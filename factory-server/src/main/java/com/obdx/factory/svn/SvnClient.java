@@ -147,6 +147,8 @@ public class SvnClient {
     /** @param clientOptions add the options of svn and svnmucc (svnadmin has none of them) */
     private String run(String executable, List<String> args, SvnCredentials credentials, Path workingDirectory, Duration timeout,
                        boolean clientOptions) {
+        // A host such as -oProxyCommand=... would reach ssh as an option
+        args.forEach(SvnUrls::requireSafe);
         List<String> command = new ArrayList<>();
         command.add(executable);
         command.addAll(args);
@@ -158,6 +160,13 @@ public class SvnClient {
             command.add("--trust-server-cert-failures=unknown-ca");
         }
         boolean sendPassword = credentials.present() && credentials.password() != null;
+        if (sendPassword) {
+            // sent to the server now (callers have checked the request's permissions): masked wherever the server echoes it,
+            // also as the Basic authorization svn sends over HTTP
+            com.obdx.factory.common.KnownSecrets.used(credentials.password());
+            com.obdx.factory.common.KnownSecrets.used(java.util.Base64.getEncoder().encodeToString(
+                    (credentials.username() + ":" + credentials.password()).getBytes(StandardCharsets.UTF_8)));
+        }
         if (credentials.present()) {
             command.add("--username");
             command.add(credentials.username());
@@ -197,7 +206,10 @@ public class SvnClient {
                 throw new SvnException(label + " did not finish within " + timeout);
             }
             if (process.exitValue() != 0) {
-                throw new SvnException(label + " failed: " + summarize(stderr.join()));
+                // (the server's error can echo the login: SvnException hides the password, a known secret)
+                String summary = summarize(stderr.join());
+                String plain = plain(summary);
+                throw new SvnException(plain == null ? label + " failed: " + summary : plain + " (" + label + ": " + summary + ")");
             }
             return stdout.join();
         } catch (InterruptedException e) {
@@ -215,6 +227,34 @@ public class SvnClient {
                 return "";
             }
         });
+    }
+
+    /** The start of the message for a working copy that svn cannot use any more (see WorkspaceService.checkOutAgain). */
+    public static final String WORKING_COPY_DAMAGED = "The workspace's working copy is damaged or locked";
+
+    /**
+     * What svn's error means and what to do, in plain words, for the errors people meet: a server that cannot be
+     * reached, a refused login, a path that is not there, a damaged working copy. Null for other errors (svn's own
+     * lines are shown then).
+     */
+    static String plain(String summary) {
+        if (summary.matches("(?s).*\\bE(155016|155036|155037|155004|155007|200030|155010|155032)\\b.*")) {
+            return WORKING_COPY_DAMAGED + ", so svn cannot update it. Use \"Check out again\" on the Workspaces page: it "
+                    + "discards the working copy and checks the code out again; requirements, designs and changes are kept.";
+        }
+        if (summary.matches("(?s).*\\bE(170001|215004)\\b.*")) {
+            return "The SVN server refused the user name or password, or the user cannot write to this path. Check them in the "
+                    + "workspace's SVN settings (and the account's access to the branches folder), then try again.";
+        }
+        if (summary.contains("E170013") && summary.matches("(?s).*(\\bE(730061|000111|731001|670002|670008|000110|730060|120108|730010)\\b"
+                + "|refused|timed out|[Uu]nknown host|No such host|Can't connect).*")) {
+            return "Could not connect to the SVN server. Check the URL (host and port) and that the server is running and "
+                    + "reachable from the factory, then try again.";
+        }
+        if (summary.matches("(?s).*\\bE(180001|170000|160013|200009)\\b.*")) {
+            return "The SVN path was not found. Check the repository URL (for example .../trunk), then try again.";
+        }
+        return null;
     }
 
     /** Keeps the meaningful "svn: E....." lines of svn's error output. */

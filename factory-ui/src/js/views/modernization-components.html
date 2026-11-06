@@ -1,0 +1,168 @@
+<div class="factory-pg factory-mc">
+  <div class="factory-rq-head">
+    <div class="factory-rq-title">
+      <h1>Component inventory</h1>
+      <p class="factory-rq-lead">Every Oracle JET component in the code and its premium replacement.</p>
+    </div>
+    <div class="factory-rq-headbar">
+      <a class="fx-btn fx-btn--secondary" id="mcCsv" :href="[[csvHref]]"><span class="factory-nav-icon factory-ico-download" aria-hidden="true"></span>Export CSV</a>
+    </div>
+  </div>
+
+  <nav class="factory-mz-stepbar" aria-label="Steps of this path"><span class="factory-mz-stepbar-name"><oj-bind-text value="[[pathName]]"></oj-bind-text></span>
+    <ol><oj-bind-for-each data="[[steps]]" as="s"><template><li :class="[[s.data.css]]" :aria-current="[[s.data.current]]"><span class="factory-mz-dot"><oj-bind-text value="[[s.data.n]]"></oj-bind-text></span>
+      <oj-bind-if test="[[s.data.done]]"><a :href="[[s.data.href]]" on-click="[[s.data.go]]"><oj-bind-text value="[[s.data.label]]"></oj-bind-text></a></oj-bind-if>
+      <oj-bind-if test="[[!s.data.done]]"><span><oj-bind-text value="[[s.data.label]]"></oj-bind-text></span></oj-bind-if></li></template></oj-bind-for-each></ol></nav>
+
+  <oj-bind-if test="[[error()]]"><div class="fx-empty" id="mcError" role="alert"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span></span><strong>Nothing to show yet</strong><oj-bind-text value="[[error]]"></oj-bind-text>
+    <div class="factory-mr-next"><button type="button" class="fx-btn fx-btn--primary" on-click="[[tryAgain]]">Try again</button><a class="fx-btn fx-btn--secondary" href="?ojr=modernization">Analyze on Overview</a></div></div></oj-bind-if>
+  <oj-bind-if test="[[loading() && !data()]]"><div class="factory-mo-skeleton" role="status" aria-label="Loading the component inventory"><span class="fx-skeleton"></span><span class="fx-skeleton"></span></div></oj-bind-if>
+
+  <oj-bind-if test="[[data()]]">
+    <oj-bind-if test="[[!counted()]]"><div class="fx-alert fx-alert--warning" role="status"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text">This analysis was made before the factory counted JET components. Analyze again on Overview to fill the inventory.</span></div></oj-bind-if>
+    <div class="factory-mc-kpis">
+      <oj-bind-for-each data="[[kpis]]" as="k">
+        <template>
+          <oj-bind-if test="[[k.data.filters]]">
+            <button type="button" :class="[[k.data.css]]" :aria-pressed="[[k.data.pressed]]" on-click="[[k.data.pick]]">
+              <span class="fx-kpi-icon"><span :class="[[k.data.iconClass]]" aria-hidden="true"></span></span>
+              <span class="factory-mc-kpi-text"><span class="fx-kpi-label"><oj-bind-text value="[[k.data.label]]"></oj-bind-text></span>
+                <span class="fx-kpi-value"><oj-bind-text value="[[k.data.value]]"></oj-bind-text><oj-bind-if test="[[k.data.percent]]"><span :class="[[k.data.percentCss]]"><oj-bind-text value="[[k.data.percent]]"></oj-bind-text></span></oj-bind-if></span></span>
+            </button>
+          </oj-bind-if>
+          <oj-bind-if test="[[!k.data.filters]]">
+            <div :class="[[k.data.css]]"><span class="fx-kpi-icon"><span :class="[[k.data.iconClass]]" aria-hidden="true"></span></span>
+              <span class="factory-mc-kpi-text"><span class="fx-kpi-label"><oj-bind-text value="[[k.data.label]]"></oj-bind-text></span><span class="fx-kpi-value"><oj-bind-text value="[[k.data.value]]"></oj-bind-text></span></span></div>
+          </oj-bind-if>
+        </template>
+      </oj-bind-for-each>
+    </div>
+
+    <div class="factory-tabbar fx-tabs factory-mc-tabs" role="tablist" aria-label="Views" on-keydown="[[tabKey]]">
+      <oj-bind-for-each data="[[tabs]]" as="t"><template><button type="button" role="tab" :id="[['mcTab-' + t.data.value]]" :class="[[t.data.css]]" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :tabindex="[[t.data.selected() ? '0' : '-1']]" :aria-controls="[['mcPanel-' + t.data.value]]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
+    </div>
+
+    <!-- Inventory -->
+    <div id="mcPanel-inventory" role="tabpanel" aria-labelledby="mcTab-inventory" :hidden="[[tab() !== 'inventory']]">
+      <div class="factory-mc-body">
+        <aside class="fx-card factory-mc-filters" aria-label="Filters">
+          <div class="fx-card-head"><h2 class="fx-card-title">Filters</h2><button type="button" class="fx-btn fx-btn--link fx-btn--sm" id="mcReset" on-click="[[reset]]" :disabled="[[!filtered()]]">Reset all</button></div>
+          <h3 class="factory-mc-facet-title">Category</h3>
+          <ul class="factory-mc-checks"><oj-bind-for-each data="[[categories]]" as="c"><template><li><label class="factory-mc-check"><input type="checkbox" class="fx-check" :checked="[[c.data.checked]]" on-click="[[c.data.toggle]]"/>
+            <span><oj-bind-text value="[[c.data.name]]"></oj-bind-text></span><span class="factory-mc-facet-n"><oj-bind-text value="[[c.data.n]]"></oj-bind-text></span></label></li></template></oj-bind-for-each></ul>
+          <h3 class="factory-mc-facet-title">Usage</h3>
+          <fx-select id="mcUsage" label="Usage" hide-label options="[[usageOptions]]" value="{{usage}}"></fx-select>
+          <h3 class="factory-mc-facet-title">Compatibility</h3>
+          <ul class="factory-mc-facets"><oj-bind-for-each data="[[compatFacets]]" as="c"><template><li><button type="button" :class="[[c.data.css]]" :aria-pressed="[[c.data.pressed]]" on-click="[[c.data.pick]]"><span class="factory-mc-facet-dot" :style="[[c.data.dot]]" aria-hidden="true"></span><span><oj-bind-text value="[[c.data.name]]"></oj-bind-text></span><span class="factory-mc-facet-n"><oj-bind-text value="[[c.data.n]]"></oj-bind-text></span></button></li></template></oj-bind-for-each></ul>
+        </aside>
+        <section class="fx-card factory-mc-tablecard" aria-label="Components">
+          <div class="factory-mc-toolbar">
+            <fx-select id="mcModule" label="Module" hide-label options="[[moduleOptions]]" value="{{module}}"></fx-select>
+            <fx-input id="mcSearch" class="factory-mc-search" type="search" icon="search" clearable label="Search components" hide-label placeholder="Search components" value="{{query}}"></fx-input>
+            <fx-select id="mcView" label="View" hide-label options="[[viewOptions]]" value="{{compat}}"></fx-select>
+            <fx-select id="mcSort" label="Sort" hide-label options="[[sortOptions]]" value="{{sort}}"></fx-select>
+            <fx-menu-button id="mcColumns" variant="ghost" icon="table" label="Columns" items="[[columnItems]]" on-fx-action="[[columnAction]]"></fx-menu-button>
+          </div>
+          <div class="fx-table-wrap">
+            <table class="fx-table factory-mc-table">
+              <caption class="fx-visually-hidden">JET components in the code with their premium replacement</caption>
+              <thead><tr>
+                <th scope="col" class="fx-col-check"><input type="checkbox" class="fx-check" aria-label="Select all on this page" :checked="[[allOnPage]]" on-click="[[toggleAll]]"/></th>
+                <th scope="col">JET component</th>
+                <oj-bind-if test="[[showCategory]]"><th scope="col">Category</th></oj-bind-if>
+                <oj-bind-if test="[[showScreens]]"><th scope="col" class="fx-num">Screens</th></oj-bind-if>
+                <oj-bind-if test="[[showModules]]"><th scope="col">Modules</th></oj-bind-if>
+                <oj-bind-if test="[[showPremium]]"><th scope="col">Premium replacement</th></oj-bind-if>
+                <oj-bind-if test="[[showCompat]]"><th scope="col">Compatibility</th></oj-bind-if>
+                <oj-bind-if test="[[showEffort]]"><th scope="col">Effort</th></oj-bind-if>
+                <th scope="col"><span class="fx-visually-hidden">Actions</span></th>
+              </tr></thead>
+              <tbody>
+                <oj-bind-for-each data="[[rows]]" as="r">
+                  <template>
+                    <tr :class="[[r.data.css]]">
+                      <td class="fx-col-check"><input type="checkbox" class="fx-check" :aria-label="[['Select ' + r.data.element]]" :checked="[[r.data.checked]]" on-click="[[r.data.toggle]]"/></td>
+                      <th scope="row"><span class="factory-mc-el"><oj-bind-text value="[[r.data.element]]"></oj-bind-text></span><span class="fx-muted factory-mc-uses"><oj-bind-text value="[[r.data.uses + ' uses']]"></oj-bind-text></span></th>
+                      <oj-bind-if test="[[r.data.cols.category]]"><td><oj-bind-text value="[[r.data.category]]"></oj-bind-text></td></oj-bind-if>
+                      <oj-bind-if test="[[r.data.cols.screens]]"><td class="fx-num"><oj-bind-text value="[[r.data.screens]]"></oj-bind-text></td></oj-bind-if>
+                      <oj-bind-if test="[[r.data.cols.modules]]"><td :title="[[r.data.allModules]]"><oj-bind-text value="[[r.data.modules]]"></oj-bind-text> <span class="fx-muted"><oj-bind-text value="[[r.data.more]]"></oj-bind-text></span></td></oj-bind-if>
+                      <oj-bind-if test="[[r.data.cols.premium]]"><td :class="[[r.data.premiumMono ? 'factory-mc-el' : 'fx-muted']]"><oj-bind-text value="[[r.data.premium]]"></oj-bind-text></td></oj-bind-if>
+                      <oj-bind-if test="[[r.data.cols.compatibility]]"><td><span :class="[[r.data.compatCss]]" :title="[[r.data.status]]"><oj-bind-text value="[[r.data.compat]]"></oj-bind-text></span></td></oj-bind-if>
+                      <oj-bind-if test="[[r.data.cols.effort]]"><td><span :class="[[r.data.effortCss]]"><oj-bind-text value="[[r.data.effort]]"></oj-bind-text></span></td></oj-bind-if>
+                      <td class="fx-table-actions">
+                        <button type="button" class="fx-btn fx-btn--ghost fx-btn--icon fx-btn--sm" :aria-label="[['Preview the mapping of ' + r.data.element]]" on-click="[[r.data.preview]]"><span class="factory-nav-icon factory-ico-eye" aria-hidden="true"></span></button>
+                        <fx-menu-button variant="ghost" size="sm" icon="more" icon-only label="[[r.data.element + ' actions']]" align="end" items="[[r.data.menu]]" on-fx-action="[[r.data.menuAction]]"></fx-menu-button>
+                      </td>
+                    </tr>
+                  </template>
+                </oj-bind-for-each>
+              </tbody>
+            </table>
+          </div>
+          <oj-bind-if test="[[rows().length === 0]]"><p class="fx-muted factory-mc-none">No component matches the filters. <button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[reset]]">Reset all</button></p></oj-bind-if>
+          <div class="fx-pager">
+            <span class="fx-pager-text"><oj-bind-text value="[[pagerText]]"></oj-bind-text></span>
+            <fx-select id="mcPageSize" label="Rows per page" hide-label options="[[sizeOptions]]" value="{{pager.size}}"></fx-select>
+            <button type="button" aria-label="Previous page" on-click="[[pager.prev]]" :disabled="[[!pager.canPrev()]]">‹</button>
+            <oj-bind-for-each data="[[pager.numbers]]" as="n"><template>
+              <oj-bind-if test="[[n.data.gap]]"><span class="fx-pager-gap">…</span></oj-bind-if>
+              <oj-bind-if test="[[!n.data.gap]]"><button type="button" :class="[[n.data.css]]" :aria-current="[[n.data.current ? 'page' : null]]" :aria-label="[['Page ' + n.data.label]]" on-click="[[n.data.go]]"><oj-bind-text value="[[n.data.label]]"></oj-bind-text></button></oj-bind-if>
+            </template></oj-bind-for-each>
+            <button type="button" aria-label="Next page" on-click="[[pager.next]]" :disabled="[[!pager.canNext()]]">›</button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Compatibility matrix -->
+    <section class="fx-card" id="mcPanel-matrix" role="tabpanel" aria-labelledby="mcTab-matrix" :hidden="[[tab() !== 'matrix']]">
+      <h2 class="fx-card-title">Compatibility matrix</h2>
+      <p class="fx-muted">How each JET component maps to its premium component, part by part. A part maps when the premium component takes it with the same meaning; a renamed part counts as mapped.</p>
+      <div class="fx-table-wrap"><table class="fx-table">
+        <thead><tr><th scope="col">Component</th><th scope="col">Properties</th><th scope="col">Events</th><th scope="col">Slots</th><th scope="col">Styling</th><th scope="col">Result</th></tr></thead>
+        <tbody><oj-bind-for-each data="[[matrix]]" as="m"><template><tr>
+          <th scope="row"><a href="#" class="factory-mc-el" on-click="[[m.data.open]]"><oj-bind-text value="[[m.data.element]]"></oj-bind-text></a></th>
+          <td :class="[[m.data.propCss]]"><oj-bind-text value="[[m.data.properties]]"></oj-bind-text></td><td :class="[[m.data.eventCss]]"><oj-bind-text value="[[m.data.events]]"></oj-bind-text></td>
+          <td><oj-bind-text value="[[m.data.slots]]"></oj-bind-text></td><td><oj-bind-text value="[[m.data.styling]]"></oj-bind-text></td>
+          <td><span :class="[[m.data.resultCss]]"><oj-bind-text value="[[m.data.result]]"></oj-bind-text></span></td></tr></template></oj-bind-for-each></tbody>
+      </table></div>
+    </section>
+
+    <!-- Usage by module -->
+    <section class="fx-card" id="mcPanel-modules" role="tabpanel" aria-labelledby="mcTab-modules" :hidden="[[tab() !== 'modules']]">
+      <h2 class="fx-card-title">Usage by module</h2>
+      <p class="fx-muted">Where the JET components are used, and how much of each module the premium pack covers (direct or mapped).</p>
+      <div class="fx-table-wrap"><table class="fx-table">
+        <thead><tr><th scope="col">Module</th><th scope="col" class="fx-num">Screens</th><th scope="col" class="fx-num">Component uses</th><th scope="col">Most used</th><th scope="col">Covered by the pack</th></tr></thead>
+        <tbody><oj-bind-for-each data="[[moduleRows]]" as="m"><template><tr>
+          <th scope="row"><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[m.data.filter]]"><oj-bind-text value="[[m.data.module]]"></oj-bind-text></button></th>
+          <td class="fx-num"><oj-bind-text value="[[m.data.screens]]"></oj-bind-text></td><td class="fx-num"><oj-bind-text value="[[m.data.uses]]"></oj-bind-text></td>
+          <td class="factory-mc-el"><oj-bind-text value="[[m.data.most]]"></oj-bind-text></td><td><span :class="[[m.data.coveredCss]]"><oj-bind-text value="[[m.data.covered]]"></oj-bind-text></span></td></tr></template></oj-bind-for-each></tbody>
+      </table></div>
+    </section>
+
+    <!-- Findings -->
+    <section class="fx-card" id="mcPanel-findings" role="tabpanel" aria-labelledby="mcTab-findings" :hidden="[[tab() !== 'findings']]">
+      <h2 class="fx-card-title">Findings</h2>
+      <p class="fx-muted">Things to fix or decide before the upgrade, from the mapping and what the analysis counted.</p>
+      <oj-bind-if test="[[findings().length === 0]]"><p class="fx-muted">Nothing to fix: every component has a premium replacement with no hand edits.</p></oj-bind-if>
+      <div class="fx-table-wrap"><table class="fx-table">
+        <thead><tr><th scope="col">Finding</th><th scope="col">Where</th><th scope="col">How bad</th><th scope="col">What to do</th></tr></thead>
+        <tbody><oj-bind-for-each data="[[findings]]" as="f"><template><tr>
+          <th scope="row"><oj-bind-if test="[[f.data.hasElement]]"><a href="#" on-click="[[f.data.open]]"><oj-bind-text value="[[f.data.text]]"></oj-bind-text></a></oj-bind-if><oj-bind-if test="[[!f.data.hasElement]]"><oj-bind-text value="[[f.data.text]]"></oj-bind-text></oj-bind-if></th>
+          <td><oj-bind-text value="[[f.data.where]]"></oj-bind-text></td><td><span :class="[[f.data.severityCss]]"><oj-bind-text value="[[f.data.severity]]"></oj-bind-text></span></td>
+          <td><oj-bind-text value="[[f.data.todo]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody>
+      </table></div>
+    </section>
+
+    <div class="factory-mz-actions">
+      <button type="button" class="fx-btn fx-btn--ghost" id="mcBack" on-click="[[back]]"><span class="factory-nav-icon factory-ico-arrow-left" aria-hidden="true"></span>Choose a path</button>
+      <span class="fx-muted" id="mcSelection" role="status"><oj-bind-text value="[[selectionText]]"></oj-bind-text></span>
+      <div class="factory-mz-actions-end">
+        <fx-menu-button id="mcMore" variant="ghost" icon="more" icon-only label="More actions" align="end" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
+        <button type="button" class="fx-btn fx-btn--secondary" id="mcCompare" on-click="[[compare]]">Compare and preview</button>
+        <button type="button" class="fx-btn fx-btn--primary" id="mcAddToPlan" on-click="[[addToPlan]]" :disabled="[[!hasPicked() || !canManage()]]">Add to the upgrade plan<span class="factory-nav-icon factory-ico-arrow-right" aria-hidden="true"></span></button>
+      </div>
+    </div>
+  </oj-bind-if>
+</div>

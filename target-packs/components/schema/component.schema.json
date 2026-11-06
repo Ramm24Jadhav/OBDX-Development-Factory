@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://obdx-factory/schema/component.schema.json",
+  "title": "Premium pack component",
+  "description": "One component in one technology's premium pack. The factory reads these to fill the pack explorer and to tell code generation which components exist. See docs/COMPONENT-PACKS.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "category", "technology", "package", "componentVersion", "frameworkRange", "properties", "events", "accessibility", "gates"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$", "description": "Logical component id, the same in every technology (for example amount-input)." },
+    "name": { "type": "string", "description": "Name in this technology (fx-amount-input, AmountInput ...)." },
+    "category": { "enum": ["foundation", "layout", "data", "feedback", "account", "payment", "security", "transaction"] },
+    "technology": { "enum": ["jet", "react", "react-native", "angular"] },
+    "package": {
+      "type": "object", "additionalProperties": false, "required": ["name", "version"],
+      "properties": { "name": { "type": "string" }, "version": { "$ref": "#/$defs/semver" } }
+    },
+    "componentVersion": { "$ref": "#/$defs/semver" },
+    "frameworkRange": { "type": "string", "description": "Supported framework versions as a semver range, for example >=15.1 <22 for JET or ^19 for React." },
+    "properties": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["name", "type"],
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string", "description": "TypeScript-style type, for example string, number, 'primary' | 'secondary', Option[]." },
+          "default": {},
+          "required": { "type": "boolean" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["name"],
+        "properties": { "name": { "type": "string" }, "payload": { "type": "string" }, "description": { "type": "string" } }
+      }
+    },
+    "slots": { "type": "array", "items": { "type": "string" } },
+    "validation": { "type": "array", "items": { "type": "string" }, "description": "Validation the component supports (it shows messages; the rules come from the screen)." },
+    "accessibility": {
+      "type": "object", "additionalProperties": false, "required": ["role", "keyboard"],
+      "properties": {
+        "role": { "type": "string" },
+        "keyboard": { "type": "array", "items": { "type": "string" } },
+        "screenReader": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "responsive": { "type": "string" },
+    "theming": { "type": "array", "items": { "type": "string" }, "description": "Tokens the component reads, for example --bank-primary." },
+    "banking": { "type": "array", "items": { "type": "string" }, "description": "Banking rules, for example 'account number masked by default'." },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["name", "version", "licence"],
+        "properties": { "name": { "type": "string" }, "version": { "type": "string" }, "licence": { "type": "string" } }
+      }
+    },
+    "examples": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": false, "required": ["title", "code"], "properties": { "title": { "type": "string" }, "code": { "type": "string" } } }
+    },
+    "gates": {
+      "type": "object",
+      "description": "Quality gate results for this component version. The explorer shows Available only when every gate is passed.",
+      "additionalProperties": false,
+      "required": ["unit", "accessibility", "visual", "themes", "responsive"],
+      "properties": {
+        "unit": { "$ref": "#/$defs/gate" },
+        "accessibility": { "$ref": "#/$defs/gate" },
+        "visual": { "$ref": "#/$defs/gate" },
+        "themes": { "$ref": "#/$defs/gate" },
+        "responsive": { "$ref": "#/$defs/gate" },
+        "parity": { "$ref": "#/$defs/gate" }
+      }
+    }
+  },
+  "$defs": {
+    "semver": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?$" },
+    "gate": {
+      "type": "object", "additionalProperties": false, "required": ["status"],
+      "properties": {
+        "status": { "enum": ["passed", "failed", "not-run", "not-applicable"] },
+        "evidence": { "type": "string", "description": "Test file, report or run that shows the result." },
+        "checkedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

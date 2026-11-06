@@ -79,6 +79,39 @@ public class ChangeBuildService {
         this.executor = executor;
     }
 
+    /** The job parameters a job may take to run only some tests (the failed ones), in the order they are looked for. */
+    static final List<String> TEST_FILTERS = List.of("FAILED_TESTS", "TESTS", "TEST_FILTER");
+
+    /** Failed tests to run again, per change, while its build is starting (see startFailed). */
+    private final Map<UUID, List<String>> rerun = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * Builds again with only the tests that failed in the last build: when a job takes a test filter parameter
+     * (FAILED_TESTS, TESTS or TEST_FILTER) it gets the failed tests' names; a job without one runs every test, and the
+     * change's message says so.
+     */
+    public ChangeService.ChangeDetail startFailed(UUID changeId) {
+        List<ChangeBuildStore.Build> list = builds.list(changeId);
+        List<String> failed = new ArrayList<>();
+        for (int i = list.size() - 1; i >= 0 && failed.isEmpty(); i--) {
+            ChangeBuildStore.Build b = list.get(i);
+            if (b.buildNumber() == null) {
+                continue;
+            }
+            builds.report(b.id()).cases().stream().filter(c -> "FAILED".equals(c.status())).forEach(c -> failed.add(c.className() + "#" + c.name()));
+        }
+        if (failed.isEmpty()) {
+            throw new com.obdx.factory.common.BadRequestException("The last build has no failed tests to run again. Run the tests instead.");
+        }
+        rerun.put(changeId, List.copyOf(failed));
+        try {
+            return start(changeId);
+        } catch (RuntimeException e) {
+            rerun.remove(changeId);
+            throw e;
+        }
+    }
+
     /** Starts building in the background: the delivered branch (BRANCH mode) or the patch (PATCH mode). */
     public ChangeService.ChangeDetail start(UUID changeId) {
         ChangeRequest change = changes.find(changeId);
@@ -153,9 +186,10 @@ public class ChangeBuildService {
                         + ". Building again...");
                 repository.save(latest);
             }
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | Error e) {
+            // An Error too (a stack overflow in a check): the build must not stay BUILDING
             log.error("Jenkins build of change {} failed", changeId, e);
-            finish(changeId, "FAILED", "Could not build with Jenkins: " + e.getMessage());
+            finish(changeId, "FAILED", "Could not build with Jenkins: " + com.obdx.factory.common.Messages.redacted(e.getMessage()));
         }
     }
 
@@ -192,19 +226,38 @@ public class ChangeBuildService {
 
     private JobOutcome buildOnce(JenkinsClient client, JenkinsSettings settings, ChangeRequest change, String job, UUID buildId) {
         Map<String, String> parameters = new LinkedHashMap<>();
+        List<String> only = rerun.remove(change.getId());
+        if (only != null) {
+            List<String> accepted = client.job(job).parameters();
+            String filter = TEST_FILTERS.stream().filter(accepted::contains).findFirst().orElse(null);
+            ChangeRequest current = changes.find(change.getId());
+            if (filter != null) {
+                parameters.put(filter, String.join(",", only));
+                current.build("BUILDING", "Running the " + only.size() + " failed test" + (only.size() == 1 ? "" : "s") + " again with Jenkins (" + job + ")...");
+            } else {
+                current.build("BUILDING", job + " takes no test filter parameter (" + String.join(", ", TEST_FILTERS) + "), so it runs every test again...");
+            }
+            repository.save(current);
+        }
         JenkinsClient.FileParameter file = null;
         if (settings.mode() == JenkinsSettings.Mode.BRANCH) {
             ChangeRequest current = changes.find(change.getId());
             parameters.put(settings.branchParameter(), settings.branchValue() == JenkinsSettings.BranchValue.URL
                     ? current.getBranchUrl() : branchPath(current).path());
         } else {
+            // A build checks what is there, so the patch goes even without the files not written yet; the log says so
+            List<String> missing = ChangeService.unwritten(files.files(change.getId()));
+            if (!missing.isEmpty()) {
+                log.warn("Building change {} without {} planned file(s) not written yet: {}", change.getId(), missing.size(), missing);
+            }
             file = new JenkinsClient.FileParameter(settings.patchParameter(), "change-" + change.getId().toString().substring(0, 8) + ".patch",
-                    changes.patch(change.getId()).getBytes(StandardCharsets.UTF_8));
+                    changes.patch(change.getId(), true).getBytes(StandardCharsets.UTF_8));
         }
         String queue = client.trigger(job, parameters, file);
         JenkinsClient.BuildRef build = client.waitForStart(queue);
         builds.running(buildId, build.number(), build.url());
         String result = client.waitForResult(build);
+        keepReport(client, build, buildId);
         if ("SUCCESS".equals(result)) {
             builds.finish(buildId, result, List.of(), null);
             return new JobOutcome(true, List.of(), List.of());
@@ -214,21 +267,37 @@ public class ChangeBuildService {
         List<String> tests = client.failedTests(build);
         List<String> changed = files.files(change.getId()).stream().filter(f -> f.generated() != null).map(ChangeFileStore.ChangeFile::path).toList();
         List<String> unmatched = new ArrayList<>();
+        List<String> otherTests = new ArrayList<>();
         for (String test : tests) {
             // A failing test in a file of the change can be fixed like a compile error.
-            String className = test.substring(0, test.indexOf(':')).replaceAll("\\.[^.]+$", "");
+            String className = test.substring(0, Math.max(0, test.indexOf(':'))).replaceAll("\\.[^.]+$", "");
             String path = BuildLogParser.matchFile(className.replace('.', '/') + ".java", changed);
+            if (path == null) {
+                path = BuildLogParser.testFile(className, changed);
+            }
             if (path != null) {
                 errors.add(new BuildLogParser.BuildError(path, 0, "Test failed: " + test));
             } else {
                 unmatched.add("test " + test);
+                otherTests.add("Test failed: " + test);
             }
         }
         errors.stream().filter(e -> BuildLogParser.matchFile(e.file(), changed) == null)
                 .forEach(e -> unmatched.add(e.file() + ":" + e.line() + " " + e.message()));
-        List<String> described = errors.stream().map(e -> e.file() + (e.line() > 0 ? ":" + e.line() : "") + " " + e.message()).toList();
+        // Every failed test is recorded, also one no file of the change is named after: the unit test gate shows it failed
+        List<String> described = new ArrayList<>(errors.stream().map(e -> e.file() + (e.line() > 0 ? ":" + e.line() : "") + " " + e.message()).toList());
+        described.addAll(otherTests);
         builds.finish(buildId, result, described, BuildLogParser.tail(console, 60));
         return new JobOutcome(false, errors, unmatched);
+    }
+
+    /** Keeps the build's whole test report, coverage and images for Validation; a job that publishes none leaves them empty. */
+    private void keepReport(JenkinsClient client, JenkinsClient.BuildRef build, UUID buildId) {
+        try {
+            builds.report(buildId, client.testReport(build), client.lineCoverage(build), client.imageArtifacts(build));
+        } catch (RuntimeException e) {
+            log.warn("Could not read the test report of build {}: {}", build.url(), e.getMessage());
+        }
     }
 
     /** Lets the model fix each file with build errors, saves the fixes and, in BRANCH mode, commits them to the branch. */
@@ -244,11 +313,19 @@ public class ChangeBuildService {
             ChangeFileStore.ChangeFile file = files.file(change.getId(), entry.getKey()).orElseThrow();
             ChangePlan.Item item = plan.items().stream().filter(i -> i.path().equals(file.path())).findFirst()
                     .orElse(new ChangePlan.Item(file.path(), file.action(), file.layer(), file.purpose(), List.of(), null));
-            String note = heading + "\n" + entry.getValue().stream()
+            // The build's own text (from Jenkins) is data to fix the file by, never an instruction to follow
+            String note = CodeGenerator.BUILD_OUTPUT + "\n" + heading + "\n" + entry.getValue().stream()
                     .map(e -> "- " + (e.line() > 0 ? "line " + e.line() + ": " : "") + e.message()).collect(Collectors.joining("\n"))
-                    + "\nFix them and keep everything else unchanged.";
-            CodeGenerator.Result result = generator.generate(context, plan, item, file.generated(), file.original(), Map.of(), others, note,
-                    changes.scaffold(context, file.path(), file.original()));
+                    + "\n(end of build output) Fix the errors above and keep everything else unchanged.";
+            CodeGenerator.Result result;
+            try {
+                result = generator.generate(context, plan, item, file.generated(), file.original(), Map.of(), others, note,
+                        changes.scaffold(context, file.path(), file.original()));
+            } catch (CodeGenerator.JoinFailed e) {
+                // The fix came in pieces that did not join: the file (and any reviewer's edit of it) is kept as it is
+                log.warn("The build fix of {} in change {} did not join cleanly; the file is kept as it is", file.path(), change.getId());
+                continue;
+            }
             files.saveResult(change.getId(), file.path(), ChangeFileStore.Status.GENERATED, file.original(), result.content(),
                     file.edited(), result.check(), file.attempts() + result.attempts());
             fixed.add(file.path());
@@ -288,6 +365,9 @@ public class ChangeBuildService {
     }
 
     private void finish(UUID changeId, String status, String message) {
+        if ("FAILED".equals(status)) {
+            builds.closeUnfinished(changeId, message);
+        }
         ChangeRequest change = changes.find(changeId);
         change.build(status, message);
         repository.save(change);

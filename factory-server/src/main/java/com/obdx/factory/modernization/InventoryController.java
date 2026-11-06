@@ -20,8 +20,10 @@ public class InventoryController {
     private final InventoryService service;
     private final AccessGuard guard;
     private final AuditLog audit;
+    private final AnalysisJobs jobs;
 
-    public InventoryController(InventoryService service, AccessGuard guard, AuditLog audit) {
+    public InventoryController(InventoryService service, AccessGuard guard, AuditLog audit, AnalysisJobs jobs) {
+        this.jobs = jobs;
         this.service = service;
         this.guard = guard;
         this.audit = audit;
@@ -41,6 +43,31 @@ public class InventoryController {
         audit.record("INVENTORY_SCANNED", workspaceId, "r" + inventory.revision(),
                 inventory.summary().screens() + " screens, " + inventory.summary().endpoints() + " services");
         return inventory;
+    }
+
+    /** Starts the analysis in the background; the page follows its steps (GET) and can stop it. */
+    @PostMapping("/api/workspaces/{workspaceId}/inventory/analysis")
+    @org.springframework.web.bind.annotation.ResponseStatus(org.springframework.http.HttpStatus.ACCEPTED)
+    public AnalysisJobs.Job startAnalysis(@PathVariable UUID workspaceId) {
+        var user = guard.require(workspaceId, Permission.MANAGE_CODE);
+        AnalysisJobs.Job job = jobs.start(workspaceId, user.getDisplayName());
+        audit.record("INVENTORY_ANALYSIS_STARTED", workspaceId, "analysis", "started");
+        return job;
+    }
+
+    /** The workspace's analysis job, or 204 when none ran since the factory started. */
+    @GetMapping("/api/workspaces/{workspaceId}/inventory/analysis")
+    public ResponseEntity<AnalysisJobs.Job> analysis(@PathVariable UUID workspaceId) {
+        guard.require(workspaceId, Permission.VIEW);
+        AnalysisJobs.Job job = jobs.find(workspaceId);
+        return job == null ? ResponseEntity.noContent().build() : ResponseEntity.ok(job);
+    }
+
+    @PostMapping("/api/workspaces/{workspaceId}/inventory/analysis/stop")
+    public ResponseEntity<AnalysisJobs.Job> stopAnalysis(@PathVariable UUID workspaceId) {
+        guard.require(workspaceId, Permission.MANAGE_CODE);
+        AnalysisJobs.Job job = jobs.stop(workspaceId);
+        return job == null ? ResponseEntity.noContent().build() : ResponseEntity.ok(job);
     }
 
     @GetMapping("/api/workspaces/{workspaceId}/inventory/screens.csv")

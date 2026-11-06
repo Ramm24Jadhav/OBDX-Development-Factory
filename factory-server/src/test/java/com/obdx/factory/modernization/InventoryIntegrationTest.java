@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 /** The inventory is scanned after an import, stored, and exported. Runs when FACTORY_TEST_DB_URL is set and svn is installed. */
 @SpringBootTest(properties = "factory.indexing.embeddings-enabled=false")
 @EnabledIfEnvironmentVariable(named = "FACTORY_TEST_DB_URL", matches = ".+")
+@org.junit.jupiter.api.extension.ExtendWith(com.obdx.factory.common.ForgetSecrets.class)
 class InventoryIntegrationTest {
 
     @TempDir

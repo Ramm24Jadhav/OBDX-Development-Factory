@@ -1,0 +1,3 @@
+# Keeps secrets out of the log (installed right after logging is set up)
+org.springframework.context.ApplicationListener=\
+com.obdx.factory.common.RedactedLog$Installer

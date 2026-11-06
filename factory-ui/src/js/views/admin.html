@@ -1,107 +1,251 @@
-<div class="oj-hybrid-padding">
-  <h1>Administration</h1>
-  <oj-bind-if test="[[errorMessage()]]">
-    <p id="adminError" class="oj-text-color-danger"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></p>
+<div class="factory-pg factory-ad factory-adm">
+  <!-- Opened by URL without the right: a plain notice, none of the page (the server refuses its data anyway) -->
+  <oj-bind-if test="[[!isAdmin()]]">
+    <h1 class="fx-visually-hidden">Administration</h1>
+    <div class="fx-empty" id="adminOnly"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-shield" aria-hidden="true"></span></span>
+      <strong>Only administrators can open Administration</strong>Ask an administrator of this factory if you need a user added or a role changed.</div>
   </oj-bind-if>
-  <oj-bind-if test="[[infoMessage()]]">
-    <p id="adminInfo" class="oj-text-color-success"><oj-bind-text value="[[infoMessage]]"></oj-bind-text></p>
-  </oj-bind-if>
-
-  <h2>Users</h2>
-  <p class="oj-text-color-secondary">
-    <oj-bind-text value="[[modeHint]]"></oj-bind-text>
-  </p>
-  <table class="factory-profile-table">
-    <thead><tr><th>Username</th><th>Name</th><th>Signs in with</th><th>Administrator</th><th>Status</th><th>Last sign-in</th><th></th></tr></thead>
-    <tbody>
-      <oj-bind-for-each data="[[users]]" as="u">
-        <template>
-          <tr>
-            <td><oj-bind-text value="[[u.data.username]]"></oj-bind-text></td>
-            <td><oj-bind-text value="[[u.data.displayName]]"></oj-bind-text></td>
-            <td><oj-bind-text value="[[u.data.source]]"></oj-bind-text></td>
-            <td><oj-bind-text value="[[u.data.admin ? 'yes' : 'no']]"></oj-bind-text></td>
-            <td><oj-bind-text value="[[u.data.enabled ? 'active' : 'disabled']]"></oj-bind-text></td>
-            <td><oj-bind-text value="[[u.data.lastLogin]]"></oj-bind-text></td>
-            <td class="factory-actions">
-              <oj-button chroming="borderless" on-oj-action="[[u.data.toggleAdmin]]">
-                <oj-bind-text value="[[u.data.admin ? 'Remove admin' : 'Make admin']]"></oj-bind-text>
-              </oj-button>
-              <oj-button chroming="borderless" on-oj-action="[[u.data.toggleEnabled]]">
-                <oj-bind-text value="[[u.data.enabled ? 'Disable' : 'Enable']]"></oj-bind-text>
-              </oj-button>
-              <oj-bind-if test="[[u.data.source === 'LOCAL']]">
-                <oj-button chroming="borderless" on-oj-action="[[u.data.resetPassword]]">Reset password</oj-button>
-              </oj-bind-if>
-            </td>
-          </tr>
-        </template>
-      </oj-bind-for-each>
-    </tbody>
-  </table>
-
-  <h3>Add a user</h3>
-  <oj-form-layout max-columns="3" direction="row">
-    <oj-input-text id="newUsername" label-hint="Username" value="{{newUsername}}"></oj-input-text>
-    <oj-input-text id="newDisplayName" label-hint="Name" value="{{newDisplayName}}"></oj-input-text>
-    <oj-input-text id="newEmail" label-hint="Email" value="{{newEmail}}"></oj-input-text>
-    <oj-bind-if test="[[localMode()]]">
-      <oj-input-password id="newPassword" label-hint="Password (at least 12 characters)" value="{{newPassword}}" autocomplete="new-password"></oj-input-password>
-    </oj-bind-if>
-    <oj-switch id="newAdmin" label-hint="Administrator" value="{{newAdmin}}"></oj-switch>
-  </oj-form-layout>
-  <oj-button id="addUserButton" chroming="callToAction" on-oj-action="[[addUser]]" disabled="[[!newUsername()]]">Add user</oj-button>
-
-  <h2>Workspace members</h2>
-  <oj-form-layout max-columns="2">
-    <oj-select-single id="memberWorkspace" label-hint="Workspace" data="[[workspaceProvider]]" value="{{memberWorkspaceId}}"
-                      placeholder="Select a workspace"></oj-select-single>
-  </oj-form-layout>
-  <oj-bind-if test="[[memberWorkspaceId()]]">
-    <table class="factory-profile-table">
-      <thead><tr><th>User</th><th>Role</th><th>Can</th><th></th></tr></thead>
-      <tbody>
-        <oj-bind-for-each data="[[members]]" as="m">
-          <template>
-            <tr>
-              <td><oj-bind-text value="[[m.data.label]]"></oj-bind-text></td>
-              <td><oj-bind-text value="[[m.data.role]]"></oj-bind-text></td>
-              <td class="oj-typography-body-sm"><oj-bind-text value="[[m.data.can]]"></oj-bind-text></td>
-              <td><oj-button chroming="borderless" on-oj-action="[[m.data.removeAction]]">Remove</oj-button></td>
-            </tr>
-          </template>
-        </oj-bind-for-each>
-      </tbody>
-    </table>
-    <oj-bind-if test="[[members().length === 0]]">
-      <p class="oj-text-color-secondary">No members yet. Only administrators can see this workspace.</p>
-    </oj-bind-if>
-    <div class="oj-flex factory-gap oj-sm-align-items-flex-end">
-      <oj-select-single id="memberUser" class="factory-wide-select" label-hint="User" data="[[userProvider]]" value="{{memberUserId}}"></oj-select-single>
-      <oj-select-single id="memberRole" class="factory-narrow" label-hint="Role" data="[[roleProvider]]" value="{{memberRole}}"></oj-select-single>
-      <oj-button id="setMemberButton" on-oj-action="[[setMember]]" disabled="[[!memberUserId() || !memberRole()]]">Add or change</oj-button>
+  <oj-bind-if test="[[isAdmin()]]">
+  <!-- One header: what the page is for, Add user and a menu with the rest -->
+  <div class="factory-rq-head">
+    <div class="factory-rq-title">
+      <h1>Administration</h1>
+      <p class="factory-rq-lead">Users, their roles in each workspace and the audit log. Every change is checked on the server and recorded.</p>
     </div>
-    <p class="oj-typography-body-sm oj-text-color-secondary">
-      Analyst: requirements and designs. Developer: SVN, imports, Project Profile and designs. Lead: everything in the workspace, including approvals.
-    </p>
+    <div class="factory-rq-headbar">
+      <button type="button" id="addUserStart" class="fx-btn fx-btn--primary" on-click="[[startAdd]]"><span class="factory-nav-icon factory-ico-plus factory-btn-icon" aria-hidden="true"></span>Add user</button>
+      <fx-menu-button id="adMoreButton" variant="ghost" icon="more" icon-only label="More actions" align="end" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
+    </div>
+  </div>
+
+  <oj-bind-if test="[[errorMessage()]]"><div class="fx-alert fx-alert--danger factory-adm-alert" id="adminError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+    <span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span></div></oj-bind-if>
+
+  <!-- The one problem, with its fix -->
+  <oj-bind-if test="[[problem()]]">
+    <div :class="[[problem().css + ' factory-adm-problem']]" id="adProblem" role="status">
+      <span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+      <span class="factory-rqd-problemtext"><strong><oj-bind-text value="[[problem().lead]]"></oj-bind-text></strong><oj-bind-text value="[[' ' + problem().detail]]"></oj-bind-text></span>
+      <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="adProblemFix" on-click="[[problem().fix.run]]"><oj-bind-text value="[[problem().fix.label]]"></oj-bind-text></button>
+    </div>
   </oj-bind-if>
 
-  <h2>Audit log</h2>
-  <table class="factory-profile-table factory-audit">
-    <thead><tr><th>When</th><th>Who</th><th>What</th><th>Workspace</th><th>Item</th><th>Details</th></tr></thead>
-    <tbody>
-      <oj-bind-for-each data="[[auditEvents]]" as="e">
-        <template>
-          <tr>
-            <td><oj-bind-text value="[[e.data.when]]"></oj-bind-text></td>
-            <td><oj-bind-text value="[[e.data.username || '']]"></oj-bind-text></td>
-            <td><oj-bind-text value="[[e.data.action]]"></oj-bind-text></td>
-            <td><oj-bind-text value="[[e.data.workspace]]"></oj-bind-text></td>
-            <td><oj-bind-text value="[[e.data.target || '']]"></oj-bind-text></td>
-            <td><oj-bind-text value="[[e.data.detail || '']]"></oj-bind-text></td>
-          </tr>
-        </template>
-      </oj-bind-for-each>
-    </tbody>
-  </table>
+  <!-- The answer: people, who has not signed in, sign-in, the factory -->
+  <section class="factory-adm-now" id="adNow" aria-label="Now">
+    <oj-bind-for-each data="[[nowCards]]" as="c">
+      <template><div class="fx-card factory-adm-card" :id="[[c.data.id]]">
+        <div class="factory-adm-cardtop"><span :class="[[c.data.iconCss]]" aria-hidden="true"><span :class="[[c.data.iconClass]]"></span></span>
+          <span class="factory-adm-cardlabel"><oj-bind-text value="[[c.data.label]]"></oj-bind-text></span></div>
+        <strong class="factory-adm-cardvalue"><oj-bind-text value="[[c.data.value]]"></oj-bind-text></strong>
+        <span class="factory-adm-cardsub"><oj-bind-text value="[[c.data.sub]]"></oj-bind-text></span>
+        <oj-bind-if test="[[c.data.action]]"><button type="button" class="factory-link-sm factory-adm-cardlink" on-click="[[c.data.run]]" :aria-label="[[c.data.action + ' (' + c.data.label + ')']]"><oj-bind-text value="[[c.data.action]]"></oj-bind-text> ›</button></oj-bind-if>
+      </div></template>
+    </oj-bind-for-each>
+  </section>
+
+  <div class="fx-tabs factory-adm-tabs" role="tablist" aria-label="Administration" on-keydown="[[tabKey]]">
+    <oj-bind-for-each data="[[tabs]]" as="t">
+      <template><button type="button" role="tab" :id="[['ad-' + t.data.value]]" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :tabindex="[[t.data.selected() ? '0' : '-1']]" on-click="[[t.data.pick]]">
+        <oj-bind-text value="[[t.data.label]]"></oj-bind-text><oj-bind-if test="[[t.data.n !== '']]"><span class="factory-rqd-cnt"><oj-bind-text value="[[t.data.n]]"></oj-bind-text></span></oj-bind-if></button></template>
+    </oj-bind-for-each>
+  </div>
+
+  <!-- ===== Users ===== -->
+  <oj-bind-if test="[[tab() === 'users']]">
+    <section class="fx-card factory-adm-panel" aria-labelledby="adUsersTitle">
+      <div class="factory-rq-listhead"><h2 id="adUsersTitle">Users</h2><span class="factory-rq-shown" role="status"><oj-bind-text value="[[usersShown]]"></oj-bind-text></span></div>
+      <p class="factory-adm-hint"><oj-bind-text value="[[modeHint]]"></oj-bind-text></p>
+      <div class="factory-rq-chips" role="group" aria-label="Show users" id="adUserChips">
+        <oj-bind-for-each data="[[userChips]]" as="c">
+          <template><button type="button" class="fx-chip fx-chip--sm" :id="[['adChip-' + c.data.value]]" :aria-pressed="[[c.data.pressed]]" on-click="[[c.data.pick]]">
+            <oj-bind-if test="[[c.data.dot]]"><span :class="[[c.data.dot]]" aria-hidden="true"></span></oj-bind-if><oj-bind-text value="[[c.data.text]]"></oj-bind-text></button></template>
+        </oj-bind-for-each>
+      </div>
+      <div class="factory-adm-filters">
+        <fx-input class="factory-adm-search" input-id="userSearch" label="Search users" hide-label icon="search" clearable placeholder="Search by name, username, email or role" value="{{search}}"></fx-input>
+        <fx-select class="factory-adm-wsfilter" id="workspaceFilter" label="Workspace" hide-label placeholder="All workspaces" options="[[workspaceFilterOptions]]" value="{{workspaceFilter}}" searchable></fx-select>
+      </div>
+      <ul class="factory-adm-list" id="userList" aria-label="Users">
+        <oj-bind-for-each data="[[userPager.rows]]" as="u">
+          <template><li class="factory-adm-item">
+            <button type="button" class="factory-adm-open" :aria-label="[[u.data.openLabel]]" on-click="[[u.data.doView]]">
+              <span :class="[[u.data.avatarCss]]" aria-hidden="true"><oj-bind-text value="[[u.data.initials]]"></oj-bind-text></span>
+              <span class="factory-adm-text"><span class="factory-adm-title"><oj-bind-text value="[[u.data.name]]"></oj-bind-text></span>
+                <span class="factory-adm-sub"><oj-bind-text value="[[u.data.sub]]"></oj-bind-text></span></span>
+              <span class="factory-adm-meta">
+                <span :class="[[u.data.rolePill.css]]"><oj-bind-text value="[[u.data.rolePill.text]]"></oj-bind-text></span>
+                <span :class="[[u.data.status.css]]"><span :class="[[u.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[u.data.status.text]]"></oj-bind-text></span>
+                <span class="factory-adm-ws"><oj-bind-text value="[[u.data.workspaceText]]"></oj-bind-text></span>
+                <span class="factory-adm-when"><oj-bind-text value="[[u.data.lastLogin]]"></oj-bind-text></span>
+              </span>
+            </button>
+            <fx-menu-button class="factory-adm-itemmenu" :label="[[u.data.menuLabel]]" icon="more" icon-only variant="ghost" size="sm" align="end" items="[[u.data.menuItems]]" on-fx-action="[[u.data.menu]]"></fx-menu-button>
+          </li></template>
+        </oj-bind-for-each>
+      </ul>
+      <oj-bind-if test="[[loaded() && visibleUsers().length === 0]]"><div class="fx-empty" id="adUsersEmpty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-user" aria-hidden="true"></span></span>
+        <span><oj-bind-text value="[[filtersOn() ? 'No users match.' : 'No users yet.']]"></oj-bind-text></span>
+        <oj-bind-if test="[[filtersOn()]]"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[resetFilters]]">Show all users</button></oj-bind-if>
+        <oj-bind-if test="[[!filtersOn()]]"><button type="button" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[startAdd]]">Add user</button></oj-bind-if></div></oj-bind-if>
+      <oj-bind-if test="[[userLong()]]">
+        <div class="fx-pager factory-adm-pager">
+          <span class="fx-pager-text"><oj-bind-text value="[[userPager.text() + ' users']]"></oj-bind-text></span>
+          <button type="button" aria-label="Previous page" on-click="[[userPager.prev]]" :disabled="[[!userPager.canPrev()]]">‹</button>
+          <oj-bind-for-each data="[[userPager.numbers]]" as="n"><template>
+            <oj-bind-if test="[[n.data.gap]]"><span class="fx-pager-gap">…</span></oj-bind-if>
+            <oj-bind-if test="[[!n.data.gap]]"><button type="button" :class="[[n.data.css]]" :aria-current="[[n.data.current ? 'page' : null]]" :aria-label="[['Page ' + n.data.label]]" on-click="[[n.data.go]]"><oj-bind-text value="[[n.data.label]]"></oj-bind-text></button></oj-bind-if>
+          </template></oj-bind-for-each>
+          <button type="button" aria-label="Next page" on-click="[[userPager.next]]" :disabled="[[!userPager.canNext()]]">›</button>
+        </div>
+      </oj-bind-if>
+    </section>
+  </oj-bind-if>
+
+  <!-- ===== Workspace access ===== -->
+  <oj-bind-if test="[[tab() === 'access']]">
+    <section class="fx-card factory-adm-panel" aria-labelledby="adAccessTitle">
+      <div class="factory-rq-listhead"><h2 id="adAccessTitle">Workspace access</h2><span class="factory-rq-shown"><oj-bind-text value="[[membersShown]]"></oj-bind-text></span></div>
+      <p class="factory-adm-hint">Give people a role in a workspace. They see only the workspaces they are members of.</p>
+      <div class="factory-adm-filters">
+        <fx-select id="memberWorkspace" class="factory-adm-pick" label="Workspace" placeholder="Choose a workspace" options="[[workspaceList]]" value="{{memberWorkspaceId}}" searchable></fx-select>
+      </div>
+      <oj-bind-if test="[[memberWorkspaceId()]]">
+        <ul class="factory-adm-list" id="memberList" aria-label="Members">
+          <oj-bind-for-each data="[[members]]" as="m">
+            <template><li class="factory-adm-item factory-adm-member">
+              <span class="factory-adm-open factory-adm-static">
+                <span :class="[[m.data.avatarCss]]" aria-hidden="true"><oj-bind-text value="[[m.data.initials]]"></oj-bind-text></span>
+                <span class="factory-adm-text"><span class="factory-adm-title"><oj-bind-text value="[[m.data.name]]"></oj-bind-text></span>
+                  <span class="factory-adm-sub"><oj-bind-text value="[[m.data.username + ' · can ' + m.data.can]]"></oj-bind-text></span></span>
+                <span class="factory-adm-meta"><span :class="[[m.data.rolePill.css]]"><oj-bind-text value="[[m.data.rolePill.text]]"></oj-bind-text></span></span>
+              </span>
+              <span class="factory-adm-mactions">
+                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" :aria-label="[['Change the role of ' + m.data.label]]" on-click="[[m.data.change]]">Change role</button>
+                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm factory-ad-remove" :aria-label="[['Remove ' + m.data.label]]" on-click="[[m.data.removeAction]]">Remove</button>
+              </span>
+            </li></template>
+          </oj-bind-for-each>
+        </ul>
+        <oj-bind-if test="[[members().length === 0]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span></span><span>No members yet. Give someone access below.</span></div></oj-bind-if>
+        <div class="factory-adm-grant" id="adGrant">
+          <span class="factory-adm-grantlabel">Give access</span>
+          <fx-select id="memberUser" label="User" placeholder="Choose a user" options="[[userOptions]]" value="{{memberUserId}}" searchable></fx-select>
+          <fx-select id="memberRole" label="Role" options="[[roleOptions]]" value="{{memberRole}}"></fx-select>
+          <span class="fx-tip-wrap" :tabindex="[[memberUserId() ? null : '0']]" :data-fx-tip="[[memberUserId() ? null : 'Pick a user first']]"><button type="button" id="setMemberButton" class="fx-btn fx-btn--primary" :disabled="[[!memberUserId() || busy()]]" on-click="[[setMember]]">Give access</button></span>
+        </div>
+      </oj-bind-if>
+    </section>
+  </oj-bind-if>
+
+  <!-- ===== Roles & security ===== -->
+  <oj-bind-if test="[[tab() === 'roles']]">
+    <div class="factory-adm-roles">
+      <section class="fx-card factory-adm-flush" aria-labelledby="adMatrixTitle">
+        <div class="factory-adm-cardhead"><h2 id="adMatrixTitle">Roles and permissions</h2>
+          <p class="factory-adm-hint">Administrators can do everything. Everyone else has one role in each workspace they work in. The matrix comes from the factory's role definitions, the same rules every request is checked against.</p></div>
+        <div class="fx-table-wrap">
+          <table class="fx-table factory-ad-matrix" id="permissionMatrix">
+            <thead><tr><th scope="col">Resource and action</th><oj-bind-for-each data="[[matrixRoles]]" as="r"><template><th scope="col"><oj-bind-text value="[[r.data]]"></oj-bind-text></th></template></oj-bind-for-each></tr></thead>
+            <tbody><oj-bind-for-each data="[[matrix]]" as="p"><template><tr><th scope="row"><span class="factory-ad-perm"><oj-bind-text value="[[p.data.permission]]"></oj-bind-text></span><span class="factory-ov-subtle factory-ad-permdesc"><oj-bind-text value="[[p.data.description]]"></oj-bind-text></span></th>
+              <oj-bind-for-each data="[[p.data.cells]]" as="cell"><template><td><span class="factory-ad-cell"><span :class="[[cell.data.css]]" aria-hidden="true"></span><span><oj-bind-text value="[[cell.data.label]]"></oj-bind-text></span></span></td></template></oj-bind-for-each></tr></template></oj-bind-for-each></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="fx-card factory-adm-flush" aria-labelledby="adSecurityTitle">
+        <div class="factory-adm-cardhead"><h2 id="adSecurityTitle">Sign-in and security</h2></div>
+        <dl class="factory-adm-kv" id="securitySettings">
+          <oj-bind-for-each data="[[securityRows]]" as="r">
+            <template><div><dt><oj-bind-text value="[[r.data.label]]"></oj-bind-text></dt><dd><oj-bind-text value="[[r.data.value]]"></oj-bind-text>
+              <oj-bind-if test="[[r.data.sub]]"><span class="factory-adm-kvsub"><oj-bind-text value="[[r.data.sub]]"></oj-bind-text></span></oj-bind-if></dd></div></template>
+          </oj-bind-for-each>
+        </dl>
+      </section>
+    </div>
+  </oj-bind-if>
+
+  <!-- ===== Audit log ===== -->
+  <oj-bind-if test="[[tab() === 'audit']]">
+    <section class="fx-card factory-adm-panel" aria-labelledby="adAuditTitle">
+      <div class="factory-rq-listhead"><h2 id="adAuditTitle">Audit log</h2><span class="factory-rq-shown" role="status"><oj-bind-text value="[[auditShown]]"></oj-bind-text></span></div>
+      <div class="factory-rq-chips" role="group" aria-label="Show events" id="adAuditChips">
+        <oj-bind-for-each data="[[auditChips]]" as="c">
+          <template><button type="button" class="fx-chip fx-chip--sm" :id="[['adAudit-' + c.data.value]]" :aria-pressed="[[c.data.pressed]]" on-click="[[c.data.pick]]">
+            <oj-bind-if test="[[c.data.dot]]"><span :class="[[c.data.dot]]" aria-hidden="true"></span></oj-bind-if><oj-bind-text value="[[c.data.text]]"></oj-bind-text></button></template>
+        </oj-bind-for-each>
+      </div>
+      <div class="factory-adm-filters">
+        <fx-input class="factory-adm-search" input-id="auditSearch" label="Search the audit log" hide-label icon="search" clearable placeholder="Search actions, users or details" value="{{auditSearch}}"></fx-input>
+      </div>
+      <ul class="factory-adm-list factory-adm-audit" id="auditList" aria-label="Audit events">
+        <oj-bind-for-each data="[[auditPager.rows]]" as="e">
+          <template><li class="factory-adm-event" :title="[[e.data.tip]]">
+            <span :class="[[e.data.iconCss]]" aria-hidden="true"><span :class="[[e.data.iconClass]]"></span></span>
+            <span class="factory-adm-text"><span class="factory-adm-title"><oj-bind-text value="[[e.data.title]]"></oj-bind-text><span class="factory-adm-atext"><oj-bind-text value="[[e.data.text ? ' · ' + e.data.text : '']]"></oj-bind-text></span></span>
+              <span class="factory-adm-sub"><oj-bind-text value="[[e.data.sub]]"></oj-bind-text></span></span>
+            <span class="factory-adm-when"><oj-bind-text value="[[e.data.when]]"></oj-bind-text></span>
+          </li></template>
+        </oj-bind-for-each>
+      </ul>
+      <oj-bind-if test="[[loaded() && auditEvents().length === 0]]"><div class="fx-empty" id="adAuditEmpty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-list" aria-hidden="true"></span></span>
+        <span>No events match.</span><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[clearAudit]]">Show all events</button></div></oj-bind-if>
+      <oj-bind-if test="[[auditLong()]]">
+        <div class="fx-pager factory-adm-pager">
+          <span class="fx-pager-text"><oj-bind-text value="[[auditPager.text]]"></oj-bind-text></span>
+          <button type="button" aria-label="Previous page" on-click="[[auditPager.prev]]" :disabled="[[!auditPager.canPrev()]]">‹</button>
+          <oj-bind-for-each data="[[auditPager.numbers]]" as="n"><template>
+            <oj-bind-if test="[[n.data.gap]]"><span class="fx-pager-gap">…</span></oj-bind-if>
+            <oj-bind-if test="[[!n.data.gap]]"><button type="button" :class="[[n.data.css]]" :aria-current="[[n.data.current ? 'page' : null]]" :aria-label="[['Page ' + n.data.label]]" on-click="[[n.data.go]]"><oj-bind-text value="[[n.data.label]]"></oj-bind-text></button></oj-bind-if>
+          </template></oj-bind-for-each>
+          <button type="button" aria-label="Next page" on-click="[[auditPager.next]]" :disabled="[[!auditPager.canNext()]]">›</button>
+        </div>
+      </oj-bind-if>
+    </section>
+  </oj-bind-if>
+
+  <!-- ===== Side panels ===== -->
+  <fx-sheet id="addUserSheet" open="{{adding}}" heading="Add a user" subtitle="[[modeHint]]">
+    <div class="factory-adm-sheet" id="addUserForm">
+      <fx-input id="newUsername" label="Username" value="{{newUsername}}" autocomplete="off" required></fx-input>
+      <fx-input id="newDisplayName" label="Name" value="{{newDisplayName}}" autocomplete="off"></fx-input>
+      <fx-input id="newEmail" label="Email" type="email" value="{{newEmail}}" autocomplete="off"></fx-input>
+      <oj-bind-if test="[[localMode()]]">
+        <fx-input id="newPassword" type="password" label="Password (at least 12 characters)" value="{{newPassword}}" autocomplete="new-password"></fx-input>
+      </oj-bind-if>
+      <div class="factory-adm-switchline"><fx-switch id="newAdmin" label="Administrator" value="{{newAdmin}}"></fx-switch>
+        <span class="factory-adm-hint">Sees every workspace, manages users and the factory's settings.</span></div>
+      <p class="factory-adm-hint">Give them a role in a workspace afterwards, on Workspace access. The factory sends no invitation email: share its address with them.</p>
+      <div class="factory-adm-sheetfoot"><button type="button" class="fx-btn fx-btn--secondary" on-click="[[cancelAdd]]">Cancel</button>
+        <button type="button" id="addUserButton" :class="[[busyCss]]" :disabled="[[busy() || !newUsername()]]" on-click="[[addUser]]">Add user</button></div>
+    </div>
+  </fx-sheet>
+
+  <fx-sheet id="resetPasswordSheet" open="{{resetOpen}}" heading="[[resetHeading]]" subtitle="Tell them the new password, and to change it on the Account page after signing in.">
+    <div class="factory-adm-sheet" id="resetPasswordForm">
+      <fx-input id="resetPassword" type="password" label="New password (at least 12 characters)" value="{{resetPassword}}" autocomplete="new-password"></fx-input>
+      <div class="factory-adm-sheetfoot"><button type="button" class="fx-btn fx-btn--secondary" on-click="[[cancelReset]]">Cancel</button>
+        <button type="button" id="resetPasswordButton" :class="[[busyCss]]" :disabled="[[busy() || resetPassword().length < 12]]" on-click="[[savePassword]]">Reset password</button></div>
+    </div>
+  </fx-sheet>
+
+  <fx-sheet id="accessSheet" open="{{accessOpen}}" heading="[[accessHeading]]" subtitle="Effective permissions per workspace, and the changes to this user's access" wide>
+    <div class="factory-adm-sheet">
+      <oj-bind-if test="[[!accessData()]]"><p class="fx-help" role="status">Loading…</p></oj-bind-if>
+      <oj-bind-if test="[[accessData()]]">
+        <div class="factory-adm-sheethead">
+          <p class="factory-adm-hint"><oj-bind-text value="[[(accessData().admin ? 'Administrator: every action in every workspace, plus administration. ' : '') + (accessData().enabled ? 'Active.' : 'Deactivated: cannot sign in.')]]"></oj-bind-text></p>
+          <oj-bind-if test="[[accessActions().length > 0]]"><fx-menu-button id="accessMore" label="Change" icon="edit" variant="secondary" size="sm" align="end" items="[[accessActions]]" on-fx-action="[[accessAction]]"></fx-menu-button></oj-bind-if>
+        </div>
+        <h3>Effective permissions</h3>
+        <div class="fx-table-wrap"><table class="fx-table" id="accessTable"><thead><tr><th scope="col">Workspace</th><th scope="col">Role</th><th scope="col">Allowed</th><th scope="col">Denied</th></tr></thead>
+          <tbody><oj-bind-for-each data="[[accessRows]]" as="w"><template><tr><td><oj-bind-text value="[[w.data.workspace]]"></oj-bind-text></td><td><span :class="[[w.data.rolePill.css]]"><oj-bind-text value="[[w.data.rolePill.text]]"></oj-bind-text></span></td>
+            <td class="factory-ad-wrap"><oj-bind-text value="[[w.data.allowed.join(', ') || 'Nothing']]"></oj-bind-text></td><td class="factory-ad-wrap factory-ov-subtle"><oj-bind-text value="[[w.data.denied.join(', ') || 'Nothing']]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table>
+          <oj-bind-if test="[[accessRows().length === 0]]"><div class="fx-empty">No workspace yet: give them a role on Workspace access.</div></oj-bind-if></div>
+        <h3>Role assignment and privilege history</h3>
+        <ul class="factory-ad-history" id="accessHistory"><oj-bind-for-each data="[[accessHistory]]" as="h"><template><li><span class="factory-ad-htitle"><oj-bind-text value="[[h.data.title]]"></oj-bind-text></span>
+          <span class="factory-ad-hsub"><oj-bind-text value="[[h.data.text + (h.data.by ? ' · by ' + h.data.by : '')]]"></oj-bind-text></span><span class="factory-ov-subtle"><oj-bind-text value="[[h.data.when]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+        <oj-bind-if test="[[accessHistory().length === 0]]"><p class="fx-muted">No changes recorded.</p></oj-bind-if>
+      </oj-bind-if>
+    </div>
+  </fx-sheet>
+  </oj-bind-if>
 </div>

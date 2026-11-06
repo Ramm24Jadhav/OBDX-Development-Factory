@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<!--
+  The premium JET pack's gallery: every foundation bx- element in its main states inside a real Oracle JET app, one
+  <section data-component="id"> each. ?jet=6 loads JET 6.2 (what OBDX 22.1 ships), ?jet=21 the current release;
+  ?mode=light|dark picks the theme. The libraries come from gates/jet6 and gates/jet21 (npm install there).
+-->
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>obdx-jet gallery</title>
+  <link rel="stylesheet" href="../jet-premium/bx/bx.css" />
+  <link rel="stylesheet" href="../react/gallery/gallery.css" />
+</head>
+<body>
+  <main id="gallery" class="gallery">
+    <h1>obdx-jet foundation set</h1>
+    <section class="gate" data-component="button" aria-labelledby="button-h"><h2 id="button-h">Button</h2><div class="gate-body"><div class="gate-row">
+      <bx-button label="Pay now"></bx-button><bx-button label="Save draft" chroming="solid"></bx-button><bx-button label="Cancel" chroming="outlined"></bx-button>
+      <bx-button label="Details" chroming="borderless"></bx-button><bx-button label="Delete" chroming="danger"></bx-button><bx-button label="Paying" disabled="true"></bx-button>
+    </div></div></section>
+    <section class="gate" data-component="icon-button" aria-labelledby="ib-h"><h2 id="ib-h">Icon button</h2><div class="gate-body"><div class="gate-row">
+      <bx-icon-button label="More actions"></bx-icon-button><bx-icon-button label="Close" icon="close" chroming="outlined"></bx-icon-button><bx-icon-button label="Disabled action" disabled="true"></bx-icon-button>
+    </div></div></section>
+    <section class="gate" data-component="text-field" aria-labelledby="tf-h"><h2 id="tf-h">Text field</h2><div class="gate-body">
+      <bx-text-field label-hint="Beneficiary name" value="{{name}}" required="true" length.max="40" clear-icon="always" help.instruction="As it appears on the account"></bx-text-field>
+      <bx-text-field label-hint="Reference" value="INV 2041" messages-custom="[[refError]]"></bx-text-field>
+      <bx-text-field label-hint="Customer ID" value="CUST-00921" readonly="true"></bx-text-field>
+    </div></section>
+    <section class="gate" data-component="amount" aria-labelledby="am-h"><h2 id="am-h">Amount input</h2><div class="gate-body">
+      <bx-amount label-hint="Amount" currency="INR" value="{{amount}}" required="true" help.instruction="Up to 50,000.00 a day"></bx-amount>
+      <bx-amount label-hint="Amount in KWD" currency="KWD" value="12.5" messages-custom="[[kwdError]]"></bx-amount>
+    </div></section>
+    <section class="gate" data-component="select" aria-labelledby="dd-h"><h2 id="dd-h">Dropdown</h2><div class="gate-body">
+      <bx-select label-hint="From account" options="[[accounts]]" value="{{account}}" required="true"></bx-select>
+      <bx-select label-hint="To account" options="[[accounts]]" disabled="true"></bx-select>
+    </div></section>
+    <section class="gate" data-component="checkbox-group" aria-labelledby="cg-h"><h2 id="cg-h">Checkbox group</h2><div class="gate-body">
+      <bx-checkbox-group label-hint="Send alerts by" options="[[channels]]" value="{{alerts}}"></bx-checkbox-group>
+    </div></section>
+    <section class="gate" data-component="choice-group" aria-labelledby="rg-h"><h2 id="rg-h">Radio group</h2><div class="gate-body">
+      <bx-choice-group label-hint="Transfer speed" layout="horizontal" options="[[speeds]]" value="{{speed}}"></bx-choice-group>
+    </div></section>
+    <section class="gate" data-component="date" aria-labelledby="dp-h"><h2 id="dp-h">Date picker</h2><div class="gate-body">
+      <bx-date label-hint="Pay on" value="{{day}}" min="2026-11-10" max="2026-12-31"></bx-date>
+    </div></section>
+    <section class="gate" data-component="dialog" aria-labelledby="dl-h"><h2 id="dl-h">Dialog</h2><div class="gate-body"><div class="gate-dialog">
+      <bx-dialog id="dlg" dialog-title="Delete A. Sharma?">
+        <div slot="body"><p>You can add them again later. Payments scheduled to A. Sharma will stop.</p></div>
+        <div slot="footer"><bx-button label="Cancel" chroming="outlined"></bx-button><bx-button label="Delete" chroming="danger"></bx-button></div>
+      </bx-dialog>
+    </div></div></section>
+    <section class="gate" data-component="toast" aria-labelledby="ts-h"><h2 id="ts-h">Toast</h2><div class="gate-body">
+      <bx-toast display="general" messages="[[messages]]"></bx-toast>
+    </div></section>
+    <section class="gate" data-component="card" aria-labelledby="cd-h"><h2 id="cd-h">Card</h2><div class="gate-body"><div class="gate-row">
+      <bx-card heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</bx-card>
+      <bx-card heading="Current •••• 0187" subheading="Open the account" interactive="true">₹12,410.50</bx-card>
+    </div></div></section>
+    <section class="gate" data-component="tabs" aria-labelledby="tb-h"><h2 id="tb-h">Tabs</h2><div class="gate-body">
+      <bx-tabs label="Accounts" options="[[tabs]]" selection="{{tab}}"></bx-tabs>
+    </div></section>
+    <section class="gate" data-component="data-grid" aria-labelledby="dg-h"><h2 id="dg-h">Data table</h2><div class="gate-body">
+      <bx-data-grid caption="Recent transactions" data="[[rows]]" columns="[[columns]]" key-attributes="id" selection-mode='{"row": "multiple"}' selected="{{selected}}"></bx-data-grid>
+    </div></section>
+    <section class="gate" data-component="text-area" aria-labelledby="ta-h"><h2 id="ta-h">Text area</h2><div class="gate-body">
+      <bx-text-area label-hint="Remarks" value="{{remarks}}" length.max="140" help.instruction="Shown on the payee's statement"></bx-text-area>
+      <bx-text-area label-hint="Reason" required="true" messages-custom="[[reasonError]]"></bx-text-area>
+    </div></section>
+    <section class="gate" data-component="password" aria-labelledby="pw-h"><h2 id="pw-h">Password</h2><div class="gate-body">
+      <bx-password label-hint="Password" value="{{secret}}" autocomplete="new-password" help.instruction="At least 8 characters, one number"></bx-password>
+      <bx-password label-hint="Transaction PIN" value="1234" autocomplete="one-time-code" messages-custom="[[pinError]]"></bx-password>
+    </div></section>
+    <section class="gate" data-component="number-input" aria-labelledby="ni-h"><h2 id="ni-h">Number</h2><div class="gate-body">
+      <bx-number-input label-hint="Cheque leaves" value="{{copies}}" min="1" max="5" help.instruction="Up to 5 books"></bx-number-input>
+      <bx-number-input label-hint="Tenure (months)" value="84" messages-custom="[[tenureError]]"></bx-number-input>
+    </div></section>
+    <section class="gate" data-component="currency-picker" aria-labelledby="cp-h"><h2 id="cp-h">Currency</h2><div class="gate-body">
+      <bx-currency-picker label-hint="Currency" value="{{currency}}" required="true"></bx-currency-picker>
+    </div></section>
+    <section class="gate" data-component="multi-select" aria-labelledby="ms-h"><h2 id="ms-h">Multi select</h2><div class="gate-body">
+      <bx-multi-select label-hint="Accounts on the statement" options="[[accounts]]" value="{{picked}}" help.instruction="Choose one or more"></bx-multi-select>
+    </div></section>
+    <section class="gate" data-component="switch" aria-labelledby="sw-h"><h2 id="sw-h">Switch</h2><div class="gate-body">
+      <bx-switch label-hint="Paperless statements" value="{{paperless}}" help.instruction="We email them on the 1st"></bx-switch>
+      <bx-switch label-hint="International use" disabled="true"></bx-switch>
+    </div></section>
+    <section class="gate" data-component="date-range" aria-labelledby="dr-h"><h2 id="dr-h">Date range</h2><div class="gate-body">
+      <bx-date-range label-hint="Statement period" value="{{period}}" max-days="92" help.instruction="Up to 3 months"></bx-date-range>
+    </div></section>
+    <section class="gate" data-component="search" aria-labelledby="se-h"><h2 id="se-h">Search</h2><div class="gate-body">
+      <bx-search label-hint="Search transactions" value="{{query}}" placeholder="Payee, amount or reference"></bx-search>
+    </div></section>
+    <section class="gate" data-component="autocomplete" aria-labelledby="ac-h"><h2 id="ac-h">Autocomplete</h2><div class="gate-body">
+      <bx-autocomplete label-hint="Payee" options="[[payees]]" value="{{payee}}"></bx-autocomplete>
+    </div></section>
+    <section class="gate" data-component="document-upload" aria-labelledby="du-h"><h2 id="du-h">Document upload</h2><div class="gate-body">
+      <bx-document-upload label-hint="Proof of address" accept='[".pdf", "image/*"]' max-size="5242880" value="{{proof}}" help.instruction="A utility bill or a statement"></bx-document-upload>
+    </div></section>
+  </main>
+  <script>
+    // The JET release to load: its libraries are where npm put them
+    var params = new URLSearchParams(location.search);
+    var jet = params.get('jet') === '21' ? 'jet21' : 'jet6';
+    var mode = params.get('mode') === 'dark' ? 'dark' : 'light';
+    document.getElementById('gallery').className = 'gallery bx-theme bx-look-elevated' + (mode === 'dark' ? ' bx-dark' : '');
+    var lib = jet + '/node_modules/';
+    var script = document.createElement('script');
+    script.src = lib + 'requirejs/require.js';
+    script.onload = function () {
+      var oj = lib + '@oracle/oraclejet/dist/js/libs/oj/debug';
+      requirejs.config({
+        baseUrl: '.',
+        paths: {
+          knockout: lib + 'knockout/build/output/knockout-latest.debug',
+          jquery: lib + 'jquery/dist/jquery',
+          'jqueryui-amd': lib + 'jquery-ui/ui',
+          ojs: oj, ojL10n: oj + '/../ojL10n', ojtranslations: oj + '/../resources',
+          text: lib + 'requirejs-text/text', css: lib + 'require-css/css', signals: lib + 'signals/dist/signals',
+          promise: lib + 'es6-promise/dist/es6-promise', hammerjs: lib + 'hammerjs/hammer', touchr: lib + '@oracle/oraclejet/dist/js/libs/touchr/touchr',
+          customElements: lib + '@webcomponents/custom-elements/custom-elements.min', ojdnd: lib + '@oracle/oraclejet/dist/js/libs/dnd-polyfill/dnd-polyfill-' + (jet === 'jet6' ? '1.0.0' : '1.0.2'),
+          preact: lib + 'preact/dist/preact.umd', 'preact/hooks': lib + 'preact/hooks/dist/hooks.umd', 'preact/compat': lib + 'preact/compat/dist/compat.umd',
+          '@oracle/oraclejet-preact': lib + '@oracle/oraclejet-preact/amd', 'preact/jsx-runtime': lib + 'preact/jsx-runtime/dist/jsxRuntime.umd',
+          bx: '../jet-premium/bx'
+        },
+        shim: { jquery: { exports: ['jQuery', '$'] } }
+      });
+      // Only what JET 6 has: ojcore, ojknockout and ojcomposite (no ojbootstrap before JET 7)
+      require(['knockout', 'ojs/ojcore', 'ojs/ojknockout', 'bx/bx'], function (ko, oj) {
+        var vm = {
+          name: ko.observable('A. Sharma'),
+          amount: ko.observable(1250),
+          account: ko.observable('S'),
+          alerts: ko.observableArray(['E']),
+          speed: ko.observable('N'),
+          day: ko.observable('2026-11-12'),
+          tab: ko.observable('c'),
+          remarks: ko.observable('Rent for November'),
+          secret: ko.observable('s3cret-pass'),
+          copies: ko.observable(2),
+          currency: ko.observable('INR'),
+          picked: ko.observableArray(['S']),
+          paperless: ko.observable(true),
+          period: ko.observable({ from: '2026-10-01', to: '2026-10-31' }),
+          query: ko.observable('rent'),
+          payee: ko.observable('P1'),
+          proof: ko.observableArray([{ name: 'statement-october.pdf', type: 'application/pdf', size: 248000 }]),
+          reasonError: [{ severity: 'error', summary: 'Say why you are cancelling.', detail: 'Say why you are cancelling.' }],
+          pinError: [{ severity: 'error', summary: 'The PIN is wrong. 2 tries left.', detail: 'The PIN is wrong. 2 tries left.' }],
+          tenureError: [{ severity: 'error', summary: 'Enter 60 or less.', detail: 'Enter 60 or less.' }],
+          payees: [{ value: 'P1', label: 'Asha Sharma' }, { value: 'P2', label: 'Ravi Kumar' }, { value: 'P3', label: 'Asha Patel' }],
+          selected: ko.observable({ row: ['t2'], column: [] }),
+          refError: [{ severity: 'error', summary: 'Use letters and numbers only.', detail: 'Use letters and numbers only.' }],
+          kwdError: [{ severity: 'error', summary: 'Enter at most 10.000.', detail: 'Enter at most 10.000.' }],
+          accounts: [{ value: 'S', label: 'Savings •••• 4521' }, { value: 'C', label: 'Current •••• 0187' }],
+          channels: [{ value: 'E', label: 'Email' }, { value: 'M', label: 'SMS' }, { value: 'P', label: 'Push', disabled: true }],
+          speeds: [{ value: 'N', label: 'NEFT' }, { value: 'R', label: 'RTGS' }, { value: 'I', label: 'IMPS' }],
+          tabs: [{ id: 'c', label: 'Current' }, { id: 's', label: 'Savings' }, { id: 'd', label: 'Deposits' }, { id: 'l', label: 'Loans', disabled: true }],
+          messages: [
+            { severity: 'error', summary: 'Payment failed', detail: 'The account is blocked. Call the bank.', autoTimeout: -1 },
+            { severity: 'confirmation', summary: 'Beneficiary added', autoTimeout: -1 },
+            { severity: 'warning', summary: 'Your session ends in 2 minutes', autoTimeout: -1 }
+          ],
+          rows: [
+            { id: 't1', date: '12 Nov 2026', text: 'Electricity bill', amount: '-1,240.00' },
+            { id: 't2', date: '11 Nov 2026', text: 'Salary', amount: '85,000.00' },
+            { id: 't3', date: '09 Nov 2026', text: 'Card payment', amount: '-3,499.00' }
+          ],
+          columns: [{ headerText: 'Date', field: 'date' }, { headerText: 'Description', field: 'text', sortable: 'disabled' }, { headerText: 'Amount', field: 'amount', style: 'text-align:right' }]
+        };
+        window.galleryVm = vm;
+        var start = function () {
+          ko.applyBindings(vm, document.getElementById('gallery'));
+          var Context = oj.Context;
+          var done = Context && Context.getPageContext ? Context.getPageContext().getBusyContext().whenReady() : Promise.resolve();
+          done.then(function () {
+            document.getElementById('dlg').open();
+            setTimeout(function () {
+              document.getElementById('gallery').setAttribute('data-gallery-ready', '');
+              document.getElementById('gallery').setAttribute('data-jet', oj.version || jet);
+            }, 100);
+          });
+        };
+        if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', start); } else { start(); }
+      });
+    };
+    document.head.appendChild(script);
+  </script>
+</body>
+</html>

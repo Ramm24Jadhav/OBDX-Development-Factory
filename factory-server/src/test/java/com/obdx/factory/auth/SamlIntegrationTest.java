@@ -90,6 +90,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.security.saml2.relyingparty.registration.sso.assertingparty.verification.credentials[0].certificate-location=classpath:saml/idp.crt"})
 @AutoConfigureMockMvc
 @EnabledIfEnvironmentVariable(named = "FACTORY_TEST_DB_URL", matches = ".+")
+@org.junit.jupiter.api.extension.ExtendWith(com.obdx.factory.common.ForgetSecrets.class)
 class SamlIntegrationTest {
 
     static final String IDP = "https://idp.bank.local";

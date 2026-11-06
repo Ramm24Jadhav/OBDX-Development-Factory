@@ -2,9 +2,11 @@ package com.obdx.factory.requirements;
 
 import com.obdx.factory.common.BadRequestException;
 import com.obdx.factory.common.ConflictException;
+import com.obdx.factory.common.Messages;
 import com.obdx.factory.common.NotFoundException;
 import com.obdx.factory.importing.StorageProperties;
 import com.obdx.factory.profile.ProjectProfileService;
+import com.obdx.factory.knowledge.KnowledgeService;
 import com.obdx.factory.search.CodeSearchService;
 import com.obdx.factory.workspace.WorkspaceRepository;
 import org.slf4j.Logger;
@@ -52,11 +54,12 @@ public class RequirementService {
     private final CodeSearchService codeSearch;
     private final StorageProperties storage;
     private final TaskExecutor executor;
+    private final KnowledgeService knowledge;
 
     public RequirementService(RequirementRepository requirements, RequirementSpecRepository specs,
                               WorkspaceRepository workspaces, DocumentTextExtractor textExtractor, SpecDrafter drafter,
                               ProjectProfileService profiles, CodeSearchService codeSearch, StorageProperties storage,
-                              @Qualifier("requirementExecutor") TaskExecutor executor) {
+                              @Qualifier("requirementExecutor") TaskExecutor executor, KnowledgeService knowledge) {
         this.requirements = requirements;
         this.specs = specs;
         this.workspaces = workspaces;
@@ -66,6 +69,7 @@ public class RequirementService {
         this.codeSearch = codeSearch;
         this.storage = storage;
         this.executor = executor;
+        this.knowledge = knowledge;
     }
 
     public record RequirementSummary(UUID id, String title, String fileName, Requirement.Status status, String message,
@@ -76,7 +80,35 @@ public class RequirementService {
     public record RequirementDetail(UUID id, UUID workspaceId, String title, String fileName, int sizeBytes,
                                     Requirement.Status status, String message, Integer currentVersion,
                                     OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime approvedAt,
-                                    String approvedBy, String documentText, RequirementSpec spec) {
+                                    String approvedBy, String documentText, RequirementSpec spec, List<String> warnings) {
+    }
+
+    /**
+     * What looks wrong in a spec as stored, for the reviewer (the spec is not changed): an ID used by more than one
+     * requirement, criterion or non-functional requirement, as an older import made of traceability rows
+     * ("FR-001 | AC-001").
+     */
+    static List<String> warnings(RequirementSpec spec) {
+        if (spec == null) {
+            return List.of();
+        }
+        List<String> warnings = new ArrayList<>();
+        duplicateIds("requirement", spec.requirements().stream().map(RequirementSpec.FunctionalRequirement::id).toList(), warnings);
+        duplicateIds("acceptance criterion", spec.acceptanceCriteria().stream().map(RequirementSpec.AcceptanceCriterion::id).toList(), warnings);
+        duplicateIds("non-functional requirement", spec.nonFunctional().stream().map(RequirementSpec.NonFunctional::id).toList(), warnings);
+        return warnings;
+    }
+
+    private static void duplicateIds(String kind, List<String> ids, List<String> warnings) {
+        Map<String, Integer> counts = new java.util.LinkedHashMap<>();
+        ids.stream().filter(id -> id != null && !id.isBlank()).map(String::strip).forEach(id -> counts.merge(id, 1, Integer::sum));
+        List<String> repeated = counts.entrySet().stream().filter(e -> e.getValue() > 1)
+                .map(e -> e.getKey() + " (" + e.getValue() + " times)").toList();
+        if (!repeated.isEmpty()) {
+            warnings.add("Duplicate " + kind + " IDs: " + String.join(", ", repeated.stream().limit(10).toList())
+                    + (repeated.size() > 10 ? " and " + (repeated.size() - 10) + " more" : "") + ". The document's rows may have "
+                    + "been read twice (a traceability table such as \"FR-001 | AC-001\"): check them against the document before approving.");
+        }
     }
 
     public record Answer(int index, String answer) {
@@ -104,6 +136,23 @@ public class RequirementService {
         return startDraft(requirement);
     }
 
+    /**
+     * A requirement Modernization writes for a run (docs/MODERNIZATION.md): the brief as its document and a spec made from
+     * the code analysis, approved at once by the person who started the run. No model drafts it and it needs no screen
+     * designs: it changes existing screens.
+     */
+    public RequirementDetail fromModernization(UUID workspaceId, String title, String brief, RequirementSpec spec, String by) {
+        requireWorkspace(workspaceId);
+        if (!buildable(spec)) {
+            throw new BadRequestException("The brief has nothing to build: no screens or requirements");
+        }
+        Requirement requirement = requirements.save(new Requirement(workspaceId, truncate(title, 300), null, brief.length(), brief));
+        int version = specs.add(requirement.getId(), RequirementSpecRepository.Origin.MODERNIZATION, spec);
+        requirement.ready(version, "Written by Modernization from the code analysis.");
+        requirement.approve(by);
+        return detail(requirements.save(requirement));
+    }
+
     // --- read ---
 
     @Transactional(readOnly = true)
@@ -124,6 +173,12 @@ public class RequirementService {
         return detail(find(id));
     }
 
+    /** The spec's versions, newest first: the revision history. */
+    @Transactional(readOnly = true)
+    public List<RequirementSpecRepository.Version> versions(UUID id) {
+        return specs.versions(find(id).getId());
+    }
+
     // --- review ---
 
     /** Saves answers to open questions (by position in the list) as a new spec version. */
@@ -137,7 +192,7 @@ public class RequirementService {
             }
             RequirementSpec.OpenQuestion q = questions.get(answer.index());
             String text = answer.answer() == null || answer.answer().isBlank() ? null : answer.answer().trim();
-            questions.set(answer.index(), new RequirementSpec.OpenQuestion(q.question(), q.reason(), q.reference(), text));
+            questions.set(answer.index(), q.withAnswer(text));
         }
         return addVersion(requirement, RequirementSpecRepository.Origin.ANSWERED, withQuestions(spec, questions, spec.decisions()),
                 "Answers saved. Click \"Update spec with answers\" to apply them.");
@@ -171,6 +226,12 @@ public class RequirementService {
         } catch (SpecParser.InvalidSpecException e) {
             throw new BadRequestException(e.getMessage());
         }
+        RequirementSpec current = currentSpec(requirement);
+        if (empty(edited) && current != null && !empty(current)) {
+            // An edit that keeps only a title would throw the drafted spec away
+            throw new BadRequestException("The edited spec has no screens, requirements, rules or APIs, but the current one has. "
+                    + "Send the whole spec; to start again, draft it again with Retry.");
+        }
         return addVersion(requirement, RequirementSpecRepository.Origin.EDITED, edited, "Spec edited.");
     }
 
@@ -182,11 +243,41 @@ public class RequirementService {
             throw new BadRequestException("Resolve the " + open + " open question(s) first: answer them and update the spec, "
                     + "or remove them by editing the spec.");
         }
-        if (spec.screens().isEmpty()) {
-            throw new BadRequestException("The spec has no screens to build yet");
+        if (!buildable(spec)) {
+            throw new BadRequestException("The spec has nothing to build yet: no screens, requirements or APIs");
         }
         requirement.approve(by);
         return detail(requirements.save(requirement));
+    }
+
+    /**
+     * " Screens without fields: Transfer History, Confirmation. Add their fields by editing the spec, or Retry." for the
+     * spec's message; empty when every screen has fields. A model sometimes drafts a list or confirmation screen bare.
+     */
+    static String noFieldsNote(RequirementSpec spec) {
+        List<String> bare = spec.screens().stream().filter(s -> s.fields().isEmpty()).map(RequirementSpec.Screen::name).toList();
+        return bare.isEmpty() ? "" : " Screens without fields: " + String.join(", ", bare)
+                + ". Add their fields by editing the spec, or draft it again with Retry.";
+    }
+
+    /** A spec with nothing to build or ask: no screens, requirements, rules, APIs, criteria or questions. */
+    static boolean empty(RequirementSpec spec) {
+        return spec.screens().isEmpty() && spec.requirements().isEmpty() && spec.businessRules().isEmpty() && spec.apis().isEmpty()
+                && spec.acceptanceCriteria().isEmpty() && spec.openQuestions().isEmpty() && spec.nonFunctional().isEmpty();
+    }
+
+    /** A message as one sentence ending with a single period: "limit." stays, "limit" gets one. */
+    static String sentence(String message) {
+        String m = message == null ? "unknown error" : message.strip();
+        return m.endsWith(".") || m.endsWith("!") || m.endsWith("?") ? m : m + ".";
+    }
+
+    /**
+     * Whether a spec can be approved for building: screens, or for a backend-only change (a REST API without UI) its
+     * functional requirements or APIs. Such a change needs no screen designs.
+     */
+    static boolean buildable(RequirementSpec spec) {
+        return !spec.screens().isEmpty() || !spec.requirements().isEmpty() || !spec.apis().isEmpty();
     }
 
     /** Drafts the spec again from the document, for example after a failure. */
@@ -212,6 +303,12 @@ public class RequirementService {
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void failInterrupted() {
+        // Updating a spec with answers: the spec and the answers are kept, so it is not drafted again from the start
+        int updating = requirements.readyAgain("Updating the spec with the answers was interrupted because the server restarted. "
+                + "The answers are kept: click Update spec with answers again.", OffsetDateTime.now());
+        if (updating > 0) {
+            log.warn("{} requirement(s) were being updated with answers when the server stopped; their specs are kept", updating);
+        }
         int count = requirements.failProcessing("Interrupted because the server restarted. Click Retry.", OffsetDateTime.now());
         if (count > 0) {
             log.warn("Marked {} requirement(s) as failed after restart", count);
@@ -230,14 +327,24 @@ public class RequirementService {
     void runDraft(UUID id) {
         Requirement requirement = find(id);
         try {
-            RequirementSpec spec = drafter.draft(requirement.getTitle(), requirement.getDocumentText(), systemContext(requirement.getWorkspaceId()));
+            RequirementSpec spec = drafter.draft(requirement.getTitle(), requirement.getDocumentText(), systemContext(requirement.getWorkspaceId(),
+                    requirement.getTitle() + "\n" + head(requirement.getDocumentText(), 1500)), progress -> {
+                        // A long document on a local model takes a while: the page shows how far it is
+                        requirement.processing(progress);
+                        requirements.save(requirement);
+                    });
+            // The document's own tables and lists (requirements, rules, criteria, questions) exactly as written
+            DocumentStructure.Structure structure = DocumentStructure.read(requirement.getDocumentText());
+            spec = DocumentStructure.apply(spec, structure);
+            spec = SpecGrounding.apply(spec, requirement.getDocumentText());
             spec = linkRelatedCode(requirement.getWorkspaceId(), spec, Map.of());
             int version = specs.add(id, RequirementSpecRepository.Origin.DRAFTED, spec);
             requirement.ready(version, "Spec drafted: " + spec.screens().size() + " screen(s), "
-                    + spec.openQuestions().size() + " open question(s).");
-        } catch (RuntimeException e) {
+                    + spec.openQuestions().size() + " open question(s)." + DocumentStructure.questionsLeftOut(structure) + noFieldsNote(spec));
+        } catch (RuntimeException | Error e) {
+            // An Error too (a stack overflow): the requirement must not stay "processing"
             log.error("Drafting the spec for requirement {} failed", id, e);
-            requirement.failed("Drafting failed: " + e.getMessage());
+            requirement.failed("Drafting failed: " + Messages.reason(e));
         }
         requirements.save(requirement);
     }
@@ -245,39 +352,57 @@ public class RequirementService {
     void runRefine(UUID id, RequirementSpec withDecisions) {
         Requirement requirement = find(id);
         try {
-            RequirementSpec refined = drafter.refine(withDecisions, systemContext(requirement.getWorkspaceId()));
+            RequirementSpec refined = drafter.refine(withDecisions, systemContext(requirement.getWorkspaceId(), requirement.getTitle()));
             // Decisions are kept exactly as the analyst gave them, and answered questions must not come back.
             Set<String> decided = withDecisions.decisions().stream().map(d -> SpecMerger.normalize(d.question())).collect(Collectors.toSet());
             List<RequirementSpec.OpenQuestion> stillOpen = refined.openQuestions().stream()
                     .filter(q -> !decided.contains(SpecMerger.normalize(q.question())))
-                    .map(q -> new RequirementSpec.OpenQuestion(q.question(), q.reason(), q.reference(), null))
+                    .map(q -> q.withAnswer(null))
                     .toList();
             Map<String, List<String>> previousCode = withDecisions.screens().stream()
                     .collect(Collectors.toMap(s -> SpecMerger.normalize(s.name()), RequirementSpec.Screen::relatedCode, (a, b) -> a));
             RequirementSpec result = linkRelatedCode(requirement.getWorkspaceId(),
                     withQuestions(refined, stillOpen, withDecisions.decisions()), previousCode);
+            DocumentStructure.Structure structure = DocumentStructure.read(requirement.getDocumentText());
+            result = DocumentStructure.apply(result, structure);
+            // Not the APIs the document names: one the analyst removed must not come back with the answers
+            result = SpecGrounding.apply(result, requirement.getDocumentText(), false);
             int version = specs.add(id, RequirementSpecRepository.Origin.REFINED, result);
-            requirement.ready(version, "Spec updated with the answers; " + stillOpen.size() + " open question(s) left.");
-        } catch (RuntimeException e) {
+            requirement.ready(version, "Spec updated with the answers; " + result.openQuestions().size() + " open question(s) left."
+                    + DocumentStructure.questionsLeftOut(structure)
+                    + noFieldsNote(result));
+        } catch (RuntimeException | Error e) {
+            // An Error too (a stack overflow): the requirement must not stay "updating"
             log.error("Updating the spec for requirement {} failed", id, e);
-            requirement.ready(requirement.getCurrentVersion(), "Updating with the answers failed: " + e.getMessage()
-                    + ". The answers are kept; try again.");
+            requirement.ready(requirement.getCurrentVersion(), "Updating with the answers failed: " + sentence(Messages.reason(e))
+                    + " The answers are kept; try again.");
         }
         requirements.save(requirement);
     }
 
     // --- helpers ---
 
-    /** Facts from the confirmed Project Profile, so the model knows what the bank runs. Empty if there is no profile. */
-    private String systemContext(UUID workspaceId) {
+    private static String head(String text, int max) {
+        return text == null ? "" : text.length() <= max ? text : text.substring(0, max);
+    }
+
+    /**
+     * Facts from the confirmed Project Profile, so the model knows what the bank runs, and what the OBDX knowledge base
+     * (manuals and approved notes for the workspace's version) says about the requirement. Empty if there is neither.
+     */
+    private String systemContext(UUID workspaceId, String about) {
+        String facts;
         try {
-            return profiles.get(workspaceId).facts().stream()
+            facts = profiles.get(workspaceId).facts().stream()
                     .filter(f -> CONTEXT_FACTS.contains(f.key()) && f.value() != null)
                     .map(f -> "- " + f.label() + ": " + f.value())
                     .collect(Collectors.joining("\n"));
         } catch (NotFoundException e) {
-            return "";
+            facts = "";
         }
+        String known = knowledge.contextFor(workspaceId, about, 4000);
+        return known.isBlank() ? facts : facts + (facts.isEmpty() ? "" : "\n\n")
+                + "OBDX knowledge (Oracle manuals and approved notes; use it for how OBDX does this):\n" + known;
     }
 
     /** Adds up to three existing files that look related to each screen, found by code search. */
@@ -292,12 +417,14 @@ public class RequirementService {
             screens.add(new RequirementSpec.Screen(screen.name(), screen.changeType(), screen.description(),
                     screen.reference(), screen.fields(), screen.actions(), related));
         }
-        return new RequirementSpec(spec.title(), spec.summary(), screens, spec.businessRules(), spec.roles(), spec.apis(),
-                spec.hostInteractions(), spec.messages(), spec.openQuestions(), spec.decisions());
+        return spec.withScreens(screens);
     }
 
     private List<String> searchRelated(UUID workspaceId, RequirementSpec.Screen screen) {
-        String query = screen.name() + " " + screen.fields().stream().limit(6).map(RequirementSpec.Field::name).collect(Collectors.joining(" "));
+        String asWritten = screen.name() + " " + screen.fields().stream().limit(6).map(RequirementSpec.Field::name).collect(Collectors.joining(" "));
+        // In OBDX's own words too: a BRD's "beneficiary" is a payee in the code
+        String inCode = com.obdx.factory.knowledge.ObdxGlossary.inManualWords(asWritten);
+        String query = inCode == null ? asWritten : asWritten + " " + inCode;
         try {
             Set<String> paths = new LinkedHashSet<>();
             for (CodeSearchService.SearchResult result : codeSearch.search(workspaceId, query, 10).results()) {
@@ -321,14 +448,14 @@ public class RequirementService {
 
     private static RequirementSpec withQuestions(RequirementSpec spec, List<RequirementSpec.OpenQuestion> questions,
                                                  List<RequirementSpec.Decision> decisions) {
-        return new RequirementSpec(spec.title(), spec.summary(), spec.screens(), spec.businessRules(), spec.roles(),
-                spec.apis(), spec.hostInteractions(), spec.messages(), questions, decisions);
+        return spec.withQuestions(questions, decisions);
     }
 
     private RequirementDetail detail(Requirement r) {
+        RequirementSpec spec = currentSpec(r);
         return new RequirementDetail(r.getId(), r.getWorkspaceId(), r.getTitle(), r.getFileName(), r.getSizeBytes(),
                 r.getStatus(), r.getMessage(), r.getCurrentVersion(), r.getCreatedAt(), r.getUpdatedAt(), r.getApprovedAt(),
-                r.getApprovedBy(), r.getDocumentText(), currentSpec(r));
+                r.getApprovedBy(), r.getDocumentText(), spec, warnings(spec));
     }
 
     private RequirementSpec currentSpec(Requirement requirement) {
@@ -338,10 +465,23 @@ public class RequirementService {
 
     private Requirement requireStatus(Requirement requirement, Requirement.Status status) {
         if (requirement.getStatus() != status) {
-            throw new ConflictException("The requirement is " + requirement.getStatus().name().toLowerCase()
-                    + "; this needs it to be " + status.name().toLowerCase());
+            throw new ConflictException(notInStatus(requirement.getStatus(), status));
         }
         return requirement;
+    }
+
+    /** Why the action cannot be done in the requirement's status, and what to do instead. */
+    static String notInStatus(Requirement.Status actual, Requirement.Status needed) {
+        if (needed == Requirement.Status.READY) {
+            return switch (actual) {
+                case APPROVED -> "The spec is approved, so it cannot be changed. To change it, add the requirement again with the "
+                        + "updated document or text, and approve the new spec.";
+                case PROCESSING -> "The spec is still being drafted. Wait for the draft to finish, then try again.";
+                case FAILED -> "Drafting the spec failed. Use Draft again first, then try again.";
+                default -> "The requirement is " + actual.name().toLowerCase() + "; this needs it to be ready";
+            };
+        }
+        return "The requirement is " + actual.name().toLowerCase() + "; this needs it to be " + needed.name().toLowerCase();
     }
 
     private Requirement find(UUID id) {

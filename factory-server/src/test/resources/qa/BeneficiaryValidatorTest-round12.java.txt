@@ -1,0 +1,112 @@
+package com.bank.obdx.payments;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+/**
+ * Unit tests for {@link BeneficiaryValidator} business rules.
+ */
+public class BeneficiaryValidatorTest {
+
+    private BeneficiaryValidator validator;
+
+    @Before
+    public void setUp() {
+        validator = new BeneficiaryValidator();
+    }
+
+    // AC-003: Given an entry with IFSC "ABCD1234567", when validated, then it is INVALID with DIGX_BV_003.
+    @Test
+    public void testInvalidIfscFormat() {
+        List<BeneficiaryValidationRequest.BeneficiaryEntry> entries = new ArrayList<>();
+        BeneficiaryValidationRequest.BeneficiaryEntry entry = createValidEntry("REF001");
+        entry.setIfsc("ABCD1234567"); // Invalid IFSC format
+        
+        List<BeneficiaryValidationResponse.Result> results = validator.validateEntries(entries);
+        
+        assertEquals(1, results.size());
+        BeneficiaryValidationResponse.Result result = results.get(0);
+        assertEquals(BeneficiaryValidationResponse.Result.STATUS_INVALID, result.getStatus());
+        
+        boolean hasError = false;
+        for (BeneficiaryValidationResponse.ValidationError error : result.getErrors()) {
+            if ("DIGX_BV_003".equals(error.getCode())) {
+                hasError = true;
+                break;
+            }
+        }
+        assertTrue("Expected error code DIGX_BV_003", hasError);
+    }
+
+    // AC-004: Given two entries with the same clientRef, when validated, then both are INVALID with DIGX_BV_005.
+    @Test
+    public void testDuplicateClientRef() {
+        List<BeneficiaryValidationRequest.BeneficiaryEntry> entries = new ArrayList<>();
+        entries.add(createValidEntry("REF001"));
+        entries.add(createValidEntry("REF001")); // Duplicate reference
+        
+        List<BeneficiaryValidationResponse.Result> results = validator.validateEntries(entries);
+        
+        assertEquals(2, results.size());
+        
+        // Both should be invalid
+        assertEquals(BeneficiaryValidationResponse.Result.STATUS_INVALID, results.get(0).getStatus());
+        assertEquals(BeneficiaryValidationResponse.Result.STATUS_INVALID, results.get(1).getStatus());
+        
+        // Both should have DIGX_BV_005 error
+        boolean firstHasError = hasErrorCode(results.get(0), "DIGX_BV_005");
+        boolean secondHasError = hasErrorCode(results.get(1), "DIGX_BV_005");
+        assertTrue("First entry should have DIGX_BV_005", firstHasError);
+        assertTrue("Second entry should have DIGX_BV_005", secondHasError);
+    }
+
+    // BR-006 / AC-004: Duplicate clientRef within the batch.
+    @Test
+    public void testDuplicateClientRef() {
+        // AC-004: duplicate clientRef
+        List<BeneficiaryValidationRequest.BeneficiaryEntry> entries = new ArrayList<>();
+        BeneficiaryValidationRequest.BeneficiaryEntry entry1 = createValidEntry("DUPREF");
+        BeneficiaryValidationRequest.BeneficiaryEntry entry2 = createValidEntry("DUPREF"); // Duplicate
+        
+        entries.add(entry1);
+        entries.add(entry2);
+
+        List<BeneficiaryValidationResponse.Result> results = validator.validateEntries(entries);
+        
+        assertEquals(2, results.size());
+
+        // Second entry should be invalid due to duplicate clientRef
+        assertEquals(BeneficiaryValidationResponse.Result.STATUS_INVALID, results.get(1).getStatus());
+        assertTrue("Expected error code DIGX_BV_005 for duplicate clientRef", hasErrorCode(results.get(1), "DIGX_BV_005"));
+    }
+
+    @Test
+    public void testValidHolderNames() {
+        // Valid names: alphabetic, spaces, apostrophes
+        String[] validNames = {"John Smith", "Mary O'Brien", "A", "Bob"};
+        
+        for (String name : validNames) {
+            if (name.length() < 3) continue; // Skip for this test as we want to test format validity
+            
+            List<BeneficiaryValidationRequest.BeneficiaryEntry> entries = new ArrayList<>();
+            BeneficiaryValidationRequest.BeneficiaryEntry entry = createValidEntry("NAME_" + name.hashCode());
+            entry.setAccountHolderName(name);
+            
+            List<BeneficiaryValidationResponse.Result> results = validator.validateEntries(entries);
+            
+            assertEquals(1, results.size());
+            // Note: This might be invalid if name is too short, so only check format error absence for valid lengths
+            if (name.length() >= 3) {
+                assertFalse("Should not have DIGX_BV_007 for valid name format", hasErrorCode(results.get(0), "DIGX_BV_007"));
+            }
+        }
+    }
+}

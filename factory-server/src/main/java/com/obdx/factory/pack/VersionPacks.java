@@ -13,6 +13,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -46,9 +47,10 @@ public class VersionPacks {
         for (String version : VERSIONS) {
             Map<String, Object> own = builtIn(version + ".yml");
             Map<String, PackRule> rules = new LinkedHashMap<>();
+            Map<String, String> sources = new HashMap<>();
             Map<String, Recipe> recipes = new LinkedHashMap<>();
-            merge(rules, common, "packs/common.yml");
-            merge(rules, own, "packs/" + version + ".yml");
+            merge(rules, common, "packs/common.yml", sources);
+            merge(rules, own, "packs/" + version + ".yml", sources);
             recipeLoader.merge(recipes, commonRecipes, "packs/recipes.yml");
             recipeLoader.merge(recipes, own, "packs/" + version + ".yml");
             Object javaLevel = own.get("java");
@@ -58,7 +60,7 @@ public class VersionPacks {
                     Path file = dir.resolve(name);
                     if (Files.isRegularFile(file)) {
                         Map<String, Object> extra = read(file);
-                        merge(rules, extra, file.toString());
+                        merge(rules, extra, file.toString(), sources);
                         recipeLoader.merge(recipes, extra, file.toString());
                         if (name.equals(version + ".yml") && extra.get("java") != null) {
                             javaLevel = extra.get("java");
@@ -67,7 +69,7 @@ public class VersionPacks {
                 }
             }
             packs.put(version, new VersionPack(version, description, javaLevel == null ? 8 : Integer.parseInt(javaLevel.toString()),
-                    List.copyOf(rules.values()), List.copyOf(recipes.values())));
+                    List.copyOf(rules.values()), List.copyOf(recipes.values()), sources));
         }
         packs.values().forEach(p -> log.info("Version pack {}: {} rule(s), {} recipe(s), Java level {}", p.version(), p.rules().size(),
                 p.recipes().size(), p.javaLevel()));
@@ -119,8 +121,13 @@ public class VersionPacks {
     }
 
     /** Adds the "rules" of a pack file: same id replaces, "enabled: false" removes. Also used for target packs. */
-    @SuppressWarnings("unchecked")
     public static void merge(Map<String, PackRule> rules, Map<String, Object> file, String source) {
+        merge(rules, file, source, null);
+    }
+
+    /** As above, and records in sources (when given) the file each rule now comes from. */
+    @SuppressWarnings("unchecked")
+    public static void merge(Map<String, PackRule> rules, Map<String, Object> file, String source, Map<String, String> sources) {
         Object list = file.get("rules");
         if (list == null) {
             return;
@@ -139,9 +146,15 @@ public class VersionPacks {
             }
             if (Boolean.FALSE.equals(raw.get("enabled"))) {
                 rules.remove(id);
+                if (sources != null) {
+                    sources.remove(id);
+                }
                 continue;
             }
             rules.put(id, rule(raw, id, source));
+            if (sources != null) {
+                sources.put(id, source);
+            }
         }
     }
 

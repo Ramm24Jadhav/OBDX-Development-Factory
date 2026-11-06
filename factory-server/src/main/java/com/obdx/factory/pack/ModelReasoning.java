@@ -1,0 +1,352 @@
+package com.obdx.factory.pack;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Finds the model's own reasoning left in a generated file ("Let's assume the service returns...", "The prompt says
+ * ...", "As an AI ..."): it is not code a bank would accept, and the file is written again. Only phrases a developer
+ * would not write are taken, in comments (and a few in strings), so "we need to refresh the list" in a comment or a
+ * label such as "We need to verify your identity" is not. Comments and strings are found with {@link SourceScan}, in
+ * linear time whatever the file holds.
+ */
+public final class ModelReasoning {
+
+    static final String RULE = "no-model-reasoning";
+
+    static final String STUB_RULE = "no-stub-code";
+
+    static final String SAMPLE_RULE = "no-sample-data";
+
+    /** At most this many findings of one rule; each rule keeps its own, so many of one do not hide another. */
+    static final int MAX_PER_RULE = 3;
+
+    private static final Pattern PHRASE = Pattern.compile("(?i)\\b(let'?s assume|let us assume|the prompt (?:says|asks|wants|requires)|"
+            + "as an ai\\b|as an ai language model|as per (?:the|your) (?:prompt|instructions)\\b|in this response,? (?:i|we)\\b|the user (?:wants|asked) (?:me|us)\\b|"
+            + "as you requested|here is the (?:complete|updated|corrected) (?:file|code)|for this exercise|in this isolated artifact|"
+            + "not defined in (?:the )?prompt|we model the behaviou?r|since we don'?t have|"
+            // "No specific error code defined for Name Format in the provided list": what the model was given
+            + "(?:not|no)\\b[^.\\n]{0,60}?\\b(?:defined|given|specified|listed|mentioned)\\b[^.\\n]{0,40}? in the (?:provided|given) "
+            + "(?:list|spec|specification|prompt)\\b|"
+            // as per instruction "never exception text": a quoted instruction, not "as per instruction frequency"
+            + "as per (?:the )?instructions?\\s*[:,]?\\s*[\"'\\u201C\\u2018]|"
+            // "For now, we assume ..." and "Assuming the validation response has a way ...": the model guessing aloud
+            + "for now,? we assume|assum(?:e|ing) the \\w+ (?:response|request|service|validator) (?:has|returns|marks|will)\\b)"
+            // "Assuming the host returns ...": an assumption opening a comment; and the model talking to itself mid-answer
+            // ("// Wait, ...", "// Let's check ...", "// But wait, I already wrote that line"), only where a comment starts
+            + "|^(?:/[/*]+|\\*|<!--|--|#)?\\s*(assuming (?:the )?(?:host|standard|default)\\b|(?:but |hmm,? )?wait\\s*[,.!:]"
+            + "|let'?s check\\b|i already wrote\\b)");
+    /**
+     * The model talking to itself where a comment starts ("// Wait, ...", "// Let's check ...", "// I already wrote ...", "// The prompt
+     * says ..."): in a piece of a continued file this is where its code stops, so the piece is cut there. Other reasoning
+     * phrases only take their comment out.
+     */
+    private static final Pattern SELF_TALK = Pattern.compile("(?i)^(?:/[/*]+|\\*|<!--|--|#)?\\s*((?:but |hmm,? )?wait\\s*[,.!:]|let'?s check\\b"
+            + "|i already wrote\\b|the prompt (?:says|asks|wants|requires)\\b)");
+    /** Code that only pretends: placeholder logic, simulated calls, mock data in the bank's code (not in tests) */
+    private static final Pattern STUB = Pattern.compile("(?i)\\b(placeholder logic|simulated (?:host |api |backend )?(?:response|call|delay|data)\\b|"
+            + "simulate (?:the )?(?:host|api|call|backend|response)\\b|in a real implementation|todo:?\\s*call|mock (?:response|data))");
+    /** Sample people in a string: "JOHN SMITH", "Jane Doe" */
+    private static final Pattern SAMPLE_DATA = Pattern.compile("(?i)\\b((?:john|jane) (?:smith|doe)|lorem ipsum)\\b");
+    /** A placeholder or hint shows sample text on purpose: placeholder: 'John Smith', hint-text="..." */
+    private static final Pattern HINT_BEFORE = Pattern.compile("(?i)(placeholder|hint|example|sample|helptext|help-text)[\\w-]*\\s*[:=]\\s*\\(?\\s*$");
+    private static final Pattern IN_STRINGS = Pattern.compile("(?i)\\b(the prompt (?:says|asks|wants)|as an ai\\b|let'?s assume|as per the prompt)");
+
+    private ModelReasoning() {
+    }
+
+    public static List<LocalChecks.Finding> findings(String path, String original, String content) {
+        if (content == null) {
+            return List.of();
+        }
+        String lower = path.toLowerCase(Locale.ROOT);
+        SourceScan.Syntax syntax = lower.matches(".*\\.(java|js|ts|tsx|jsx)") ? SourceScan.Syntax.CODE
+                : lower.endsWith(".html") || lower.endsWith(".xml") ? SourceScan.Syntax.MARKUP
+                : lower.endsWith(".sql") ? SourceScan.Syntax.SQL
+                : lower.endsWith(".properties") ? SourceScan.Syntax.PROPERTIES : null;
+        if (syntax == null) {
+            return List.of();
+        }
+        Set<String> before = new HashSet<>();
+        if (original != null) {
+            original.lines().forEach(l -> before.add(l.strip()));
+        }
+        String[] lines = content.split("\n", -1);
+        List<LocalChecks.Finding> found = new ArrayList<>();
+        SourceScan.Parts parts = SourceScan.scan(content, syntax);
+        // Comments outside strings ("http://x" or "a // b" in a string is no comment), and for code its strings
+        search(content, parts.comments(), PHRASE, RULE, PackRule.Severity.ERROR, REASONING, lines, before, found);
+        if (syntax == SourceScan.Syntax.CODE) {
+            search(content, parts.strings(), IN_STRINGS, RULE, PackRule.Severity.ERROR, REASONING, lines, before, found);
+        }
+        // Stubs fail the bank's code; a test, a mock or a story may mock and simulate
+        if (!testCode(path)) {
+            search(content, parts.comments(), STUB, STUB_RULE, PackRule.Severity.ERROR, STUB_MESSAGE, lines, before, found);
+            boolean bundle = lower.contains("/nls/") || lower.contains("/resources/") && lower.endsWith(".js");
+            if (syntax == SourceScan.Syntax.CODE && !bundle) {
+                // Sample names may be fine (a demo customer): a warning, and not in a placeholder or hint
+                List<SourceScan.Range> notHints = parts.strings().stream()
+                        .filter(r -> !HINT_BEFORE.matcher(before(content, r.start())).find())
+                        .toList();
+                search(content, notHints, SAMPLE_DATA, SAMPLE_RULE, PackRule.Severity.WARNING, SAMPLE_MESSAGE, lines, before, found);
+            }
+        }
+        return found;
+    }
+
+    /**
+     * The first line (from 1) of a piece of code whose comments carry the model's reasoning ("// Wait, ...", "// Let's
+     * check ...", "// The prompt says ..."), or 0; only comments are read. For a continued file, whose pieces are checked
+     * before they are joined.
+     */
+    public static int firstReasoningLine(String path, String piece) {
+        if (piece == null || piece.isBlank()) {
+            return 0;
+        }
+        String lower = path.toLowerCase(Locale.ROOT);
+        SourceScan.Syntax syntax = lower.matches(".*\\.(java|js|ts|tsx|jsx)") ? SourceScan.Syntax.CODE
+                : lower.endsWith(".html") || lower.endsWith(".xml") ? SourceScan.Syntax.MARKUP
+                : lower.endsWith(".sql") ? SourceScan.Syntax.SQL
+                : lower.endsWith(".properties") ? SourceScan.Syntax.PROPERTIES : SourceScan.Syntax.CODE;
+        List<LocalChecks.Finding> found = new ArrayList<>();
+        search(piece, SourceScan.scan(piece, syntax).comments(), SELF_TALK, RULE, PackRule.Severity.ERROR, REASONING, piece.split("\n", -1),
+                Set.of(), found);
+        return found.stream().mapToInt(LocalChecks.Finding::line).min().orElse(0);
+    }
+
+    /**
+     * The model talking about its input or its own answers in prose (a plan's risks, purposes and details): "The JSON
+     * provided was truncated ...", "The previous answer likely created ...", "My earlier answer ...", "The prompt says
+     * ...", "Let's check ...", "Wait, ...", "I already planned ...", "As an AI ...". Narrow on purpose, as these are
+     * also a developer's words about the host or the user: not "The input given was truncated by the host", "The
+     * previous answer from the host is cached", "Our previous attempt to reconcile failed", "In this response the host
+     * returns 200", "The user wants weekly only", "Wait times can exceed 30 seconds", "Wait: the host returns Y", nor an
+     * assumption ("The prompt does not specify the currency; assume INR", "Let's assume ISO dates"), which is a risk.
+     */
+    private static final Pattern PROSE = Pattern.compile("(?i)\\b(?:the|this) (?:json|context|prompt)"
+            + " (?:provided|given|above|you (?:provided|gave|sent)|in the prompt) (?:was|is|got|has been|seems|appears)(?: to be)?"
+            + " (?:truncated|cut off|cut)\\b"
+            + "|^\\W{0,3}the (?:previous|earlier) (?:answer|reply)\\b(?! (?:from|of|by|for|to|in|on|at|with)\\b)"
+            // (not "Our previous response to the host was rejected": a response to someone is the code's)
+            + "|\\bmy (?:previous|earlier|last) (?:answer|reply|response)\\b(?! (?:to|from|of|for)\\b)"
+            + "|\\bour (?:previous|earlier|last) (?:answer|reply)\\b(?! (?:to|from|of|for)\\b)"
+            + "|\\b(?:the|your) prompt (?:says|said|asks|asked|wants|requires|gives|shows|mentions)\\b(?! nothing\\b)"
+            + "|\\blet'?s (?:check|see|re-?check|re-?read)\\b|\\bas an ai\\b"
+            + "|\\bin this (?:response|answer),? (?:i|we)\\b|\\bthe user (?:wants|asks|asked) (?:me|us)\\b"
+            + "|\\bi (?:already|previously) (?:wrote|planned|listed|created|answered)\\b"
+            + "|^\\W{0,3}(?:but |hmm,? |ok(?:ay)?,? )?wait\\s{0,3}[,.!\\u2026\\u2014-]");
+    /** The most of a text that is read for such sentences; the rest is kept as it is. */
+    static final int MAX_PROSE = 4000;
+    /** Abbreviations whose full stop ends no sentence when a lower-case word or a number follows ("e.g. the", "etc. and"). */
+    private static final Set<String> NO_STOP = Set.of("eg", "ie", "etc", "vs", "approx", "incl", "cf", "viz", "fig", "sec", "st", "ltd", "inc",
+            "jr", "sr");
+    /** Titles: their full stop ends no sentence before a name either ("Mr. Smith"). */
+    private static final Set<String> TITLES = Set.of("mr", "mrs", "ms", "dr");
+    /** "No." ends no sentence only before a number ("No. 5"): "The answer is no. The ..." are two. */
+    private static final Set<String> NUMBER_WORDS = Set.of("no", "nos");
+
+    /**
+     * The text without its sentences in which the model talks about its input or its own answers (see {@link #PROSE});
+     * empty when every sentence was such. A sentence ends at . ! or ? before a space or the end, or at a line break; a
+     * dot inside a word (model.js), after a single letter or an abbreviation (e.g., Mr.) ends none. What is kept is
+     * kept as written (indentation, spaces); only the space a dropped sentence leaves at the start or end goes. Linear
+     * in the text's length.
+     */
+    public static String withoutReasoningSentences(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        String read = text.length() > MAX_PROSE ? text.substring(0, MAX_PROSE) : text;
+        StringBuilder kept = new StringBuilder();
+        boolean dropped = false;
+        int start = 0;
+        for (int i = 0; i <= read.length(); i++) {
+            boolean end = i == read.length() || read.charAt(i) == '\n'
+                    || ".!?".indexOf(read.charAt(i)) >= 0 && (i + 1 == read.length() || Character.isWhitespace(read.charAt(i + 1)))
+                    && !(read.charAt(i) == '.' && abbreviation(read, i));
+            if (!end) {
+                continue;
+            }
+            int stop = Math.min(read.length(), i + 1);
+            String sentence = read.substring(start, stop);
+            if (PROSE.matcher(sentence.strip()).find()) {
+                dropped = true;
+            } else {
+                kept.append(sentence);
+            }
+            start = stop;
+        }
+        if (!dropped) {
+            return text;
+        }
+        String out = kept + text.substring(read.length());
+        // the space or line break left before the first sentence kept, not the indentation of a line
+        out = out.startsWith("\r\n") ? out.substring(2) : out.startsWith("\n") ? out.substring(1) : out.replaceFirst("^[ \\t]++", "");
+        return out.stripTrailing();
+    }
+
+    /**
+     * Whether the full stop at {@code dot} is an abbreviation's rather than a sentence's end (read back at most 8
+     * characters, ahead at most 4): a title's always; "No." before a number; a single letter or another abbreviation
+     * before a lower-case word or a number ("e.g. the", "etc. and"), but not before a capital ("etc. The ...").
+     */
+    private static boolean abbreviation(String text, int dot) {
+        int from = dot;
+        while (from > 0 && dot - from < 8 && (Character.isLetter(text.charAt(from - 1)) || text.charAt(from - 1) == '.')) {
+            from--;
+        }
+        if (from > 0 && Character.isLetterOrDigit(text.charAt(from - 1))) {
+            return false;
+        }
+        String word = text.substring(from, dot).replace(".", "").toLowerCase(Locale.ROOT);
+        if (TITLES.contains(word)) {
+            return true;
+        }
+        int next = dot + 1;
+        while (next < text.length() && next - dot <= 4 && (text.charAt(next) == ' ' || text.charAt(next) == '\t')) {
+            next++;
+        }
+        char following = next < text.length() ? text.charAt(next) : 'A';
+        if (NUMBER_WORDS.contains(word)) {
+            return Character.isDigit(following);
+        }
+        return (word.length() == 1 || NO_STOP.contains(word)) && (Character.isLowerCase(following) || Character.isDigit(following));
+    }
+
+    /** A comment longer than this many lines is not taken out (it may be code the scan misread). */
+    static final int MAX_REMOVED_LINES = 10;
+
+    /** At most 120 characters of the line before an offset: what a placeholder or hint label would be (bounded, so linear). */
+    private static String before(String content, int offset) {
+        String window = content.substring(Math.max(0, offset - 120), offset);
+        int newline = window.lastIndexOf('\n');
+        return newline < 0 ? window : window.substring(newline + 1);
+    }
+
+    /** A file with the comments that carry the model's reasoning taken out, and how many comments that was. */
+    public record Cleaned(String content, int removed) {
+    }
+
+    /**
+     * The file without its comments that carry the model's reasoning ("// The prompt asks ...", "// Wait, ..."): a comment
+     * on a line of its own goes with its line, a comment after code is cut from the line. Comments on lines the file had
+     * before the change (original) stay; strings are not touched.
+     */
+    public static Cleaned withoutReasoningComments(String path, String original, String content) {
+        String lower = path.toLowerCase(Locale.ROOT);
+        SourceScan.Syntax syntax = lower.matches(".*\\.(java|js|ts|tsx|jsx)") ? SourceScan.Syntax.CODE
+                : lower.endsWith(".html") || lower.endsWith(".xml") ? SourceScan.Syntax.MARKUP
+                : lower.endsWith(".sql") ? SourceScan.Syntax.SQL
+                : lower.endsWith(".properties") ? SourceScan.Syntax.PROPERTIES : null;
+        if (content == null || syntax == null) {
+            return new Cleaned(content, 0);
+        }
+        Set<String> before = new HashSet<>();
+        if (original != null) {
+            original.lines().forEach(l -> before.add(l.strip()));
+        }
+        boolean[] removed = new boolean[content.length()];
+        int count = 0;
+        for (SourceScan.Range range : SourceScan.scan(content, syntax).comments()) {
+            // A comment that never closes (runs to the end of the file) or spans many lines may be code the scan misread: kept
+            if (range.end() >= content.length() && !content.startsWith("//", range.start()) && !content.startsWith("#", range.start())
+                    || content.substring(range.start(), range.end()).lines().count() > MAX_REMOVED_LINES) {
+                continue;
+            }
+            Matcher p = PHRASE.matcher(content).region(range.start(), range.end());
+            p.useAnchoringBounds(true);
+            if (!p.find()) {
+                continue;
+            }
+            int lineStart = content.lastIndexOf('\n', range.start() - 1) + 1;
+            int lineEnd = content.indexOf('\n', range.start());
+            String line = content.substring(lineStart, lineEnd < 0 ? content.length() : lineEnd).strip();
+            if (before.contains(line)) {
+                continue;
+            }
+            java.util.Arrays.fill(removed, range.start(), range.end(), true);
+            count++;
+        }
+        if (count == 0) {
+            return new Cleaned(content, 0);
+        }
+        StringBuilder out = new StringBuilder();
+        int start = 0;
+        while (start <= content.length()) {
+            int end = content.indexOf('\n', start);
+            int stop = end < 0 ? content.length() : end;
+            StringBuilder kept = new StringBuilder();
+            boolean touched = false;
+            for (int i = start; i < stop; i++) {
+                if (removed[i]) {
+                    touched = true;
+                } else {
+                    kept.append(content.charAt(i));
+                }
+            }
+            // a line that was only the comment goes; a line with code keeps its code
+            if (!(touched && kept.toString().isBlank())) {
+                out.append(touched ? kept.toString().stripTrailing() : kept);
+                if (end >= 0) {
+                    out.append('\n');
+                }
+            }
+            if (end < 0) {
+                break;
+            }
+            start = end + 1;
+        }
+        return new Cleaned(out.toString(), count);
+    }
+
+    /** Tests, mocks and stories, where simulated data belongs. */
+    static boolean testCode(String path) {
+        String lower = path.toLowerCase(Locale.ROOT);
+        return lower.matches(".*/(tests?|__tests__|__mocks__|mocks)/.*") || lower.startsWith("mocks/") || lower.startsWith("test/")
+                || path.matches(".*(Test|Tests|IT)\\.java") || lower.matches(".*\\.(spec|test|stories)\\.(js|ts|jsx|tsx|mjs)");
+    }
+
+    private static final String REASONING = "The model's own reasoning (\"%s\") is left in the file. Write code and comments only, as a "
+            + "developer would.";
+    private static final String STUB_MESSAGE = "Stub code (\"%s\"): placeholder, simulated or sample data instead of the real call. Call "
+            + "the service or host the way the codebase does.";
+
+    private static final String SAMPLE_MESSAGE = "Sample data (\"%s\") in the code: take the value from the service, or say why it "
+            + "is fixed.";
+
+    private static void search(String content, List<SourceScan.Range> ranges, Pattern phrase, String rule, PackRule.Severity severity,
+                               String message, String[] lines, Set<String> before, List<LocalChecks.Finding> found) {
+        for (SourceScan.Range range : ranges) {
+            if (found.stream().filter(f -> f.ruleId().equals(rule)).count() >= MAX_PER_RULE) {
+                return;
+            }
+            Matcher p = phrase.matcher(content).region(range.start(), range.end());
+            p.useAnchoringBounds(true);
+            if (p.find()) {
+                int line = lineOf(content, p.start());
+                if (line <= lines.length && before.contains(lines[line - 1].strip())) {
+                    continue;
+                }
+                String said = p.group(1) != null ? p.group(1) : p.groupCount() > 1 && p.group(2) != null ? p.group(2) : p.group();
+                if (found.stream().noneMatch(f -> f.line() == line && f.ruleId().equals(rule))) {
+                    found.add(new LocalChecks.Finding(rule, severity, line, message.formatted(said)));
+                }
+            }
+        }
+    }
+
+    private static int lineOf(String text, int offset) {
+        int line = 1;
+        for (int i = 0; i < offset; i++) {
+            if (text.charAt(i) == '\n') {
+                line++;
+            }
+        }
+        return line;
+    }
+}

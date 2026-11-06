@@ -84,9 +84,8 @@ public class SourceService {
 
     /** Checks an SVN URL with the credentials and suggests the workspace's details from its files. */
     public Inspection inspectUrl(String url, SvnCredentials credentials) {
-        if (url == null || !url.strip().matches("(svn|svn\\+ssh|https?|file)://.+")) {
-            throw new BadRequestException("Enter an svn://, http://, https:// or file:// URL");
-        }
+        // Administrators only (SourceController); file:// only where local folders are offered
+        com.obdx.factory.svn.SvnUrls.check(url, localEnabled);
         String target = url.strip().replaceAll("/+$", "");
         SvnClient.SvnInfo info = svn.info(target, credentials);
         CodeDetector.Suggestion suggestion = detectInRepository(info.url(), credentials, urlNames(info.url()));

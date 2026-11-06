@@ -26,9 +26,18 @@ import java.util.UUID;
 @Service
 public class PackService {
 
-    /** appliesTo: "OBDX code" for version pack rules, or the new app (for example "React Native app in mobile/"). */
+    /**
+     * appliesTo: "OBDX code" for version pack rules, or the new app (for example "React Native app in mobile/").
+     * origin: VERSION_PACK (the factory's own pack files), BANK (a file of the bank's pack folder, factory.packs.dir) or
+     * TARGET (the UI target pack); source: the file name; disabledBy and disabledAt: who turned the rule off for this
+     * workspace, and when (null while it is on).
+     */
     public record RuleView(String id, String title, PackRule.Severity severity, List<String> files, List<String> exclude,
-                           String forbid, String require, String message, boolean enabled, boolean matchesProfile, String appliesTo) {
+                           String forbid, String require, String message, boolean enabled, boolean matchesProfile, String appliesTo,
+                           String origin, String source, String disabledBy, OffsetDateTime disabledAt) {
+    }
+
+    private record Disabled(String by, OffsetDateTime at) {
     }
 
     public record WorkspaceChecks(String version, String description, int javaLevel, String javaLevelSource,
@@ -60,16 +69,34 @@ public class PackService {
     }
 
     public WorkspaceChecks get(UUID workspaceId) {
-        CheckScope scope = scope(workspaceId);
+        return get(workspaceId, null);
+    }
+
+    /**
+     * The rules this workspace's code would be checked with on another OBDX version (null: its own), for example the
+     * newer pack an upgrade moves to. The workspace's profile, target pack and disabled rules apply as they are.
+     */
+    public WorkspaceChecks get(UUID workspaceId, String version) {
+        CheckScope own = scope(workspaceId);
+        CheckScope scope = version == null || version.isBlank() ? own
+                : new CheckScope(version.strip(), own.facts(), own.disabled(), own.target(), own.appFolder());
         VersionPack pack = packs.find(scope.version())
                 .orElseThrow(() -> new NotFoundException("No version pack for OBDX " + scope.version()));
         Integer jet = scope.jetMajor();
-        List<RuleView> rules = new ArrayList<>(pack.rules().stream().map(r -> new RuleView(r.id(), r.title(), r.severity(), r.files(), r.exclude(),
-                r.forbid(), r.require(), r.message(), !scope.disabled().contains(r.id()), r.appliesToProfile(scope.facts(), jet), "OBDX code"))
-                .toList());
-        targetPack(scope).ifPresent(target -> target.rules().forEach(r -> rules.add(new RuleView(r.id(), r.title(), r.severity(), r.files(),
-                r.exclude(), r.forbid(), r.require(), r.message(), !scope.disabled().contains(r.id()), true,
-                target.title() + " app in " + scope.appFolder() + "/"))));
+        Map<String, Disabled> off = disabledDetails(workspaceId);
+        List<RuleView> rules = new ArrayList<>(pack.rules().stream().map(r -> {
+            String source = pack.sourceOf(r.id());
+            Disabled d = off.get(r.id());
+            return new RuleView(r.id(), r.title(), r.severity(), r.files(), r.exclude(), r.forbid(), r.require(), r.message(),
+                    !scope.disabled().contains(r.id()), r.appliesToProfile(scope.facts(), jet), "OBDX code", origin(source), fileName(source),
+                    d == null ? null : d.by(), d == null ? null : d.at());
+        }).toList());
+        targetPack(scope).ifPresent(target -> target.rules().forEach(r -> {
+            Disabled d = off.get(r.id());
+            rules.add(new RuleView(r.id(), r.title(), r.severity(), r.files(), r.exclude(), r.forbid(), r.require(), r.message(),
+                    !scope.disabled().contains(r.id()), true, target.title() + " app in " + scope.appFolder() + "/", "TARGET",
+                    target.title() + " target pack", d == null ? null : d.by(), d == null ? null : d.at()));
+        }));
         return new WorkspaceChecks(pack.version(), pack.description(), checks.javaLevel(scope),
                 scope.javaVersion() != null ? "Project Profile" : "version pack default", rules);
     }
@@ -93,6 +120,29 @@ public class PackService {
     /** The workspace's React Native or React target pack, if it has one with an app folder. */
     private Optional<TargetPack> targetPack(CheckScope scope) {
         return scope.appFolder() == null ? Optional.empty() : targets.find(scope.target()).filter(t -> !t.isJet());
+    }
+
+    /** VERSION_PACK for the factory's own pack files (packs/...), BANK for a file of the bank's pack folder. */
+    static String origin(String source) {
+        return source == null || source.startsWith("packs/") ? "VERSION_PACK" : "BANK";
+    }
+
+    /** The file name only: the bank's pack folder is a path on the factory's server. */
+    static String fileName(String source) {
+        if (source == null) {
+            return null;
+        }
+        String name = source.replace('\\', '/');
+        return source.startsWith("packs/") ? name : name.substring(name.lastIndexOf('/') + 1);
+    }
+
+    private Map<String, Disabled> disabledDetails(UUID workspaceId) {
+        Map<String, Disabled> map = new HashMap<>();
+        jdbc.query("SELECT rule_id, disabled_by, disabled_at FROM workspace_disabled_rule WHERE workspace_id = ?",
+                rs -> {
+                    map.put(rs.getString("rule_id"), new Disabled(rs.getString("disabled_by"), rs.getObject("disabled_at", OffsetDateTime.class)));
+                }, workspaceId);
+        return map;
     }
 
     private Set<String> disabled(UUID workspaceId) {

@@ -36,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "FACTORY_TEST_DB_URL", matches = ".+")
+@org.junit.jupiter.api.extension.ExtendWith(com.obdx.factory.common.ForgetSecrets.class)
 class DesignFlowIntegrationTest {
 
     @TempDir
@@ -156,8 +157,10 @@ class DesignFlowIntegrationTest {
         designs.reviewComment(token, "Priya (Bank A)", "Please show the remaining characters for remarks.", "c-remarks");
         ScreenDesignService.ReviewView approved = designs.reviewApprove(token, "Priya (Bank A)");
         assertThat(approved.status()).isEqualTo(ScreenDesign.Status.APPROVED);
-        assertThat(approved.comments()).extracting(DesignStore.Comment::text)
+        assertThat(approved.comments()).extracting(ScreenDesignService.ReviewComment::text)
                 .containsExactly("Please show the remaining characters for remarks.", "Approved version 3.");
+        assertThat(approved.comments()).extracting(ScreenDesignService.ReviewComment::kind)
+                .containsExactly(DesignStore.Kind.COMMENT, DesignStore.Kind.APPROVAL);
 
         assertThatThrownBy(() -> designs.review(token)).isInstanceOf(NotFoundException.class);
         assertThatThrownBy(() -> designs.save(designId, edited, null)).hasMessageContaining("Reopen it");
@@ -165,6 +168,104 @@ class DesignFlowIntegrationTest {
         assertThat(detail.approvedVersion()).isEqualTo(3);
         assertThat(detail.approvedBy()).isEqualTo("Priya (Bank A)");
         assertThat(designs.reopen(designId).status()).isEqualTo(ScreenDesign.Status.DRAFT);
+    }
+
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    /**
+     * A review link shows only its screen and what reviewers said; revoking or expiry ends it on the server; a new link
+     * replaces the old address; comments are about a part of the current screen, and the team can resolve them.
+     */
+    @Test
+    void reviewLinksShowOnlyTheSharedScreenAndEndWhenRevokedOrExpired() {
+        workspaceId = workspaces.create(new WorkspaceRequest("review-" + UUID.randomUUID(), "Test Bank", "22.x", null)).id();
+        UUID otherWorkspace = workspaces.create(new WorkspaceRequest("review-other-" + UUID.randomUUID(), "Other Bank", "22.x", null)).id();
+        try {
+            UUID designId = designs.blank(workspaceId, "Transfer").id();
+            ScreenModel.Component accounts = new ScreenModel.Component("c-from", "select", "fromAccount", "From account", true, null, null,
+                    null, null, List.of(), List.of(), false, null, java.util.Map.of(), null, null, null,
+                    new ScreenModel.DataSource("GET /digx/v1/accounts/demandDeposit", "accounts", "id.value", "displayName"), null, null);
+            designs.save(designId, new ScreenModel("Transfer", "Transfer", null, "new",
+                    List.of(new ScreenModel.Section("s-1", "Details", 1, List.of(accounts))),
+                    List.of(new ScreenModel.ActionButton("a-submit", "Submit", "primary"))), null);
+            designs.comment(designId, "Asha (team)", "Internal: check the limits service first", null);
+            UUID otherDesign = designs.blank(otherWorkspace, "Other bank screen").id();
+            designs.comment(otherDesign, "Ravi (other)", "Other workspace note", null);
+
+            String first = designs.openReview(designId, 7).reviewToken();
+            String token = designs.openReview(designId, 7).reviewToken();
+            assertThat(token).isNotEqualTo(first);
+            assertThatThrownBy(() -> designs.review(first)).isInstanceOf(NotFoundException.class);
+
+            ScreenDesignService.ReviewView view = designs.review(token);
+            assertThat(view.name()).isEqualTo("Transfer");
+            assertThat(view.comments()).isEmpty();
+            assertThat(view.model().sections().getFirst().components().getFirst().dataSource()).isNull();
+            assertThat(view.toString()).doesNotContain("Asha", "Internal", "/digx/", "Other workspace note", workspaceId.toString(), designId.toString());
+
+            assertThatThrownBy(() -> designs.reviewComment(token, "Priya", "About a field", "c-missing"))
+                    .hasMessageContaining("no longer there");
+            assertThatThrownBy(() -> designs.reviewComment(token, "Priya", "x".repeat(ScreenDesignService.MAX_COMMENT + 1), null))
+                    .hasMessageContaining("too long");
+            ScreenDesignService.ReviewView commented = designs.reviewComment(token, "Priya (Bank A)", "Show the balance", "c-from");
+            assertThat(commented.comments()).singleElement().satisfies(c -> {
+                assertThat(c.componentId()).isEqualTo("c-from");
+                assertThat(c.resolved()).isFalse();
+            });
+
+            UUID commentId = designs.get(designId).comments().stream().filter(DesignStore.Comment::fromReview).findFirst().orElseThrow().id();
+            DesignStore.Comment resolved = designs.resolveComment(designId, commentId, true, "Asha (team)").comments().stream()
+                    .filter(c -> c.id().equals(commentId)).findFirst().orElseThrow();
+            assertThat(resolved.resolvedBy()).isEqualTo("Asha (team)");
+            assertThat(resolved.resolvedAt()).isNotNull();
+            assertThat(designs.review(token).comments().getFirst().resolved()).isTrue();
+            assertThat(designs.review(token).toString()).doesNotContain("Asha");
+            assertThatThrownBy(() -> designs.resolveComment(otherDesign, commentId, true, "Asha")).isInstanceOf(NotFoundException.class);
+            assertThat(designs.resolveComment(designId, commentId, false, null).comments().stream()
+                    .filter(c -> c.id().equals(commentId)).findFirst().orElseThrow().resolvedAt()).isNull();
+
+            // Revoked: the link stops working at once
+            designs.closeReview(designId);
+            assertThatThrownBy(() -> designs.review(token)).isInstanceOf(NotFoundException.class);
+            assertThatThrownBy(() -> designs.reviewComment(token, "Priya", "Late", null)).isInstanceOf(NotFoundException.class);
+            assertThatThrownBy(() -> designs.reviewApprove(token, "Priya")).isInstanceOf(NotFoundException.class);
+
+            // Expired: refused although the address is still stored
+            String later = designs.openReview(designId, 1).reviewToken();
+            jdbc.update("UPDATE screen_design SET review_expires_at = now() - interval '1 minute' WHERE id = ?", designId);
+            assertThatThrownBy(() -> designs.review(later)).hasMessageContaining("expired");
+            assertThatThrownBy(() -> designs.reviewApprove(later, "Priya")).hasMessageContaining("expired");
+            assertThat(designs.get(designId).status()).isEqualTo(ScreenDesign.Status.IN_REVIEW);
+        } finally {
+            workspaces.delete(otherWorkspace);
+        }
+    }
+
+    @Autowired
+    private DesignFlowService flows;
+
+    @Test
+    void approvesARequirementsScreensTogether() throws Exception {
+        workspaceId = workspaces.create(new WorkspaceRequest("studio-" + UUID.randomUUID(), "Test Bank", "22.x", null)).id();
+        UUID requirementId = requirements.fromText(workspaceId, "Remarks", "Add remarks to transfers.").id();
+        waitForStatus(requirementId, Requirement.Status.READY);
+        requirements.approve(requirementId, "Lead");
+        assertThatThrownBy(() -> flows.approve(requirementId, null, "Lead")).hasMessageContaining("Generate the screens");
+        List<ScreenDesignService.DesignSummary> created = designs.fromRequirement(requirementId);
+
+        DesignFlowService.DesignFlow flow = flows.flow(requirementId);
+        assertThat(flow.screens()).extracting(DesignFlowService.FlowScreen::name).containsExactly("Own Account Transfer", "Transfer Confirmation");
+        assertThat(flow.screens().getFirst().model().sections()).isNotEmpty();
+        // A text request has no functional requirements: every screen is an "other" one
+        assertThat(flow.others()).hasSize(2);
+
+        DesignFlowService.Approval one = flows.approve(requirementId, List.of(created.getFirst().id()), "Lead");
+        assertThat(one.approved()).containsExactly("Own Account Transfer");
+        DesignFlowService.Approval rest = flows.approve(requirementId, null, "Lead");
+        assertThat(rest.approved()).containsExactly("Transfer Confirmation");
+        assertThat(rest.flow().screens()).allMatch(s -> s.status() == ScreenDesign.Status.APPROVED && s.approvedVersion() == 1);
+        assertThatThrownBy(() -> flows.approve(requirementId, List.of(UUID.randomUUID()), "Lead")).hasMessageContaining("not part of");
     }
 
     private void waitForStatus(UUID id, Requirement.Status status) throws InterruptedException {

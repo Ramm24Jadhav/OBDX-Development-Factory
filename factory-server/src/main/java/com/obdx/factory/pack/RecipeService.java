@@ -86,6 +86,18 @@ public class RecipeService {
         return new WorkspaceRecipes(pack.version(), finder.files.size(), views);
     }
 
+    /**
+     * A version pack's own recipes, without reference examples (those come from a workspace's code), to compare the
+     * same recipe between OBDX versions. Read only: generation still takes recipes from the workspace's scope.
+     */
+    public WorkspaceRecipes packRecipes(String version) {
+        VersionPack pack = packs.find(version).orElseThrow(() -> new NotFoundException("No version pack for OBDX " + version));
+        return new WorkspaceRecipes(pack.version(), 0, pack.recipes().stream().map(recipe -> new RecipeView(recipe.id(), recipe.title(),
+                recipe.when(), recipe.guidance(), List.copyOf(recipe.actions()), List.copyOf(recipe.layers()), recipe.source(),
+                recipe.parts().stream().map(part -> new PartView(part.id(), part.name(), part.files(), part.exclude(), part.template(),
+                        part.content(), List.<Example>of())).toList())).toList());
+    }
+
     /** Pins a file of the workspace's code as a reference example of a recipe part. */
     public WorkspaceRecipes pin(UUID workspaceId, String recipeId, String partId, String path, String by) {
         part(workspaceId, recipeId, partId);

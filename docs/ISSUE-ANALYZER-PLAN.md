@@ -1,7 +1,9 @@
 # Issue Analyzer: Phase 1 plan
 
-**Built** as planned (see "Issue Analyzer" in `DEVELOPMENT.md`), with three small additions: a NOT_RESOLVED status,
-leads can delete issues, and the SR draft is assembled by the factory without a model call.
+**Built** (see "Issue Analyzer" in `DEVELOPMENT.md`), with these differences: there is no separate screenshot model;
+the chat model reads screenshots through the image path the Design Studio already uses (so the "Vision model"
+section below was not built). Also a NOT_RESOLVED status, leads can delete issues, the SR draft is assembled by the
+factory without a model call, and the migration is V40.
 
 A support engineer gives the factory what a bank reports (a description, a screenshot of the error screen, a log or
 stack trace) and the factory says what probably caused it, shows the evidence, and lists the steps to fix it without

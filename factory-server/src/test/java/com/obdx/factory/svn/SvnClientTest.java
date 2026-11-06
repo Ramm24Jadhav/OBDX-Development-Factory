@@ -76,7 +76,7 @@ class SvnClientTest {
 
         assertThatThrownBy(() -> client.info(missing, SvnCredentials.NONE))
                 .isInstanceOf(SvnException.class)
-                .hasMessageStartingWith("svn info failed: svn: E");
+                .hasMessageStartingWith("The SVN path was not found. Check the repository URL").hasMessageContaining("(svn info: svn: E");
     }
 
     @Test

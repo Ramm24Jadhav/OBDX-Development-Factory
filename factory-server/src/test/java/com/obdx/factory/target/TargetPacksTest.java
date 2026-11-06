@@ -21,7 +21,9 @@ class TargetPacksTest {
     @Test
     void builtInPacksLoadWithStarterProjects() {
         TargetPacks packs = TargetPacks.builtIn();
-        assertThat(packs.all()).extracting(TargetPack::id).containsExactly("jet", "react-native", "react");
+        assertThat(packs.all()).extracting(TargetPack::id).containsExactly("jet", "react-native", "react", "angular", "flutter", "jet-core-pack");
+        assertThat(packs.find("flutter").orElseThrow().isDart()).isTrue();
+        assertThat(packs.find("flutter").orElseThrow().starter()).containsKeys("pubspec.yaml", "lib/api/client.dart", "lib/components/tokens.dart", "assets/i18n/en.json");
         assertThat(packs.jet().isJet()).isTrue();
 
         TargetPack native_ = packs.find("react-native").orElseThrow();
@@ -40,6 +42,33 @@ class TargetPacksTest {
         assertThat(react.structure().get("screen")).isEqualTo("src/screens/{module}/{Screen}Page.tsx");
         assertThat(react.starter()).containsKeys("vite.config.ts", "src/components/fields.tsx").doesNotContainKey("App.tsx");
         assertThat(react.rules()).extracting(r -> r.id()).contains("react-no-react-native").doesNotContain("rn-no-html");
+        assertThat(react.syntax()).isEqualTo("jsx");
+
+        TargetPack angular = packs.find("angular").orElseThrow();
+        assertThat(angular.isAngular()).isTrue();
+        assertThat(angular.structure().get("screen")).isEqualTo("src/app/screens/{module}/{Screen}Page.ts");
+        assertThat(angular.components().get("amount")).satisfies(m -> {
+            assertThat(m.tag()).isEqualTo("bx-amount");
+            assertThat(m.value()).isEqualTo("number");
+        });
+        // The starter carries the premium Angular components (a copy of the pack) and its own parts
+        assertThat(angular.starter()).containsKeys("angular.json", "src/main.ts", "src/app/api/client.ts", "src/app/forms/form.ts",
+                "src/app/components/text-field.ts", "src/app/components/bx.css", "src/app/components/layout.ts");
+        assertThat(angular.rules()).extracting(r -> r.id()).contains("angular-no-react", "angular-no-inner-html", "app-no-jet");
+    }
+
+    @Test
+    void theAngularStarterCarriesThePremiumComponentsUnchanged() throws Exception {
+        // The starter's components are a copy of target-packs/components/angular/src, so generated apps use the pack
+        java.nio.file.Path pack = java.nio.file.Path.of("..", "target-packs", "components", "angular", "src");
+        TargetPack angular = TargetPacks.builtIn().find("angular").orElseThrow();
+        try (var files = java.nio.file.Files.list(pack)) {
+            for (java.nio.file.Path file : files.filter(f -> !f.getFileName().toString().equals("index.ts")).toList()) {
+                String name = file.getFileName().toString();
+                assertThat(angular.starter().get("src/app/components/" + name)).as(name)
+                        .isEqualToNormalizingNewlines(java.nio.file.Files.readString(file));
+            }
+        }
     }
 
     @Test

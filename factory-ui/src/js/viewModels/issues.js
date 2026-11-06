@@ -3,55 +3,69 @@
  * finds the evidence and the bank's matching code, the model diagnoses it, and the page shows the cause, the evidence
  * and fix steps. Then record what fixed it, draft an Oracle SR, or (leads) share the fix as product knowledge.
  */
-define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', 'ojs/ojarraydataprovider',
-        'ojs/ojknockout', 'ojs/ojformlayout', 'ojs/ojselectsingle', 'ojs/ojinputtext', 'ojs/ojbutton', 'ojs/ojtoolbar',
-        'ojs/ojtable', 'ojs/ojfilepicker'],
-  function (ko, accUtils, api, workspaceSelection, session, ArrayDataProvider) {
+define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/session', '../services/ui',
+        '../services/dialog', '../services/toast', 'ojs/ojknockout'],
+  function (ko, accUtils, api, workspaceSelection, session, ui, dialog, toast) {
     const POLL_MS = 2000;
+    const ACCEPTED = '.log,.txt,.out,.png,.jpg,.jpeg';
     const CATEGORIES = ['CONFIGURATION', 'DEPENDENCY', 'INFRASTRUCTURE', 'SECURITY', 'DATA', 'INTEGRATION', 'PRODUCT_DEFECT',
       'CUSTOMIZATION', 'UNKNOWN'];
     const label = (value) => value ? value.charAt(0) + value.slice(1).toLowerCase().replace(/_/g, ' ') : '';
     const where = (item) => item.source + (item.line ? ':' + item.line : '');
+    // Issue statuses in the shared status categories (ui.status), with this page's words
+    const CATEGORY_OF = { DIAGNOSED: 'READY', RESOLVED: 'APPROVED', NOT_RESOLVED: 'WARNING', ESCALATED: 'IN_REVIEW' };
+    const WORDS = { NEW: 'New', ANALYZING: 'Analyzing', DIAGNOSED: 'Diagnosed', FAILED: 'Failed', RESOLVED: 'Resolved',
+      NOT_RESOLVED: 'Not resolved', ESCALATED: 'Escalated' };
+    const issueStatus = (s) => ui.status(CATEGORY_OF[s] || s, WORDS[s]);
+    const TONE = { PROBABLE: 'success', POSSIBLE: 'warning', INCONCLUSIVE: '', LOW: 'success', MEDIUM: 'warning', HIGH: 'danger' };
+    const badge = (text, key) => ({ text: text, css: 'fx-badge' + (TONE[key] ? ' fx-badge--' + TONE[key] : '') });
 
     function IssuesViewModel() {
-      this.workspaceProvider = new ArrayDataProvider(workspaceSelection.options, { keyAttributes: 'value' });
       this.workspaceId = workspaceSelection.selectedId;
       this.errorMessage = ko.observable('');
       this.canFile = ko.pureComputed(() => session.can(this.workspaceId(), 'VIEW'));
       this.canApprove = ko.pureComputed(() => session.can(this.workspaceId(), 'APPROVE'));
-      this.busy = ko.observable(false);
-      const showError = (error) => this.errorMessage(error.message);
+      this.accepted = ACCEPTED;
+      const showError = (error) => this.errorMessage(ui.errorText(error));
 
       // New issue
-      this.environmentProvider = new ArrayDataProvider(['DEV', 'SIT', 'UAT', 'PROD'].map((e) => ({ value: e, label: e })),
-        { keyAttributes: 'value' });
+      this.environmentOptions = [{ value: '', label: 'Not given' }].concat(['DEV', 'SIT', 'UAT', 'PROD'].map((e) => ({ value: e, label: e })));
       this.newTitle = ko.observable('');
-      this.newEnvironment = ko.observable(null);
+      this.newEnvironment = ko.observable('');
       this.newDescription = ko.observable('');
       this.newLog = ko.observable('');
       this.chosenFiles = ko.observableArray([]);
-      this.chosenFileNames = ko.pureComputed(() => this.chosenFiles().length === 0
-        ? 'No files chosen' : this.chosenFiles().map((f) => f.name).join(', '));
-      this.canSubmit = ko.pureComputed(() => !this.busy()
-        && (this.newDescription().trim() || this.newLog().trim() || this.chosenFiles().length > 0));
-      this.filesSelected = (event) => this.chosenFiles(this.chosenFiles().concat(Array.from(event.detail.files)));
-      this.clearFiles = () => this.chosenFiles([]);
+      this.chosenRows = ko.pureComputed(() => this.chosenFiles().map((file) => ({
+        name: file.name,
+        remove: () => this.chosenFiles.remove(file)
+      })));
+      this.canSubmit = ko.pureComputed(() => !!(this.newDescription().trim() || this.newLog().trim() || this.chosenFiles().length > 0));
+      const addFiles = (files) => this.chosenFiles(this.chosenFiles().concat(Array.from(files || [])));
+      this.filesSelected = (event) => { addFiles(event.target.files); event.target.value = ''; };
+      this.dropOver = ko.observable(false);
+      this.dragOver = (event) => { event.preventDefault(); this.dropOver(true); return false; };
+      this.dragLeave = () => { this.dropOver(false); };
+      this.dropFiles = (event) => { event.preventDefault(); this.dropOver(false); addFiles(event.dataTransfer.files); return false; };
+      this.dropCss = ko.pureComputed(() => 'fx-dropzone factory-is-drop' + (this.dropOver() ? ' is-over' : ''));
 
       // List
-      const items = ko.observableArray([]);
-      this.listProvider = new ArrayDataProvider(items, { keyAttributes: 'id' });
+      this.rows = ko.observableArray([]);
+      this.listLoading = ko.observable(true);
 
       // Detail
       this.detail = ko.observable(null);
-      this.base = () => 'workspaces/' + this.workspaceId() + '/issues/' + this.detail().id;
-      this.statusLabel = ko.pureComputed(() => this.detail() ? label(this.detail().status) : '');
+      const base = () => 'workspaces/' + this.workspaceId() + '/issues/' + this.detail().id;
+      this.status = ko.pureComputed(() => this.detail() ? issueStatus(this.detail().status) : null);
       this.analyzing = ko.pureComputed(() => !!this.detail() && this.detail().status === 'ANALYZING');
+      this.messageCss = ko.pureComputed(() => 'fx-alert factory-is-alert ' + (this.detail() && this.detail().status === 'FAILED'
+        ? 'fx-alert--danger' : 'fx-alert--warning'));
       this.screenshots = ko.observableArray([]);
       this.logFiles = ko.observableArray([]);
       this.evidenceItems = ko.observableArray([]);
       this.codeItems = ko.observableArray([]);
       this.view = ko.observable(null);
       this.resolution = ko.observable('');
+      this.descriptionText = ko.pureComputed(() => (this.detail() && this.detail().description) || '(no description)');
 
       /** The diagnosis with display text prepared, since templates cannot run JavaScript functions. */
       const viewOf = (detail) => {
@@ -63,9 +77,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         (detail.evidence ? detail.evidence.items : []).forEach((item) => { byId[item.id] = item; });
         const cite = (ids) => (ids || []).filter((id) => byId[id]).map((id) => id + ' ' + where(byId[id])).join(', ');
         return {
-          category: label(d.category),
-          state: label(d.state),
-          stateClass: 'factory-status factory-issue-state-' + d.state.toLowerCase(),
+          category: badge(label(d.category), 'category'),
+          state: badge(label(d.state), d.state),
           summary: d.summary || '',
           rootCause: d.rootCause,
           evidence: d.evidence.filter((id) => byId[id]).map((id) => ({ id: id, where: where(byId[id]), text: byId[id].text })),
@@ -73,8 +86,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             title: (i + 1) + '. ' + s.action,
             why: s.why || '',
             file: s.file || '',
-            risk: 'Risk: ' + label(s.risk),
-            riskClass: 'factory-status factory-issue-risk-' + s.risk.toLowerCase(),
+            risk: badge('Risk: ' + label(s.risk), s.risk),
             evidence: cite(s.evidence)
           })),
           alternatives: d.alternatives.map((a) => a.cause + (a.why ? ': ' + a.why : '')),
@@ -82,7 +94,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           conflicts: d.conflicts || '',
           similar: d.similar.map((s) => ({
             title: s.title,
-            where: s.shared ? 'shared knowledge' : 'this workspace',
+            where: s.shared ? 'Shared knowledge' : 'This workspace',
             text: label(s.category) + '. Cause: ' + s.rootCause + (s.resolution ? ' Fixed by: ' + s.resolution : '')
           })),
           model: d.model ? 'Diagnosed by ' + d.model : ''
@@ -93,18 +105,23 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const loadList = () => {
         const id = this.workspaceId();
         if (!id) {
-          items([]);
+          this.rows([]);
+          this.listLoading(false);
           return Promise.resolve();
         }
         return api.get('workspaces/' + id + '/issues').then((list) => {
-          items(list.map((i) => Object.assign({}, i, {
-            statusText: label(i.status),
-            categoryText: label(i.category),
+          this.rows(list.map((i) => ({
+            id: i.id,
+            title: i.title,
+            status: issueStatus(i.status),
+            category: label(i.category),
             environment: i.environment || '',
+            createdBy: i.createdBy || '',
             updated: new Date(i.updatedAt).toLocaleString(),
-            openAction: () => this.open(i.id)
+            current: ko.pureComputed(() => (this.detail() && this.detail().id === i.id ? 'true' : 'false')),
+            open: () => this.open(i.id)
           })));
-        }).catch(showError);
+        }).catch(showError).finally(() => this.listLoading(false));
       };
 
       const show = (detail) => {
@@ -116,10 +133,11 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             name: f.name,
             src: filesBase + f.position,
             alt: 'Screenshot ' + f.name,
+            label: 'Text on ' + f.name,
             text: text,
             hasText: f.extractedText !== null,
             save: () => api.put('workspaces/' + detail.workspaceId + '/issues/' + detail.id + '/files/' + f.position + '/text',
-              { text: text() }).then(show).catch(showError)
+              { text: text() }).then((d) => { show(d); toast.success('Saved. Analyze again to use it.'); }).catch(showError)
           };
         }));
         this.logFiles(detail.files.filter((f) => f.kind === 'LOG').map((f) => ({ name: f.name, href: filesBase + f.position })));
@@ -133,7 +151,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           this.resolution(detail.resolution || '');
           this.sharing(false);
         }
+        const finished = this.detail() && this.detail().id === detail.id && this.detail().status === 'ANALYZING' && detail.status !== 'ANALYZING';
         this.detail(detail);
+        if (finished) {
+          if (detail.status === 'FAILED') {
+            toast.error('The analysis failed. ' + (detail.message || ''));
+          } else {
+            toast.success('The diagnosis is ready.');
+          }
+        }
         clearTimeout(pollTimer);
         if (detail.status === 'ANALYZING') {
           pollTimer = setTimeout(() => this.open(detail.id), POLL_MS);
@@ -146,42 +172,41 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.submit = () => {
         const form = new FormData();
         [['title', this.newTitle()], ['description', this.newDescription()], ['logText', this.newLog()],
-          ['environment', this.newEnvironment() || '']].forEach((pair) => { if (pair[1]) { form.append(pair[0], pair[1]); } });
+          ['environment', this.newEnvironment()]].forEach((pair) => { if (pair[1]) { form.append(pair[0], pair[1]); } });
         this.chosenFiles().forEach((file) => form.append('files', file));
-        this.busy(true);
         api.upload('workspaces/' + this.workspaceId() + '/issues', form)
           .then((detail) => {
-            this.newTitle(''); this.newDescription(''); this.newLog(''); this.chosenFiles([]);
+            this.newTitle(''); this.newDescription(''); this.newLog(''); this.newEnvironment(''); this.chosenFiles([]);
             show(detail);
           })
-          .catch(showError)
-          .finally(() => this.busy(false));
+          .catch(showError);
       };
 
-      this.analyze = () => api.post(this.base() + '/analyze').then(show).catch(showError);
-      const outcome = (status) => api.post(this.base() + '/outcome', { status: status, resolution: this.resolution() })
-        .then(show).catch(showError);
-      this.markResolved = () => outcome('RESOLVED');
-      this.markNotResolved = () => outcome('NOT_RESOLVED');
-      this.markEscalated = () => outcome('ESCALATED');
-      this.draftSr = () => api.post(this.base() + '/sr-draft').then(show).catch(showError);
-      this.copyMessage = ko.observable('');
-      this.copySr = () => navigator.clipboard.writeText(this.detail().srDraft)
-        .then(() => this.copyMessage('Copied. Paste it into a new Service Request in My Oracle Support.'))
-        .catch(() => this.copyMessage('Copying is not allowed here; select the text and copy it.'));
-      this.remove = () => {
-        if (!window.confirm('Delete this issue with its files and analysis?')) {
-          return;
+      this.analyze = () => api.post(base() + '/analyze').then(show).catch(showError);
+      const outcome = (status, words) => api.post(base() + '/outcome', { status: status, resolution: this.resolution() })
+        .then((d) => { show(d); toast.success('Marked as ' + words + '.'); }).catch(showError);
+      this.markResolved = () => outcome('RESOLVED', 'resolved');
+      this.markNotResolved = () => outcome('NOT_RESOLVED', 'not resolved');
+      this.markEscalated = () => outcome('ESCALATED', 'escalated to Oracle');
+      this.draftSr = () => api.post(base() + '/sr-draft').then(show).catch(showError);
+      this.copySr = () => ui.copy(this.detail().srDraft)
+        .then(() => toast.success('Copied. Paste it into a new Service Request in My Oracle Support.'))
+        .catch(() => toast.error('Copying is not allowed here; select the text and copy it.'));
+      this.remove = () => dialog.confirm({
+        title: 'Delete this issue?', message: 'Its files, evidence and diagnosis are deleted. This cannot be undone.',
+        confirmLabel: 'Delete', danger: true
+      }).then((ok) => {
+        if (ok) {
+          api.del(base()).then(() => { this.detail(null); loadList(); toast.success('Issue deleted.'); }).catch(showError);
         }
-        api.del(this.base()).then(() => { this.detail(null); loadList(); }).catch(showError);
-      };
+      });
 
       // Sharing as product knowledge (leads)
-      this.categoryProvider = new ArrayDataProvider(CATEGORIES.map((c) => ({ value: c, label: label(c) })), { keyAttributes: 'value' });
+      this.categoryOptions = CATEGORIES.map((c) => ({ value: c, label: label(c) }));
       this.sharing = ko.observable(false);
       this.shareTitle = ko.observable('');
       this.shareComponent = ko.observable('');
-      this.shareCategory = ko.observable(null);
+      this.shareCategory = ko.observable('UNKNOWN');
       this.shareRootCause = ko.observable('');
       this.shareResolution = ko.observable('');
       this.canShare = ko.pureComputed(() => !!this.detail() && this.detail().status === 'RESOLVED' && this.canApprove()
@@ -196,24 +221,31 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         this.sharing(true);
       };
       this.cancelShare = () => this.sharing(false);
-      this.share = () => api.post(this.base() + '/share', {
+      this.share = () => api.post(base() + '/share', {
         title: this.shareTitle(), component: this.shareComponent(), category: this.shareCategory(),
         rootCause: this.shareRootCause(), resolution: this.shareResolution()
-      }).then(() => { this.sharing(false); loadKnowledge(); return this.open(this.detail().id); }).catch(showError);
+      }).then(() => {
+        this.sharing(false);
+        toast.success('Shared. Every workspace now uses this fix.');
+        loadKnowledge();
+        return this.open(this.detail().id);
+      }).catch(showError);
 
       this.knowledge = ko.observableArray([]);
-      this.knowledgeTitle = ko.pureComputed(() => 'Shared product knowledge (' + this.knowledge().length + ')');
       const loadKnowledge = () => api.get('issue-knowledge').then((list) => this.knowledge(list.map((k) => ({
         title: k.title,
         meta: label(k.category) + (k.component ? ' · ' + k.component : '') + (k.obdxVersion ? ' · OBDX ' + k.obdxVersion : '')
           + ' · shared by ' + k.sharedBy + ' on ' + new Date(k.sharedAt).toLocaleDateString(),
         text: 'Cause: ' + k.rootCause + ' Fixed by: ' + k.resolution,
         canWithdraw: k.canWithdraw,
-        withdraw: () => {
-          if (window.confirm('Withdraw "' + k.title + '" from shared knowledge?')) {
+        withdraw: () => dialog.confirm({
+          title: 'Withdraw this fix?', message: '"' + k.title + '" is no longer offered to other workspaces.',
+          confirmLabel: 'Withdraw', danger: true
+        }).then((ok) => {
+          if (ok) {
             api.del('issue-knowledge/' + k.id).then(loadKnowledge).catch(showError);
           }
-        }
+        })
       })))).catch(showError);
 
       let subscription = null;

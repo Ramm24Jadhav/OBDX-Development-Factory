@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<!--
+  Parity between each Oracle JET element and the premium element that replaces it: both in one real JET app (?jet=6 or
+  ?jet=21), each bound to its own Knockout observables. specs/parity.spec.ts drives both the same way and compares what
+  the screen's view model sees: values written back, events, methods and what is shown.
+-->
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>obdx-jet parity</title>
+  <link id="jetCss" rel="stylesheet" />
+  <link rel="stylesheet" href="../jet-premium/bx/bx.css" />
+  <style>
+    body { margin: 0; padding: 16px; font-family: system-ui, sans-serif; }
+    .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; }
+    .pair h2 { grid-column: 1 / -1; margin: 0; font-size: 14px; }
+  </style>
+</head>
+<body class="bx-theme">
+  <main id="parity">
+    <section class="pair" data-parity="text-field"><h2>oj-input-text · bx-text-field</h2>
+      <div data-side="jet"><oj-input-text id="jet-text-field" label-hint="Beneficiary name" value="{{jet.text}}" raw-value="{{jet.textRaw}}" required="true" valid="{{jet.textValid}}"></oj-input-text></div>
+      <div data-side="bx"><bx-text-field id="bx-text-field" label-hint="Beneficiary name" value="{{bx.text}}" raw-value="{{bx.textRaw}}" required="true" valid="{{bx.textValid}}"></bx-text-field></div>
+    </section>
+    <section class="pair" data-parity="amount"><h2>oj-input-number · bx-amount</h2>
+      <div data-side="jet"><oj-input-number id="jet-amount" label-hint="Amount" value="{{jet.amount}}" min="1" max="50000"></oj-input-number></div>
+      <div data-side="bx"><bx-amount id="bx-amount" label-hint="Amount" value="{{bx.amount}}" min="1" max="50000"></bx-amount></div>
+    </section>
+    <section class="pair" data-parity="select"><h2>oj-select-one · bx-select</h2>
+      <div data-side="jet"><oj-select-one id="jet-select" label-hint="From account" placeholder="Choose" value="{{jet.account}}"><oj-option value="S">Savings •••• 4521</oj-option><oj-option value="C">Current •••• 0187</oj-option></oj-select-one></div>
+      <div data-side="bx"><bx-select id="bx-select" label-hint="From account" placeholder="Choose" value="{{bx.account}}" options="[[accounts]]"></bx-select></div>
+    </section>
+    <section class="pair" data-parity="checkbox-group"><h2>oj-checkboxset · bx-checkbox-group</h2>
+      <div data-side="jet"><oj-checkboxset id="jet-checkbox-group" label-hint="Send alerts by" value="{{jet.alerts}}"><oj-option value="E">Email</oj-option><oj-option value="M">SMS</oj-option></oj-checkboxset></div>
+      <div data-side="bx"><bx-checkbox-group id="bx-checkbox-group" label-hint="Send alerts by" value="{{bx.alerts}}" options="[[channels]]"></bx-checkbox-group></div>
+    </section>
+    <section class="pair" data-parity="choice-group"><h2>oj-radioset · bx-choice-group</h2>
+      <div data-side="jet"><oj-radioset id="jet-choice-group" label-hint="Transfer speed" value="{{jet.speed}}"><oj-option value="N">NEFT</oj-option><oj-option value="I">IMPS</oj-option></oj-radioset></div>
+      <div data-side="bx"><bx-choice-group id="bx-choice-group" label-hint="Transfer speed" value="{{bx.speed}}" options="[[speeds]]"></bx-choice-group></div>
+    </section>
+    <section class="pair" data-parity="date"><h2>oj-input-date · bx-date</h2>
+      <div data-side="jet"><oj-input-date id="jet-date" label-hint="Pay on" value="{{jet.day}}"></oj-input-date></div>
+      <div data-side="bx"><bx-date id="bx-date" label-hint="Pay on" value="{{bx.day}}"></bx-date></div>
+    </section>
+    <section class="pair" data-parity="button"><h2>oj-button · bx-button</h2>
+      <div data-side="jet"><oj-button id="jet-button" on-oj-action="[[jet.press]]">Pay now</oj-button></div>
+      <div data-side="bx"><bx-button id="bx-button" label="Pay now" on-oj-action="[[bx.press]]"></bx-button></div>
+    </section>
+    <section class="pair" data-parity="icon-button"><h2>oj-button display="icons" · bx-icon-button</h2>
+      <div data-side="jet"><oj-button id="jet-icon-button" display="icons" on-oj-action="[[jet.pressIcon]]">More actions<span slot="startIcon" class="oj-fwk-icon oj-fwk-icon-caret-end"></span></oj-button></div>
+      <div data-side="bx"><bx-icon-button id="bx-icon-button" label="More actions" on-oj-action="[[bx.pressIcon]]"></bx-icon-button></div>
+    </section>
+    <section class="pair" data-parity="dialog"><h2>oj-dialog · bx-dialog</h2>
+      <div data-side="jet"><oj-dialog id="jet-dialog" dialog-title="Delete A. Sharma?" on-oj-close="[[jet.closed]]"><div slot="body">Payments will stop.</div></oj-dialog></div>
+      <div data-side="bx"><bx-dialog id="bx-dialog" dialog-title="Delete A. Sharma?" on-oj-close="[[bx.closed]]"><div slot="body">Payments will stop.</div></bx-dialog></div>
+    </section>
+    <section class="pair" data-parity="toast"><h2>oj-messages · bx-toast</h2>
+      <div data-side="jet"><oj-messages id="jet-toast" messages="[[messages]]" display="general"></oj-messages></div>
+      <div data-side="bx"><bx-toast id="bx-toast" messages="[[messages]]" display="general"></bx-toast></div>
+    </section>
+    <section class="pair" data-parity="tabs"><h2>oj-tab-bar · bx-tabs</h2>
+      <div data-side="jet"><oj-tab-bar id="jet-tabs" selection="{{jet.tab}}" aria-label="Accounts"><ul><li id="c"><a href="#">Current</a></li><li id="s"><a href="#">Savings</a></li><li id="d"><a href="#">Deposits</a></li></ul></oj-tab-bar></div>
+      <div data-side="bx"><bx-tabs id="bx-tabs" selection="{{bx.tab}}" label="Accounts" options="[[tabs]]"></bx-tabs></div>
+    </section>
+    <section class="pair" data-parity="data-grid"><h2>oj-table · bx-data-grid</h2>
+      <div data-side="jet"><oj-table id="jet-data-grid" aria-label="Recent transactions" data="[[rowsProvider]]" columns="[[columns]]" selection-mode='{"row": "multiple"}' selection="{{jet.rowsSelected}}"></oj-table></div>
+      <div data-side="bx"><bx-data-grid id="bx-data-grid" caption="Recent transactions" data="[[rowsProvider]]" columns="[[columns]]" key-attributes="id" selection-mode='{"row": "multiple"}'></bx-data-grid></div>
+    </section>
+    <section class="pair" data-parity="text-area"><h2>oj-text-area · bx-text-area</h2>
+      <div data-side="jet"><oj-text-area id="jet-text-area" label-hint="Remarks" value="{{jet.remarks}}"></oj-text-area></div>
+      <div data-side="bx"><bx-text-area id="bx-text-area" label-hint="Remarks" value="{{bx.remarks}}"></bx-text-area></div>
+    </section>
+    <section class="pair" data-parity="password"><h2>oj-input-password · bx-password</h2>
+      <div data-side="jet"><oj-input-password id="jet-password" label-hint="Password" value="{{jet.secret}}" required="true" valid="{{jet.secretValid}}"></oj-input-password></div>
+      <div data-side="bx"><bx-password id="bx-password" label-hint="Password" value="{{bx.secret}}" required="true" valid="{{bx.secretValid}}"></bx-password></div>
+    </section>
+    <section class="pair" data-parity="number-input"><h2>oj-input-number · bx-number-input</h2>
+      <div data-side="jet"><oj-input-number id="jet-number-input" label-hint="Cheque leaves" value="{{jet.copies}}" min="1" max="5" step="1"></oj-input-number></div>
+      <div data-side="bx"><bx-number-input id="bx-number-input" label-hint="Cheque leaves" value="{{bx.copies}}" min="1" max="5" step="1"></bx-number-input></div>
+    </section>
+    <section class="pair" data-parity="currency-picker"><h2>oj-select-one · bx-currency-picker</h2>
+      <div data-side="jet"><oj-select-one id="jet-currency-picker" label-hint="Currency" value="{{jet.currency}}"><oj-option value="INR">INR · Indian rupee</oj-option><oj-option value="EUR">EUR · Euro</oj-option><oj-option value="USD">USD · US dollar</oj-option></oj-select-one></div>
+      <div data-side="bx"><bx-currency-picker id="bx-currency-picker" label-hint="Currency" value="{{bx.currency}}"></bx-currency-picker></div>
+    </section>
+    <section class="pair" data-parity="multi-select"><h2>oj-select-many · bx-multi-select</h2>
+      <div data-side="jet"><oj-select-many id="jet-multi-select" label-hint="Accounts" value="{{jet.picked}}"><oj-option value="S">Savings •••• 4521</oj-option><oj-option value="C">Current •••• 0187</oj-option></oj-select-many></div>
+      <div data-side="bx"><bx-multi-select id="bx-multi-select" label-hint="Accounts" value="{{bx.picked}}" options="[[accounts]]"></bx-multi-select></div>
+    </section>
+    <section class="pair" data-parity="switch"><h2>oj-switch · bx-switch</h2>
+      <div data-side="jet"><oj-label for="jet-switch">Paperless statements</oj-label><oj-switch id="jet-switch" value="{{jet.paperless}}"></oj-switch></div>
+      <div data-side="bx"><bx-switch id="bx-switch" label-hint="Paperless statements" value="{{bx.paperless}}"></bx-switch></div>
+    </section>
+    <section class="pair" data-parity="date-range"><h2>two oj-input-date · bx-date-range</h2>
+      <div data-side="jet"><oj-input-date id="jet-date-from" label-hint="From" value="{{jet.from}}"></oj-input-date><oj-input-date id="jet-date-to" label-hint="To" value="{{jet.to}}"></oj-input-date></div>
+      <div data-side="bx"><bx-date-range id="bx-date-range" label-hint="Statement period" value="{{bx.period}}"></bx-date-range></div>
+    </section>
+    <section class="pair" data-parity="search"><h2>oj-input-text · bx-search</h2>
+      <div data-side="jet"><oj-input-text id="jet-search" label-hint="Search transactions" value="{{jet.query}}"></oj-input-text></div>
+      <div data-side="bx"><bx-search id="bx-search" label-hint="Search transactions" value="{{bx.query}}"></bx-search></div>
+    </section>
+    <section class="pair" data-parity="autocomplete"><h2>oj-combobox-one · bx-autocomplete</h2>
+      <div data-side="jet"><oj-combobox-one id="jet-autocomplete" label-hint="Payee" value="{{jet.payee}}"><oj-option value="P1">Asha Sharma</oj-option><oj-option value="P2">Ravi Kumar</oj-option><oj-option value="P3">Asha Patel</oj-option></oj-combobox-one></div>
+      <div data-side="bx"><bx-autocomplete id="bx-autocomplete" label-hint="Payee" value="{{bx.payee}}" options="[[payees]]"></bx-autocomplete></div>
+    </section>
+    <section class="pair" data-parity="document-upload"><h2>oj-file-picker · bx-document-upload</h2>
+      <div data-side="jet"><oj-file-picker id="jet-document-upload" accept='[".pdf"]' selection-mode="single" on-oj-select="[[jet.chose]]" on-oj-invalid-select="[[jet.refused]]"></oj-file-picker></div>
+      <div data-side="bx"><bx-document-upload id="bx-document-upload" label-hint="Proof of address" accept='[".pdf"]' selection-mode="single" on-oj-select="[[bx.chose]]" on-oj-invalid-select="[[bx.refused]]"></bx-document-upload></div>
+    </section>
+  </main>
+  <script>
+    var params = new URLSearchParams(location.search);
+    var jet = params.get('jet') === '21' ? 'jet21' : 'jet6';
+    var lib = jet + '/node_modules/';
+    document.getElementById('jetCss').href = lib + '@oracle/oraclejet/dist/css/' + (jet === 'jet6' ? 'alta/oj-alta-min.css' : 'redwood/oj-redwood-min.css');
+    var script = document.createElement('script');
+    script.src = lib + 'requirejs/require.js';
+    script.onload = function () {
+      var oj = lib + '@oracle/oraclejet/dist/js/libs/oj/debug';
+      requirejs.config({
+        baseUrl: '.',
+        paths: {
+          knockout: lib + 'knockout/build/output/knockout-latest.debug', jquery: lib + 'jquery/dist/jquery', 'jqueryui-amd': lib + 'jquery-ui/ui',
+          ojs: oj, ojL10n: oj + '/../ojL10n', ojtranslations: oj + '/../resources', text: lib + 'requirejs-text/text', css: lib + 'require-css/css',
+          signals: lib + 'signals/dist/signals', promise: lib + 'es6-promise/dist/es6-promise', hammerjs: lib + 'hammerjs/hammer', touchr: lib + '@oracle/oraclejet/dist/js/libs/touchr/touchr',
+          customElements: lib + '@webcomponents/custom-elements/custom-elements.min', ojdnd: lib + '@oracle/oraclejet/dist/js/libs/dnd-polyfill/dnd-polyfill-' + (jet === 'jet6' ? '1.0.0' : '1.0.2'),
+          preact: lib + 'preact/dist/preact.umd', 'preact/hooks': lib + 'preact/hooks/dist/hooks.umd', 'preact/compat': lib + 'preact/compat/dist/compat.umd',
+          '@oracle/oraclejet-preact': lib + '@oracle/oraclejet-preact/amd', 'preact/jsx-runtime': lib + 'preact/jsx-runtime/dist/jsxRuntime.umd',
+          bx: '../jet-premium/bx'
+        },
+        shim: { jquery: { exports: ['jQuery', '$'] } }
+      });
+      require(['knockout', 'ojs/ojcore', 'ojs/ojarraydataprovider', 'ojs/ojknockout', 'ojs/ojinputtext', 'ojs/ojinputnumber', 'ojs/ojselectcombobox', 'ojs/ojcheckboxset',
+               'ojs/ojradioset', 'ojs/ojdatetimepicker', 'ojs/ojbutton', 'ojs/ojdialog', 'ojs/ojmessages', 'ojs/ojnavigationlist', 'ojs/ojtable', 'ojs/ojswitch', 'ojs/ojlabel', 'ojs/ojfilepicker', 'bx/bx'],
+      function (ko, oj, ArrayDataProvider) {
+        var side = function () {
+          var s = { text: ko.observable(''), textRaw: ko.observable(''), textValid: ko.observable(''), amount: ko.observable(null), account: ko.observable(null),
+            alerts: ko.observableArray([]), speed: ko.observable(null), day: ko.observable(null), tab: ko.observable('c'), rowsSelected: ko.observable(null),
+            presses: 0, iconPresses: 0, closes: 0,
+            remarks: ko.observable(''), secret: ko.observable(''), secretValid: ko.observable(''), copies: ko.observable(null), currency: ko.observable(null),
+            picked: ko.observableArray([]), paperless: ko.observable(false), from: ko.observable(null), to: ko.observable(null), period: ko.observable({ from: '', to: '' }),
+            query: ko.observable(''), payee: ko.observable(null), files: [], refusals: 0 };
+          s.chose = function (event) { s.files = Array.prototype.map.call(event.detail.files, function (f) { return f.name; }); };
+          s.refused = function () { s.refusals += 1; };
+          s.press = function () { s.presses += 1; };
+          s.pressIcon = function () { s.iconPresses += 1; };
+          s.closed = function () { s.closes += 1; };
+          return s;
+        };
+        var rows = [{ id: 't1', date: '12 Nov', text: 'Electricity bill', amount: '-1,240.00' }, { id: 't2', date: '11 Nov', text: 'Salary', amount: '85,000.00' },
+          { id: 't3', date: '09 Nov', text: 'Card payment', amount: '-3,499.00' }];
+        var vm = {
+          jet: side(), bx: side(),
+          accounts: [{ value: 'S', label: 'Savings •••• 4521' }, { value: 'C', label: 'Current •••• 0187' }],
+          channels: [{ value: 'E', label: 'Email' }, { value: 'M', label: 'SMS' }],
+          speeds: [{ value: 'N', label: 'NEFT' }, { value: 'I', label: 'IMPS' }],
+          payees: [{ value: 'P1', label: 'Asha Sharma' }, { value: 'P2', label: 'Ravi Kumar' }, { value: 'P3', label: 'Asha Patel' }],
+          tabs: [{ id: 'c', label: 'Current' }, { id: 's', label: 'Savings' }, { id: 'd', label: 'Deposits' }],
+          messages: ko.observableArray([{ severity: 'error', summary: 'Payment failed', detail: 'The account is blocked.', autoTimeout: -1 },
+            { severity: 'confirmation', summary: 'Beneficiary added', autoTimeout: -1 }]),
+          rowsProvider: new ArrayDataProvider(rows, { keyAttributes: 'id' }),
+          columns: [{ headerText: 'Date', field: 'date' }, { headerText: 'Description', field: 'text' }, { headerText: 'Amount', field: 'amount' }]
+        };
+        // What each side's view model sees, for the spec to compare
+        window.parityState = function () {
+          var view = function (s) { return { text: s.text(), textRaw: s.textRaw(), textValid: s.textValid(), amount: s.amount(), account: s.account(), alerts: s.alerts().slice().sort(),
+            speed: s.speed(), day: s.day(), tab: s.tab(), presses: s.presses, iconPresses: s.iconPresses, closes: s.closes,
+            remarks: s.remarks(), secret: s.secret(), secretValid: s.secretValid(), copies: s.copies(), currency: s.currency(), picked: s.picked().slice().sort(),
+            paperless: s.paperless(), period: s === vm.jet ? { from: s.from() || '', to: s.to() || '' } : s.period(), query: s.query(), payee: s.payee(),
+            files: s.files, refusals: s.refusals }; };
+          return { jet: view(vm.jet), bx: view(vm.bx) };
+        };
+        var start = function () {
+          ko.applyBindings(vm, document.getElementById('parity'));
+          oj.Context.getPageContext().getBusyContext().whenReady().then(function () {
+            setTimeout(function () { document.body.setAttribute('data-parity-ready', oj.version); }, 200);
+          });
+        };
+        if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', start); } else { start(); }
+      });
+    };
+    document.head.appendChild(script);
+  </script>
+</body>
+</html>

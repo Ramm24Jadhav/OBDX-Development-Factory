@@ -84,7 +84,7 @@ class IssueFlowIntegrationTest {
                 }
 
                 @Override
-                public ChatResult describeImage(String prompt, byte[] image, String mimeType) {
+                public ChatResult chatJsonWithImage(String systemPrompt, String userPrompt, byte[] image, String mimeType) {
                     return new ChatResult("{\"errorText\": \"Transfer could not be completed\", \"screen\": \"Own Account Transfer\"}", "canned", 0);
                 }
 

@@ -155,6 +155,8 @@
         <targetPath>target-packs</targetPath>
         <excludes>
           <exclude>**/node_modules/**</exclude>
+          <!-- The packs' browser gates (galleries, screenshots, results) are for CI, not the server -->
+          <exclude>components/gates/**</exclude>
         </excludes>
       </resource>
       <!-- Helper scripts of the download, refreshed in place after an update (BundleFiles) -->

@@ -1,34 +1,107 @@
-<div class="oj-hybrid-padding">
-  <h1>About</h1>
-  <p>
-    OBDX Development Factory turns requirements (prompts, BRDs, FSDs) into code for a bank's existing
-    Oracle Banking Digital Experience application, using local or privately hosted AI models.
-  </p>
+<div class="factory-pg factory-ab-page factory-abt">
+  <div class="factory-rq-head">
+    <div class="factory-rq-title">
+      <h1>About</h1>
+      <p class="factory-rq-lead">The factory's version, its updates, the models in use and where to find help.</p>
+    </div>
+    <div class="factory-rq-headbar">
+      <button type="button" id="userGuideButton" class="fx-btn fx-btn--secondary" on-click="[[openDocs]]"><span class="factory-nav-icon factory-ico-doc factory-btn-icon" aria-hidden="true"></span>User guide</button>
+      <oj-bind-if test="[[canUpdate()]]">
+        <button type="button" id="checkUpdatesButton" :class="[[checking() ? 'fx-btn fx-btn--secondary is-loading' : 'fx-btn fx-btn--secondary']]" on-click="[[check]]"><span class="factory-nav-icon factory-ico-refresh factory-btn-icon" aria-hidden="true"></span>Check for updates</button>
+      </oj-bind-if>
+      <fx-menu-button id="abMoreButton" variant="ghost" icon="more" icon-only label="More actions" align="end" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
+    </div>
+  </div>
 
-  <h2>Version</h2>
-  <oj-bind-if test="[[status()]]">
-    <p id="versionText">
-      <oj-bind-text value="[[status().build === 'dev' ? 'Development build' : 'Build ' + status().build]]"></oj-bind-text>
-      <oj-bind-if test="[[status().builtAt]]">
-        <span class="oj-text-color-secondary">(<oj-bind-text value="[[builtAtText]]"></oj-bind-text>)</span>
-      </oj-bind-if>
-    </p>
-    <oj-bind-if test="[[status().enabled]]">
-      <p id="updateMessage"><oj-bind-text value="[[status().message]]"></oj-bind-text></p>
-      <oj-bind-if test="[[isAdmin()]]">
-        <div class="factory-actions">
-          <oj-button id="checkUpdatesButton" on-oj-action="[[check]]">Check for updates</oj-button>
-          <oj-bind-if test="[[status().state === 'AVAILABLE' || status().state === 'FAILED']]">
-            <oj-button id="aboutUpdateButton" chroming="callToAction" on-oj-action="[[install]]" disabled="[[!status().latestBuild]]">Update now</oj-button>
-          </oj-bind-if>
+  <!-- The one problem: an update to install, or one that failed -->
+  <oj-bind-if test="[[problem()]]">
+    <div :class="[[problem().css + ' factory-abt-problem']]" id="abProblem" role="status">
+      <span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+      <span class="factory-rqd-problemtext"><strong><oj-bind-text value="[[problem().lead]]"></oj-bind-text></strong><oj-bind-text value="[[' ' + problem().detail]]"></oj-bind-text></span>
+      <oj-bind-if test="[[problem().fix]]"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" :id="[[problem().fix.id || 'abProblemFix']]" on-click="[[problem().fix.run]]"><oj-bind-text value="[[problem().fix.label]]"></oj-bind-text></button></oj-bind-if>
+    </div>
+  </oj-bind-if>
+  <oj-bind-if test="[[updateMessage()]]"><p class="factory-rqd-next factory-abt-next" id="updateMessage" role="status"><oj-bind-text value="[[updateMessage]]"></oj-bind-text></p></oj-bind-if>
+
+  <!-- What the factory is -->
+  <section class="factory-ab-hero factory-abt-hero" id="ab-sec-overview" aria-label="OBDX Development Factory">
+    <div class="factory-ab-copy">
+      <div class="factory-ab-brand">
+        <span class="factory-brand-mark factory-ab-mark" aria-hidden="true"></span>
+        <div class="factory-ab-word"><strong>OBDX</strong><span>Development Factory</span><span class="factory-brand-ai">Powered by AI</span></div></div>
+      <p class="factory-ab-tag">AI-powered development for modern banking</p>
+      <p class="factory-abt-desc">Helps development teams design, generate and implement OBDX-based changes using AI, reusable patterns and bank-specific standards, with traceability from requirements to delivered code.</p>
+    </div>
+    <div class="factory-ab-art" aria-hidden="true">
+      <div class="factory-ab-chip factory-ab-chip-1"><span class="factory-ab-chip-ico factory-ab-chip-violet"><span class="factory-nav-icon factory-ico-target"></span></span><span>From Requirements<br/>to Code</span></div>
+      <div class="factory-ab-chip factory-ab-chip-4"><span class="factory-ab-chip-ico"><span class="factory-nav-icon factory-ico-sparkle"></span></span><span>AI-Powered<br/>Generation</span></div>
+      <div class="factory-ab-chip factory-ab-chip-2"><span class="factory-ab-chip-ico"><span class="factory-nav-icon factory-ico-cog"></span></span>OBDX Best Practices</div>
+      <div class="factory-ab-chip factory-ab-chip-3"><span class="factory-ab-chip-ico factory-ab-chip-dark"><span class="factory-nav-icon factory-ico-shield"></span></span>Secure &amp; Enterprise Ready</div>
+      <div class="factory-ab-laptop">
+        <div class="factory-ab-lid">
+          <div class="factory-ab-screen">
+            <div class="factory-ab-side"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="factory-ab-main">
+              <div class="factory-ab-bar"></div>
+              <div class="factory-ab-tiles"><i></i><i></i><i></i><i></i></div>
+              <div class="factory-ab-code"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            </div>
+          </div>
         </div>
-      </oj-bind-if>
-    </oj-bind-if>
-    <oj-bind-if test="[[!status().enabled]]">
-      <p class="oj-text-color-secondary">Updates are installed by the administrators of this factory.</p>
-    </oj-bind-if>
-  </oj-bind-if>
-  <oj-bind-if test="[[error()]]">
-    <p class="oj-text-color-danger"><oj-bind-text value="[[error]]"></oj-bind-text></p>
-  </oj-bind-if>
+        <div class="factory-ab-base"></div>
+      </div>
+      <div class="factory-ab-phone">
+        <div class="factory-ab-phone-head"><i></i><i></i></div>
+        <div class="factory-ab-phone-card"><i></i><b></b></div>
+        <div class="factory-ab-phone-list"><i></i><i></i><i></i></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- The answer: version, updates, models, workspaces -->
+  <section class="factory-adm-now factory-abt-now" id="versionText" aria-label="This factory">
+    <oj-bind-for-each data="[[cards]]" as="c">
+      <template><div class="fx-card factory-adm-card" :id="[[c.data.id]]">
+        <div class="factory-adm-cardtop"><span class="factory-adm-nowicon is-primary" aria-hidden="true"><span :class="[[c.data.iconClass]]"></span></span>
+          <span class="factory-adm-cardlabel"><oj-bind-text value="[[c.data.label]]"></oj-bind-text></span>
+          <oj-bind-if test="[[c.data.pill]]"><span :class="[[c.data.pill.css + ' factory-abt-pill']]"><span :class="[[c.data.pill.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[c.data.pill.text]]"></oj-bind-text></span></oj-bind-if></div>
+        <strong :class="[[c.data.valueCss]]" :title="[[c.data.value]]"><oj-bind-text value="[[c.data.value]]"></oj-bind-text></strong>
+        <span class="factory-adm-cardsub"><oj-bind-text value="[[c.data.sub]]"></oj-bind-text></span>
+      </div></template>
+    </oj-bind-for-each>
+  </section>
+
+  <div class="factory-abt-grid">
+    <section class="fx-card factory-acc-group" id="ab-sec-stack" aria-labelledby="abStackTitle">
+      <h2 id="abStackTitle">Built with</h2>
+      <ul class="factory-abt-list">
+        <oj-bind-for-each data="[[stack]]" as="r"><template><li><span :class="[[r.data.iconClass]]" aria-hidden="true"></span><span class="factory-abt-label"><oj-bind-text value="[[r.data.label]]"></oj-bind-text></span>
+          <span class="factory-abt-val"><oj-bind-text value="[[r.data.value]]"></oj-bind-text></span></li></template></oj-bind-for-each>
+      </ul>
+    </section>
+    <section class="fx-card factory-acc-group" aria-labelledby="abFeaturesTitle">
+      <h2 id="abFeaturesTitle">What it does</h2>
+      <ul class="factory-abt-features">
+        <oj-bind-for-each data="[[features]]" as="f"><template><li><span :class="[[f.data.css]]" aria-hidden="true"><span :class="[[f.data.iconClass]]"></span></span><oj-bind-text value="[[f.data.text]]"></oj-bind-text></li></template></oj-bind-for-each>
+      </ul>
+    </section>
+    <section class="fx-card factory-acc-group" id="ab-sec-support" aria-labelledby="abLinksTitle">
+      <h2 id="abLinksTitle">Links</h2>
+      <ul class="factory-abt-links">
+        <oj-bind-for-each data="[[links]]" as="l"><template><li><a :href="[[l.data.href]]" target="_blank" rel="noopener"><span :class="[[l.data.iconClass]]" aria-hidden="true"></span>
+          <span class="factory-abt-linktext"><oj-bind-text value="[[l.data.label]]"></oj-bind-text></span><span class="factory-abt-chev" aria-hidden="true">›</span></a></li></template></oj-bind-for-each>
+      </ul>
+      <p class="factory-acc-note">The documentation is in the factory's GitHub repository; sign in to GitHub if it is private.</p>
+    </section>
+    <section class="fx-card factory-acc-group" id="ab-sec-license" aria-labelledby="abLicenseTitle">
+      <h2 id="abLicenseTitle">License and support</h2>
+      <dl class="factory-adm-kv factory-abt-kv">
+        <oj-bind-for-each data="[[license]]" as="r"><template><div><dt><oj-bind-text value="[[r.data.label]]"></oj-bind-text></dt><dd><oj-bind-text value="[[r.data.value]]"></oj-bind-text></dd></div></template></oj-bind-for-each>
+      </dl>
+      <div class="factory-abt-btns">
+        <button type="button" id="licenseDetailsButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[openLicense]]" title="Opens the licensing notes in the architecture document">License details</button>
+        <button type="button" id="contactSupportButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[openSupport]]" title="Opens a new issue in the factory's GitHub repository">Contact support</button>
+      </div>
+    </section>
+  </div>
 </div>

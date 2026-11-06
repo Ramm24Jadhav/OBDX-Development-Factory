@@ -5,12 +5,17 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -35,6 +40,9 @@ public class AuditLog {
     }
 
     public void recordAs(String username, String action, UUID workspaceId, String target, String detail) {
+        // a detail can quote a server's error (SVN_TEST_FAILED), which can echo a password or key: never stored
+        // (the target names what was acted on, kept as it is so the audit can be searched by it)
+        detail = com.obdx.factory.common.KnownSecrets.masked(detail);
         jdbc.update("INSERT INTO audit_event (at, username, action, workspace_id, target, detail) VALUES (?, ?, ?, ?, ?, ?)",
                 Timestamp.from(Instant.now()), username, action, workspaceId,
                 target == null || target.length() <= 500 ? target : target.substring(0, 500), detail);
@@ -49,10 +57,46 @@ public class AuditLog {
         }
         args.add(Math.clamp(limit, 1, 1000));
         return jdbc.query("SELECT id, at, username, action, workspace_id, target, detail FROM audit_event " + where
-                        + "ORDER BY at DESC, id DESC LIMIT ?",
-                (rs, row) -> new Event(rs.getLong("id"), rs.getTimestamp("at").toInstant().atOffset(ZoneOffset.UTC),
-                        rs.getString("username"), rs.getString("action"), rs.getObject("workspace_id", UUID.class),
-                        rs.getString("target"), rs.getString("detail")),
-                args.toArray());
+                        + "ORDER BY at DESC, id DESC LIMIT ?", AuditLog::event, args.toArray());
+    }
+
+    /** Events of the given actions about any of the targets (a user's id or username), newest first, in every workspace. */
+    public List<Event> about(Collection<String> targets, Collection<String> actions, int limit) {
+        if (targets.isEmpty() || actions.isEmpty()) {
+            return List.of();
+        }
+        List<Object> args = new ArrayList<>(targets);
+        args.addAll(actions);
+        args.add(Math.clamp(limit, 1, 1000));
+        return jdbc.query("SELECT id, at, username, action, workspace_id, target, detail FROM audit_event WHERE target IN ("
+                        + String.join(", ", Collections.nCopies(targets.size(), "?")) + ") AND action IN ("
+                        + String.join(", ", Collections.nCopies(actions.size(), "?")) + ") ORDER BY at DESC, id DESC LIMIT ?",
+                AuditLog::event, args.toArray());
+    }
+
+    /** One workspace's events of the given actions, newest first. */
+    public List<Event> recent(UUID workspaceId, Collection<String> actions, int limit) {
+        if (actions.isEmpty()) {
+            return List.of();
+        }
+        List<Object> args = new ArrayList<>();
+        args.add(workspaceId);
+        args.addAll(actions);
+        args.add(Math.clamp(limit, 1, 1000));
+        return jdbc.query("SELECT id, at, username, action, workspace_id, target, detail FROM audit_event WHERE workspace_id = ? "
+                        + "AND action IN (" + String.join(", ", Collections.nCopies(actions.size(), "?")) + ") "
+                        + "ORDER BY at DESC, id DESC LIMIT ?", AuditLog::event, args.toArray());
+    }
+
+    /** The newest event of the action with exactly this detail, if any (for example the last LDAP sign-in). */
+    public Optional<Event> latest(String action, String detail) {
+        return jdbc.query("SELECT id, at, username, action, workspace_id, target, detail FROM audit_event WHERE action = ? AND detail = ? "
+                + "ORDER BY at DESC, id DESC LIMIT 1", AuditLog::event, action, detail).stream().findFirst();
+    }
+
+    private static Event event(ResultSet rs, int row) throws SQLException {
+        return new Event(rs.getLong("id"), rs.getTimestamp("at").toInstant().atOffset(ZoneOffset.UTC),
+                rs.getString("username"), rs.getString("action"), rs.getObject("workspace_id", UUID.class),
+                rs.getString("target"), rs.getString("detail"));
     }
 }

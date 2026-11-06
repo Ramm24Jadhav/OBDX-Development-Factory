@@ -20,7 +20,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Asks the models about an issue: the screenshot model reads screenshots, the chat model diagnoses the evidence. The
+ * Asks the chat model about an issue: it reads the screenshots, then diagnoses the evidence. The
  * diagnosis is checked before anyone sees it: known categories and states, evidence ids and files that were given to
  * the model, and "probable" only with evidence. Everything sent is masked first.
  */
@@ -87,9 +87,9 @@ public class IssueAnalyzer {
         this.modelGateway = modelGateway;
     }
 
-    /** The text the screenshot model reads from a screenshot, as "Label: value" lines. */
+    /** The text the chat model reads from a screenshot, as "Label: value" lines. */
     public String readScreenshot(byte[] image, String mimeType) {
-        String reply = modelGateway.describeImage(SCREENSHOT_PROMPT, image, mimeType).reply();
+        String reply = modelGateway.chatJsonWithImage(null, SCREENSHOT_PROMPT, image, mimeType).reply();
         return screenshotText(reply == null ? "" : reply);
     }
 

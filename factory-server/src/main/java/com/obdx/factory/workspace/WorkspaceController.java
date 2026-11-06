@@ -4,6 +4,10 @@ import java.util.Map;
 import com.obdx.factory.auth.WorkspaceRole.Permission;
 import com.obdx.factory.auth.AuditLog;
 import com.obdx.factory.auth.AccessGuard;
+import com.obdx.factory.auth.AppUser;
+import com.obdx.factory.svn.SvnException;
+import com.obdx.factory.svn.SvnUrls;
+import org.springframework.beans.factory.annotation.Value;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,14 +27,23 @@ import java.util.UUID;
 @RequestMapping("/api/workspaces")
 public class WorkspaceController {
 
+    public static final String SVN_TEST_PASSED = "SVN_TEST_PASSED";
+    public static final String SVN_TEST_FAILED = "SVN_TEST_FAILED";
+    /** A workspace's connection activity on the Integrations page (JenkinsController records the Jenkins tests). */
+    static final List<String> INTEGRATION_ACTIONS = List.of("WORKSPACE_CREATED", "SVN_SETTINGS_CHANGED", SVN_TEST_PASSED, SVN_TEST_FAILED,
+            "JENKINS_SETTINGS_CHANGED", "JENKINS_TEST_PASSED", "JENKINS_TEST_WARNING", "JENKINS_TEST_FAILED");
+
     private final WorkspaceService service;
     private final AccessGuard guard;
     private final AuditLog audit;
+    private final boolean localFolders;
 
-    public WorkspaceController(WorkspaceService service, AccessGuard guard, AuditLog audit) {
+    public WorkspaceController(WorkspaceService service, AccessGuard guard, AuditLog audit,
+                               @Value("${factory.local-folders.enabled:false}") boolean localFolders) {
         this.service = service;
         this.guard = guard;
         this.audit = audit;
+        this.localFolders = localFolders;
     }
 
     /** Administrators see every workspace; others see the workspaces they are members of. */
@@ -50,6 +63,9 @@ public class WorkspaceController {
     @ResponseStatus(HttpStatus.CREATED)
     public WorkspaceResponse create(@Valid @RequestBody WorkspaceRequest request) {
         guard.requireAdmin();
+        if (request.svnUrl() != null && !request.svnUrl().isBlank()) {
+            SvnUrls.check(request.svnUrl(), localFolders);
+        }
         WorkspaceResponse created = service.create(request);
         audit.record("WORKSPACE_CREATED", created.id(), created.name(), created.bankName() + ", OBDX " + created.obdxVersion());
         return created;
@@ -57,17 +73,38 @@ public class WorkspaceController {
 
     @PutMapping("/{id}/svn")
     public WorkspaceResponse updateSvnSettings(@PathVariable UUID id, @Valid @RequestBody SvnSettingsRequest request) {
-        guard.require(id, Permission.MANAGE_CODE);
+        AppUser user = guard.require(id, Permission.MANAGE_CODE);
+        // file:// reads the server's own folders: administrators only, where local folders are offered
+        SvnUrls.check(request.svnUrl(), user != null && user.isAdmin() && localFolders);
+        WorkspaceResponse before = service.get(id);
         WorkspaceResponse updated = service.updateSvnSettings(id, request);
+        boolean dropped = before != null && updated != null && before.svnPasswordSet() && request.svnPassword() == null && !updated.svnPasswordSet();
         audit.record("SVN_SETTINGS_CHANGED", id, request.svnUrl(),
-                "user " + request.svnUsername() + (request.svnPassword() != null ? ", password changed" : ""));
+                "user " + request.svnUsername() + (request.svnPassword() != null ? ", password changed" : "")
+                        + (dropped ? ", stored password removed because the URL points to another server" : ""));
         return updated;
     }
 
+    /** Each result is recorded (SVN_TEST_PASSED or SVN_TEST_FAILED), so the Integrations page can show the last one. */
     @PostMapping("/{id}/svn/test")
     public WorkspaceService.SvnConnectionResponse testSvnConnection(@PathVariable UUID id) {
         guard.require(id, Permission.MANAGE_CODE);
-        return service.testSvnConnection(id);
+        WorkspaceService.SvnConnectionResponse result;
+        try {
+            result = service.testSvnConnection(id);
+        } catch (SvnException e) {
+            audit.record(SVN_TEST_FAILED, id, null, e.getMessage());
+            throw e;
+        }
+        audit.record(SVN_TEST_PASSED, id, result.url(), "revision " + result.headRevision());
+        return result;
+    }
+
+    /** A workspace's SVN and Jenkins settings changes and connection tests, newest first. */
+    @GetMapping("/{id}/integrations/activity")
+    public List<AuditLog.Event> integrationActivity(@PathVariable UUID id) {
+        guard.require(id, Permission.VIEW);
+        return audit.recent(id, INTEGRATION_ACTIONS, 50);
     }
 
     @DeleteMapping("/{id}")

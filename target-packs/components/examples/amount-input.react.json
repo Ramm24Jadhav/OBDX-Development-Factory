@@ -1,0 +1,40 @@
+{
+  "id": "amount-input",
+  "name": "AmountInput",
+  "category": "foundation",
+  "technology": "react",
+  "package": { "name": "@bank/components-react", "version": "0.1.0" },
+  "componentVersion": "0.1.0",
+  "frameworkRange": "^19",
+  "properties": [
+    { "name": "testID", "type": "string", "required": true, "description": "Screen Model id, rendered as data-testid." },
+    { "name": "label", "type": "string", "required": true },
+    { "name": "value", "type": "string", "required": true, "description": "The amount as typed; the screen converts it." },
+    { "name": "currency", "type": "string", "default": "USD", "description": "ISO 4217 code; sets the decimals." },
+    { "name": "error", "type": "string" },
+    { "name": "required", "type": "boolean", "default": false },
+    { "name": "readOnly", "type": "boolean", "default": false }
+  ],
+  "events": [{ "name": "onChange", "payload": "string", "description": "Every edit, unformatted." }],
+  "validation": ["required", "decimals from the currency", "message from the screen's rules"],
+  "accessibility": {
+    "role": "textbox",
+    "keyboard": ["Tab to focus", "digits and the decimal separator"],
+    "screenReader": "Label, then the currency code, then the error when present."
+  },
+  "responsive": "Full width of its column; the currency code stays visible at 320 px.",
+  "theming": ["--bank-primary", "--bank-border", "--bank-danger-text", "--bank-radius"],
+  "banking": ["No business limits in the component: the screen's validation decides."],
+  "dependencies": [],
+  "examples": [
+    { "title": "Transfer amount", "code": "<AmountInput testID=\"amount\" label={t('transfer.amount')} currency=\"EUR\" value={form.amount} onChange={set('amount')} />" }
+  ],
+  "gates": {
+    "unit": { "status": "not-run" },
+    "accessibility": { "status": "not-run" },
+    "visual": { "status": "not-run" },
+    "themes": { "status": "not-run" },
+    "responsive": { "status": "not-run" },
+    "parity": { "status": "not-run" }
+  }
+}

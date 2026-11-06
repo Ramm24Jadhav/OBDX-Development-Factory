@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /** Choosing the model server on the Models page takes effect at once. Runs when FACTORY_TEST_DB_URL is set. */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "FACTORY_TEST_DB_URL", matches = ".+")
+@org.junit.jupiter.api.extension.ExtendWith(com.obdx.factory.common.ForgetSecrets.class)
 class ModelSettingsIntegrationTest {
 
     @DynamicPropertySource
@@ -44,6 +45,7 @@ class ModelSettingsIntegrationTest {
     private String base;
     private final AtomicReference<String> lastRequest = new AtomicReference<>();
     private final AtomicReference<String> lastAuthorization = new AtomicReference<>();
+    private final AtomicReference<String> lastEmbeddingAuthorization = new AtomicReference<>();
 
     @BeforeEach
     void start() throws IOException {
@@ -58,6 +60,13 @@ class ModelSettingsIntegrationTest {
                         """.formatted(name));
             });
         }
+        server.createContext("/e/v1/embeddings", exchange -> {
+            lastEmbeddingAuthorization.set(exchange.getRequestHeaders().getFirst("Authorization"));
+            respond(exchange, """
+                    {"object": "list", "model": "embed-e", "usage": {"prompt_tokens": 1, "total_tokens": 1},
+                     "data": [{"object": "embedding", "index": 0, "embedding": [0.5, 0.25, 0.125]}]}
+                    """);
+        });
         server.start();
         base = "http://127.0.0.1:" + server.getAddress().getPort();
     }
@@ -71,11 +80,11 @@ class ModelSettingsIntegrationTest {
 
     @Test
     void switchesServerAndModelsWithoutRestart() {
-        settings.save(new ModelSettings.Update(base + "/a/v1/", "", "chat-a", "embed-a", null), "tester");
+        settings.save(new ModelSettings.Update(base + "/a/v1/", "", "chat-a", "embed-a"), "tester");
         assertThat(gateway.chat(null, "hello").reply()).isEqualTo("server a");
         assertThat(lastRequest.get()).contains("\"chat-a\"");
 
-        settings.save(new ModelSettings.Update(base + "/b/v1", "secret-key-123", "chat-b", "embed-a", null), "tester");
+        settings.save(new ModelSettings.Update(base + "/b/v1", "secret-key-123", "chat-b", "embed-a"), "tester");
         assertThat(gateway.chat(null, "hello").reply()).isEqualTo("server b");
         assertThat(lastRequest.get()).contains("\"chat-b\"");
         assertThat(lastAuthorization.get()).isEqualTo("Bearer secret-key-123");
@@ -92,9 +101,32 @@ class ModelSettingsIntegrationTest {
 
     @Test
     void reportsWhenTheEmbeddingModelChanges() {
-        settings.save(new ModelSettings.Update(base + "/a/v1", "", "chat-a", "embed-a", null), "tester");
-        assertThat(settings.save(new ModelSettings.Update(base + "/b/v1", "", "chat-b", "embed-a", null), "tester")).isFalse();
-        assertThat(settings.save(new ModelSettings.Update(base + "/b/v1", "", "chat-b", "embed-b", null), "tester")).isTrue();
+        settings.save(new ModelSettings.Update(base + "/a/v1", "", "chat-a", "embed-a"), "tester");
+        assertThat(settings.save(new ModelSettings.Update(base + "/b/v1", "", "chat-b", "embed-a"), "tester")).isFalse();
+        assertThat(settings.save(new ModelSettings.Update(base + "/b/v1", "", "chat-b", "embed-b"), "tester")).isTrue();
+    }
+
+    @Test
+    void usesAnotherServerForCodeSearch() {
+        settings.save(new ModelSettings.Update(base + "/a/v1", "chat-key", "chat-a", "embed-e", base + "/e/v1/", "embed-key"), "tester");
+
+        assertThat(gateway.chat(null, "hello").reply()).isEqualTo("server a");
+        assertThat(lastAuthorization.get()).isEqualTo("Bearer chat-key");
+        assertThat(gateway.embed("search text")).containsExactly(0.5f, 0.25f, 0.125f);
+        assertThat(lastEmbeddingAuthorization.get()).isEqualTo("Bearer embed-key");
+
+        ModelSettings.Current current = settings.current();
+        assertThat(current.embeddingBaseUrl()).isEqualTo(base + "/e/v1");
+        assertThat(settings.storedKeyFor(base + "/e/v1")).isEqualTo("embed-key");
+        assertThat(jdbc.queryForObject("SELECT embedding_api_key FROM model_settings", String.class)).doesNotContain("embed-key");
+
+        // Back to one server with the same embedding model: the embeddings are kept
+        assertThat(settings.save(new ModelSettings.Update(base + "/a/v1", null, "chat-a", "embed-e"), "tester")).isFalse();
+        assertThat(settings.current().embeddingBaseUrl()).isNull();
+        assertThat(settings.current().apiKey()).as("null keeps the stored key").isEqualTo("chat-key");
+        // Naming the chat server as the code search server is the same as no separate server
+        assertThat(settings.save(new ModelSettings.Update(base + "/a/v1", null, "chat-a", "embed-e", base + "/a/v1", null), "tester")).isFalse();
+        assertThat(settings.current().embeddingBaseUrl()).isNull();
     }
 
     private static void respond(HttpExchange exchange, String body) throws IOException {

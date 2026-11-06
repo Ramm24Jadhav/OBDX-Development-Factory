@@ -1,0 +1,9 @@
+{
+  "name": "obdx-gates-jet6",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Oracle JET 6.2 (the release OBDX 22.1 ships), for the premium JET pack's browser gates and parity tests.",
+  "dependencies": {
+    "@oracle/oraclejet": "6.2.0"
+  }
+}

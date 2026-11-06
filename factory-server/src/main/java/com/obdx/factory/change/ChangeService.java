@@ -2,12 +2,16 @@ package com.obdx.factory.change;
 
 import com.obdx.factory.common.BadRequestException;
 import com.obdx.factory.common.ConflictException;
+import com.obdx.factory.common.Messages;
 import com.obdx.factory.common.NotFoundException;
+import com.obdx.factory.common.RequestText;
 import com.obdx.factory.design.DesignStore;
 import com.obdx.factory.design.ScreenDesign;
 import com.obdx.factory.design.ScreenDesignRepository;
 import com.obdx.factory.design.ScreenModel;
 import com.obdx.factory.importing.StorageProperties;
+import com.obdx.factory.knowledge.KnowledgeService;
+import com.obdx.factory.model.ModelLimitReachedException;
 import com.obdx.factory.pack.CheckScope;
 import com.obdx.factory.pack.LocalChecks;
 import com.obdx.factory.pack.PackService;
@@ -52,6 +56,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -87,6 +93,10 @@ public class ChangeService {
     private final TargetService targets;
     private final TargetPacks targetPacks;
     private final TaskExecutor executor;
+    private final KnowledgeService knowledge;
+    private final PlanReviewStore planReviews;
+    private final com.obdx.factory.importing.WorkingCopyLocks locks;
+    private final com.obdx.factory.auth.AuditLog audit;
 
     public ChangeService(ChangeRequestRepository changes, ChangeFileStore files, WorkspaceRepository workspaces,
                          WorkspaceService workspaceService, RequirementService requirements, ScreenDesignRepository designs,
@@ -94,7 +104,11 @@ public class ChangeService {
                          ImpactAnalyzer analyzer, CodeGenerator generator, SvnClient svn, StorageProperties storage,
                          ChangeProperties properties, JdbcTemplate jdbc, ObjectMapper json, ChangeBuildStore builds,
                          PackService packs, LocalChecks localChecks, RecipeService recipes, TargetService targets,
-                         TargetPacks targetPacks, @Qualifier("changeExecutor") TaskExecutor executor) {
+                         TargetPacks targetPacks, @Qualifier("changeExecutor") TaskExecutor executor, KnowledgeService knowledge,
+                         PlanReviewStore planReviews, com.obdx.factory.importing.WorkingCopyLocks locks,
+                         com.obdx.factory.auth.AuditLog audit) {
+        this.locks = locks;
+        this.audit = audit;
         this.changes = changes;
         this.files = files;
         this.workspaces = workspaces;
@@ -118,6 +132,8 @@ public class ChangeService {
         this.targets = targets;
         this.targetPacks = targetPacks;
         this.executor = executor;
+        this.knowledge = knowledge;
+        this.planReviews = planReviews;
     }
 
     public record FileView(String path, String action, String layer, String purpose, ChangeFileStore.Status status,
@@ -131,7 +147,11 @@ public class ChangeService {
                                OffsetDateTime createdAt, OffsetDateTime updatedAt, List<FileView> files,
                                String buildStatus, String buildMessage, List<ChangeBuildStore.Build> builds,
                                ChangeRequest.CloseReason closedReason, String closedBy, OffsetDateTime closedAt,
-                               Long branchDeletedRevision) {
+                               Long branchDeletedRevision, List<HistoryEvent> events) {
+    }
+
+    /** An event in the change's history: when, who, what ("Wrote x.js again", "Delivery failed: ..."). */
+    public record HistoryEvent(OffsetDateTime at, String by, String text) {
     }
 
     public record ChangeSummary(UUID id, String title, ChangeRequest.Status status, String message, int files,
@@ -156,6 +176,7 @@ public class ChangeService {
             throw new BadRequestException("Approve the screen designs first: " + String.join(", ", unapproved));
         }
         Workspace workspace = workspace(requirement.workspaceId());
+        locks.requireFree(workspace.getId());
         if (workspace.getIndexedRevision() == null) {
             throw new BadRequestException("Import the workspace's code first; the change is planned against it");
         }
@@ -168,52 +189,246 @@ public class ChangeService {
 
     @Transactional
     public ChangeDetail analyzeAgain(UUID id) {
+        return analyzeAgain(id, false);
+    }
+
+    /**
+     * @param fresh true: analyze afresh even when the model's limit stopped the plan part-way (by default such a plan is
+     *              continued, when the code and the spec are those it was made from)
+     */
+    @Transactional
+    public ChangeDetail analyzeAgain(UUID id, boolean fresh) {
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.PLAN_READY, ChangeRequest.Status.FAILED);
+        locks.requireFree(change.getWorkspaceId());
         change.status(ChangeRequest.Status.ANALYZING, "Analyzing the impact on the codebase...");
         changes.save(change);
-        startAfterCommit(() -> runAnalysis(id));
+        startAfterCommit(() -> runAnalysis(id, fresh));
         return detail(change);
     }
 
     void runAnalysis(UUID id) {
+        runAnalysis(id, false);
+    }
+
+    void runAnalysis(UUID id, boolean fresh) {
         ChangeRequest change = find(id);
         try {
             Workspace workspace = workspace(change.getWorkspaceId());
             RequirementService.RequirementDetail requirement = requirements.get(change.getRequirementId());
             ChangeContext context = context(change, requirement);
             List<ImpactAnalyzer.Candidate> candidates = candidates(workspace.getId(), requirement.spec());
-            ChangePlan plan = analyzer.analyze(context, candidates, existsIn(workspace.getId()));
-            change.plan(json.writeValueAsString(plan), workspace.getIndexedRevision());
+            String print = contextPrint(context);
+            // A plan the model's limit stopped part-way is completed: its files are kept and only the missing ones asked for
+            ChangePlan before = change.getPlan() == null ? null : plan(change);
+            String notResumed = fresh ? "a fresh analysis was asked for" : whyNotResumed(before, workspace.getIndexedRevision(), print);
+            boolean resumed = notResumed == null;
+            if (before != null) {
+                log.info(resumed ? "Change {}: continuing the incomplete plan ({} file(s) planned)" : "Change {}: analyzing afresh, not continuing "
+                        + "the plan: {}", id, resumed ? before.items().size() : notResumed);
+            }
+            ChangePlan analyzed = resumed ? analyzer.resume(context, candidates, existsIn(workspace.getId()), before)
+                    : analyzer.analyze(context, candidates, existsIn(workspace.getId()));
+            if (analyzed.incomplete() != null) {
+                // what a later continuation needs to be the same
+                analyzed = new ChangePlan(analyzed.summary(), analyzed.items(), analyzed.risks(),
+                        analyzed.incomplete().at(workspace.getIndexedRevision(), print));
+            }
+            ChangePlan plan = PlanReview.review(analyzed, requirement.spec(), servedPaths(workspace.getId()),
+                    sameNamed(workspace.getId(), analyzed), inApp(workspace.getId()));
+            String planJson = json.writeValueAsString(plan);
+            change.plan(planJson, workspace.getIndexedRevision());
+            int analyzedRevision = planReviews.record(id, planJson, PlanReviewStore.Origin.ANALYZED, "Impact analysis");
+            // a new analysis answers the requests for changes, also when it gives the same plan
+            planReviews.answerRequestsByAnalysis(id, analyzedRevision, "Impact analysis");
             long creates = plan.items().stream().filter(i -> "create".equals(i.action())).count();
+            String added = resumed ? " The incomplete plan was continued: " + Math.max(0, plan.items().size() - before.items().size())
+                    + " file(s) added to the " + before.items().size() + " planned before" + (ImpactAnalyzer.resumable(plan)
+                    ? "; the model's limit stopped it again, so files may still be missing." : ".") : "";
             change.status(ChangeRequest.Status.PLAN_READY, "Plan ready: " + plan.items().size() + " file(s), " + creates
-                    + " new and " + (plan.items().size() - creates) + " changed. Review and approve it to generate the code.");
-        } catch (RuntimeException e) {
+                    + " new and " + (plan.items().size() - creates) + " changed." + added + " Review and approve it to generate the code.");
+        } catch (RuntimeException | Error e) {
+            // An Error too (a stack overflow in a check): the change must not stay "analyzing"
             log.error("Impact analysis of change {} failed", id, e);
-            change.status(ChangeRequest.Status.FAILED, "Impact analysis failed: " + e.getMessage());
+            change.status(ChangeRequest.Status.FAILED, "Impact analysis failed: " + Messages.reason(e));
         }
         changes.save(change);
+    }
+
+    /**
+     * Whether Analyze again continues the plan rather than starting over: the model's limit stopped it part-way, and the
+     * code (its revision) and the approved spec and designs are those it was made from. Otherwise the files planned
+     * before may not fit, and the analysis starts afresh.
+     */
+    static boolean resumes(ChangePlan before, Long indexedRevision, String contextPrint) {
+        return whyNotResumed(before, indexedRevision, contextPrint) == null;
+    }
+
+    /** Why Analyze again does not continue the plan (see {@link #resumes}), in plain words for the log; null when it does. */
+    static String whyNotResumed(ChangePlan before, Long indexedRevision, String contextPrint) {
+        if (before == null || before.items() == null || before.items().isEmpty()) {
+            return "there is no plan to continue";
+        }
+        if (before.incomplete() == null) {
+            return "the plan has no record of being incomplete";
+        }
+        if (!ImpactAnalyzer.resumable(before)) {
+            return "the plan is incomplete for another reason than the model's limit (" + before.incomplete().kind() + ")";
+        }
+        if (before.incomplete().revision() == null) {
+            return "the plan was stored by an earlier version, which did not record what it was made from";
+        }
+        if (!before.incomplete().revision().equals(indexedRevision)) {
+            return "the code revision changed (planned at r" + before.incomplete().revision() + ", now r" + indexedRevision + ")";
+        }
+        if (!contextPrint.equals(before.incomplete().context())) {
+            return "the spec or the screen designs changed since the plan was made";
+        }
+        return null;
+    }
+
+    /**
+     * Gives the plans stored before the server kept the record of an incomplete plan (see ChangePlan#incomplete) the
+     * record their server-written risk stands for, once, at startup: an unapproved plan whose latest revision is the
+     * impact analysis's own (never an edit), with the risk the analysis wrote (see ImpactAnalyzer.legacyRecord). The
+     * plan then asks for the confirmation of an incomplete plan when approved, shows as incomplete, and an edit keeps
+     * the record. It is not continued by Analyze again: what it was made from was not recorded (see whyNotResumed). A
+     * plan stored by this version never needs it (a model's answer or an edit cannot carry such a risk, see PlanParser),
+     * so a plan once upgraded or stored since is left alone.
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void upgradeLegacyPlans() {
+        try {
+            upgradeLegacy();
+        } catch (RuntimeException e) {
+            // The factory starts all the same; such a plan stays as it was
+            log.warn("Could not record the plans of an earlier version as incomplete", e);
+        }
+    }
+
+    private void upgradeLegacy() {
+        List<Map<String, Object>> rows = jdbc.queryForList("SELECT c.id, c.plan::text AS plan, (SELECT v.origin FROM change_plan_revision v "
+                + "WHERE v.change_id = c.id ORDER BY v.revision DESC LIMIT 1) AS origin, (SELECT MAX(v.revision) FROM change_plan_revision v "
+                + "WHERE v.change_id = c.id) AS revision FROM change_request c WHERE c.plan IS NOT NULL AND c.plan_approved_at IS NULL "
+                + "AND c.plan->>'incomplete' IS NULL");
+        int upgraded = 0;
+        for (Map<String, Object> row : rows) {
+            ChangePlan stored;
+            try {
+                stored = json.readValue((String) row.get("plan"), ChangePlan.class);
+            } catch (RuntimeException e) {
+                continue;
+            }
+            ChangePlan.Incomplete record = ImpactAnalyzer.legacyRecord(stored, (String) row.get("origin"));
+            if (record == null) {
+                continue;
+            }
+            String planJson = json.writeValueAsString(new ChangePlan(stored.summary(), stored.items(), stored.risks(), record));
+            // (only while the plan is still the one read)
+            if (jdbc.update("UPDATE change_request SET plan = ?::jsonb WHERE id = ? AND plan = ?::jsonb", planJson, row.get("id"),
+                    row.get("plan")) == 1) {
+                jdbc.update("UPDATE change_plan_revision SET plan = ?::jsonb WHERE change_id = ? AND revision = ?", planJson, row.get("id"),
+                        row.get("revision"));
+                upgraded++;
+            }
+        }
+        if (upgraded > 0) {
+            log.info("Recorded {} plan(s) stored by an earlier version as incomplete, as their risks said", upgraded);
+        }
+    }
+
+    /** A fingerprint of what a plan is made from: the spec and the designs as the model gets them. */
+    static String contextPrint(ChangeContext context) {
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            digest.update(String.valueOf(context.specJson()).getBytes(StandardCharsets.UTF_8));
+            digest.update((byte) 0);
+            digest.update(String.valueOf(context.designsJson()).getBytes(StandardCharsets.UTF_8));
+            return java.util.HexFormat.of().formatHex(digest.digest());
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** Whether a file is in the workspace's React or React Native app (see PlanReview's shell risk). */
+    private Predicate<String> inApp(UUID workspaceId) {
+        CheckScope scope = packs.scope(workspaceId);
+        return scope::inApp;
     }
 
     // --- plan review ---
 
     @Transactional
-    public ChangeDetail updatePlan(UUID id, String planJson) {
+    public ChangeDetail updatePlan(UUID id, String planJson, String by) {
+        lockForPlan(id);
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.PLAN_READY);
-        ChangePlan plan = PlanParser.parse(planJson, existsIn(change.getWorkspaceId()), properties.maxPlanItems());
-        change.plan(json.writeValueAsString(plan), change.getBaseRevision());
+        ChangePlan parsed = PlanParser.parse(planJson, existsIn(change.getWorkspaceId()), properties.maxPlanItems());
+        ChangePlan previous = change.getPlan() == null ? null : plan(change);
+        ChangePlan carried = carryIncomplete(previous, parsed);
+        ChangePlan plan = PlanReview.review(carried, requirements.get(change.getRequirementId()).spec(), servedPaths(change.getWorkspaceId()),
+                sameNamed(change.getWorkspaceId(), carried), inApp(change.getWorkspaceId()));
+        String edited = json.writeValueAsString(plan);
+        change.plan(edited, change.getBaseRevision());
+        int editedRevision = planReviews.record(id, edited, PlanReviewStore.Origin.EDITED, by);
+        // a saved edit answers the requests made on another plan; saving the plan unchanged answers none
+        planReviews.answerRequestsByEdit(id, edited, editedRevision, by);
         change.status(ChangeRequest.Status.PLAN_READY, "Plan edited: " + plan.items().size() + " file(s).");
         return detail(changes.save(change));
+    }
+
+    /**
+     * An edited plan keeps what the server recorded about the plan before it: whether files may be missing (an edit
+     * cannot say so or take it away, see PlanParser), with its risk, whatever the edit changes. Only Analyze again
+     * clears it; until then the approver confirms the plan as incomplete, even when the edit added the missing files
+     * (an edit that adds a file and a later one that takes it out again must not make it complete).
+     */
+    static ChangePlan carryIncomplete(ChangePlan previous, ChangePlan edited) {
+        if (previous == null || previous.incomplete() == null) {
+            return edited;
+        }
+        ChangePlan.Incomplete record = previous.incomplete();
+        // "No test is planned yet" is no longer true once the edit adds a test
+        if (record.risk() != null && record.risk().endsWith(ImpactAnalyzer.TESTS_MISSING)
+                && edited.items().stream().anyMatch(i -> "test".equals(i.layer()) || PlanReview.isTest(i.path()))) {
+            record = new ChangePlan.Incomplete(record.kind(), record.risk().substring(0, record.risk().length()
+                    - ImpactAnalyzer.TESTS_MISSING.length()), record.revision(), record.context());
+        }
+        List<String> risks = new ArrayList<>(edited.risks() == null ? List.of() : edited.risks());
+        risks.add(0, record.risk());
+        return new ChangePlan(edited.summary(), edited.items(), risks, record);
     }
 
     /** Approves the plan and starts writing the code in the background. */
     @Transactional
     public ChangeDetail approvePlan(UUID id, String by) {
+        return approvePlan(id, by, false, null);
+    }
+
+    /**
+     * @param incomplete true: the reviewer confirmed approving a plan that may be missing files (see
+     *                   {@link ChangePlan#incomplete()}); without it such a plan is refused with what looks missing
+     * @param revision   the plan revision the reviewer confirmed (named in the refusal): a plan changed since is refused
+     *                   again, so a confirmation never approves a plan the reviewer did not see
+     */
+    @Transactional
+    public ChangeDetail approvePlan(UUID id, String by, boolean incomplete, Integer revision) {
+        lockForPlan(id);
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.PLAN_READY);
+        locks.requireFree(change.getWorkspaceId());
         ChangePlan plan = plan(change);
+        Integer latest = planReviews.latest(id);
+        // A request for changes holds the plan: the revision it was made on is not approved, confirmed or not
+        // (edits and analyses record a new revision, so the latest one is the plan as it is)
+        if (latest != null && planReviews.changesRequested(id, latest)) {
+            throw new ConflictException(CHANGES_REQUESTED);
+        }
+        if (!incomplete || !java.util.Objects.equals(revision, latest)) {
+            requireCompletePlan(plan, requirements.get(change.getRequirementId()).spec(), latest, incomplete);
+        }
         change.approvePlan(by);
+        planReviews.comment(id, planReviews.record(id, change.getPlan(), PlanReviewStore.Origin.EDITED, by), PlanReviewStore.Kind.APPROVED, by, "");
         files.replaceAll(id, plan.items());
         change.status(ChangeRequest.Status.GENERATING, "Writing " + plan.items().size() + " file(s)...");
         changes.save(change);
@@ -221,11 +436,104 @@ public class ChangeService {
         return detail(change);
     }
 
+    /**
+     * Holds the change's row until the transaction ends (SELECT ... FOR UPDATE), before the change and its latest plan
+     * revision are read: an edit and an approval of the same plan then run one after the other, so an approval never
+     * approves a plan edited after it read the revision, and two edits never take the same revision number.
+     */
+    private void lockForPlan(UUID id) {
+        List<UUID> locked = jdbc.queryForList("SELECT id FROM change_request WHERE id = ? FOR UPDATE", UUID.class, id);
+        if (locked.isEmpty()) {
+            throw new NotFoundException("Change not found: " + id);
+        }
+    }
+
+    /** Why a plan with a request for changes on its revision is not approved. */
+    static final String CHANGES_REQUESTED = "Changes were requested on this revision of the plan: edit it or analyze again first.";
+
+    /** How a refused approval of an incomplete plan starts, so the UI can ask the reviewer to confirm it. */
+    static final String INCOMPLETE_PLAN = "Incomplete plan: ";
+    /** How the refusal names the plan revision to confirm ("revision 3 of the plan"), for the UI to send back. */
+    static final String REVISION_NAMED = "revision ";
+
+    static void requireCompletePlan(ChangePlan plan, RequirementSpec spec) {
+        requireCompletePlan(plan, spec, null, false);
+    }
+
+    /**
+     * Refuses a plan the server marked incomplete (see {@link ChangePlan#incomplete()}; never by a risk's text, which a
+     * model or an edit could write), naming the plan revision and what looks missing as far as the plan and the spec
+     * tell (see {@link PlanReview#gaps}).
+     *
+     * @param confirmed the reviewer confirmed an incomplete plan, but another revision than the latest
+     */
+    static void requireCompletePlan(ChangePlan plan, RequirementSpec spec, Integer revision, boolean confirmed) {
+        if (plan.incomplete() == null) {
+            return;
+        }
+        List<String> gaps = PlanReview.gaps(plan, spec);
+        throw new ConflictException(INCOMPLETE_PLAN + (confirmed ? "the plan changed since you confirmed it. " : "")
+                + (revision == null ? "the plan" : REVISION_NAMED + revision + " of the plan") + " may be missing files ("
+                + plan.items().size() + " planned): the analysis stopped before it was complete. " + (gaps.isEmpty()
+                ? "The factory cannot tell which ones." : "Missing as far as the factory can tell: " + String.join("; ", gaps) + ".")
+                + " Analyze again to plan the rest, add them by editing the plan, or approve it as it is.");
+    }
+
+    /** The plan's revisions and what reviewers said about them. */
+    @Transactional(readOnly = true)
+    public PlanReviewStore.Review planReview(UUID id) {
+        find(id);
+        return planReviews.review(id);
+    }
+
+    /**
+     * A comment on the current plan, or a request for changes (with its reason) while the plan waits for approval. A
+     * request for changes does not change the status: the plan stays unapproved, so no code is generated, until it is
+     * edited or analyzed again and approved.
+     */
+    @Transactional
+    public PlanReviewStore.Comment commentOnPlan(UUID id, PlanReviewStore.Kind kind, String text, String by) {
+        ChangeRequest change = find(id);
+        String body = text == null ? "" : text.strip();
+        if (kind == PlanReviewStore.Kind.APPROVED) {
+            throw new BadRequestException("Approve the plan with Approve Plan.");
+        }
+        if (body.isEmpty()) {
+            throw new BadRequestException(kind == PlanReviewStore.Kind.CHANGES_REQUESTED
+                    ? "Say what has to change in the plan." : "Write the comment first.");
+        }
+        if (body.length() > 4000) {
+            throw new BadRequestException("Keep the comment under 4,000 characters.");
+        }
+        if (kind == PlanReviewStore.Kind.CHANGES_REQUESTED) {
+            requireStatus(change, ChangeRequest.Status.PLAN_READY);
+        }
+        return planReviews.comment(id, planReviews.latest(id), kind, by, body);
+    }
+
     // --- generation ---
 
     /** Writes all pending files, or only onlyPath (with the reviewer's note) when given. */
     void runGeneration(UUID id, String onlyPath, String note) {
+        runGeneration(id, onlyPath, note, false);
+    }
+
+    /**
+     * @param resume write only the files not written yet (after generation stopped at the model's limit), keeping the
+     *               others as they are
+     */
+    void runGeneration(UUID id, String onlyPath, String note, boolean resume) {
+        runGeneration(id, onlyPath, note, resume, null);
+    }
+
+    /** @param by who asked to write onlyPath again (for the audit log of its outcome) */
+    void runGeneration(UUID id, String onlyPath, String note, boolean resume, String by) {
         ChangeRequest change = find(id);
+        String outcome = null;
+        String failedAgain = null;
+        String writing = null;
+        Set<String> writtenNow = new LinkedHashSet<>();
+        List<String> rejected = new ArrayList<>();
         try {
             Workspace workspace = workspace(change.getWorkspaceId());
             RequirementService.RequirementDetail requirement = requirements.get(change.getRequirementId());
@@ -233,7 +541,9 @@ public class ChangeService {
             ChangePlan plan = plan(change);
             Path workingCopy = storage.workingCopy(workspace.getId());
             String revisionNote = "";
-            if (onlyPath == null) {
+            // A resumed generation keeps the base the files already written were read at (Continue refuses when the code
+            // moved on since)
+            if (onlyPath == null && !resume) {
                 if (change.getBaseRevision() != null && !change.getBaseRevision().equals(workspace.getIndexedRevision())) {
                     revisionNote = " The code was updated since the analysis (r" + change.getBaseRevision() + " to r"
                             + workspace.getIndexedRevision() + "); files were read at r" + workspace.getIndexedRevision() + ".";
@@ -244,59 +554,718 @@ public class ChangeService {
 
             Map<String, String> earlier = new LinkedHashMap<>();
             for (ChangeFileStore.ChangeFile existing : files.files(id)) {
-                if (existing.generated() != null && !existing.path().equals(onlyPath)) {
+                if (existing.generated() != null && !existing.path().equals(onlyPath) && !partial(existing)) {
                     earlier.put(existing.path(), existing.generated());
                 }
             }
-            for (ChangePlan.Item item : plan.items()) {
-                if (onlyPath != null && !item.path().equals(onlyPath)) {
+            Set<String> toWrite = resume ? continued(files.files(id)) : null;
+            for (int i = 0; i < plan.items().size(); i++) {
+                ChangePlan.Item item = plan.items().get(i);
+                if ((onlyPath != null && !item.path().equals(onlyPath)) || (toWrite != null && !toWrite.contains(item.path()))) {
                     continue;
                 }
-                generateFile(id, workspace.getId(), context, plan, item, workingCopy, earlier, note);
+                if (onlyPath == null) {
+                    change.status(ChangeRequest.Status.GENERATING, "Writing file " + (i + 1) + " of " + plan.items().size() + ": " + item.path());
+                    change = changes.save(change);
+                }
+                String fileNote = note;
+                if (onlyPath != null) {
+                    String fixes = files.file(id, item.path()).map(f -> crossFileFixes(f.checkMessage())).orElse("");
+                    fileNote = fixes.isEmpty() ? note : note == null || note.isBlank() ? fixes : note + "\n\n" + fixes;
+                }
+                // Continue and Write again go on from the part of a file (or of its rewrite) the limit stopped, instead of writing it all again
+                // (Write again with a reviewer's note starts afresh: the kept part was written without it)
+                boolean resumes = resume || onlyPath != null && (note == null || note.isBlank());
+                Kept partial = resumes ? files.file(id, item.path()).map(kept -> resumable(files, id, kept)).orElse(null) : null;
+                writing = item.path();
+                writtenNow.add(item.path());
+                String error = generateFile(id, workspace.getId(), context, plan, item, workingCopy, earlier, fileNote, partial,
+                        onlyPath != null);
+                if (onlyPath == null && error != null && error.startsWith(REJECTED)) {
+                    rejected.add(item.path());
+                }
+                if (onlyPath != null) {
+                    failedAgain = error;
+                }
             }
 
+            Map<String, String> unfit = crossCheck(id, workspace.getId());
+            String fixesStopped = "";
+            // (also when Continue finished the files the model's limit stopped: the run it stopped fixed none of them)
+            // Write again too: the reviewer asked for that file to be written again, so fixing what the checks find in it is
+            // asked for as well (once, as for any file written now; a failed Write again keeps the earlier version unfixed)
+            List<String> toFit = properties.fixAttempts() > 0
+                    ? toFit(unfit, fitNow(onlyPath, failedAgain, writtenNow), files.files(id), resume && onlyPath == null) : List.of();
+            if (!toFit.isEmpty()) {
+                // Certain errors only the other files show (a method the called class lacks): each file written now is fixed once
+                CheckScope scope = packs.scope(workspace.getId());
+                writing = null;
+                for (int k = 0; k < toFit.size(); k++) {
+                    String path = toFit.get(k);
+                    ChangePlan.Item item = plan.items().stream().filter(i -> i.path().equals(path)).findFirst().orElse(null);
+                    if (item == null) {
+                        continue;
+                    }
+                    change.status(ChangeRequest.Status.GENERATING, "Fixing " + item.path() + ", which does not fit the other files");
+                    change = changes.save(change);
+                    try {
+                        fitToOthers(files, generator, localChecks, scope, id, context, plan, item, fitNote(unfit.get(path), onlyPath, note),
+                                scaffold(context, path, files.file(id, path).map(ChangeFileStore.ChangeFile::original).orElse(null)));
+                    } catch (ModelLimitReachedException e) {
+                        // Every file is written; only these fixes wait for the model
+                        log.warn("Fixing the files of change {} by the other files stopped at the model's limit: {}", id, e.getMessage());
+                        fixesStopped = fixesStopped(toFit.subList(k, toFit.size()), e);
+                        files.markFitDue(id, toFit.subList(k, toFit.size()));
+                        break;
+                    }
+                }
+                crossCheck(id, workspace.getId());
+            }
+            // Says whether a version is still there: a file that had none has none after a failed Write again
+            boolean versionKept = onlyPath != null && files.file(id, onlyPath).map(f -> f.generated() != null && !partial(f)).orElse(false);
+            String said = onlyPath == null ? ""
+                    : CUT_OFF_FIRST.equals(failedAgain) ? onlyPath + " was cut off at the model's output limit: the part written is kept, "
+                    + "and Continue generation (or Write again) goes on from it. "
+                    : failedAgain != null ? "Writing " + onlyPath + " again failed (" + failedAgain + "); "
+                    + (versionKept ? "the previous version is kept. " : "it is not written yet. ")
+                    : onlyPath + " written again. ";
+            outcome = onlyPath == null ? null : CUT_OFF_FIRST.equals(failedAgain) ? "cut off at the output limit, the part written is kept"
+                    : failedAgain != null ? (versionKept ? "kept the previous version: " : "not written: ") + failedAgain : "written again";
+            String keptNote = rejected.isEmpty() ? "" : " The earlier version of " + String.join(", ", rejected) + " is kept: the version "
+                    + "written now failed its checks.";
+            change.status(ChangeRequest.Status.GENERATED, said + summary(files.files(id)) + revisionNote + fixesStopped + keptNote);
+        } catch (ModelLimitReachedException e) {
+            // Every further file would fail the same way: stop, and leave the rest to Continue generation
+            log.warn("Code generation for change {} stopped at the model's limit: {}", id, e.getMessage());
+            if (onlyPath == null) {
+                // The files this run wrote get their fix by the cross-check when Continue finishes the rest
+                files.markFitDue(id, writtenNow);
+            }
+            try {
+                crossCheck(id, change.getWorkspaceId());
+            } catch (RuntimeException | StackOverflowError checkFailed) {
+                // The change must not stay "generating" because a check could not run
+                log.warn("Cross-file checks of change {} failed", id, checkFailed);
+            }
             List<ChangeFileStore.ChangeFile> result = files.files(id);
-            long failed = result.stream().filter(f -> f.status() == ChangeFileStore.Status.FAILED
-                    || f.checkStatus() == FileChecks.Status.FAILED).count();
-            long warnings = result.stream().filter(f -> f.checkStatus() == FileChecks.Status.WARNING).count();
-            long written = result.stream().filter(f -> f.status() == ChangeFileStore.Status.GENERATED).count();
-            change.status(ChangeRequest.Status.GENERATED, (onlyPath != null ? onlyPath + " written again. " : "")
-                    + written + " file(s) written, " + failed + " with problems, " + warnings + " with warnings. "
-                    + "Review the changes before delivering them." + revisionNote);
-        } catch (RuntimeException e) {
+            long written = result.stream().filter(f -> f.status() == ChangeFileStore.Status.GENERATED
+                    || f.status() == ChangeFileStore.Status.UNCHANGED).count();
+            String kept = e instanceof CodeGenerator.Partial p && p.check() == null ? writing : null;
+            change.status(ChangeRequest.Status.GENERATED, stoppedMessage(e, onlyPath, written, result.size(), kept));
+            outcome = "kept the previous version: " + limitReason(e);
+        } catch (RuntimeException | Error e) {
+            // An Error too (a stack overflow in a check): the change must not stay "generating"
             log.error("Code generation for change {} failed", id, e);
-            change.status(onlyPath != null ? ChangeRequest.Status.GENERATED : ChangeRequest.Status.FAILED,
-                    "Code generation failed: " + e.getMessage());
+            // Writing one file again, or the rest of them, leaves the files already written to review
+            change.status(onlyPath != null || resume ? ChangeRequest.Status.GENERATED : ChangeRequest.Status.FAILED,
+                    "Code generation failed: " + Messages.reason(e));
+            outcome = "failed: " + Messages.reason(e);
         }
         changes.save(change);
+        if (onlyPath != null) {
+            // What came of the Write again, in the audit log and the change's history
+            try {
+                audit.recordAs(by, ChangeController.WRITTEN_AGAIN, change.getWorkspaceId(), id.toString(), onlyPath
+                        + (note == null || note.isBlank() ? "" : " (with a note)") + ": " + (outcome == null ? "written again" : outcome));
+            } catch (RuntimeException e) {
+                log.warn("Could not record writing {} again in change {}", onlyPath, id, e);
+            }
+        }
     }
 
-    private void generateFile(UUID changeId, UUID workspaceId, ChangeContext context, ChangePlan plan, ChangePlan.Item item,
-                              Path workingCopy, Map<String, String> earlier, String note) {
+    /** What the change says when the model's limit stopped the cross-check fixes: every file is written, these were not fixed. */
+    static String fixesStopped(List<String> skipped, RuntimeException limit) {
+        return " The model's limit (" + Messages.reason(limit) + ") stopped the fixes of what the cross-checks found; not fixed: "
+                + String.join(", ", skipped) + ". Every file is written: Write again a file to fix it.";
+    }
+
+    /**
+     * The files a generation may fix by what the cross-check found: those it wrote; for Write again (onlyPath) that one
+     * file, unless writing it failed (then its earlier version stays as it was). toFit still leaves out a reviewer's
+     * edit and applies the limit.
+     */
+    static Set<String> fitNow(String onlyPath, String failedAgain, Set<String> writtenNow) {
+        if (onlyPath == null) {
+            return writtenNow;
+        }
+        return failedAgain == null && writtenNow.contains(onlyPath) ? Set.of(onlyPath) : Set.of();
+    }
+
+    /**
+     * What the fix by the cross-check's findings is told: the findings, and for Write again with a reviewer's note the
+     * note too, so the fix keeps what the reviewer asked for (the file was just written with it). Empty without findings.
+     */
+    static String fitNote(String findings, String onlyPath, String note) {
+        String fixes = crossFileFixes(findings);
+        if (fixes.isEmpty() || onlyPath == null || note == null || note.isBlank()) {
+            return fixes;
+        }
+        return fixes + "\n\nKeep what the reviewer asked for when this file was written again: " + note.strip();
+    }
+
+    /** The most files of one generation fixed by what the cross-check found, so their model calls stay bounded. */
+    static final int MAX_CROSS_FIXES = 5;
+
+    /**
+     * The files a generation fixes by what the cross-check found: those it wrote itself in this run, written by the
+     * model (a reviewer's edit is never rewritten), at most {@link #MAX_CROSS_FIXES}.
+     */
+    static List<String> toFit(Map<String, String> unfit, Set<String> writtenNow, List<ChangeFileStore.ChangeFile> all) {
+        return toFit(unfit, writtenNow, all, false);
+    }
+
+    /**
+     * @param resume the generation is Continue's: the files an earlier run wrote whose fix is still due (that run was
+     *               stopped by the model's limit before it could fix them, see {@link ChangeFileStore.ChangeFile#fitDue()})
+     *               are fixed too, after those written now. Never a file whose fix was tried already, nor one written
+     *               again since (both clear the mark). Certain errors in the code (a method the called class lacks, a
+     *               define list that binds the wrong modules) come before a view's bindings, within the same limit of
+     *               {@link #MAX_CROSS_FIXES}.
+     */
+    static List<String> toFit(Map<String, String> unfit, Set<String> writtenNow, List<ChangeFileStore.ChangeFile> all, boolean resume) {
+        List<ChangeFileStore.ChangeFile> fixable = all.stream().filter(f -> unfit.containsKey(f.path()) && !f.edited()
+                && f.status() == ChangeFileStore.Status.GENERATED && f.generated() != null
+                && (writtenNow.contains(f.path()) || resume && f.fitDue())).toList();
+        java.util.Comparator<ChangeFileStore.ChangeFile> order = java.util.Comparator
+                .comparingInt((ChangeFileStore.ChangeFile f) -> onlyBindings(unfit.get(f.path())) ? 1 : 0)
+                .thenComparingInt(f -> writtenNow.contains(f.path()) ? 0 : 1);
+        return fixable.stream().sorted(order).map(ChangeFileStore.ChangeFile::path).limit(MAX_CROSS_FIXES).toList();
+    }
+
+    /** Whether the certain errors of a file's findings are only a view's bindings (less sure than the code's errors). */
+    static boolean onlyBindings(String findings) {
+        return findings != null && findings.lines().filter(ChangeService::crossError)
+                .allMatch(line -> line.startsWith(ViewBindings.UNDEFINED_IN_CHANGE));
+    }
+
+    /**
+     * Fixes a written file once by what the cross-check found against the other files of the change: the model gets the
+     * file and the findings, as when a failed check is fixed. The fix is kept only when it is whole (not cut off at the
+     * output limit, joined cleanly) and the file's own checks find it no worse than before; otherwise the file stays as
+     * it was. Returns whether the fix was kept.
+     */
+    static boolean fitToOthers(ChangeFileStore files, CodeGenerator generator, LocalChecks checks, CheckScope scope, UUID changeId,
+                               ChangeContext context, ChangePlan plan, ChangePlan.Item item, String note, ScreenScaffolder.Scaffold scaffold) {
+        ChangeFileStore.ChangeFile file = files.file(changeId, item.path()).orElse(null);
+        if (file == null || file.generated() == null || file.edited() || note.isEmpty()) {
+            return false;
+        }
+        Map<String, String> others = new LinkedHashMap<>();
+        files.files(changeId).stream().filter(f -> f.generated() != null && !f.path().equals(item.path()) && !partial(f))
+                .forEach(f -> others.put(f.path(), f.generated()));
+        CodeGenerator.Result result;
+        try {
+            result = generator.fixFindings(context, plan, item, file.generated(), file.original(), others, note, scaffold);
+        } catch (CodeGenerator.JoinFailed e) {
+            log.warn("The fix of {} in change {} did not join cleanly; the file is kept as it is", item.path(), changeId);
+            files.fitTried(changeId, item.path());
+            return false;
+        }
+        // Tried once, whatever comes of it (a later Continue does not ask again)
+        files.fitTried(changeId, item.path());
+        if (result == null || result.content().equals(file.generated())) {
+            return false;
+        }
+        FileChecks.Status before = CodeGenerator.withParity(checks.check(scope, item.path(), file.original(), file.generated()),
+                file.generated(), scaffold).status();
+        if (severity(result.check().status()) > severity(before)) {
+            log.info("The fix of {} in change {} made its own checks worse ({} after {}); the file is kept as it is", item.path(), changeId,
+                    result.check().status(), before);
+            return false;
+        }
+        // A view's own checks do not see its bindings: its fix is kept only when it binds fewer names its view model lacks
+        ViewModel viewModel = item.path().toLowerCase(java.util.Locale.ROOT).endsWith(".html")
+                ? viewModel(item.path(), others, null, p -> plan.items().stream().anyMatch(i -> i.path().equals(p))) : null;
+        if (viewModel != null && ViewBindings.missing(result.content(), viewModel.content()).size()
+                >= ViewBindings.missing(file.generated(), viewModel.content()).size()) {
+            log.info("The fix of {} in change {} does not bind fewer names its view model lacks; the file is kept as it is", item.path(),
+                    changeId);
+            return false;
+        }
+        files.saveResult(changeId, item.path(), ChangeFileStore.Status.GENERATED, file.original(), result.content(), false,
+                result.check(), file.attempts() + result.attempts());
+        return true;
+    }
+
+    private static int severity(FileChecks.Status status) {
+        return status == FileChecks.Status.FAILED ? 2 : status == FileChecks.Status.WARNING ? 1 : 0;
+    }
+
+    /**
+     * The files a resumed generation writes: those not written yet, or that could not be written, except those that can
+     * never be (too large, or a link outside the working copy: "change it by hand"). Those still count as not written
+     * for delivery.
+     */
+    static Set<String> notWritten(List<ChangeFileStore.ChangeFile> files) {
+        Set<String> paths = new LinkedHashSet<>();
+        files.stream().filter(f -> f.status() == ChangeFileStore.Status.PENDING || (f.status() == ChangeFileStore.Status.FAILED
+                && f.generated() == null && (f.checkMessage() == null || !f.checkMessage().contains(BY_HAND)))
+                || partial(f)).forEach(f -> paths.add(f.path()));
+        return paths;
+    }
+
+    /** A file the model's limit stopped part-way: its part is kept, but it is not written. */
+    static boolean partial(ChangeFileStore.ChangeFile f) {
+        return f.status() == ChangeFileStore.Status.FAILED && f.generated() != null && f.checkMessage() != null
+                && f.checkMessage().startsWith(CodeGenerator.PARTIAL);
+    }
+
+    /** How the message of a file that can never be written ends. */
+    static final String BY_HAND = "change it by hand";
+
+    /**
+     * Why Continue cannot go on: the code was imported again since the files already written were read, so the rest
+     * would be written against other code and the delivery based on the old revision. Null when it can.
+     */
+    static String resumeProblem(Long base, Long indexed) {
+        if (base == null || base.equals(indexed)) {
+            return null;
+        }
+        return "The code was updated since the files were written (r" + base + " to r" + indexed + "), so the remaining files would not "
+                + "fit them. Analyze the change again, or write the files that need it with Write again.";
+    }
+
+    private static final String SUMMARY_END = "Review the changes before delivering them.";
+
+    /**
+     * The change's message after a reviewer's edit: the earlier notes stay (the code was updated since the analysis, the
+     * fixes the limit stopped ...), the counts are the new ones and the edit is named once.
+     */
+    static String edited(String before, String path, String summary) {
+        String note = path + " edited. ";
+        String text = before == null ? "" : before;
+        int end = text.indexOf(SUMMARY_END);
+        int start = end < 0 ? -1 : text.lastIndexOf(" file(s) written, ", end);
+        if (start >= 0) {
+            // back to the count's first digit
+            while (start > 0 && Character.isDigit(text.charAt(start - 1))) {
+                start--;
+            }
+            String head = text.substring(0, start).replace(note, "");
+            return note + head + summary + text.substring(end + SUMMARY_END.length());
+        }
+        return note + summary + (text.isBlank() ? "" : " " + text.replace(note, "").strip());
+    }
+
+    /** "8 file(s) written, 1 with problems, 2 with warnings, 3 not written yet. Review ..." */
+    static String summary(List<ChangeFileStore.ChangeFile> result) {
+        // a file cut off part-way is not a problem of its code: it is counted as cut off, for Continue to finish
+        long cut = result.stream().filter(ChangeService::partial).count();
+        long failed = result.stream().filter(f -> !partial(f) && (f.status() == ChangeFileStore.Status.FAILED
+                || f.checkStatus() == FileChecks.Status.FAILED)).count();
+        long warnings = result.stream().filter(f -> f.checkStatus() == FileChecks.Status.WARNING).count();
+        long written = result.stream().filter(f -> f.status() == ChangeFileStore.Status.GENERATED).count();
+        long pending = result.stream().filter(f -> f.status() == ChangeFileStore.Status.PENDING).count();
+        return written + " file(s) written, " + failed + " with problems, " + warnings + " with warnings"
+                + (cut > 0 ? ", " + cut + " cut off" + (pending > 0 ? "" : " (Continue generation)") : "")
+                + (pending > 0 ? ", " + pending + " not written yet (Continue generation)" : "") + ". Review the changes before delivering them.";
+    }
+
+    /**
+     * What the change says when the model's limit stopped it: why, how far it got, and when and how to go on ("Try again
+     * in about 15 minutes, then click Continue generation.").
+     */
+    static String stoppedMessage(ModelLimitReachedException e, String onlyPath, long written, int planned) {
+        return stoppedMessage(e, onlyPath, written, planned, null);
+    }
+
+    /** @param kept a file the limit stopped part-way, whose part is kept for Continue to go on from, or null */
+    static String stoppedMessage(ModelLimitReachedException e, String onlyPath, long written, int planned, String kept) {
+        String message = stopped(e, onlyPath, written, planned);
+        if (kept == null) {
+            return message;
+        }
+        return onlyPath != null ? message + " The rewrite written so far is kept beside it; Write again (or Continue) goes on from it."
+                : message + " The part of " + kept + " written so far is kept; Continue generation goes on from it.";
+    }
+
+    private static String stopped(ModelLimitReachedException e, String onlyPath, long written, int planned) {
+        String when = e.retryIn() != null ? "in " + e.retryIn() : null;
+        if (onlyPath != null) {
+            return "Writing " + onlyPath + " again stopped: " + limitReason(e) + " The previous version is kept; write it again "
+                    + (when != null ? when + "." : "later.");
+        }
+        return limitReason(e) + " Generation stopped after " + written + " of " + planned + " file(s); the files already written are "
+                + "kept." + (when != null ? " Try again " + when + ", then click Continue generation."
+                : " Click Continue generation when the limit resets.");
+    }
+
+    static String limitReason(ModelLimitReachedException e) {
+        return e.daily() ? "The model's daily limit is used up." : "The model's server is at its rate limit.";
+    }
+
+    /**
+     * Writes one file and saves it. A file that could not be written is saved as FAILED, unless it had been written
+     * before (Write again): then the earlier content and its check stay, and the error is returned. The model's limit
+     * is passed on, so generation stops.
+     *
+     * @return why the file could not be written, or null
+     */
+    /** Why Write again of a file without a version gave none: it was cut off (its part is kept, Continue goes on). */
+    static final String CUT_OFF_FIRST = "it was cut off at the model's output limit; the part written is kept, and Continue "
+            + "generation (or Write again) goes on from it";
+
+    String generateFile(UUID changeId, UUID workspaceId, ChangeContext context, ChangePlan plan, ChangePlan.Item item,
+                                Path workingCopy, Map<String, String> earlier, String note, Kept partial, boolean again) {
         boolean modify = "modify".equals(item.action());
         String current = null;
         try {
             if (modify) {
                 Path file = workingCopy.resolve(item.path());
+                if (!within(workingCopy, file)) {
+                    throw new IOException("it is a link to a file outside the working copy; change it by hand");
+                }
                 if (Files.size(file) > properties.maxFileSize().toBytes()) {
                     files.saveResult(changeId, item.path(), ChangeFileStore.Status.FAILED, read(file), null, false,
                             new FileChecks.Result(FileChecks.Status.FAILED, "The file is too large to rewrite safely; change it by hand."), 0);
-                    return;
+                    return "the file is too large to rewrite safely";
                 }
                 current = read(file);
             }
             Map<String, String> examples = examples(workspaceId, workingCopy, item);
             ScreenScaffolder.Scaffold scaffold = scaffold(context, item.path(), current);
-            CodeGenerator.Result result = generator.generate(context, plan, item, current, current, examples, earlier, note, scaffold);
+            CodeGenerator.Result result = generator.generate(context, plan, item, current, current, examples, earlier, note, scaffold,
+                    partial == null ? null : partial.text(), partial != null && partial.complete());
             ChangeFileStore.Status status = modify && result.content().equals(current)
                     ? ChangeFileStore.Status.UNCHANGED : ChangeFileStore.Status.GENERATED;
+            if (cutOff(result.check())) {
+                // Still cut off at the output limit after its continuations: kept as a part, as when the model's limit
+                // stops a file, so it counts as cut off (not written) and Continue goes on from it
+                ChangeFileStore.ChangeFile previous = files.file(changeId, item.path()).orElse(null);
+                if (previous == null || previous.generated() == null || partial(previous)) {
+                    files.saveResult(changeId, item.path(), ChangeFileStore.Status.FAILED, current, result.content(), false,
+                            new FileChecks.Result(FileChecks.Status.FAILED, CodeGenerator.PARTIAL + " " + result.check().message()
+                                    + "\nContinue generation goes on from here, or write it again."), result.attempts());
+                    return again ? CUT_OFF_FIRST : null;
+                }
+                // A file written before: that version stays; the new part is kept beside it to go on from
+                files.saveRewrite(changeId, item.path(), result.content(), false);
+                return "it was cut off at the model's output limit; the part written is kept beside it, and Write again (or Continue) "
+                        + "goes on from it";
+            }
+            // Neither Write again nor Continue (going on from a kept rewrite) replaces a version that passed its checks with
+            // one that fails them: the earlier one stays, and the rejected rewrite is dropped
+            String worse = worseThanBefore(files.file(changeId, item.path()).orElse(null), result.check());
+            if (worse != null) {
+                log.info("Writing {} in change {} gave a version that fails its checks; the previous version is kept", item.path(), changeId);
+                files.saveRewrite(changeId, item.path(), null);
+                return worse;
+            }
             files.saveResult(changeId, item.path(), status, current, result.content(), false, result.check(), result.attempts());
             earlier.put(item.path(), result.content());
-        } catch (IOException | RuntimeException e) {
-            log.warn("Could not write {} for change {}", item.path(), changeId, e);
-            files.saveResult(changeId, item.path(), ChangeFileStore.Status.FAILED, current, null, false,
-                    new FileChecks.Result(FileChecks.Status.FAILED, "Could not be written: " + e.getMessage()), 0);
+            return null;
+        } catch (CodeGenerator.Partial e) {
+            recordPartial(files, changeId, item.path(), current, e);
+            throw e;
+        } catch (ModelLimitReachedException e) {
+            throw e;
+        } catch (IOException | RuntimeException | StackOverflowError e) {
+            return recordFailure(files, changeId, item.path(), current, e);
         }
+    }
+
+    /** Whether a written file is still cut off at the model's output limit after its continuations (CodeGenerator.CUT). */
+    static boolean cutOff(FileChecks.Result check) {
+        return check != null && check.status() == FileChecks.Status.FAILED && check.message() != null
+                && check.message().startsWith(CodeGenerator.CUT);
+    }
+
+    /** How the reason a version written now is not used starts. */
+    static final String REJECTED = "the new version fails its checks";
+
+    /**
+     * Why a version written now is not kept: the file's version before passed its checks (or had only warnings) and
+     * the new one fails them. Null when the new one may replace it (it passes, or the one before failed too or was none).
+     */
+    static String worseThanBefore(ChangeFileStore.ChangeFile previous, FileChecks.Result now) {
+        if (previous == null || previous.generated() == null || partial(previous) || now == null || now.status() != FileChecks.Status.FAILED
+                || previous.checkStatus() == FileChecks.Status.FAILED || previous.status() == ChangeFileStore.Status.FAILED) {
+            return null;
+        }
+        String reason = now.message() == null ? "" : now.message().lines().findFirst().orElse("").strip();
+        return REJECTED + (reason.isEmpty() ? "" : ": " + Messages.reason(new IllegalStateException(reason)))
+                + "; it is not used";
+    }
+
+    /**
+     * Keeps the part of a file the model's limit stopped. A file without a version yet keeps it as its content, marked
+     * "Cut off" (not written); a file with one (Write again) keeps that version as its content and the new part beside it.
+     */
+    static void recordPartial(ChangeFileStore files, UUID changeId, String path, String current, CodeGenerator.Partial e) {
+        ChangeFileStore.ChangeFile previous = files.file(changeId, path).orElse(null);
+        boolean none = previous == null || previous.generated() == null || partial(previous);
+        if (e.check() != null && none) {
+            // A whole answer whose fix the limit stopped: the file's content, with the check it failed (Write again fixes it)
+            files.saveResult(changeId, path, ChangeFileStore.Status.GENERATED, current, e.content(), false, e.check(), 1);
+            return;
+        }
+        if (none) {
+            // Kept for the reviewer to see and for Continue to go on from; it still counts as not written
+            files.saveResult(changeId, path, ChangeFileStore.Status.FAILED, current, e.content(), false,
+                    new FileChecks.Result(FileChecks.Status.FAILED, CodeGenerator.PARTIAL + " Continue generation goes on from here "
+                            + "when the limit resets, or write it again."), 1);
+        } else {
+            // A rewrite (Write again) stopped part-way: the version written before stays the file's content for review and
+            // delivery; the new part is kept beside it, and the next Write again or Continue goes on from it
+            files.saveRewrite(changeId, path, e.content(), e.check() != null);
+        }
+    }
+
+    /** What Continue writes: the files not written yet, and the rewrites the model's limit stopped part-way. */
+    static Set<String> continued(List<ChangeFileStore.ChangeFile> files) {
+        Set<String> paths = notWritten(files);
+        files.stream().filter(f -> f.rewrite() != null).forEach(f -> paths.add(f.path()));
+        return paths;
+    }
+
+    /** "Rewrite in progress: ..." before a file's own check message while a stopped rewrite is kept beside it. */
+    static String withRewrite(ChangeFileStore.ChangeFile f) {
+        if (f.rewrite() == null) {
+            return f.checkMessage();
+        }
+        String rewrite = "Rewrite in progress: " + f.rewrite().length() + " characters written; Write again (or Continue) goes on from it.";
+        return f.checkMessage() == null ? rewrite : rewrite + "\n" + f.checkMessage();
+    }
+
+    /**
+     * The part of a file to go on from: a kept partial, or the part of a stopped rewrite, cleaned (and saved so); null
+     * when there is none, or too little of it is usable.
+     */
+    static Kept resumable(ChangeFileStore files, UUID changeId, ChangeFileStore.ChangeFile file) {
+        if (partial(file)) {
+            String usable = usablePartial(files, changeId, file);
+            return usable == null ? null : new Kept(usable, false);
+        }
+        if (file.rewrite() == null) {
+            return null;
+        }
+        if (file.rewriteComplete()) {
+            // a whole answer: checked and fixed as it is
+            return new Kept(file.rewrite(), true);
+        }
+        String cleaned = CodeGenerator.cleanPartial(file.path(), file.rewrite());
+        if (!java.util.Objects.equals(cleaned, file.rewrite())) {
+            files.saveRewrite(changeId, file.path(), cleaned);
+        }
+        return cleaned == null ? null : new Kept(cleaned, false);
+    }
+
+    /** A kept part of a file to go on from, and whether it is a whole answer (checked and fixed) rather than a part (continued). */
+    record Kept(String text, boolean complete) {
+    }
+
+    /**
+     * The kept part of a file to continue from, cleaned first (the model's reasoning and a seam that does not parse cut
+     * off) and saved so: a broken part is not paid for on every Continue. Null when too little is usable; the file is
+     * then saved as not written and written whole.
+     */
+    static String usablePartial(ChangeFileStore files, UUID changeId, ChangeFileStore.ChangeFile kept) {
+        String cleaned = CodeGenerator.cleanPartial(kept.path(), kept.generated());
+        if (cleaned == null) {
+            files.saveResult(changeId, kept.path(), ChangeFileStore.Status.FAILED, kept.original(), null, false,
+                    new FileChecks.Result(FileChecks.Status.FAILED, "The part kept after the model's limit was not usable; it is written whole."),
+                    kept.attempts());
+        } else if (!cleaned.equals(kept.generated())) {
+            files.saveResult(changeId, kept.path(), ChangeFileStore.Status.FAILED, kept.original(), cleaned, false,
+                    new FileChecks.Result(FileChecks.Status.FAILED, kept.checkMessage()), kept.attempts());
+        }
+        return cleaned;
+    }
+
+    /**
+     * Saves why a file could not be written, and returns it. Pieces that did not join leave no content and no partial:
+     * the file counts as not written, and Continue writes it whole instead of failing on the same text again. Any other
+     * failure keeps a version written before (Write again, or a kept partial), so it is not thrown away.
+     */
+    static String recordFailure(ChangeFileStore files, UUID changeId, String path, String current, Throwable e) {
+        ChangeFileStore.ChangeFile previous = files.file(changeId, path).orElse(null);
+        int attempts = previous == null ? 0 : previous.attempts();
+        if (e instanceof CodeGenerator.JoinFailed && previous != null && previous.generated() != null && !partial(previous)) {
+            // A version written before (and any edit of it) stays; a rewrite that did not join is dropped, so the next Write
+            // again starts afresh
+            log.warn("{} of change {}: {} The version before is kept.", path, changeId, e.getMessage());
+            if (previous.rewrite() != null) {
+                files.saveRewrite(changeId, path, null);
+            }
+            return e.getMessage();
+        }
+        if (e instanceof CodeGenerator.JoinFailed) {
+            // Expected when a model continues badly: one line, no stack trace
+            log.warn("{} of change {}: {}", path, changeId, e.getMessage());
+            files.saveResult(changeId, path, ChangeFileStore.Status.FAILED, current, null, false,
+                    new FileChecks.Result(FileChecks.Status.FAILED, e.getMessage()), attempts);
+            return e.getMessage();
+        }
+        log.warn("Could not write {} for change {}", path, changeId, e);
+        if (previous != null && previous.generated() != null) {
+            // Written before: a failed attempt to write it again must not throw that version away
+            return Messages.reason(e);
+        }
+        files.saveResult(changeId, path, ChangeFileStore.Status.FAILED, current, null, false,
+                new FileChecks.Result(FileChecks.Status.FAILED, "Could not be written: " + Messages.reason(e)), 0);
+        return Messages.reason(e);
+    }
+
+    private static final Pattern PACKAGE = Pattern.compile("(?m)^\\s*package\\s+([a-zA-Z_]\\w*\\.[a-zA-Z_]\\w*)[\\w.]*\\s*;");
+    /** import com.bank.x.Name; (not static imports or wildcards) */
+    private static final Pattern IMPORT = Pattern.compile("(?m)^\\s*import\\s+([a-z_][\\w.]*)\\s*;");
+
+    /**
+     * Classes a Java file imports from the bank's own packages (those starting like its own package, com.bank) that
+     * are neither in the codebase nor in this change: the model used a class nobody writes, and the build will fail.
+     * A package the code has no file in comes from a library (OBDX's own com.ofss.digx jars, for extension code), so its
+     * imports are not checked.
+     *
+     * @param classExists   whether a class file (com/bank/x/Name.java, as the end of a path) is in the code or the change
+     * @param packageExists whether a package folder (com/bank/x) holds a file in the code or the change
+     */
+    static List<String> unresolvedImports(String content, Predicate<String> classExists, Predicate<String> packageExists) {
+        return unresolvedImports(content, classExists, packageExists, null, folder -> false);
+    }
+
+    /**
+     * @param bankRoot       the bank's root package (the common prefix of the indexed code's packages, com.bank.obdx), or null
+     * @param missingCounts  for an import under the bank's root whose package folder has no file: whether that folder
+     *                       still belongs to the bank (the change creates it, or a sibling package is indexed), rather
+     *                       than to a library or generated code
+     */
+    static List<String> unresolvedImports(String content, Predicate<String> classExists, Predicate<String> packageExists, String bankRoot,
+                                          Predicate<String> missingCounts) {
+        if (content == null) {
+            return List.of();
+        }
+        Matcher pkg = PACKAGE.matcher(content);
+        if (!pkg.find()) {
+            return List.of();
+        }
+        String own = pkg.group(1) + ".";
+        List<String> missing = new ArrayList<>();
+        Matcher imports = IMPORT.matcher(content);
+        while (imports.find()) {
+            // com.bank.x.Outer.Inner is in com/bank/x/Outer.java: the class file is the first name with a capital
+            String[] parts = imports.group(1).split("\\.");
+            int cls = 0;
+            while (cls < parts.length && (parts[cls].isEmpty() || !Character.isUpperCase(parts[cls].charAt(0)))) {
+                cls++;
+            }
+            if (cls == 0 || cls == parts.length) {
+                continue;
+            }
+            String folder = String.join("/", java.util.Arrays.copyOfRange(parts, 0, cls));
+            String name = folder.replace('/', '.') + "." + parts[cls];
+            boolean bank = bankRoot != null && name.startsWith(bankRoot + ".");
+            if ((name.startsWith(own) || bank) && !classExists.test(folder + "/" + parts[cls] + ".java")
+                    && (packageExists.test(folder) || (bank && missingCounts.test(folder)))) {
+                missing.add(name);
+            }
+        }
+        return missing;
+    }
+
+    /** The indexed Java files named like the classes the plan creates (FundTransferService -> its existing paths). */
+    private Map<String, List<String>> sameNamed(UUID workspaceId, ChangePlan plan) {
+        Map<String, List<String>> found = new LinkedHashMap<>();
+        for (ChangePlan.Item item : plan.items()) {
+            // (and the UI's shell files, by their whole file name: a new dashboard.js beside an existing one is glue)
+            if ("create".equals(item.action()) && (item.path().endsWith(".java") || PlanReview.shellName(item.path()))) {
+                String file = item.path().substring(item.path().lastIndexOf('/') + 1);
+                List<String> paths = jdbc.queryForList("SELECT path FROM code_file WHERE workspace_id = ? AND (path = ? OR path LIKE ?) LIMIT 5",
+                        String.class, workspaceId, file, "%/" + file.replace("_", "\\_").replace("%", "\\%"));
+                if (!paths.isEmpty()) {
+                    found.put(file.replaceAll("\\.java$", ""), paths);
+                }
+            }
+        }
+        return found;
+    }
+
+    /**
+     * Whether a package folder under the bank's root with no indexed file belongs to the bank, so that an import from it
+     * of a class nobody has is wrong: the change creates files in it, or it is any package of the bank's own root
+     * (com.bank.obdx.payments.payments, a package the model made up) other than generated code (generated, gen, stub),
+     * which the build makes and the index does not have.
+     */
+    static boolean bankFolder(String folder, List<String> planned) {
+        if (planned.stream().anyMatch(p -> inFolder(p, folder))) {
+            return true;
+        }
+        return java.util.Arrays.stream(folder.split("/")).noneMatch(part -> part.matches("(?i)generated|gen|stubs?"));
+    }
+
+    /** The bank's root package by workspace, for the indexed revision it was read at. */
+    private final Map<UUID, Map.Entry<Long, String>> bankRoots = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** The bank's root package from the indexed Java code's package lines, or null (see {@link #commonRoot}). */
+    private String bankRoot(UUID workspaceId) {
+        Long revision = workspaces.findById(workspaceId).map(Workspace::getIndexedRevision).orElse(null);
+        Map.Entry<Long, String> cached = bankRoots.get(workspaceId);
+        if (cached != null && java.util.Objects.equals(cached.getKey(), revision)) {
+            return cached.getValue();
+        }
+        String root = readBankRoot(workspaceId);
+        bankRoots.put(workspaceId, new java.util.AbstractMap.SimpleImmutableEntry<>(revision, root));
+        return root;
+    }
+
+    private String readBankRoot(UUID workspaceId) {
+        List<String> packages = jdbc.queryForList("SELECT DISTINCT substring(content from '(?n)^\\s*package\\s+([a-zA-Z_][a-zA-Z0-9_.]*)\\s*;') "
+                + "FROM code_chunk WHERE workspace_id = ? AND language = 'java' LIMIT 5000", String.class, workspaceId);
+        return commonRoot(packages);
+    }
+
+    /**
+     * The longest package prefix the bank's own packages share (com.bank.obdx for com.bank.obdx.payments and
+     * com.bank.obdx.accounts), leaving out Oracle's and Java's; null when it has fewer than two parts.
+     */
+    static String commonRoot(List<String> packages) {
+        List<String[]> own = packages.stream().filter(p -> p != null && !p.isBlank())
+                .filter(p -> !p.startsWith("com.ofss.") && !p.startsWith("oracle.") && !p.startsWith("java.") && !p.startsWith("javax."))
+                .map(p -> p.split("\\.")).toList();
+        if (own.isEmpty()) {
+            return null;
+        }
+        List<String> root = new ArrayList<>(List.of(own.getFirst()));
+        for (String[] p : own) {
+            int n = 0;
+            while (n < root.size() && n < p.length && root.get(n).equals(p[n])) {
+                n++;
+            }
+            root = new ArrayList<>(root.subList(0, n));
+        }
+        return root.size() < 2 ? null : String.join(".", root);
+    }
+
+    /** The REST paths the imported Java code serves (from its @Path annotations), each with the file that serves it. */
+    private Map<String, String> servedPaths(UUID workspaceId) {
+        Map<String, String> served = new LinkedHashMap<>();
+        jdbc.query("SELECT path, string_agg(content, chr(10) ORDER BY start_line) AS content FROM code_chunk WHERE workspace_id = ? "
+                        + "AND language = 'java' AND content LIKE '%@Path%' GROUP BY path", rs -> {
+            for (String p : PlanReview.pathsIn(rs.getString("content"))) {
+                served.putIfAbsent(p, rs.getString("path"));
+            }
+        }, workspaceId);
+        return served;
+    }
+
+    /** Whether the imported code has a file whose path ends with classFile. */
+    private boolean indexed(UUID workspaceId, String classFile) {
+        String like = "%/" + classFile.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM code_file WHERE workspace_id = ? AND (path LIKE ? OR path = ?))",
+                Boolean.class, workspaceId, like, classFile));
+    }
+
+    /** Whether the imported code has a file directly in a folder whose path ends with folder (com/bank/x). */
+    private boolean indexedFolder(UUID workspaceId, String folder) {
+        String regex = "(^|/)" + folder.replaceAll("[^\\w/]", "\\\\$0") + "/[^/]+$";
+        return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM code_file WHERE workspace_id = ? AND path ~ ?)",
+                Boolean.class, workspaceId, regex));
+    }
+
+    /** Whether path is a file directly in a folder whose path ends with folder. */
+    static boolean inFolder(String path, String folder) {
+        int slash = path.lastIndexOf('/');
+        String parent = slash < 0 ? "" : path.substring(0, slash);
+        return parent.equals(folder) || parent.endsWith("/" + folder);
     }
 
     /**
@@ -309,7 +1278,7 @@ public class ChangeService {
         paths.addAll(recipes.examplesFor(workspaceId, item.path(), item.action(), item.layer()));
         for (String path : paths) {
             Path file = workingCopy.resolve(path);
-            if (examples.size() < 2 && !path.equals(item.path()) && !examples.containsKey(path) && Files.isRegularFile(file)
+            if (examples.size() < 2 && !path.equals(item.path()) && !examples.containsKey(path) && Files.isRegularFile(file) && within(workingCopy, file)
                     && Files.size(file) <= properties.maxFileSize().toBytes()) {
                 examples.put(path, read(file));
             }
@@ -319,7 +1288,7 @@ public class ChangeService {
             String extension = item.path().contains(".") ? item.path().substring(item.path().lastIndexOf('.')) : "";
             if (folder != null && Files.isDirectory(folder)) {
                 try (Stream<Path> siblings = Files.list(folder)) {
-                    Path sibling = siblings.filter(p -> p.getFileName().toString().endsWith(extension) && Files.isRegularFile(p))
+                    Path sibling = siblings.filter(p -> p.getFileName().toString().endsWith(extension) && Files.isRegularFile(p) && within(workingCopy, p))
                             .sorted().findFirst().orElse(null);
                     if (sibling != null && Files.size(sibling) <= properties.maxFileSize().toBytes()) {
                         examples.put(workingCopy.relativize(sibling).toString().replace('\\', '/'), read(sibling));
@@ -330,22 +1299,74 @@ public class ChangeService {
         return examples;
     }
 
-    /** Writes one file again, with an optional instruction from the reviewer. */
+    /** The largest file a reviewer's edit may save: it is stored, checked and put in the patch. */
+    static final int MAX_EDIT_BYTES = 512 * 1024;
+
+    static void requireEditable(String content) {
+        if (content != null && content.length() > MAX_EDIT_BYTES / 4
+                && content.getBytes(StandardCharsets.UTF_8).length > MAX_EDIT_BYTES) {
+            throw new BadRequestException("The file is larger than " + MAX_EDIT_BYTES / 1024 + " KB, the most the factory keeps for a "
+                    + "change. Make a change this large in your working copy, outside the factory.");
+        }
+    }
+
+    /** Writes the files not written yet, for example after generation stopped at the model's daily limit. */
     @Transactional
-    public ChangeDetail regenerate(UUID id, String path, String note) {
+    public ChangeDetail continueGeneration(UUID id) {
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.GENERATED);
         requireNotBuilding(change);
+        locks.requireFree(change.getWorkspaceId());
+        String moved = resumeProblem(change.getBaseRevision(), workspace(change.getWorkspaceId()).getIndexedRevision());
+        if (moved != null) {
+            throw new BadRequestException(moved);
+        }
+        int left = continued(files.files(id)).size();
+        if (left == 0) {
+            throw new BadRequestException("No file is left that the model can write. Use Write again for a single file; files marked "
+                    + "to change by hand need a developer.");
+        }
+        // Claimed in the database: of two clicks at once only one finds the change GENERATED; the other waits for the row
+        // and then finds it running
+        String message = "Writing the " + left + " file(s) not written yet...";
+        if (jdbc.update("UPDATE change_request SET status = 'GENERATING', message = ?, updated_at = now() WHERE id = ? AND status = 'GENERATED'",
+                message, id) != 1) {
+            throw new ConflictException("Generation is already running for this change. Wait for it to finish.");
+        }
+        change.status(ChangeRequest.Status.GENERATING, message);
+        changes.save(change);
+        startAfterCommit(() -> runGeneration(id, null, null, true));
+        return detail(change);
+    }
+
+    /** Writes one file again, with an optional instruction from the reviewer. */
+    @Transactional
+    public ChangeDetail regenerate(UUID id, String path, String note) {
+        return regenerate(id, path, note, null);
+    }
+
+    /** @param by who asked (the outcome is audited with that name when the file is written) */
+    @Transactional
+    public ChangeDetail regenerate(UUID id, String path, String note, String by) {
+        RequestText.requirePath(path);
+        RequestText.requireText(note);
+        ChangeRequest change = find(id);
+        requireStatus(change, ChangeRequest.Status.GENERATED);
+        requireNotBuilding(change);
+        locks.requireFree(change.getWorkspaceId());
         files.file(id, path).orElseThrow(() -> new NotFoundException("No file " + path + " in this change"));
         change.status(ChangeRequest.Status.GENERATING, "Writing " + path + " again...");
         changes.save(change);
-        startAfterCommit(() -> runGeneration(id, path, note));
+        startAfterCommit(() -> runGeneration(id, path, note, false, by));
         return detail(change);
     }
 
     /** Saves a reviewer's own edit of a generated file. */
     @Transactional
     public ChangeDetail editFile(UUID id, String path, String content) {
+        RequestText.requirePath(path);
+        RequestText.requireText(content);
+        requireEditable(content);
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.GENERATED);
         requireNotBuilding(change);
@@ -354,6 +1375,9 @@ public class ChangeService {
         files.saveResult(id, path, text.equals(file.original()) ? ChangeFileStore.Status.UNCHANGED : ChangeFileStore.Status.GENERATED,
                 file.original(), text, true, localChecks.check(packs.scope(change.getWorkspaceId()), path, file.original(), text),
                 file.attempts());
+        // The message counted the files with problems before the edit: it says how they stand now
+        change.status(ChangeRequest.Status.GENERATED, edited(change.getMessage(), path, summary(files.files(id))));
+        changes.save(change);
         return detail(change);
     }
 
@@ -364,6 +1388,11 @@ public class ChangeService {
         requireStatus(change, ChangeRequest.Status.GENERATED, ChangeRequest.Status.DELIVERED);
         requireNotBuilding(change);
         recheck(change);
+        if (change.getStatus() == ChangeRequest.Status.GENERATED) {
+            // The message said what the last generation found; it is out of date now
+            change.status(ChangeRequest.Status.GENERATED, "Checked again: " + summary(files.files(id)));
+            changes.save(change);
+        }
         return detail(change);
     }
 
@@ -384,13 +1413,243 @@ public class ChangeService {
                 }
             }
         }
+        // with the certain errors only other files show (a method the called class lacks), with the file's own findings
+        failing.putAll(crossCheck(change.getId(), change.getWorkspaceId()));
         return failing;
+    }
+
+    /**
+     * Checks that need more than one file, added to each written file's check: Java imports of the bank's classes that
+     * neither the code nor the change has, and JET views that bind names their view model lacks, as warnings; what makes
+     * the file fail for certain (see {@link #CROSS_ERRORS}) as errors. Returns the files that fail, with their findings.
+     */
+    private Map<String, String> crossCheck(UUID changeId, UUID workspaceId) {
+        Map<String, String> failing = new LinkedHashMap<>();
+        CheckScope scope = packs.scope(workspaceId);
+        List<ChangeFileStore.ChangeFile> written = files.files(changeId).stream()
+                .filter(f -> f.status() == ChangeFileStore.Status.GENERATED && f.generated() != null).toList();
+        Map<String, String> contents = new LinkedHashMap<>();
+        written.forEach(f -> contents.put(f.path(), f.generated()));
+        List<String> paths = files.files(changeId).stream().map(ChangeFileStore.ChangeFile::path).toList();
+        List<String> unwrittenJava = unwritten(files.files(changeId)).stream().filter(p -> p.endsWith(".java")).toList();
+        String bankRoot = written.stream().anyMatch(f -> f.path().endsWith(".java")) ? bankRoot(workspaceId) : null;
+        Map<String, String> classes = new LinkedHashMap<>();
+        written.stream().filter(f -> f.path().endsWith(".java")).forEach(f -> classes.put(CrossFileJava.className(f.path()), f.generated()));
+        Path workingCopy = storage.workingCopy(workspaceId);
+        boolean javaIndexed = !classes.isEmpty() && Boolean.TRUE.equals(jdbc.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM code_file WHERE workspace_id = ? AND path LIKE '%.java')", Boolean.class, workspaceId));
+        for (ChangeFileStore.ChangeFile file : written) {
+            List<String> problems = new ArrayList<>();
+            String lower = file.path().toLowerCase(java.util.Locale.ROOT);
+            if (lower.endsWith(".java")) {
+                List<String> missing = unresolvedImports(file.generated(), classFile -> paths.stream().anyMatch(p -> p.endsWith(classFile))
+                        || indexed(workspaceId, classFile), folder -> paths.stream().anyMatch(p -> inFolder(p, folder))
+                        || indexedFolder(workspaceId, folder), bankRoot, folder -> bankFolder(folder, paths));
+                if (!missing.isEmpty()) {
+                    problems.add(CROSS_CHECKS.getFirst() + " in the codebase nor in this change: " + String.join(", ", missing)
+                            + ". Add them to the plan, or change the imports to classes that exist.");
+                }
+                CrossFileJava.unwrittenClasses(file.path(), file.generated(), unwrittenJava).ifPresent(problems::add);
+                problems.addAll(CrossFileJava.missingMethods(file.generated(), classes));
+                CrossFileJava.unknownReceivers(file.generated()).ifPresent(problems::add);
+                Predicate<String> classExists = classFile -> paths.stream().anyMatch(p -> p.endsWith(classFile)) || indexed(workspaceId, classFile);
+                CrossFileJava.missingJdkImports(file.generated(), classExists).ifPresent(problems::add);
+                if (javaIndexed) {
+                    // Without imported Java code a class of the package could exist unseen
+                    CrossFileJava.unknownSamePackageClasses(file.generated(), classExists).ifPresent(problems::add);
+                }
+            } else if (lower.endsWith(".html")) {
+                ViewModel model = viewModel(file.path(), contents, workingCopy, paths::contains);
+                problems.addAll(ViewBindings.problems(file.generated(), model == null ? null : model.content(), model != null && model.inChange()));
+            } else if (lower.endsWith(".js")) {
+                problems.addAll(JsModuleChecks.problems(file.generated(), moduleKnown(workspaceId, file.path(), contents)));
+                problems.addAll(JsModuleChecks.defineProblems(file.generated(), module -> moduleSource(file.path(), module, contents)));
+            }
+            // (the screen parity of a React Native or React app's file, as Check again has it, read only when needed)
+            FileChecks.Status own = ownStatus(file, localChecks, scope, () -> scope.inApp(file.path()) && scope.appFolder() != null
+                    ? targetPacks.find(scope.target()).flatMap(p -> ScreenScaffolder.forFile(p, scope.appFolder(), file.path(),
+                    designModels(find(changeId)), file.original())).orElse(null) : null);
+            FileChecks.Result check = withCrossChecks(own, file.checkMessage(), problems);
+            if (check.status() != file.checkStatus() || !java.util.Objects.equals(check.message(), file.checkMessage())) {
+                files.saveCheck(changeId, file.path(), check);
+            }
+            if (check.status() == FileChecks.Status.FAILED && problems.stream().anyMatch(ChangeService::crossError)) {
+                failing.put(file.path(), check.message());
+            }
+        }
+        return failing;
+    }
+
+    /**
+     * A file's own status, without the cross-check's findings: as stored, unless an earlier cross-check may have failed
+     * it; then what its own checks (with the screen parity of an app's file) say, or failed while it is cut off.
+     */
+    static FileChecks.Status ownStatus(ChangeFileStore.ChangeFile file, LocalChecks checks, CheckScope scope,
+                                       java.util.function.Supplier<ScreenScaffolder.Scaffold> scaffold) {
+        FileChecks.Status stored = file.checkStatus();
+        if (stored != FileChecks.Status.FAILED || file.checkMessage() == null || file.checkMessage().lines().noneMatch(ChangeService::crossError)) {
+            return stored;
+        }
+        if (file.checkMessage().contains(CodeGenerator.CUT)) {
+            return FileChecks.Status.FAILED;
+        }
+        return CodeGenerator.withParity(checks.check(scope, file.path(), file.original(), file.generated()), file.generated(),
+                scaffold.get()).status();
+    }
+
+    /**
+     * The content of a module a view model loads, when this change writes it: './model' beside the file, or the resource
+     * bundle 'ojL10n!nls/quick-transfer' (a written file ending with nls/quick-transfer.js); null otherwise.
+     */
+    static String moduleSource(String path, String module, Map<String, String> written) {
+        String folder = path.contains("/") ? path.substring(0, path.lastIndexOf('/')) : "";
+        if (module.startsWith("./") || module.startsWith("../")) {
+            java.nio.file.Path resolved = java.nio.file.Path.of(folder.isEmpty() ? "." : folder).resolve(module).normalize();
+            String target = resolved.toString().replace('\\', '/') + (module.endsWith(".js") ? "" : ".js");
+            return written.get(target);
+        }
+        if (module.contains("!")) {
+            String name = module.substring(module.indexOf('!') + 1);
+            String suffix = "/" + (name.endsWith(".js") ? name : name + ".js");
+            return written.entrySet().stream().filter(e -> e.getKey().endsWith(suffix) || e.getKey().equals(suffix.substring(1)))
+                    .map(Map.Entry::getValue).findFirst().orElse(null);
+        }
+        return null;
+    }
+
+    /** How the cross-file findings start, so that the next cross-check replaces them instead of adding them again. */
+    static final List<String> CROSS_CHECKS = List.of("Imports classes that are neither", "Bindings that are not valid", "The view binds",
+            CrossFileJava.UNWRITTEN, CrossFileJava.MISSING_METHODS, CrossFileJava.MISSING_NESTED, CrossFileJava.UNKNOWN_RECEIVERS,
+            CrossFileJava.MISSING_IMPORTS, CrossFileJava.UNKNOWN_CLASSES, JsModuleChecks.CALLED_BEFORE_SET,
+            JsModuleChecks.NEVER_SET, JsModuleChecks.UNKNOWN_MODULES, JsModuleChecks.WRONG_BINDING, JsModuleChecks.NOT_RECEIVED,
+            JsModuleChecks.BUNDLE_GET, JsModuleChecks.BUNDLE_KEYS);
+
+    /**
+     * The cross-file findings that are certain errors, which fail the file so that the fix loop writes it again: a Java
+     * call on a name the class never declares, a method or nested type the called class of the change lacks, a JDK class
+     * without its import (when no class of the package has its name), and a view model whose define list or resource
+     * bundle does not work as written, and a view that binds names the view model written in the same change lacks.
+     * The others (a class of the codebase not found, a binding against a view model of the codebase) may be wrong and
+     * stay warnings.
+     */
+    static final List<String> CROSS_ERRORS = java.util.stream.Stream.concat(java.util.stream.Stream.of(CrossFileJava.MISSING_METHODS,
+            CrossFileJava.MISSING_NESTED, CrossFileJava.UNKNOWN_RECEIVERS, CrossFileJava.MISSING_IMPORTS, ViewBindings.UNDEFINED_IN_CHANGE),
+            JsModuleChecks.ERRORS.stream()).toList();
+
+    static boolean crossError(String line) {
+        return CROSS_ERRORS.stream().anyMatch(line::startsWith);
+    }
+
+    /**
+     * Whether the code base knows an AMD module: another file (indexed, or written in this change) names it in quotes,
+     * as a define list or the RequireJS configuration does, or an indexed file's path has its name. Null when no
+     * JavaScript is indexed, so it cannot be told.
+     */
+    private Predicate<String> moduleKnown(UUID workspaceId, String path, Map<String, String> written) {
+        Boolean anyJs = jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM code_file WHERE workspace_id = ? AND language = 'javascript')",
+                Boolean.class, workspaceId);
+        if (!Boolean.TRUE.equals(anyJs)) {
+            return null;
+        }
+        return module -> {
+            String quoted1 = "'" + module + "'";
+            String quoted2 = "\"" + module + "\"";
+            if (written.entrySet().stream().anyMatch(e -> !e.getKey().equals(path) && (e.getValue().contains(quoted1) || e.getValue().contains(quoted2)))) {
+                return true;
+            }
+            String name = module.substring(module.lastIndexOf('/') + 1);
+            return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM code_chunk WHERE workspace_id = ? AND path <> ? "
+                            + "AND (strpos(content, ?) > 0 OR strpos(content, ?) > 0)) OR EXISTS (SELECT 1 FROM code_file WHERE workspace_id = ? "
+                            + "AND strpos(lower(path), lower(?)) > 0)", Boolean.class, workspaceId, path, quoted1, quoted2, workspaceId, name));
+        };
+    }
+
+    /**
+     * The cross-file findings of a file's check, for the model when the file is written again: they are certain (the
+     * other files say so), so the model is told to fix them although the check shows them as warnings.
+     */
+    static String crossFileFixes(String checkMessage) {
+        if (checkMessage == null) {
+            return "";
+        }
+        // and the file's own compile errors that come from what it uses (methods never written, or written twice)
+        List<String> lines = checkMessage.lines().filter(line -> CROSS_CHECKS.stream().anyMatch(line::startsWith)
+                || line.contains("(" + com.obdx.factory.pack.JavaCompileChecks.UNDECLARED_RULE + ",")
+                || line.contains("(" + com.obdx.factory.pack.JavaCompileChecks.DUPLICATE_RULE + ",")).toList();
+        return lines.isEmpty() ? "" : "Fix these problems found by comparing this file with the other files of the change:\n- "
+                + String.join("\n- ", lines);
+    }
+
+    /**
+     * A file's check with this cross-check's findings in place of the previous ones: failed while there is a certain
+     * error among them, a warning while there are others, back to passed when they are gone and the file's own check
+     * found nothing.
+     *
+     * @param status the file's own status (without the cross-check's findings)
+     */
+    static FileChecks.Result withCrossChecks(FileChecks.Status status, String message, List<String> problems) {
+        String own = message == null ? "" : message.lines().filter(line -> CROSS_CHECKS.stream().noneMatch(line::startsWith))
+                .collect(java.util.stream.Collectors.joining("\n")).strip();
+        String added = String.join("\n", problems);
+        String combined = own.isEmpty() ? added : added.isEmpty() ? own : own + "\n" + added;
+        FileChecks.Status result = status == FileChecks.Status.FAILED || problems.stream().anyMatch(ChangeService::crossError)
+                ? FileChecks.Status.FAILED
+                : !problems.isEmpty() ? FileChecks.Status.WARNING
+                : status == FileChecks.Status.WARNING && own.isEmpty() ? FileChecks.Status.PASSED : status;
+        return new FileChecks.Result(result, combined.isEmpty() ? null : combined);
+    }
+
+    /**
+     * A view's view model and whether it is the .js file of the view's name written in this same change (then the two
+     * were written for each other, and a name the view binds that it lacks is an error).
+     */
+    record ViewModel(String content, boolean inChange) {
+    }
+
+    /**
+     * The view model of a JET view: the .js file of the same name next to it (written in this change or existing),
+     * else a model.js beside it that holds observables; null when there is none.
+     */
+    static ViewModel viewModel(String viewPath, Map<String, String> written, Path workingCopy) {
+        return viewModel(viewPath, written, workingCopy, path -> false);
+    }
+
+    /**
+     * @param planned whether a file is planned in the change: a view whose own view model is planned but not written
+     *                yet has none to compare with (not a model.js beside it), as its prompt had none either
+     */
+    static ViewModel viewModel(String viewPath, Map<String, String> written, Path workingCopy, Predicate<String> planned) {
+        String folder = viewPath.contains("/") ? viewPath.substring(0, viewPath.lastIndexOf('/') + 1) : "";
+        // x.js or x.ts beside it, or in js/viewModels for js/views/x.html; only then a model.js with observables beside it
+        List<String> named = ViewBindings.viewModelPaths(viewPath);
+        List<String> candidates = new ArrayList<>(named);
+        if (named.stream().noneMatch(planned)) {
+            candidates.add(folder + "model.js");
+        }
+        for (String candidate : candidates) {
+            String content = written.get(candidate);
+            boolean own = named.contains(candidate);
+            boolean inChange = content != null && own;
+            if (content == null && workingCopy != null) {
+                try {
+                    Path file = workingCopy.resolve(candidate);
+                    content = Files.isRegularFile(file) && within(workingCopy, file) ? read(file) : null;
+                } catch (IOException e) {
+                    content = null;
+                }
+            }
+            if (content != null && (own || content.contains("ko.observable"))) {
+                return new ViewModel(content, inChange);
+            }
+        }
+        return null;
     }
 
     // --- review and delivery ---
 
     @Transactional(readOnly = true)
     public FileContent fileContent(UUID id, String path) {
+        RequestText.requirePath(path);
         ChangeRequest change = find(id);
         ChangeFileStore.ChangeFile file = files.file(id, path).orElseThrow(() -> new NotFoundException("No file " + path + " in this change"));
         String diff = file.generated() == null ? "" : PatchWriter.write(
@@ -400,8 +1659,16 @@ public class ChangeService {
 
     @Transactional(readOnly = true)
     public String patch(UUID id) {
+        return patch(id, false);
+    }
+
+    /** @param incomplete true: the reviewer confirmed delivering although planned files are not written */
+    public String patch(UUID id, boolean incomplete) {
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.GENERATED, ChangeRequest.Status.DELIVERED);
+        if (!incomplete) {
+            requireComplete(files.files(id));
+        }
         List<PatchWriter.FileChange> fileChanges = deliverable(id).stream()
                 .map(f -> new PatchWriter.FileChange(f.path(), f.original(), f.generated())).toList();
         return PatchWriter.write(fileChanges, change.getBaseRevision());
@@ -412,9 +1679,56 @@ public class ChangeService {
      * generated files are put into it. Nothing is changed on trunk.
      */
     public ChangeDetail deliverToBranch(UUID id) {
+        return deliverToBranch(id, false);
+    }
+
+    /** @param incomplete true: the reviewer confirmed delivering although planned files are not written */
+    public ChangeDetail deliverToBranch(UUID id, boolean incomplete) {
+        return deliverToBranch(id, incomplete, false);
+    }
+
+    /** @param failedChecks true: the reviewer confirmed delivering files that fail their checks */
+    public ChangeDetail deliverToBranch(UUID id, boolean incomplete, boolean failedChecks) {
         ChangeRequest change = find(id);
         requireStatus(change, ChangeRequest.Status.GENERATED);
         requireNotBuilding(change);
+        if (!incomplete) {
+            requireComplete(files.files(id));
+        }
+        if (!failedChecks) {
+            requireChecksPassed(files.files(id));
+        }
+        // the working copy is read while delivering: not while it is checked out again
+        if (!locks.hold(change.getWorkspaceId(), "delivered")) {
+            locks.requireFree(change.getWorkspaceId());
+            throw new ConflictException("The workspace's code was busy. Try again.");
+        }
+        try {
+            return deliver(change, id);
+        } finally {
+            locks.release(change.getWorkspaceId());
+        }
+    }
+
+    /** Where Approve and deliver commits the change (relative to the repository root) and with which message. */
+    public record DeliveryPreview(String branch, String message) {
+    }
+
+    public DeliveryPreview deliveryPreview(UUID id) {
+        ChangeRequest change = find(id);
+        return new DeliveryPreview(branchFor(id), commitMessage(change, id));
+    }
+
+    private String branchFor(UUID id) {
+        return properties.branchFolder().replaceAll("^/+|/+$", "") + "/cr-" + id.toString().substring(0, 8);
+    }
+
+    private static String commitMessage(ChangeRequest change, UUID id) {
+        return "OBDX Development Factory: " + change.getTitle() + " (change " + id.toString().substring(0, 8)
+                + ", plan approved by " + change.getPlanApprovedBy() + ")";
+    }
+
+    private ChangeDetail deliver(ChangeRequest change, UUID id) {
         List<ChangeFileStore.ChangeFile> deliverable = deliverable(id);
         if (deliverable.isEmpty()) {
             throw new BadRequestException("There are no changed files to deliver");
@@ -424,8 +1738,7 @@ public class ChangeService {
         SvnClient.SvnInfo info = svn.info(workspace.getSvnUrl(), credentials);
         String root = info.repositoryRoot();
         String source = info.url().substring(root.length()).replaceAll("^/+", "");
-        String folder = properties.branchFolder().replaceAll("^/+|/+$", "");
-        String branch = folder + "/cr-" + id.toString().substring(0, 8);
+        String branch = branchFor(id);
         if (svn.exists(root + "/" + branch, credentials)) {
             throw new ConflictException("The branch " + branch + " already exists");
         }
@@ -434,7 +1747,7 @@ public class ChangeService {
         try {
             List<String> operations = new ArrayList<>();
             String parent = "";
-            for (String part : folder.split("/")) {
+            for (String part : branch.substring(0, branch.lastIndexOf('/')).split("/")) {
                 parent = parent.isEmpty() ? part : parent + "/" + part;
                 if (!svn.exists(root + "/" + parent, credentials)) {
                     operations.addAll(List.of("mkdir", parent));
@@ -462,11 +1775,23 @@ public class ChangeService {
                 operations.addAll(List.of("put", content.toString(), branch + "/" + file.path()));
             }
 
-            String message = "OBDX Development Factory: " + change.getTitle() + " (change " + id.toString().substring(0, 8)
-                    + ", plan approved by " + change.getPlanApprovedBy() + ")";
+            String message = commitMessage(change, id);
             long revision = svn.multiCommit(root, message, operations, credentials);
             change.delivered(root + "/" + branch, revision);
-            return detail(changes.save(change));
+            List<ChangeFileStore.ChangeFile> all = files.files(id);
+            change.status(ChangeRequest.Status.DELIVERED, deliveredMessage(root + "/" + branch, revision, deliverable.size(),
+                    all.stream().filter(f -> f.status() != ChangeFileStore.Status.UNCHANGED).count(), unwritten(all)));
+            ChangeDetail delivered = detail(changes.save(change));
+            // What this change touched becomes a suggested knowledge note, for the next similar change
+            // (the commit is made: a note that cannot be written does not make the delivery fail)
+            try {
+                ChangePlan plan = change.getPlan() == null ? null : json.readValue(change.getPlan(), ChangePlan.class);
+                knowledge.learnFromChange(change.getWorkspaceId(), change.getTitle(), plan == null ? null : plan.summary(),
+                        deliverable.stream().map(ChangeFileStore.ChangeFile::path).toList());
+            } catch (RuntimeException e) {
+                log.warn("Could not suggest a knowledge note for delivered change {}", id, e);
+            }
+            return delivered;
         } catch (IOException e) {
             throw new UncheckedIOException("Could not prepare the files for delivery", e);
         } finally {
@@ -483,6 +1808,12 @@ public class ChangeService {
     @Transactional(readOnly = true)
     public ChangeDetail get(UUID id) {
         return detail(find(id));
+    }
+
+    /** The details of every change of a workspace, newest first. */
+    @Transactional(readOnly = true)
+    public List<ChangeDetail> details(UUID workspaceId) {
+        return changes.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId).stream().map(this::detail).toList();
     }
 
     @Transactional(readOnly = true)
@@ -511,6 +1842,7 @@ public class ChangeService {
     public void failInterrupted() {
         int count = changes.failRunning("Interrupted because the server restarted. Analyze again.", OffsetDateTime.now());
         count += changes.failBuilding("Interrupted because the server restarted. Build again.");
+        builds.closeAllUnfinished("Interrupted because the server restarted. Build again.");
         if (count > 0) {
             log.warn("Marked {} change(s) as failed after restart", count);
         }
@@ -519,7 +1851,16 @@ public class ChangeService {
     // --- helpers ---
 
     /** Background work must see the committed change, so it starts only after the current transaction commits. */
-    private void startAfterCommit(Runnable work) {
+    private void startAfterCommit(Runnable job) {
+        // Each job may wait on rate limits only so long in all: the jobs share one thread
+        Runnable work = () -> {
+            com.obdx.factory.model.WaitBudget.start(com.obdx.factory.model.WaitBudget.PER_JOB);
+            try {
+                job.run();
+            } finally {
+                com.obdx.factory.model.WaitBudget.end();
+            }
+        };
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
@@ -535,7 +1876,7 @@ public class ChangeService {
     /** The requirement's screen designs: the approved version of each (the current one if not approved). */
     private List<ScreenModel> designModels(ChangeRequest change) {
         List<ScreenModel> models = new ArrayList<>();
-        for (ScreenDesign design : designs.findByRequirementIdOrderByCreatedAt(change.getRequirementId())) {
+        for (ScreenDesign design : designs.findByRequirementIdOrderByCreatedAtAscIdAsc(change.getRequirementId())) {
             int version = design.getApprovedVersion() != null ? design.getApprovedVersion() : design.getCurrentVersion();
             designStore.model(design.getId(), version).ifPresent(models::add);
         }
@@ -546,8 +1887,9 @@ public class ChangeService {
         String designsJson = null;
         List<ScreenModel> models = designModels(change);
         if (!models.isEmpty()) {
-            designsJson = json.writeValueAsString(models);
+            designsJson = json.writeValueAsString(compact(json.valueToTree(models)));
         }
+        String specJson = specForModel(json, requirement.spec());
         String profile;
         try {
             profile = profiles.get(change.getWorkspaceId()).facts().stream().filter(f -> f.value() != null)
@@ -555,9 +1897,55 @@ public class ChangeService {
         } catch (NotFoundException e) {
             profile = "";
         }
-        return new ChangeContext(change.getTitle(), json.writeValueAsString(requirement.spec()), designsJson, profile,
+        return new ChangeContext(change.getTitle(), specJson, designsJson, profile,
                 structure(change.getWorkspaceId()), packs.scope(change.getWorkspaceId()), recipes.planGuide(change.getWorkspaceId()),
-                targets.planGuide(change.getWorkspaceId()), models);
+                targets.planGuide(change.getWorkspaceId()), models,
+                knowledge.contextFor(change.getWorkspaceId(), change.getTitle() + "\n" + ChangeContext.cap(specJson, 1500), 5000),
+                existsIn(change.getWorkspaceId()));
+    }
+
+    /** The spec's parts in the order the model needs them most: a prompt that shortens the spec cuts the background lists. */
+    private static final List<String> SPEC_ORDER = List.of("title", "summary", "requirements", "acceptanceCriteria", "screens",
+            "businessRules", "messages", "roles", "apis", "hostInteractions", "nonFunctional", "scope", "outOfScope", "assumptions");
+
+    /**
+     * The approved spec as the model reads it: most useful parts first and without empty values. The questions are
+     * left out: the spec already reflects the answered ones, and the open ones are not needed to write code.
+     */
+    static String specForModel(ObjectMapper json, RequirementSpec spec) {
+        tools.jackson.databind.node.ObjectNode all = compact(json.valueToTree(spec)) instanceof tools.jackson.databind.node.ObjectNode o
+                ? o : json.createObjectNode();
+        tools.jackson.databind.node.ObjectNode ordered = json.createObjectNode();
+        for (String part : SPEC_ORDER) {
+            if (all.has(part)) {
+                ordered.set(part, all.get(part));
+            }
+        }
+        return json.writeValueAsString(ordered);
+    }
+
+    /** Removes nulls, empty texts, lists and objects, which only make a prompt longer. */
+    static tools.jackson.databind.JsonNode compact(tools.jackson.databind.JsonNode node) {
+        if (node instanceof tools.jackson.databind.node.ObjectNode object) {
+            for (String name : object.properties().stream().map(Map.Entry::getKey).toList()) {
+                tools.jackson.databind.JsonNode value = compact(object.get(name));
+                if (empty(value)) {
+                    object.remove(name);
+                }
+            }
+        } else if (node instanceof tools.jackson.databind.node.ArrayNode array) {
+            for (int i = array.size() - 1; i >= 0; i--) {
+                if (empty(compact(array.get(i)))) {
+                    array.remove(i);
+                }
+            }
+        }
+        return node;
+    }
+
+    private static boolean empty(tools.jackson.databind.JsonNode value) {
+        return value == null || value.isNull() || (value.isTextual() && value.asText().isBlank())
+                || ((value.isArray() || value.isObject()) && value.size() == 0);
     }
 
     /**
@@ -565,6 +1953,11 @@ public class ChangeService {
      * test or texts), or null.
      */
     ScreenScaffolder.Scaffold scaffold(ChangeContext context, String path, String current) {
+        // The premium JET pack's own files are written as the factory ships them (installing or upgrading the pack)
+        java.util.Optional<String> shipped = com.obdx.factory.componentpack.PackFiles.forPath(path);
+        if (shipped.isPresent()) {
+            return new ScreenScaffolder.Scaffold(ScreenScaffolder.FIXED, shipped.get(), List.of());
+        }
         CheckScope scope = context.checks();
         if (!scope.inApp(path)) {
             return null;
@@ -591,7 +1984,10 @@ public class ChangeService {
         spec.hostInteractions().forEach(host -> queries.add((host.system() == null ? "" : host.system()) + " " + host.description()));
 
         Map<String, ImpactAnalyzer.Candidate> found = new LinkedHashMap<>();
-        for (String query : queries) {
+        for (String asWritten : queries) {
+            // In OBDX's own words too: a BRD's "beneficiary" is a payee in the code
+            String inCode = com.obdx.factory.knowledge.ObdxGlossary.inManualWords(asWritten);
+            String query = inCode == null ? asWritten : asWritten + " " + inCode;
             try {
                 for (CodeSearchService.SearchResult result : codeSearch.search(workspaceId, query, 6).results()) {
                     found.putIfAbsent(result.path() + ":" + result.startLine(), new ImpactAnalyzer.Candidate(
@@ -610,6 +2006,59 @@ public class ChangeService {
     private Predicate<String> existsIn(UUID workspaceId) {
         Path workingCopy = storage.workingCopy(workspaceId);
         return path -> Files.isRegularFile(workingCopy.resolve(path));
+    }
+
+    /**
+     * "Committed 3 of 5 file(s) to .../cr-1a2b3c4d in revision 4; not delivered: a.js, b.html." for a delivery made
+     * without the files not written; the usual message when every planned file went.
+     */
+    static String deliveredMessage(String branchUrl, long revision, int committed, long planned, List<String> notDelivered) {
+        if (notDelivered.isEmpty()) {
+            return "Committed to " + branchUrl + " in revision " + revision + ".";
+        }
+        return "Committed " + committed + " of " + planned + " file(s) to " + branchUrl + " in revision " + revision + "; not delivered: "
+                + String.join(", ", notDelivered) + ".";
+    }
+
+    /** Planned files that are not written (not yet, or the model could not write them). */
+    static List<String> unwritten(List<ChangeFileStore.ChangeFile> files) {
+        return files.stream().filter(f -> f.status() == ChangeFileStore.Status.PENDING
+                || (f.status() == ChangeFileStore.Status.FAILED && f.generated() == null)
+                || partial(f)).map(ChangeFileStore.ChangeFile::path).toList();
+    }
+
+    /**
+     * A delivery leaves out files that are not written, so the branch or patch would not build: refused unless the
+     * reviewer confirmed it (the UI asks and sends the request again).
+     */
+    static void requireComplete(List<ChangeFileStore.ChangeFile> files) {
+        List<String> missing = unwritten(files);
+        if (!missing.isEmpty()) {
+            throw new ConflictException(INCOMPLETE + missing.size() + " planned file(s) are not written: " + String.join(", ", missing)
+                    + ". Write them first (Continue generation or Write again), or deliver without them.");
+        }
+    }
+
+    /** How a refused incomplete delivery starts, so the UI can offer to deliver anyway. */
+    static final String INCOMPLETE = "Incomplete change: ";
+
+    /** How a refused delivery of files that fail their checks starts, so the UI can offer to deliver anyway. */
+    static final String FAILED_CHECKS = "Failing checks: ";
+
+    /** The written files that would be delivered although their own checks failed. */
+    static List<String> failingChecks(List<ChangeFileStore.ChangeFile> files) {
+        return files.stream().filter(f -> f.status() == ChangeFileStore.Status.GENERATED && f.generated() != null
+                && f.checkStatus() == FileChecks.Status.FAILED).map(ChangeFileStore.ChangeFile::path).toList();
+    }
+
+    /** Refuses delivering files that fail their checks, naming them, unless the reviewer confirmed it. */
+    static void requireChecksPassed(List<ChangeFileStore.ChangeFile> files) {
+        List<String> failing = failingChecks(files);
+        if (!failing.isEmpty()) {
+            throw new ConflictException(FAILED_CHECKS + failing.size() + " file(s) fail their checks: "
+                    + String.join(", ", failing.stream().limit(10).toList()) + (failing.size() > 10 ? " and " + (failing.size() - 10) + " more" : "")
+                    + ". Fix them first (Write again, or edit them), or submit them as they are.");
+        }
     }
 
     private List<ChangeFileStore.ChangeFile> deliverable(UUID id) {
@@ -635,13 +2084,30 @@ public class ChangeService {
                 }
             }
             return new FileView(f.path(), f.action(), f.layer(), f.purpose(), f.status(), f.edited(), f.checkStatus(),
-                    f.checkMessage(), f.attempts(), added, removed);
+                    withRewrite(f), f.attempts(), added, removed);
         }).toList();
         return new ChangeDetail(c.getId(), c.getWorkspaceId(), c.getRequirementId(), c.getTitle(), c.getStatus(), c.getMessage(),
                 c.getBaseRevision(), c.getPlan() == null ? null : json.readValue(c.getPlan(), ChangePlan.class),
                 c.getPlanApprovedBy(), c.getPlanApprovedAt(), c.getBranchUrl(), c.getDeliveredRevision(), c.getCreatedBy(),
                 c.getCreatedAt(), c.getUpdatedAt(), views, c.getBuildStatus(), c.getBuildMessage(), builds.list(c.getId()),
-                c.getClosedReason(), c.getClosedBy(), c.getClosedAt(), c.getBranchDeletedRevision());
+                c.getClosedReason(), c.getClosedBy(), c.getClosedAt(), c.getBranchDeletedRevision(), events(c));
+    }
+
+    /** The audited events of the change that its own dates do not show (files written again, failed deliveries), oldest first. */
+    private List<HistoryEvent> events(ChangeRequest c) {
+        List<HistoryEvent> events = jdbc.query("SELECT at, username, action, detail FROM audit_event WHERE workspace_id = ? AND target = ? "
+                        + "AND action IN (?, ?) ORDER BY at DESC, id DESC LIMIT 50",
+                (rs, i) -> new HistoryEvent(rs.getTimestamp("at").toInstant().atOffset(java.time.ZoneOffset.UTC), rs.getString("username"),
+                        historyText(rs.getString("action"), rs.getString("detail"))),
+                c.getWorkspaceId(), c.getId().toString(), ChangeController.WRITTEN_AGAIN, ChangeController.DELIVERY_FAILED);
+        List<HistoryEvent> oldestFirst = new ArrayList<>(events == null ? List.of() : events);
+        java.util.Collections.reverse(oldestFirst);
+        return oldestFirst;
+    }
+
+    static String historyText(String action, String detail) {
+        String text = detail == null ? "" : detail;
+        return ChangeController.WRITTEN_AGAIN.equals(action) ? "Write again of " + text : "Delivery failed: " + text;
     }
 
     static void requireNotBuilding(ChangeRequest change) {
@@ -666,6 +2132,18 @@ public class ChangeService {
 
     private Workspace workspace(UUID id) {
         return workspaces.findById(id).orElseThrow(() -> new NotFoundException("Workspace not found: " + id));
+    }
+
+    /**
+     * Whether a file of the working copy really is in it: a link (symlink) in the bank's code could lead to any file on
+     * the server, which would then go to the model and into the change.
+     */
+    static boolean within(Path workingCopy, Path file) {
+        try {
+            return file.toRealPath().startsWith(workingCopy.toRealPath());
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     private static String read(Path file) throws IOException {

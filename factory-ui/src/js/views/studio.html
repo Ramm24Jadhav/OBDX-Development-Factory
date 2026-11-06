@@ -1,0 +1,370 @@
+<div :class="[[editing() ? 'factory-pg factory-studio is-editing' : 'factory-pg factory-studio']]">
+  <oj-bind-if test="[[canUpload()]]">
+    <input type="file" id="studioFile" class="fx-visually-hidden" accept=".docx,.doc,.pdf,.txt,.md" on-change="[[fileSelected]]">
+  </oj-bind-if>
+
+  <!-- 1. Where am I: the BRD and its stage, in one row -->
+  <section class="fx-card factory-studio-head" id="studioBar" aria-label="BRD and stage">
+    <h1 class="factory-studio-title">Design Studio</h1>
+    <oj-bind-if test="[[requirements().length > 0]]">
+      <fx-select id="studioBrd" class="factory-studio-brd" label="BRD" hide-label placeholder="Choose a BRD" searchable
+                 options="[[requirementOptions]]" value="{{brdPick}}"></fx-select>
+    </oj-bind-if>
+    <oj-bind-if test="[[stage() !== 0]]">
+      <ol class="factory-studio-stepper" aria-label="Stages">
+        <oj-bind-for-each data="[[steps]]" as="st">
+          <template>
+            <li :class="[[st.data.css]]" :aria-current="[[st.data.current]]" :title="[[st.data.label + ': ' + st.data.sub]]">
+              <span class="factory-studio-stepper-dot" aria-hidden="true"><oj-bind-text value="[[st.data.mark]]"></oj-bind-text></span>
+              <span class="factory-studio-stepper-text"><oj-bind-text value="[[st.data.text]]"></oj-bind-text></span>
+            </li>
+          </template>
+        </oj-bind-for-each>
+      </ol>
+    </oj-bind-if>
+    <oj-bind-if test="[[stage() === 0]]"><span class="factory-studio-head-fill"></span></oj-bind-if>
+    <div class="factory-studio-head-actions">
+      <oj-bind-if test="[[headerAction()]]">
+        <button type="button" id="studioNextAction" :class="[[nextButtonCss]]" on-click="[[headerAction().action]]"><oj-bind-text value="[[headerAction().label]]"></oj-bind-text></button>
+      </oj-bind-if>
+      <oj-bind-if test="[[stage() === 1 && canUpload()]]">
+        <label for="studioFile" class="fx-btn fx-btn--primary"><span class="factory-nav-icon factory-ico-upload" aria-hidden="true"></span>Choose a BRD</label>
+      </oj-bind-if>
+      <oj-bind-if test="[[stage() !== 1 && canUpload()]]">
+        <label for="studioFile" id="studioUploadButton" class="fx-btn fx-btn--secondary" title="Upload another BRD"><span class="factory-nav-icon factory-ico-upload" aria-hidden="true"></span><span class="factory-studio-hide-sm">Upload BRD</span></label>
+      </oj-bind-if>
+    </div>
+    <!-- Phones: the stage as a line of dots -->
+    <div class="factory-studio-phonestage" aria-hidden="true">
+      <oj-bind-for-each data="[[steps]]" as="st"><template><span :class="[['factory-studio-pdot' + (st.data.done ? ' is-done' : st.data.current ? ' is-current' : '')]]"></span></template></oj-bind-for-each>
+      <strong><oj-bind-text value="[[stageChip]]"></oj-bind-text></strong><span><oj-bind-text value="[[stageChipSub]]"></oj-bind-text></span>
+    </div>
+  </section>
+  <!-- What to do next: shown until there are screens; read out whenever it changes -->
+  <p :class="[[hasScreens() ? 'fx-visually-hidden' : 'factory-studio-next']]" id="studioNext" aria-live="polite">
+    <oj-bind-if test="[[next().busy]]"><span class="factory-nav-icon factory-ico-refresh fx-status-spin" aria-hidden="true"></span></oj-bind-if>
+    <strong><oj-bind-text value="[[next().title]]"></oj-bind-text></strong>
+    <span><oj-bind-text value="[[next().text]]"></oj-bind-text></span>
+  </p>
+
+  <oj-bind-if test="[[errorMessage()]]">
+    <div class="fx-alert fx-alert--danger" id="studioError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+      <span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span></div>
+  </oj-bind-if>
+
+  <!-- A new blank screen, or one to import into -->
+  <oj-bind-if test="[[newKind()]]">
+    <div class="fx-card factory-studio-new" id="studioNewPanel" role="group" aria-labelledby="studioNewTitle">
+      <div class="factory-studio-new-text">
+        <h2 id="studioNewTitle"><oj-bind-text value="[[newTitle]]"></oj-bind-text></h2>
+        <p class="fx-card-sub"><oj-bind-text value="[[newHint]]"></oj-bind-text></p>
+      </div>
+      <fx-input id="studioNewName" class="factory-studio-new-name" label="Screen name" hide-label placeholder="Fixed deposit opening" value="{{newName}}"></fx-input>
+      <button type="button" id="studioNewCreate" class="fx-btn fx-btn--primary" on-click="[[createNew]]"><oj-bind-text value="[[newKind() === 'import' ? 'Create and import' : 'Create']]"></oj-bind-text></button>
+      <button type="button" class="fx-btn fx-btn--ghost" on-click="[[cancelNew]]">Cancel</button>
+    </div>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[chosenName()]]">
+    <div class="fx-card factory-studio-upload" id="studioUploadConfirm">
+      <span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span>
+      <span class="factory-studio-upload-name"><oj-bind-text value="[[chosenName]]"></oj-bind-text></span>
+      <button type="button" class="fx-btn fx-btn--primary" id="studioUploadGo" on-click="[[upload]]">Upload and draft the spec</button>
+      <button type="button" class="fx-btn fx-btn--ghost" on-click="[[cancelUpload]]">Cancel</button>
+    </div>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[hasScreens()]]">
+    <!-- 2. What to work on: one requirement at a time, its screens in the order the customer sees them -->
+    <oj-bind-if test="[[showScreensPanel()]]">
+      <section class="fx-card factory-studio-screens" id="studioScreens" aria-labelledby="studioScreensTitle" on-keydown="[[carouselKey]]">
+        <div class="factory-studio-screens-head">
+          <div class="factory-studio-screens-title">
+            <div class="factory-studio-screens-line">
+              <h2 id="studioScreensTitle">Screens</h2>
+              <oj-bind-if test="[[manyGroups()]]">
+                <fx-select id="studioGroup" class="factory-studio-group" label="Requirement" hide-label options="[[groupOptions]]" value="{{groupPick}}"></fx-select>
+              </oj-bind-if>
+              <oj-bind-if test="[[!manyGroups() && group()]]">
+                <span class="factory-studio-group-one"><oj-bind-text value="[[groupOptions()[0] ? groupOptions()[0].label : '']]"></oj-bind-text></span>
+              </oj-bind-if>
+            </div>
+            <span class="fx-card-sub">Pick a screen to review. They are in the order the customer sees them.</span>
+          </div>
+          <span class="factory-studio-screens-fill"></span>
+          <span class="factory-studio-screens-count" id="studioGroupCount"><oj-bind-text value="[[groupCount]]"></oj-bind-text></span>
+          <oj-bind-if test="[[canDesign()]]">
+            <fx-menu-button id="studioNew" label="New screen" icon="plus" variant="secondary" size="sm" items="[[newMenuItems]]" on-fx-action="[[newMenu]]"></fx-menu-button>
+          </oj-bind-if>
+          <oj-bind-if test="[[canApproveAll()]]">
+            <button type="button" id="studioApproveAll" class="fx-btn fx-btn--secondary fx-btn--sm factory-studio-approveall" on-click="[[approveAll]]">
+              <span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Approve All</button>
+          </oj-bind-if>
+          <button type="button" id="studioHideScreens" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon" aria-label="Hide the screens" title="Hide the screens" on-click="[[hideScreens]]">▴</button>
+        </div>
+        <div class="factory-studio-carousel">
+          <oj-bind-if test="[[manyGroups()]]">
+            <button type="button" id="studioPrevGroup" class="factory-studio-arrow" aria-label="Previous requirement" on-click="[[previousGroup]]" :disabled="[[!hasPreviousGroup()]]">‹</button>
+          </oj-bind-if>
+          <div class="factory-studio-track">
+            <oj-bind-if test="[[flowScreens().length > 0]]">
+              <ol :class="[[cardsCss]]" aria-label="Screens in order. Use the arrow keys to move between them." on-keydown="[[nodeKey]]">
+                <oj-bind-for-each data="[[flowScreens]]" as="s">
+                  <template>
+                    <li>
+                      <button type="button" :class="[[s.data.css]]" :aria-pressed="[[s.data.pressed]]" :aria-current="[[s.data.current]]" :data-studio-node="[[s.data.id]]" on-click="[[s.data.pick]]">
+                        <span class="factory-studio-node-n"><oj-bind-text value="[[s.data.number]]"></oj-bind-text></span>
+                        <span class="factory-studio-node-text">
+                          <strong><oj-bind-text value="[[s.data.name]]"></oj-bind-text></strong>
+                          <span class="factory-studio-node-meta"><oj-bind-text value="[[s.data.meta]]"></oj-bind-text><span class="factory-studio-node-warn"><oj-bind-text value="[[s.data.warn]]"></oj-bind-text></span></span>
+                        </span>
+                      </button>
+                    </li>
+                  </template>
+                </oj-bind-for-each>
+              </ol>
+            </oj-bind-if>
+            <oj-bind-if test="[[missingScreens()]]">
+              <p class="fx-card-sub factory-studio-track-note">The spec names <oj-bind-text value="[[missingScreens]]"></oj-bind-text> for this requirement, but no screen has that name. A screen may have been renamed: look under Other screens.</p>
+            </oj-bind-if>
+            <oj-bind-if test="[[flowScreens().length === 0 && !missingScreens()]]">
+              <p class="fx-card-sub factory-studio-track-note">This requirement needs no screen of its own (a rule or a back-end change). Its code comes with the BRD's change.</p>
+            </oj-bind-if>
+          </div>
+          <oj-bind-if test="[[manyGroups()]]">
+            <button type="button" id="studioNextGroup" class="factory-studio-arrow" aria-label="Next requirement" on-click="[[nextGroup]]" :disabled="[[!hasNextGroup()]]">›</button>
+          </oj-bind-if>
+        </div>
+        <oj-bind-if test="[[manyGroups()]]">
+          <div class="factory-studio-dots">
+            <oj-bind-for-each data="[[groupDots]]" as="d">
+              <template><button type="button" :class="[[d.data.css]]" :aria-label="[[d.data.label]]" :aria-current="[[d.data.current]]" on-click="[[d.data.pick]]"></button></template>
+            </oj-bind-for-each>
+            <span class="fx-card-sub" id="studioGroupPosition"><oj-bind-text value="[[groupPosition]]"></oj-bind-text></span>
+          </div>
+        </oj-bind-if>
+        <!-- Phones: the screen switcher -->
+        <div class="factory-studio-phoneswitch">
+          <button type="button" class="factory-studio-arrow" aria-label="Previous screen" on-click="[[previousScreen]]" :disabled="[[!hasPrevious()]]">‹</button>
+          <span class="factory-studio-phonecard"><span class="fx-card-sub"><oj-bind-text value="[[screenMeta]]"></oj-bind-text></span>
+            <strong><oj-bind-text value="[[screen() ? screen().name : '']]"></oj-bind-text></strong></span>
+          <button type="button" class="factory-studio-arrow" aria-label="Next screen" on-click="[[nextScreen]]" :disabled="[[!hasNext()]]">›</button>
+        </div>
+      </section>
+    </oj-bind-if>
+    <oj-bind-if test="[[screensHidden() && !expanded()]]">
+      <div class="factory-studio-screens-hidden">
+        <button type="button" id="studioShowScreens" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[showScreens]]">▾ Show the screens</button>
+      </div>
+    </oj-bind-if>
+
+    <!-- 3. The screen, and 4. what is left before approving it -->
+    <section :class="[[editing() ? 'fx-card factory-studio-canvas is-editing' : 'fx-card factory-studio-canvas']]" aria-labelledby="studioScreenTitle">
+      <oj-bind-if test="[[!screen()]]">
+        <p class="fx-card-sub factory-studio-pick" id="studioScreenTitle">Pick a screen in the Screens panel to review it.</p>
+      </oj-bind-if>
+      <oj-bind-if test="[[screen()]]">
+        <div class="factory-studio-canvas-head" id="studioScreenHead">
+          <div class="factory-studio-canvas-row">
+            <div class="factory-studio-canvas-title">
+              <div class="factory-studio-canvas-name">
+                <h2 id="studioScreenTitle"><oj-bind-text value="[[screen().name]]"></oj-bind-text></h2>
+                <span :class="[[screenStatus().css]]"><oj-bind-text value="[[screenStatus().text]]"></oj-bind-text></span>
+                <oj-bind-if test="[[editing() && editorDirty()]]"><span class="fx-badge fx-badge--warning factory-dz-unsaved" id="studioUnsaved">Unsaved changes</span></oj-bind-if>
+                <oj-bind-if test="[[editing() && !editorDirty() && justSaved()]]"><span class="factory-studio-saved" id="studioSaved">✓ Saved</span></oj-bind-if>
+              </div>
+              <span class="fx-card-sub" id="studioScreenMeta"><oj-bind-text value="[[screenMeta]]"></oj-bind-text></span>
+            </div>
+            <div class="factory-studio-switch" role="group" :aria-label="[[positionLabel]]">
+              <button type="button" id="studioPrevScreen" aria-label="Previous screen" on-click="[[previousScreen]]" :disabled="[[!hasPrevious()]]">‹</button>
+              <span><oj-bind-text value="[[position]]"></oj-bind-text></span>
+              <button type="button" id="studioNextScreen" aria-label="Next screen" on-click="[[nextScreen]]" :disabled="[[!hasNext()]]">›</button>
+            </div>
+            <fx-menu-button id="studioScreenMore" class="factory-studio-more" label="More actions" icon="more" icon-only variant="secondary" items="[[screenMenuItems]]" on-fx-action="[[screenMenu]]"></fx-menu-button>
+            <oj-bind-if test="[[editing() && editorDirty()]]">
+              <button type="button" id="saveDesignButton" class="fx-btn fx-btn--primary factory-studio-decide" on-click="[[saveChanges]]"
+                      title="Save your changes. You can approve once they are saved.">Save changes</button>
+            </oj-bind-if>
+            <oj-bind-if test="[[approveOffered()]]">
+              <button type="button" id="studioApproveScreen" class="fx-btn fx-btn--primary factory-studio-decide" on-click="[[approveScreen]]"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span>Approve screen</button>
+            </oj-bind-if>
+            <oj-bind-if test="[[canApprove() && screenLocked()]]">
+              <button type="button" id="studioReopenScreen" class="fx-btn fx-btn--secondary factory-studio-decide" on-click="[[reopenScreen]]">Reopen</button>
+            </oj-bind-if>
+            <button type="button" id="studioExpand" class="fx-btn fx-btn--secondary fx-btn--icon factory-studio-expand" on-click="[[toggleExpand]]"
+                    :aria-pressed="[[expanded() ? 'true' : 'false']]" :aria-label="[[expandLabel]]" :title="[[expandLabel]]"><oj-bind-text value="[[expandIcon]]"></oj-bind-text></button>
+          </div>
+          <div class="factory-studio-canvas-row factory-studio-canvas-tabs">
+            <div class="factory-studio-modes" role="tablist" aria-label="Mode" on-keydown="[[modeKey]]">
+              <oj-bind-for-each data="[[modes]]" as="m">
+                <template><button type="button" role="tab" :id="[[m.data.id]]" :aria-selected="[[m.data.pressed]]" :aria-pressed="[[m.data.pressed]]" :tabindex="[[m.data.tabindex]]"
+                                  aria-describedby="studioModeHint" on-click="[[m.data.pick]]"><oj-bind-text value="[[m.data.label]]"></oj-bind-text></button></template>
+              </oj-bind-for-each>
+            </div>
+            <span id="studioModeHint" class="fx-visually-hidden">In Edit, Esc with nothing selected goes back to Review.</span>
+            <oj-bind-if test="[[!editing()]]">
+              <div class="fx-toggle-group factory-studio-devices" role="group" aria-label="Preview size">
+                <oj-bind-for-each data="[[devices]]" as="d">
+                  <template><button type="button" :aria-pressed="[[d.data.pressed]]" on-click="[[d.data.pick]]"><oj-bind-text value="[[d.data.label]]"></oj-bind-text></button></template>
+                </oj-bind-for-each>
+              </div>
+            </oj-bind-if>
+            <oj-bind-if test="[[editing()]]">
+              <span class="fx-card-sub factory-studio-esc"><oj-bind-text value="[[editLocked() ? 'Approved and locked: reopen to edit.' : 'Esc returns to Review']]"></oj-bind-text></span>
+            </oj-bind-if>
+          </div>
+        </div>
+
+        <!-- Edit: the designer for this screen -->
+        <oj-bind-if test="[[editing()]]">
+          <oj-bind-if test="[[narrow()]]">
+            <div class="fx-empty factory-studio-narrow" id="studioEditNarrow">
+              <span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span></span>
+              <strong>Use a wider screen to edit this screen</strong>
+              <span>The editor needs a tablet or a computer. Review, approve and refine the screen here.</span>
+              <button type="button" class="fx-btn fx-btn--secondary" on-click="[[showReview]]">Back to Review</button>
+            </div>
+          </oj-bind-if>
+          <oj-bind-if test="[[!narrow()]]">
+            <oj-bind-if test="[[editLocked()]]">
+              <div class="fx-alert fx-alert--info factory-studio-locked" id="studioEditLocked"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span>
+                <span class="fx-alert-text">This screen is approved, so it is read-only here. Reopen to edit it.</span>
+                <oj-bind-if test="[[canApprove()]]"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[reopenScreen]]">Reopen to edit</button></oj-bind-if></div>
+            </oj-bind-if>
+            <oj-module class="factory-studio-editor" id="studioEditor" config="[[editorConfig]]"></oj-module>
+          </oj-bind-if>
+        </oj-bind-if>
+
+        <!-- Review: the BRD-only preview, and Ready to approve? -->
+        <oj-bind-if test="[[!editing()]]">
+          <div :class="[[reviewBodyCss]]">
+            <div class="factory-studio-preview">
+              <oj-bind-if test="[[shownVersion()]]">
+                <div class="fx-alert fx-alert--info factory-studio-version-alert"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span>
+                  <span class="fx-alert-text">The preview shows <oj-bind-text value="[[shownVersion().label]]"></oj-bind-text>, not the current one.</span>
+                  <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[showCurrent]]">Show the current version</button></div>
+              </oj-bind-if>
+              <!-- Phones: the checks, folded into one line -->
+              <button type="button" :class="[[checksOpen() ? 'factory-studio-phoneready is-warn' : 'factory-studio-phoneready']]" on-click="[[togglePhoneReadiness]]"
+                      :aria-expanded="[[phoneReadiness() ? 'true' : 'false']]" aria-controls="studioReady">
+                <span><oj-bind-text value="[[checksOpen() ? checksOpen() + (checksOpen() === 1 ? ' thing' : ' things') + ' to resolve before approval' : 'Ready to approve']]"></oj-bind-text></span><span aria-hidden="true">›</span></button>
+              <div class="factory-studio-stage" tabindex="0" aria-label="Screen preview. Scroll to see all of it.">
+                <div :class="[[frameCss]]" :style.width="[[frameBox().width]]" :style.height="[[frameBox().height]]">
+                  <iframe :src="[[previewSrc]]" data-studio-screen="selected" title="Preview of the selected screen" tabindex="-1"
+                          :style.width="[[frameBox().innerWidth]]" :style.height="[[frameBox().innerHeight]]" :style.transform="[[frameBox().transform]]"></iframe>
+                </div>
+              </div>
+              <p class="fx-card-sub factory-studio-note">Labels and values come from the BRD. "To be confirmed by the analyst" marks a choice or table the BRD gives no values for; other values appear at run time.</p>
+            </div>
+
+            <oj-bind-if test="[[!expanded() && (!readinessFolded() || narrow())]]">
+              <aside :class="[[phoneReadiness() ? 'factory-studio-ready is-phone-open' : 'factory-studio-ready']]" id="studioReady" aria-labelledby="studioReadyTitle">
+                <div class="factory-studio-ready-head">
+                  <div class="factory-studio-ready-title">
+                    <h2 id="studioReadyTitle">Ready to approve?</h2>
+                    <span :class="[[checksOpen() ? 'factory-studio-ready-sum is-warn' : 'factory-studio-ready-sum is-ok']]" id="studioReadySummary"><oj-bind-text value="[[checksSummary]]"></oj-bind-text></span>
+                  </div>
+                  <button type="button" id="studioFoldReady" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon factory-studio-fold" aria-label="Collapse the checks" title="Collapse the checks" on-click="[[foldReadiness]]">»</button>
+                </div>
+                <div class="factory-studio-ready-body">
+                  <oj-bind-if test="[[readinessView() === 'checks']]">
+                    <oj-bind-for-each data="[[checks]]" as="c">
+                      <template>
+                        <div class="factory-studio-check">
+                          <button type="button" class="factory-studio-check-row" :id="[[c.data.id]]" :aria-expanded="[[c.data.expanded]]" on-click="[[c.data.toggle]]">
+                            <span :class="[[c.data.iconCss]]" aria-hidden="true"><oj-bind-text value="[[c.data.ok ? '✓' : '!']]"></oj-bind-text></span>
+                            <span class="factory-studio-check-title"><oj-bind-text value="[[c.data.title]]"></oj-bind-text></span>
+                            <span :class="[[c.data.countCss]]"><oj-bind-text value="[[c.data.count]]"></oj-bind-text></span>
+                            <span class="factory-studio-check-chev" aria-hidden="true"><oj-bind-text value="[[c.data.open() ? '▾' : '▸']]"></oj-bind-text></span>
+                          </button>
+                          <oj-bind-if test="[[c.data.open()]]">
+                            <ul class="factory-studio-check-items">
+                              <oj-bind-for-each data="[[c.data.items]]" as="it">
+                                <template><li><span><oj-bind-text value="[[it.data.text]]"></oj-bind-text>
+                                  <oj-bind-if test="[[it.data.detail]]"><span class="factory-studio-open-why"><oj-bind-text value="[[it.data.detail]]"></oj-bind-text></span></oj-bind-if></span>
+                                  <oj-bind-if test="[[it.data.action]]"><button type="button" class="factory-studio-link" on-click="[[it.data.run]]"><oj-bind-text value="[[it.data.action]]"></oj-bind-text></button></oj-bind-if></li></template>
+                              </oj-bind-for-each>
+                            </ul>
+                          </oj-bind-if>
+                        </div>
+                      </template>
+                    </oj-bind-for-each>
+                    <oj-bind-if test="[[screenNeedsSteps()]]">
+                      <p class="fx-card-sub factory-studio-steps-note">This screen takes input but has no review and confirmation screens after it.
+                        <button type="button" id="studioAddSteps" class="factory-studio-link" on-click="[[addSteps]]">Add them</button></p>
+                    </oj-bind-if>
+                  </oj-bind-if>
+                  <oj-bind-if test="[[readinessView() === 'compare']]">
+                    <div class="factory-studio-compare" id="studioCompare">
+                      <button type="button" class="factory-studio-link" on-click="[[showChecksList]]">‹ Back to the checks</button>
+                      <oj-bind-if test="[[versionOptions().length < 2]]">
+                        <p class="fx-card-sub">This screen has one version only. Each change with the AI or in Edit saves a new one.</p>
+                      </oj-bind-if>
+                      <oj-bind-if test="[[versionOptions().length >= 2]]">
+                        <div class="factory-studio-compare-pick">
+                          <fx-select id="studioCompareFrom" label="From" options="[[versionOptions]]" value="{{compareFrom}}"></fx-select>
+                          <fx-select id="studioCompareTo" label="To" options="[[versionOptions]]" value="{{compareTo}}"></fx-select>
+                        </div>
+                        <ul class="factory-studio-diff" id="studioDiff" aria-live="polite">
+                          <oj-bind-for-each data="[[differences]]" as="d">
+                            <template><li :class="[[d.data.css]]"><span class="factory-studio-diff-kind"><oj-bind-text value="[[d.data.kind]]"></oj-bind-text></span><span><oj-bind-text value="[[d.data.text]]"></oj-bind-text></span></li></template>
+                          </oj-bind-for-each>
+                        </ul>
+                        <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[previewFrom]]"><oj-bind-text value="[[previewFromLabel]]"></oj-bind-text></button>
+                      </oj-bind-if>
+                    </div>
+                  </oj-bind-if>
+                </div>
+                <div class="factory-studio-ready-foot">
+                  <oj-bind-if test="[[screenEditable()]]">
+                    <div class="factory-studio-refine">
+                      <fx-input id="studioRefine" label="Refine with AI" hide-label placeholder="Refine with AI, e.g. make remarks optional" value="{{instruction}}"></fx-input>
+                      <button type="button" id="studioRefineButton" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[refine]]" :disabled="[[refining()]]">Apply</button>
+                    </div>
+                  </oj-bind-if>
+                  <div class="factory-studio-ready-links">
+                    <button type="button" id="studioCompareLink" class="factory-studio-link" on-click="[[showCompare]]">Compare versions</button>
+                    <oj-bind-if test="[[screenEditable() && generatedVersion() && !asGenerated()]]">
+                      <button type="button" id="studioRegenerate" class="factory-studio-link" on-click="[[regenerate]]" :title="[[regenerateText]]">Regenerate from the spec</button>
+                    </oj-bind-if>
+                  </div>
+                </div>
+              </aside>
+            </oj-bind-if>
+            <oj-bind-if test="[[!expanded() && readinessFolded() && !narrow()]]">
+              <aside class="factory-studio-rail" id="studioReadyRail" aria-label="Ready to approve?">
+                <button type="button" id="studioUnfoldReady" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon" aria-label="Show the checks" title="Show the checks" on-click="[[unfoldReadiness]]">«</button>
+                <span :class="[[checksOpen() ? 'factory-studio-rail-count is-warn' : 'factory-studio-rail-count is-ok']]" :title="[[checksRailLabel]]"><oj-bind-text value="[[checksOpen() ? checksOpen() : '✓']]"></oj-bind-text></span>
+                <span class="factory-studio-rail-text">Ready to approve?</span>
+              </aside>
+            </oj-bind-if>
+          </div>
+        </oj-bind-if>
+      </oj-bind-if>
+    </section>
+
+    <!-- Phones: deciding is one bar, always at the bottom -->
+    <oj-bind-if test="[[narrow() && screen()]]">
+      <div class="factory-studio-phonebar">
+        <fx-menu-button id="studioPhoneMore" label="More actions" icon="more" icon-only variant="secondary" items="[[screenMenuItems]]" on-fx-action="[[screenMenu]]"></fx-menu-button>
+        <oj-bind-if test="[[approveOffered()]]">
+          <button type="button" id="studioPhoneApprove" class="fx-btn fx-btn--primary" on-click="[[approveScreen]]">Approve screen</button>
+        </oj-bind-if>
+        <oj-bind-if test="[[canApprove() && screenLocked()]]">
+          <button type="button" id="studioPhoneReopen" class="fx-btn fx-btn--secondary" on-click="[[reopenScreen]]">Reopen</button>
+        </oj-bind-if>
+      </div>
+    </oj-bind-if>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[!hasScreens() && stage() !== 1]]">
+    <div class="fx-card fx-empty factory-studio-empty">
+      <span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-monitor" aria-hidden="true"></span></span>
+      <strong>No screens yet</strong>
+      <span>Screens appear here once the spec is approved and they are generated: each functional requirement with its flow, previewed as a phone, tablet or desktop.</span>
+      <oj-bind-if test="[[canDesign() && workspaceId()]]">
+        <fx-menu-button id="studioNewEmpty" label="New screen" icon="plus" variant="secondary" items="[[newMenuItems]]" on-fx-action="[[newMenu]]"></fx-menu-button>
+      </oj-bind-if>
+    </div>
+  </oj-bind-if>
+</div>

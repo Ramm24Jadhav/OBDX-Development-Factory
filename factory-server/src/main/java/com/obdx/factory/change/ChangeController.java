@@ -4,6 +4,9 @@ import com.obdx.factory.auth.AccessGuard;
 import com.obdx.factory.auth.AuditLog;
 import com.obdx.factory.auth.WorkspaceRole.Permission;
 import com.obdx.factory.common.BadRequestException;
+import com.obdx.factory.common.ConflictException;
+import com.obdx.factory.common.Messages;
+import com.obdx.factory.common.NotFoundException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -29,9 +32,11 @@ public class ChangeController {
     private final ChangeBranchService branches;
     private final AccessGuard guard;
     private final AuditLog audit;
+    private final ChangeVersions versions;
 
     public ChangeController(ChangeService service, ChangeBuildService builds, ChangeBranchService branches, AccessGuard guard,
-                            AuditLog audit) {
+                            AuditLog audit, ChangeVersions versions) {
+        this.versions = versions;
         this.branches = branches;
         this.service = service;
         this.builds = builds;
@@ -49,6 +54,13 @@ public class ChangeController {
     public List<ChangeService.ChangeSummary> list(@PathVariable UUID workspaceId) {
         guard.require(workspaceId, Permission.VIEW);
         return service.list(workspaceId);
+    }
+
+    /** Every change of the workspace with its files and builds, in one request (the dashboard and notifications). */
+    @GetMapping("/api/workspaces/{workspaceId}/changes/details")
+    public List<ChangeService.ChangeDetail> details(@PathVariable UUID workspaceId) {
+        guard.require(workspaceId, Permission.VIEW);
+        return service.details(workspaceId);
     }
 
     @PostMapping("/api/requirements/{requirementId}/changes")
@@ -74,32 +86,71 @@ public class ChangeController {
 
     @PostMapping("/api/changes/{id}/analyze")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public ChangeService.ChangeDetail analyze(@PathVariable UUID id) {
+    public ChangeService.ChangeDetail analyze(@PathVariable UUID id, @RequestParam(value = "fresh", defaultValue = "false") boolean fresh) {
         guard.requireForChange(id, Permission.MANAGE_CODE);
-        return service.analyzeAgain(id);
+        return service.analyzeAgain(id, fresh);
     }
 
     /** The body is the edited plan as JSON. */
     @PutMapping(path = "/api/changes/{id}/plan", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ChangeService.ChangeDetail updatePlan(@PathVariable UUID id, @RequestBody String planJson) {
-        guard.requireForChange(id, Permission.MANAGE_CODE);
-        return service.updatePlan(id, planJson);
+        var user = guard.requireForChange(id, Permission.MANAGE_CODE);
+        return service.updatePlan(id, planJson, user.getDisplayName());
+    }
+
+    /** The plan's revisions, and the comments, request for changes and approval on them. */
+    @GetMapping("/api/changes/{id}/plan-review")
+    public PlanReviewStore.Review planReview(@PathVariable UUID id) {
+        guard.requireForChange(id, Permission.VIEW);
+        return service.planReview(id);
+    }
+
+    /** kind COMMENT needs the right to comment; CHANGES_REQUESTED (not approving the plan as it is) the right to approve. */
+    public record PlanComment(PlanReviewStore.Kind kind, String text) {
+    }
+
+    @PostMapping("/api/changes/{id}/plan-comments")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PlanReviewStore.Comment commentOnPlan(@PathVariable UUID id, @RequestBody PlanComment request) {
+        PlanReviewStore.Kind kind = request.kind() == null ? PlanReviewStore.Kind.COMMENT : request.kind();
+        var user = guard.requireForChange(id, kind == PlanReviewStore.Kind.COMMENT ? Permission.COMMENT : Permission.APPROVE);
+        PlanReviewStore.Comment comment = service.commentOnPlan(id, kind, request.text(), user.getDisplayName());
+        if (kind == PlanReviewStore.Kind.CHANGES_REQUESTED) {
+            ChangeService.ChangeDetail change = service.get(id);
+            audit.record("CHANGE_PLAN_CHANGES_REQUESTED", change.workspaceId(), change.title(), comment.text());
+        }
+        return comment;
     }
 
     @PostMapping("/api/changes/{id}/approve-plan")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public ChangeService.ChangeDetail approvePlan(@PathVariable UUID id) {
+    public ChangeService.ChangeDetail approvePlan(@PathVariable UUID id,
+                                                  @RequestParam(value = "incomplete", defaultValue = "false") boolean incomplete,
+                                                  @RequestParam(value = "revision", required = false) Integer revision) {
         var user = guard.requireForChange(id, Permission.APPROVE);
-        ChangeService.ChangeDetail change = service.approvePlan(id, user.getDisplayName());
-        audit.record("CHANGE_PLAN_APPROVED", change.workspaceId(), change.title(), change.plan().items().size() + " file(s)");
+        ChangeService.ChangeDetail change = service.approvePlan(id, user.getDisplayName(), incomplete, revision);
+        audit.record("CHANGE_PLAN_APPROVED", change.workspaceId(), change.title(), change.plan().items().size() + " file(s)"
+                + (change.plan().incomplete() != null ? ", revision " + revision + " approved although files may be missing (confirmed)" : ""));
         return change;
+    }
+
+    /** Writes the planned files not written yet (after generation stopped at the model's limit). */
+    @PostMapping("/api/changes/{id}/continue")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public ChangeService.ChangeDetail continueGeneration(@PathVariable UUID id) {
+        guard.requireForChange(id, Permission.MANAGE_CODE);
+        return service.continueGeneration(id);
     }
 
     @PostMapping("/api/changes/{id}/regenerate")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public ChangeService.ChangeDetail regenerate(@PathVariable UUID id, @RequestBody RegenerateRequest request) {
-        guard.requireForChange(id, Permission.MANAGE_CODE);
-        return service.regenerate(id, request.path(), request.note());
+        var user = guard.requireForChange(id, Permission.MANAGE_CODE);
+        ChangeService.ChangeDetail change = service.regenerate(id, request.path(), request.note(), user.getUsername());
+        // the request now, its outcome when the file has been written (ChangeService.runGeneration)
+        audit.record(WRITTEN_AGAIN, change.workspaceId(), id.toString(), request.path()
+                + (request.note() == null || request.note().isBlank() ? "" : " (with a note)") + ": requested");
+        return change;
     }
 
     @PutMapping("/api/changes/{id}/file")
@@ -110,10 +161,31 @@ public class ChangeController {
         return change;
     }
 
-    @GetMapping("/api/changes/{id}/patch")
-    public ResponseEntity<String> patch(@PathVariable UUID id) {
+    @GetMapping("/api/changes/{id}/delivery")
+    public ChangeService.DeliveryPreview delivery(@PathVariable UUID id) {
         guard.requireForChange(id, Permission.VIEW);
-        String patch = service.patch(id);
+        return service.deliveryPreview(id);
+    }
+
+    /** The change's versions: its first generation, then each Write again or edit (see ChangeVersions). */
+    @GetMapping("/api/changes/{id}/versions")
+    public java.util.List<ChangeVersions.Version> versions(@PathVariable UUID id) {
+        guard.requireForChange(id, Permission.VIEW);
+        return versions.versions(id);
+    }
+
+    /** What changed between two versions of the change, file by file. */
+    @GetMapping("/api/changes/{id}/compare")
+    public ChangeVersions.Comparison compare(@PathVariable UUID id, @org.springframework.web.bind.annotation.RequestParam int from,
+                                             @org.springframework.web.bind.annotation.RequestParam int to) {
+        guard.requireForChange(id, Permission.VIEW);
+        return versions.compare(id, from, to);
+    }
+
+    @GetMapping("/api/changes/{id}/patch")
+    public ResponseEntity<String> patch(@PathVariable UUID id, @RequestParam(value = "incomplete", defaultValue = "false") boolean incomplete) {
+        guard.requireForChange(id, Permission.VIEW);
+        String patch = service.patch(id, incomplete);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("text/x-diff;charset=UTF-8"))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"change-" + id.toString().substring(0, 8) + ".patch\"")
@@ -121,12 +193,43 @@ public class ChangeController {
     }
 
     @PostMapping("/api/changes/{id}/deliver")
-    public ChangeService.ChangeDetail deliver(@PathVariable UUID id) {
+    public ChangeService.ChangeDetail deliver(@PathVariable UUID id, @RequestParam(value = "incomplete", defaultValue = "false") boolean incomplete,
+                                              @RequestParam(value = "failedChecks", defaultValue = "false") boolean failedChecks) {
         guard.requireForChange(id, Permission.MANAGE_CODE);
-        ChangeService.ChangeDetail change = service.deliverToBranch(id);
-        audit.record("CHANGE_DELIVERED", change.workspaceId(), change.branchUrl(), "revision " + change.deliveredRevision());
+        ChangeService.ChangeDetail change;
+        try {
+            change = service.deliverToBranch(id, incomplete, failedChecks);
+        } catch (ConflictException | BadRequestException | NotFoundException e) {
+            // refused before anything was committed (the UI asks to confirm, or says what to do first)
+            throw e;
+        } catch (RuntimeException e) {
+            // The commit failed (a pre-commit hook, the server, a conflict): recorded, as a delivery is. The recording never
+            // replaces the error, and a change that was committed after all is not recorded as failed
+            try {
+                ChangeService.ChangeDetail failed = service.get(id);
+                if (failed.status() != ChangeRequest.Status.DELIVERED) {
+                    audit.record(DELIVERY_FAILED, failed.workspaceId(), id.toString(), Messages.redacted(failed.title() + ": " + Messages.reason(e)));
+                }
+            } catch (RuntimeException auditFailed) {
+                e.addSuppressed(auditFailed);
+            }
+            throw e;
+        }
+        long written = change.files().stream().filter(f -> f.status() == ChangeFileStore.Status.GENERATED).count();
+        long notWritten = change.files().stream().filter(f -> f.status() == ChangeFileStore.Status.PENDING
+                || f.status() == ChangeFileStore.Status.FAILED).count();
+        long failing = change.files().stream().filter(f -> f.status() == ChangeFileStore.Status.GENERATED
+                && f.checkStatus() == FileChecks.Status.FAILED).count();
+        audit.record("CHANGE_DELIVERED", change.workspaceId(), change.branchUrl(), "revision " + change.deliveredRevision() + ", "
+                + written + " file(s) committed" + (incomplete ? ", " + notWritten + " planned file(s) not written left out (confirmed)" : "")
+                + (failedChecks && failing > 0 ? ", " + failing + " file(s) failing their checks delivered (confirmed)" : ""));
         return change;
     }
+
+    /** A delivery whose commit failed (audited with the reason). */
+    static final String DELIVERY_FAILED = "CHANGE_DELIVERY_FAILED";
+    /** A file written again (audited, and shown in the change's history). */
+    static final String WRITTEN_AGAIN = "CHANGE_FILE_WRITTEN_AGAIN";
 
     /** Builds the change with the workspace's Jenkins jobs, fixing build errors in its files a limited number of times. */
     public record CloseRequest(ChangeRequest.CloseReason reason, Boolean force) {
@@ -154,9 +257,9 @@ public class ChangeController {
 
     @PostMapping("/api/changes/{id}/build")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public ChangeService.ChangeDetail build(@PathVariable UUID id) {
+    public ChangeService.ChangeDetail build(@PathVariable UUID id, @org.springframework.web.bind.annotation.RequestParam(defaultValue = "false") boolean failedOnly) {
         guard.requireForChange(id, Permission.MANAGE_CODE);
-        ChangeService.ChangeDetail change = builds.start(id);
+        ChangeService.ChangeDetail change = failedOnly ? builds.startFailed(id) : builds.start(id);
         audit.record("CHANGE_BUILD_STARTED", change.workspaceId(), change.title(), null);
         return change;
     }

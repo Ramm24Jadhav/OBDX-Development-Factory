@@ -10,7 +10,7 @@ public enum WorkspaceRole {
 
     /** Writes and refines requirements, designs screens. */
     ANALYST(EnumSet.of(Permission.VIEW, Permission.COMMENT, Permission.EDIT_REQUIREMENTS, Permission.EDIT_DESIGNS)),
-    /** Connects and imports code, corrects the Project Profile, designs screens. */
+    /** Connects and imports code, corrects the codebase facts, designs screens. */
     DEVELOPER(EnumSet.of(Permission.VIEW, Permission.COMMENT, Permission.MANAGE_CODE, Permission.EDIT_DESIGNS)),
     /** Everything in the workspace, including approving requirements and designs. */
     LEAD(EnumSet.allOf(Permission.class));
@@ -30,7 +30,7 @@ public enum WorkspaceRole {
         VIEW,
         /** Comment on designs. */
         COMMENT,
-        /** SVN settings, imports and Project Profile corrections. */
+        /** SVN settings, imports and codebase facts corrections. */
         MANAGE_CODE,
         /** Create, answer, edit and delete requirements. */
         EDIT_REQUIREMENTS,

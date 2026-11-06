@@ -168,7 +168,7 @@ public class IssueService {
         }
     }
 
-    /** Reads screenshots that have no text yet; without a screenshot model, notes why and goes on with text only. */
+    /** Reads screenshots that have no text yet; when the chat model cannot, notes why and goes on with text only. */
     private void readScreenshots(UUID id, List<String> notes) {
         for (IssueFile file : issues.files(id)) {
             if (!file.kind().equals("SCREENSHOT") || file.extractedText() != null) {
@@ -178,7 +178,8 @@ public class IssueService {
                 byte[] image = issues.fileContent(id, file.position()).orElseThrow();
                 issues.setExtractedText(id, file.position(), analyzer.readScreenshot(image, file.mimeType()));
             } catch (ModelGatewayException e) {
-                notes.add(e.getMessage());
+                notes.add("The chat model could not read the screenshots (" + e.getMessage() + "). Type the error text under each "
+                        + "screenshot and analyze again, or choose a chat model that reads images on the Models page.");
                 return;
             }
         }

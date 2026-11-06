@@ -77,7 +77,7 @@ public class ProjectProfileService {
     public ProfileResponse get(UUID workspaceId) {
         Workspace workspace = findWorkspace(workspaceId);
         ProjectProfileRepository.StoredProfile stored = repository.find(workspaceId)
-                .orElseThrow(() -> new NotFoundException("No project profile yet. Import the code or click Detect."));
+                .orElseThrow(() -> new NotFoundException("No project profile yet. Import the code, or refresh discovery if it is imported."));
         Map<String, ProjectProfileRepository.Override> overrides = repository.findOverrides(workspaceId);
 
         List<FactView> views = stored.facts().stream()

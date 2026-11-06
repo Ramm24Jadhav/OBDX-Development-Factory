@@ -43,6 +43,8 @@ class ScreenScaffolderTest {
         assertThat(ScreenScaffolder.camel("IBAN number")).isEqualTo("ibanNumber");
         assertThat(ScreenScaffolder.camel("FundTransfer")).isEqualTo("fundTransfer");
         assertThat(ScreenScaffolder.pascal("2FA setup")).isEqualTo("Screen2FaSetup");
+        assertThat(ScreenScaffolder.kebab("Fund Transfer")).isEqualTo("fund-transfer");
+        assertThat(ScreenScaffolder.kebab("FundTransfer")).isEqualTo("fund-transfer");
     }
 
     @Test
@@ -102,6 +104,87 @@ class ScreenScaffolderTest {
             write(Path.of(out, "react/src/screens/payments/FundTransferPage.tsx"), page.content());
             write(Path.of(out, "react/src/screens/payments/__tests__/FundTransferPage.test.tsx"), test.content());
             write(Path.of(out, "react/src/i18n/en.json"), ScreenScaffolder.texts(pack.starter().get("src/i18n/en.json"), List.of(TRANSFER)));
+        }
+    }
+
+    @Test
+    void scaffoldsAnAngularPage() throws Exception {
+        TargetPack pack = packs.find("angular").orElseThrow();
+        ScreenScaffolder.Scaffold page = ScreenScaffolder.forFile(pack, "web-angular", "web-angular/src/app/screens/payments/FundTransferPage.ts",
+                List.of(TRANSFER), null).orElseThrow();
+        assertThat(page.expectedIds()).containsExactly("fromAccount", "amount", "date", "purpose", "remarks", "speed", "alerts", "save",
+                "fee", "count", "ref", "submit", "cancel", "help");
+        assertThat(page.content()).contains("export class FundTransferPage {", "selector: 'app-fund-transfer'",
+                "import { AmountInput, Button, CheckboxGroup, DatePicker, Dropdown, RadioGroup, ReadOnlyField, Screen, Section, TextArea, "
+                        + "TextField, Toggle } from '../../components';",
+                "<bx-switch", "<bx-text-area",
+                "protected readonly purposeOptions = ['Family support', 'Rent', 'Other\\'s \"bill\"'];",
+                "amount: null as number | null,", "alerts: ['SMS'] as string[],", "savePayee: true as boolean,",
+                "<obdx-section [title]=\"t('fundTransfer.detailsSection')\" [columns]=\"2\">",
+                "<bx-amount", "[(value)]=\"form.values.amount\"", "[error]=\"form.errors().amount ?? ''\"", "[required]=\"true\"",
+                "<obdx-read-only", "[value]=\"form.values.fee()\"", "inputMode=\"numeric\"", "[maxLength]=\"35\"",
+                "<bx-button testID=\"submit\" [label]=\"t('fundTransfer.submit')\" chroming=\"callToAction\" [busy]=\"busy()\" (action)=\"submit()\" />",
+                "(action)=\"action.emit('cancel')\"", "chroming=\"borderless\"", "{{ failure() }}", "src/app/api/paymentsApi.ts")
+                .doesNotContain("className", "onPress", "react").doesNotContainPattern("\\{\\{\\w+(}}|:)");
+        ScreenScaffolder.Scaffold test = ScreenScaffolder.forFile(pack, "web-angular", "web-angular/src/app/screens/payments/FundTransferPage.spec.ts",
+                List.of(TRANSFER), null).orElseThrow();
+        assertThat(test.kind()).isEqualTo("test");
+        assertThat(test.content()).contains("TestBed.createComponent(FundTransferPage)", "toBe(3)").doesNotContainPattern("\\{\\{\\w+(}}|:)");
+        String out = System.getProperty("scaffold.out");
+        if (out != null) {
+            write(Path.of(out, "angular/src/app/screens/payments/FundTransferPage.ts"), page.content());
+            write(Path.of(out, "angular/src/app/screens/payments/FundTransferPage.spec.ts"), test.content());
+            write(Path.of(out, "angular/src/app/i18n/en.json"), ScreenScaffolder.texts(pack.starter().get("src/app/i18n/en.json"), List.of(TRANSFER)));
+        }
+    }
+
+    @Test
+    void scaffoldsAFlutterPage() throws Exception {
+        TargetPack pack = packs.find("flutter").orElseThrow();
+        assertThat(ScreenScaffolder.screenPath(pack, TRANSFER, "payments")).isEqualTo("lib/screens/payments/fund_transfer_page.dart");
+        ScreenScaffolder.Scaffold page = ScreenScaffolder.forFile(pack, "mobile-flutter", "mobile-flutter/lib/screens/payments/fund_transfer_page.dart",
+                List.of(TRANSFER), null).orElseThrow();
+        assertThat(page.expectedIds()).containsExactly("fromAccount", "amount", "date", "purpose", "remarks", "speed", "alerts", "save",
+                "fee", "count", "ref", "submit", "cancel", "help");
+        assertThat(page.content()).contains("class FundTransferPage extends StatefulWidget {", "class _FundTransferPageState extends State<FundTransferPage> {",
+                "final purposeOptions = const <String>['Family support', 'Rent', 'Other\\'s \"bill\"'];",
+                "'amount': null,", "'alerts': <String>['SMS'],", "'savePayee': true,",
+                "title: t('fundTransfer.detailsSection'),", "columns: 2,",
+                "BxAmountField(", "key: const ValueKey('amount'),", "value: form.number('amount'),", "onChanged: (value) => form.set('amount', value),",
+                "error: form.error('amount'),", "required: true,", "BxReadOnlyField(", "value: form.text('fee'),", "keyboardType: TextInputType.number,",
+                "maxLength: 35,", "variant: BxVariant.primary,", "busy: busy,", "onPressed: submit,",
+                "onPressed: () => widget.onAction?.call('cancel'),", "variant: BxVariant.link,", "lib/api/payments_api.dart")
+                .doesNotContain("className", "onPress=", "react", "<obdx").doesNotContainPattern("\\{\\{\\w+(}}|:)");
+        ScreenScaffolder.Scaffold test = ScreenScaffolder.forFile(pack, "mobile-flutter", "mobile-flutter/test/screens/payments/fund_transfer_page_test.dart",
+                List.of(TRANSFER), null).orElseThrow();
+        assertThat(test.kind()).isEqualTo("test");
+        assertThat(test.content()).contains("package:obdx_app/screens/payments/fund_transfer_page.dart", "home: const FundTransferPage()", "findsNWidgets(3)")
+                .doesNotContainPattern("\\{\\{\\w+(}}|:)");
+        assertThat(ScreenScaffolder.dartQuote("Pay $5 to O'Neil")).isEqualTo("'Pay \\$5 to O\\'Neil'");
+        String out = System.getProperty("scaffold.out");
+        if (out != null) {
+            write(Path.of(out, "flutter/lib/screens/payments/fund_transfer_page.dart"), page.content());
+            write(Path.of(out, "flutter/test/screens/payments/fund_transfer_page_test.dart"), test.content());
+            write(Path.of(out, "flutter/assets/i18n/en.json"), ScreenScaffolder.texts(pack.starter().get("assets/i18n/en.json"), List.of(TRANSFER)));
+        }
+    }
+
+    @Test
+    void scaffoldsAJetCorePackPage() throws Exception {
+        TargetPack pack = packs.find("jet-core-pack").orElseThrow();
+        ScreenScaffolder.Scaffold page = ScreenScaffolder.forFile(pack, "web-jet", "web-jet/src/screens/payments/FundTransferPage.tsx",
+                List.of(TRANSFER), null).orElseThrow();
+        assertThat(page.content()).contains("export function FundTransferPage(", "import { useState } from 'preact/hooks';",
+                "<AmountField", "amount: null as number | null,", "<TextArea", "<SelectField", "options={purposeOptions}",
+                "onPress={submit}").doesNotContain("from 'react'").doesNotContainPattern("\\{\\{\\w+(}}|:)");
+        ScreenScaffolder.Scaffold test = ScreenScaffolder.forFile(pack, "web-jet", "web-jet/src/screens/payments/__tests__/FundTransferPage.spec.tsx",
+                List.of(TRANSFER), null).orElseThrow();
+        assertThat(test.content()).contains("@testing-library/preact", "toHaveLength(3)").doesNotContainPattern("\\{\\{\\w+(}}|:)");
+        String out = System.getProperty("scaffold.out");
+        if (out != null) {
+            write(Path.of(out, "jet-core-pack/src/screens/payments/FundTransferPage.tsx"), page.content());
+            write(Path.of(out, "jet-core-pack/src/screens/payments/__tests__/FundTransferPage.spec.tsx"), test.content());
+            write(Path.of(out, "jet-core-pack/src/i18n/en.json"), ScreenScaffolder.texts(pack.starter().get("src/i18n/en.json"), List.of(TRANSFER)));
         }
     }
 
