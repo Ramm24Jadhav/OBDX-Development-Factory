@@ -527,7 +527,7 @@ bx-secure-confirmation, bx-sensitive, bx-kyc-steps, bx-fraud-alert { display: bl
 .bx-tr.is-due .bx-td { font-weight: 650; }
 .bx-tr.is-overdue .bx-td { color: var(--bx-danger-text); font-weight: 650; }
 .bx-tr.is-paid .bx-td { color: var(--bx-muted); }
-.bx-card-face { position: relative; display: flex; flex-direction: column; justify-content: space-between; width: min(340px, 100%); aspect-ratio: 1.586; padding: 20px; border-radius: 16px;
+.bx-card-face { box-sizing: border-box; position: relative; display: flex; flex-direction: column; justify-content: space-between; width: min(340px, 100%); aspect-ratio: 1.586; padding: 20px; border-radius: 16px;
   background: var(--bx-gradient); color: var(--bx-on-brand); box-shadow: var(--bx-shadow-3); overflow: hidden; transition: filter var(--bx-dur-base) var(--bx-ease-standard), transform var(--bx-dur-base) var(--bx-ease-standard); }
 .bx-card-face::before { content: ""; position: absolute; right: -40px; top: -60px; width: 200px; height: 200px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); }
 .bx-card-face-label { font-size: 14px; font-weight: 650; opacity: 0.92; }
