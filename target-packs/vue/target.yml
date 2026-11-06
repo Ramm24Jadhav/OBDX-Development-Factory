@@ -56,6 +56,9 @@ guidance: |
   - Motion comes from the components (the bank's --bx-dur-* tokens; nothing moves under reduced motion); do not add
     animation libraries.
   - Write tests with Vitest and @vue/test-utils.
+  - The app's design comes from the factory's component style in src/component-style.json (look, motion, mode, brand;
+    style.ts puts obdx-look-* on the root, components/looks.css draws the nine designs, Liquid glass included). Do not
+    style a page for one design: use the components and their classes, and every design applies.
 
 rules:
   - id: vue-no-v-html

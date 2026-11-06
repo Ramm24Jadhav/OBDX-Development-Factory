@@ -1,0 +1,72 @@
+/*
+ * The nine designs of the factory's Component factory over the Redwood theme (style.ts puts obdx-look-* on <html>): each
+ * sets the Core Pack's own theme variables (--oj-c-*, defined on :root by Redwood; html.x wins over :root) for buttons,
+ * text fields and radii, and styles the app's sections. Liquid glass follows target-packs/components/glass.json: frost
+ * and the lit rim on sections and buttons; fields stay solid behind their text.
+ */
+html[style*="--obdx-brand"] { --oj-c-base-button-variants-call-to-action-base-background-color: var(--obdx-brand);
+  --oj-c-base-button-variants-call-to-action-base-color: #ffffff; --oj-c-base-button-variants-outlined-base-color: var(--obdx-brand); }
+html.obdx-dark body { color-scheme: dark; background-color: var(--oj-c-page-background-neutral0); color: var(--oj-c-text-icon-primary); }
+html[class*="obdx-look-"] .obdx-section { padding: 16px; border-radius: var(--oj-c-border-radius-lg); }
+html.obdx-look-elevated .obdx-section { background-color: var(--oj-c-surface-neutral0); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06); }
+html.obdx-look-soft { --oj-c-textfield-border-enabled: transparent; --oj-c-textfield-surface-enabled: var(--oj-c-surface-neutral-subtle);
+  --oj-c-base-button-variants-outlined-base-border-color: transparent; --oj-c-base-button-variants-outlined-base-background-color: var(--oj-c-surface-neutral-subtle); }
+html.obdx-look-soft .obdx-section { background-color: var(--oj-c-surface-neutral10); }
+html.obdx-look-glass .obdx-section { background-color: color-mix(in srgb, var(--oj-c-surface-neutral0) 62%, transparent);
+  border: 1px solid color-mix(in srgb, var(--oj-c-surface-neutral0) 70%, var(--oj-c-border-divider)); -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%); }
+html.obdx-look-outline { --oj-c-base-button-variants-call-to-action-base-background-color: transparent;
+  --oj-c-base-button-variants-call-to-action-base-color: var(--obdx-brand, var(--oj-c-text-icon-primary));
+  --oj-c-base-button-variants-call-to-action-base-border-color: var(--obdx-brand, var(--oj-c-text-icon-primary)); }
+html.obdx-look-outline .obdx-section { border: 1.5px solid var(--oj-c-border-divider); }
+html.obdx-look-vivid:not([style*="--obdx-brand"]) { --oj-c-base-button-variants-call-to-action-base-background-color: #7c3aed; --oj-c-base-button-variants-call-to-action-base-color: #ffffff; }
+html.obdx-look-vivid .obdx-section { background-color: var(--oj-c-surface-neutral0); border-top: 4px solid transparent;
+  border-image: linear-gradient(90deg, var(--obdx-brand, #4f46e5), #7c3aed 60%, #db2777) 1; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+html.obdx-look-pill { --oj-c-base-button-border-radius: 999px; --oj-c-border-radius-md: 999px; }
+html.obdx-look-brutal { --oj-c-base-button-border-radius: 4px; --oj-c-border-radius-md: 4px; --oj-c-textfield-border-enabled: var(--oj-c-text-icon-primary);
+  --oj-c-base-button-variants-outlined-base-border-color: var(--oj-c-text-icon-primary); }
+html.obdx-look-brutal .obdx-section { border: 2px solid var(--oj-c-text-icon-primary); border-radius: 4px; box-shadow: 4px 4px 0 var(--oj-c-text-icon-primary); }
+html.obdx-look-redwood:not([style*="--obdx-brand"]) { --oj-c-base-button-variants-call-to-action-base-background-color: #c74634; --oj-c-base-button-variants-call-to-action-base-color: #ffffff; }
+
+/* Liquid glass: frosted, saturated glass with a lit rim; the light and dark tokens of glass.json */
+html.obdx-look-liquid { --obdx-lg-tint: rgb(255 255 255 / 0.6); --obdx-lg-blur: 3px; --obdx-lg-saturate: 1.5; --obdx-lg-rim-colour: rgb(255 255 255 / 0.3);
+  --obdx-lg-rim: inset 0 0 0 1px rgb(255 255 255 / 0.3), inset 0 1px 1px rgb(255 255 255 / 0.6); --obdx-lg-drop: 0 6px 20px rgba(15, 23, 42, 0.12);
+  --oj-c-base-button-variants-outlined-base-background-color: transparent; --oj-c-base-button-variants-outlined-base-border-color: var(--obdx-lg-rim-colour); }
+html.obdx-look-liquid.obdx-dark { --obdx-lg-tint: rgb(40 40 40 / 0.62); --obdx-lg-rim-colour: rgb(255 255 255 / 0.13);
+  --obdx-lg-rim: inset 0 0 0 1px rgb(255 255 255 / 0.13), inset 0 1px 1px rgb(255 255 255 / 0.2); --obdx-lg-drop: 0 6px 20px rgba(0, 0, 0, 0.45); }
+html.obdx-look-liquid :is(.obdx-section, .obdx-button oj-c-button) { background-color: var(--obdx-lg-tint); box-shadow: var(--obdx-lg-rim), var(--obdx-lg-drop);
+  -webkit-backdrop-filter: blur(var(--obdx-lg-blur)) saturate(var(--obdx-lg-saturate)); backdrop-filter: blur(var(--obdx-lg-blur)) saturate(var(--obdx-lg-saturate)); }
+html.obdx-look-liquid .obdx-button oj-c-button { display: inline-block; border-radius: var(--oj-c-base-button-border-radius); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html.obdx-look-liquid { --obdx-lg-tint: color-mix(in srgb, var(--oj-c-surface-neutral0) 92%, transparent); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  html.obdx-look-liquid { --obdx-lg-tint: var(--oj-c-surface-neutral0); --obdx-lg-blur: 0px; --obdx-lg-saturate: 1; }
+}
+@media (forced-colors: active) {
+  html.obdx-look-liquid :is(.obdx-section, .obdx-button oj-c-button) { background-color: Canvas; border: 1px solid CanvasText; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+
+/* Motion of the component style: hover, click and scroll */
+.obdx-button oj-c-button { display: inline-block; transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease; }
+.obdx-motion-hover-lift .obdx-button oj-c-button:hover:not([disabled]) { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16); }
+.obdx-motion-hover-glow .obdx-button oj-c-button:hover:not([disabled]) { box-shadow: 0 0 0 4px color-mix(in srgb, var(--obdx-brand, #4f46e5) 18%, transparent); }
+.obdx-motion-hover-shine .obdx-button oj-c-button:hover:not([disabled]) { filter: brightness(1.08); }
+.obdx-motion-click-press .obdx-button oj-c-button:active:not([disabled]), .obdx-look-liquid .obdx-button oj-c-button:active:not([disabled]) { transform: scale(0.97); }
+.obdx-motion-click-ripple .obdx-button oj-c-button:active:not([disabled]) { box-shadow: 0 0 0 6px color-mix(in srgb, var(--obdx-brand, #4f46e5) 22%, transparent); }
+.obdx-motion-click-bounce .obdx-button oj-c-button:active:not([disabled]) { animation: obdx-bounce 300ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes obdx-bounce { 40% { transform: scale(0.94); } 70% { transform: scale(1.03); } }
+@keyframes obdx-rise { from { opacity: 0; transform: translateY(12px); } }
+@keyframes obdx-scale-in { from { opacity: 0; transform: scale(0.94); } }
+@keyframes obdx-slide-in { from { opacity: 0; transform: translateX(-24px); } }
+@keyframes obdx-blur-in { from { opacity: 0; filter: blur(8px); } }
+@supports (animation-timeline: view()) {
+  :is(.obdx-motion-scroll-fadeup, .obdx-motion-scroll-scale, .obdx-motion-scroll-slide, .obdx-motion-scroll-blur) .obdx-section {
+    animation-timeline: view(); animation-range: entry 0% cover 25%; animation-fill-mode: both; animation-timing-function: linear; animation-duration: auto; }
+  .obdx-motion-scroll-fadeup .obdx-section { animation-name: obdx-rise; }
+  .obdx-motion-scroll-scale .obdx-section { animation-name: obdx-scale-in; }
+  .obdx-motion-scroll-slide .obdx-section { animation-name: obdx-slide-in; }
+  .obdx-motion-scroll-blur .obdx-section { animation-name: obdx-blur-in; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .obdx-section, .obdx-button oj-c-button { animation: none !important; transition: none !important; transform: none !important; }
+}

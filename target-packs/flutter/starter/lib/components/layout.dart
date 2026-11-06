@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'component_style.dart';
 import 'tokens.dart';
 
 /// A page: its title, the sections, a failure message and the actions at the end.
@@ -54,9 +55,13 @@ class BxSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final glass = Theme.of(context).extension<BxLookTheme>()?.glass ?? false;
     return Padding(
       padding: const EdgeInsets.only(bottom: BxSizes.spaceL),
-      child: Column(
+      // a glass panel on Glass and Liquid glass; the fields inside keep their solid fill
+      child: BxGlass(
+        padding: glass ? const EdgeInsets.all(BxSizes.spaceL) : EdgeInsets.zero,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (title != null)
@@ -74,6 +79,7 @@ class BxSection extends StatelessWidget {
             );
           }),
         ],
+      ),
       ),
     );
   }
