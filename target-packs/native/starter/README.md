@@ -64,7 +64,8 @@ openssl x509 -in next.pem -pubkey -noout | openssl pkey -pubin -outform der | op
 - Keys: RSA 2048 and 4096, EC P-256 and P-384. Empty pins turn pinning off: only for development against a test server.
   A release build with empty pins fails (Android when the APK or bundle is packaged, iOS before the Release build).
   To build a release without pins on purpose: `./gradlew assembleRelease -Pobdx.allowNoPins=true`, and
-  `OBDX_ALLOW_NO_PINS: YES` in `project.yml`.
+  `OBDX_ALLOW_NO_PINS: YES` in `project.yml`. In PowerShell, quote the property (`.\gradlew assembleRelease '-Pobdx.allowNoPins=true'`):
+  unquoted, PowerShell splits it at the dot.
 - Tests: `CertificatePinsTest.kt` and `CertificatePinsTests.swift` check the same certificate gives the openssl pin.
 
 ## The iOS project (XcodeGen)
