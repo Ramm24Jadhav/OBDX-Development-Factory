@@ -321,7 +321,7 @@ export interface ListEntry { title: string; meta?: string }
 /** A list whose rows come in one after another. */
 @Component({
   selector: 'bx-animated-list', changeDetection: OnPush,
-  template: `<ul class="bx-rows bx-animated-list" [attr.aria-label]="label() || null" [attr.data-testid]="testID() || null">@for (o of rows(); track $index) {
+  template: `<ul [class]="'bx-rows bx-animated-list' + vc('list')" [attr.aria-label]="label() || null" [attr.data-testid]="testID() || null">@for (o of rows(); track $index) {
     <li [class]="'bx-row bx-alist-item ' + o.step"><span class="bx-row-main"><strong>{{ o.title }}</strong>@if (o.meta) {<span class="bx-row-meta">{{ o.meta }}</span>}</span></li>}</ul>`,
 })
 export class AnimatedList extends Part {
@@ -330,7 +330,7 @@ export class AnimatedList extends Part {
   protected readonly rows = computed(() => this.items().map((x, i) => ({ ...(typeof x === 'string' ? { title: x } as ListEntry : x), step: stagger(i) })));
 }
 
-const FXCARD = `<article [class]="'bx-card ' + look" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null" (pointermove)="move($event)" (pointerleave)="leave($event)">
+const FXCARD = `<article [class]="'bx-card ' + look + vc('card')" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null" (pointermove)="move($event)" (pointerleave)="leave($event)">
   <h3 class="bx-card-title" [id]="id">{{ heading() }}</h3>@if (text()) {<p class="bx-thing-text">{{ text() }}</p>}<ng-content /></article>`;
 @Directive()
 abstract class FxCard extends Fx {
@@ -356,7 +356,7 @@ export class GlowBorderCard extends FxCard { protected override readonly look = 
 /** A card that turns over to show its details; the face turned away is hidden from screen readers and the keyboard. [(flipped)]. */
 @Component({
   selector: 'bx-flip-card', changeDetection: OnPush,
-  template: `<div [class]="flipped() ? 'bx-flip-card is-flipped' : 'bx-flip-card'" [attr.data-testid]="testID() || null"><div class="bx-flip-inner">
+  template: `<div [class]="'bx-flip-card' + vc('card') + (flipped() ? ' is-flipped' : '')" [attr.data-testid]="testID() || null"><div class="bx-flip-inner">
     <section class="bx-card bx-flip-face bx-flip-front" [attr.aria-hidden]="flipped() || null" [attr.aria-labelledby]="id"><h3 class="bx-card-title" [id]="id">{{ heading() }}</h3>
       <p class="bx-thing-text">{{ front() }}</p><button type="button" class="bx-thing-action bx-flip-button" [attr.tabindex]="flipped() ? -1 : null" (click)="flip()">{{ backLabel() }}</button></section>
     <section class="bx-card bx-flip-face bx-flip-back" [attr.aria-hidden]="!flipped() || null" [attr.aria-label]="heading()"><p class="bx-thing-text">{{ back() }}</p>
@@ -376,7 +376,7 @@ export interface DeckItem { title: string; text?: string }
 /** Cards stacked one behind another; Next and Previous go round, and the position is said. */
 @Component({
   selector: 'bx-card-stack', changeDetection: OnPush,
-  template: `<section class="bx-card-stack" [attr.aria-label]="label()" [attr.data-testid]="testID() || null"><div class="bx-deck">@for (c of cards(); track $index) {
+  template: `<section [class]="'bx-card-stack' + vc('cards')" [attr.aria-label]="label()" [attr.data-testid]="testID() || null"><div class="bx-deck">@for (c of cards(); track $index) {
     <article [class]="'bx-card bx-deck-card is-depth-' + c.depth" [attr.aria-hidden]="c.depth !== 0 || null"><h3 class="bx-card-title">{{ c.title }}</h3><p class="bx-thing-text">{{ c.text }}</p></article>}</div>
     <div class="bx-deck-controls"><button type="button" class="bx-page" aria-label="Previous card" (click)="go(-1)">‹</button><span role="status">{{ where() }}</span>
       <button type="button" class="bx-page" aria-label="Next card" (click)="go(1)">›</button></div></section>`,
@@ -394,7 +394,7 @@ export interface BentoTile { id: string; title: string; text?: string; figure?: 
 /** A dashboard of tiles of different sizes; with interactive each opens. */
 @Component({
   selector: 'bx-bento-grid', changeDetection: OnPush,
-  template: `<ul class="bx-bento" [attr.aria-label]="label() || null" [attr.data-testid]="testID() || null">@for (o of tiles(); track o.id) {
+  template: `<ul [class]="'bx-bento' + vc('tiles')" [attr.aria-label]="label() || null" [attr.data-testid]="testID() || null">@for (o of tiles(); track o.id) {
     <li [class]="o.css">
       @if (interactive()) {
         <button type="button" class="bx-bento-button" (click)="action.emit(o)"><span class="bx-tile-label">{{ o.title }}</span>@if (o.figure) {<span class="bx-tile-value">{{ o.figure }}</span>}@if (o.text) {<span class="bx-tile-meta">{{ o.text }}</span>}</button>
@@ -451,14 +451,14 @@ export class OptionWheel extends Part {
 }
 
 /** Sections in a row of pills; the current one is raised. [(selection)]. */
-@Component({ selector: 'bx-pill-nav', changeDetection: OnPush, imports: [SideNav], template: `<div class="bx-fx-pill-nav"><bx-side-nav [testID]="testID()" [label]="label()" [items]="items()" [(selection)]="selection" /></div>` })
+@Component({ selector: 'bx-pill-nav', changeDetection: OnPush, imports: [SideNav], template: `<div class="bx-fx-pill-nav"><bx-side-nav [testID]="testID()" [variant]="variant()" [label]="label()" [items]="items()" [(selection)]="selection" /></div>` })
 export class PillNav extends Part {
   readonly label = input('Main');
   readonly items = input<ReadonlyArray<string | NavItem>>([]);
   readonly selection = model('');
 }
 /** Shortcuts in a dock that swell under the pointer. */
-@Component({ selector: 'bx-dock-nav', changeDetection: OnPush, imports: [QuickLinksWidget], template: `<div class="bx-fx-dock"><bx-quick-links-corp [testID]="testID()" [label]="label()" [items]="items()" (action)="action.emit($event)" /></div>` })
+@Component({ selector: 'bx-dock-nav', changeDetection: OnPush, imports: [QuickLinksWidget], template: `<div [class]="'bx-fx-dock' + vc('nav')"><bx-quick-links-corp [testID]="testID()" [label]="label()" [items]="items()" (action)="action.emit($event)" /></div>` })
 export class DockNav extends Part {
   readonly label = input('Dock');
   readonly items = input<ReadonlyArray<QuickItem>>([]);
@@ -469,7 +469,7 @@ export interface CardNavItem { id: string; title: string; text?: string }
 /** Sections as cards that lift on hover and focus. */
 @Component({
   selector: 'bx-card-nav', changeDetection: OnPush,
-  template: `<nav class="bx-card-nav" [attr.aria-label]="label()" [attr.data-testid]="testID() || null"><ul>@for (o of items(); track o.id; let i = $index) {
+  template: `<nav [class]="'bx-card-nav' + vc('nav')" [attr.aria-label]="label()" [attr.data-testid]="testID() || null"><ul>@for (o of items(); track o.id; let i = $index) {
     <li [class]="'bx-card-nav-item ' + step(i)"><button type="button" class="bx-card-nav-button" (click)="action.emit(o.id)"><strong>{{ o.title }}</strong>@if (o.text) {<span>{{ o.text }}</span>}</button></li>}</ul></nav>`,
 })
 export class CardNav extends Part {
@@ -479,7 +479,7 @@ export class CardNav extends Part {
   protected step(i: number): string { return stagger(i); }
 }
 /** A menu whose items come in one after another. */
-@Component({ selector: 'bx-staggered-menu', changeDetection: OnPush, imports: [ActionMenu], template: `<div class="bx-fx-stagger-menu"><bx-action-menu [testID]="testID()" [label]="label()" [items]="items()" (action)="action.emit($event)" /></div>` })
+@Component({ selector: 'bx-staggered-menu', changeDetection: OnPush, imports: [ActionMenu], template: `<div class="bx-fx-stagger-menu"><bx-action-menu [testID]="testID()" [variant]="variant()" [label]="label()" [items]="items()" (action)="action.emit($event)" /></div>` })
 export class StaggeredMenu extends Part {
   readonly label = input('Menu');
   readonly items = input<ReadonlyArray<string | MenuItem>>([]);
@@ -490,7 +490,7 @@ export interface FolderDoc { id: string; title: string; meta?: string }
 /** A folder that opens to show its documents, each to open. [(open)]. */
 @Component({
   selector: 'bx-document-folder', changeDetection: OnPush,
-  template: `<section [class]="open() ? 'bx-folder is-open' : 'bx-folder'" [attr.data-testid]="testID() || null"><button type="button" class="bx-folder-tab" [attr.aria-expanded]="open()" [attr.aria-controls]="id" (click)="open.set(!open())">
+  template: `<section [class]="'bx-folder' + vc('list') + (open() ? ' is-open' : '')" [attr.data-testid]="testID() || null"><button type="button" class="bx-folder-tab" [attr.aria-expanded]="open()" [attr.aria-controls]="id" (click)="open.set(!open())">
     <span class="bx-folder-icon" aria-hidden="true"></span><span class="bx-row-main"><strong>{{ heading() }}</strong><span class="bx-row-meta">{{ items().length }} {{ items().length === 1 ? 'document' : 'documents' }}</span></span></button>
     @if (open()) {<ul class="bx-rows bx-folder-docs" [id]="id">@for (o of items(); track o.id; let i = $index) {<li [class]="'bx-row ' + step(i)"><span class="bx-row-main"><strong>{{ o.title }}</strong>
       @if (o.meta) {<span class="bx-row-meta">{{ o.meta }}</span>}</span><button type="button" class="bx-btn bx-btn--borderless bx-btn--sm" [attr.aria-label]="'Open ' + o.title" (click)="action.emit(o)">Open</button></li>}</ul>}</section>`,
@@ -506,7 +506,7 @@ export class DocumentFolder extends Part {
 /** Cards that stack as the page scrolls. */
 @Component({
   selector: 'bx-scroll-stack', changeDetection: OnPush,
-  template: `<ul class="bx-scroll-stack" [attr.aria-label]="label() || null" [attr.data-testid]="testID() || null">@for (o of items(); track $index) {
+  template: `<ul [class]="'bx-scroll-stack' + vc('cards')" [attr.aria-label]="label() || null" [attr.data-testid]="testID() || null">@for (o of items(); track $index) {
     <li [class]="'bx-card bx-scroll-stack-card is-n-' + ($index > 9 ? 9 : $index)"><h3 class="bx-card-title">{{ o.title }}</h3><p class="bx-thing-text">{{ o.text }}</p></li>}</ul>`,
 })
 export class ScrollStack extends Part {
@@ -517,7 +517,7 @@ export class ScrollStack extends Part {
 /** A person with their photo or initials, their role and details. */
 @Component({
   selector: 'bx-profile-card', changeDetection: OnPush,
-  template: `<article class="bx-card bx-profile-card" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null"><div class="bx-profile-head">
+  template: `<article [class]="'bx-card bx-profile-card' + vc('card')" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null"><div class="bx-profile-head">
     @if (src()) {<img class="bx-avatar is-lg" [src]="src()" alt="" />} @else {<span class="bx-avatar is-lg" aria-hidden="true">{{ initials() }}</span>}
     <span class="bx-row-main"><h3 class="bx-card-title" [id]="id">{{ name() }}</h3>@if (jobTitle()) {<span class="bx-row-meta">{{ jobTitle() }}</span>}</span></div>
     @if (items().length) {<dl class="bx-kv-list">@for (o of items(); track $index) {<div class="bx-kv-row"><dt>{{ o.label }}</dt><dd>{{ o.value }}</dd></div>}</dl>}

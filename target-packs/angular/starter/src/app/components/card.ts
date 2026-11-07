@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { CardVariant } from './variants-v2';
 
 /** A card: a heading, the content (default slot) and actions ([actions]). With interactive, the whole card is a button. */
 @Component({
@@ -25,11 +26,12 @@ export class Card {
   /** Makes the whole card a button (an account to open). Do not put other buttons in it then. */
   readonly interactive = input(false);
   readonly selected = input<boolean | undefined>(undefined);
-  /** A style variant from variants.json; the default look when empty. */
-  readonly variant = input<'' | 'outlined'>('');
   readonly testID = input('');
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  readonly variant = input<'' | CardVariant>('');
+  protected readonly vcls = computed(() => (this.variant() && this.variant() !== 'default' ? ` bx-v-${this.variant()}` : ''));
   readonly action = output<void>();
-  protected readonly css = computed(() => 'bx-card' + (this.variant() ? ' bx-v-' + this.variant() : '') + (this.interactive() ? ' is-interactive' : '') + (this.selected() ? ' is-selected' : ''));
+  protected readonly css = computed(() => 'bx-card' + this.vcls() + (this.interactive() ? ' is-interactive' : '') + (this.selected() ? ' is-selected' : ''));
 
   protected press(): void { if (this.interactive()) { this.action.emit(); } }
 

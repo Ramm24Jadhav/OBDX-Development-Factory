@@ -20,7 +20,7 @@ export interface SummaryTab { id: string; label: string; summary: string }
 export const TABSUM = `
   <section class="bx-panel bx-tabsum" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
     <h3 class="bx-panel-title" [id]="id">{{ head() }}</h3>
-    <div class="bx-tabs" role="tablist" [attr.aria-labelledby]="id" (keydown)="key($event)">
+    <div [class]="'bx-tabs' + vc('tabs')" role="tablist" [attr.aria-labelledby]="id" [attr.aria-orientation]="variant() === 'vertical' ? 'vertical' : null" (keydown)="key($event)">
       @for (o of items(); track o.id) {
         <button type="button" role="tab" [id]="id + '-t-' + o.id" [class]="o.id === chosen()?.id ? 'bx-tab is-on' : 'bx-tab'" [attr.aria-selected]="o.id === chosen()?.id"
                 [attr.tabindex]="o.id === chosen()?.id ? 0 : -1" [attr.aria-controls]="id + '-panel'" (click)="selection.set(o.id)">{{ o.label }}</button>

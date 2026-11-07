@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, model, output, signal } from '@angular/core';
+import { TableVariant } from './variants-v2';
 
 export interface Column {
   field: string;
@@ -15,7 +16,7 @@ export interface Column {
   selector: 'bx-data-grid',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="bx-grid-wrap" [attr.data-testid]="testID() || null">
+    <div [class]="'bx-grid-wrap' + vcls()" [attr.data-testid]="testID() || null">
       <table class="bx-grid">
         <caption>{{ caption() }}</caption>
         <thead>
@@ -39,7 +40,7 @@ export interface Column {
                          (change)="toggleRow(r.key)" />
                 </td>
               }
-              @for (c of r.cells; track $index) { <td [class]="c.css">{{ c.text }}</td> }
+              @for (c of r.cells; track $index) { <td [class]="c.css" [attr.data-label]="variant() === 'cards' ? c.label : null">{{ c.text }}</td> }
             </tr>
           }
         </tbody>
@@ -59,6 +60,9 @@ export class DataTable {
   readonly selected = model<ReadonlyArray<string>>([]);
   readonly noData = input('No data to show.');
   readonly testID = input('');
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  readonly variant = input<'' | TableVariant>('');
+  protected readonly vcls = computed(() => (this.variant() && this.variant() !== 'default' ? ` bx-v-${this.variant()}` : ''));
   readonly sorted = output<{ field: string; direction: 'ascending' | 'descending' }>();
   private readonly sort = signal<{ field: string; asc: boolean } | null>(null);
 
@@ -85,7 +89,7 @@ export class DataTable {
     return list.map((row) => {
       const key = String(row[this.keyField()]);
       return { key, on: chosen.includes(key), cells: this.columns().map((c) => ({
-        text: c.format ? c.format(row) : String(row[c.field] ?? ''), css: 'bx-td' + (c.align === 'end' ? ' is-end' : '') })) };
+        text: c.format ? c.format(row) : String(row[c.field] ?? ''), css: 'bx-td' + (c.align === 'end' ? ' is-end' : ''), label: c.headerText })) };
     });
   });
 

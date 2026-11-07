@@ -74,7 +74,7 @@ export class AccountSelector extends PickerBase { protected override readonly de
 export interface Tile { id?: string; label: string; value: string; meta?: string; tone?: 'danger' | 'success' }
 
 export const TILES = `
-  <section class="bx-tiles-wrap" [attr.aria-label]="head() || null" [attr.data-testid]="testID() || null">
+  <section [class]="'bx-tiles-wrap' + vc('tiles')" [attr.aria-label]="head() || null" [attr.data-testid]="testID() || null">
     @if (head()) { <h3 class="bx-panel-title">{{ head() }}</h3> }
     <ul class="bx-tiles">
       @for (o of items(); track $index) {
@@ -143,7 +143,7 @@ export class AccountBalance extends Part {
 /* ---------- cards ---------- */
 
 export const THING = `
-  <article class="bx-card bx-thing" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
+  <article [class]="'bx-card bx-thing' + vc('card')" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
     <div class="bx-thing-head"><h3 class="bx-card-title" [id]="id">{{ heading() }}</h3>@if (badge()) {<span class="bx-badge is-info">{{ badge() }}</span>}</div>
     @if (text()) { <p class="bx-thing-text">{{ text() }}</p> }
     <ng-content />
@@ -172,7 +172,7 @@ export class BeneficiaryCard extends ThingBase { protected override readonly def
 /* ---------- details ---------- */
 
 export const DETAILS = `
-  <section class="bx-panel bx-kv" [attr.aria-label]="head() || null" [attr.data-testid]="testID() || null">
+  <section [class]="'bx-panel bx-kv' + vc('kv')" [attr.aria-label]="head() || null" [attr.data-testid]="testID() || null">
     @if (head()) { <h3 class="bx-panel-title">{{ head() }}</h3> }
     <dl class="bx-kv-list">
       @for (o of items(); track $index) { <div [class]="o.total ? 'bx-kv-row is-total' : 'bx-kv-row'"><dt>{{ o.label }}</dt><dd>{{ o.value }}</dd></div> }
@@ -448,7 +448,7 @@ export class UpcomingBills extends RowsBase { protected override readonly defaul
 export interface QuickItem { id: string; label: string; icon?: string }
 
 export const QUICK = `
-  <nav class="bx-quick" [attr.aria-label]="name()" [attr.data-testid]="testID() || null">
+  <nav [class]="'bx-quick' + vc('quick')" [attr.aria-label]="name()" [attr.data-testid]="testID() || null">
     <ul>
       @for (o of items(); track o.id) {
         <li><button type="button" class="bx-quick-item" (click)="action.emit(o.id)"><span class="bx-quick-icon" aria-hidden="true">{{ o.icon || '•' }}</span><span>{{ o.label }}</span></button></li>

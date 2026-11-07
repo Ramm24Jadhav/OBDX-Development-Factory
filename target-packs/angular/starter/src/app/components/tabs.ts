@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, model } from '@angular/core';
+import { TabsVariant } from './variants-v2';
 
 import { nextId } from './field';
 
@@ -16,7 +17,7 @@ export interface Tab {
   selector: 'bx-tabs',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="bx-tabs is-top" role="tablist" [attr.aria-label]="label()" [attr.data-testid]="testID() || null" (keydown)="onKey($event)">
+    <div [class]="'bx-tabs is-top' + vcls()" role="tablist" [attr.aria-label]="label()" [attr.aria-orientation]="variant() === 'vertical' ? 'vertical' : null" [attr.data-testid]="testID() || null" (keydown)="onKey($event)">
       @for (t of rows(); track t.id) {
         <button type="button" role="tab" [id]="t.tabId" [class]="t.css" [attr.aria-selected]="t.on" [attr.tabindex]="t.on ? 0 : -1"
                 [attr.aria-controls]="panelId(t.id)" [disabled]="!!t.disabled" (click)="selection.set(t.id)">{{ t.label }}</button>
@@ -30,6 +31,9 @@ export class Tabs {
   readonly tabs = input<ReadonlyArray<Tab>>([]);
   readonly selection = model('');
   readonly testID = input('');
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  readonly variant = input<'' | TabsVariant>('');
+  protected readonly vcls = computed(() => (this.variant() && this.variant() !== 'default' ? ` bx-v-${this.variant()}` : ''));
   readonly id = nextId('bx-tabs');
   private readonly host = inject(ElementRef<HTMLElement>);
   protected readonly rows = computed(() => this.tabs().map((t) => {
