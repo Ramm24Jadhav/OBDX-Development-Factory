@@ -1,0 +1,24 @@
+.bx-panel { display: flex; flex-direction: column; gap: 4px; padding: calc(var(--bx-pad-card) - 2px) var(--bx-pad-card); border-radius: var(--bx-radius-lg); background: var(--bx-card); -webkit-backdrop-filter: var(--bx-blur); backdrop-filter: var(--bx-blur); border: var(--bx-bw) solid var(--bx-border); box-shadow: var(--bx-shadow-1); }
+.bx-panel-title { margin: 0 0 6px; font-size: 15px; font-weight: var(--bx-weight-title); color: var(--bx-text); }
+.bx-panel-empty { margin: 8px 0; color: var(--bx-muted); font-size: 14px; }
+.bx-rows { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.bx-row { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 0; border-top: var(--bx-bw) solid var(--bx-rule); animation: bx-settle var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-row:first-child { border-top: 0; }
+.bx-row-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: var(--bx-text); }
+.bx-row-main strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bx-row-meta { font-size: 12.5px; color: var(--bx-muted); }
+.bx-row-value { flex: none; font-weight: 650; font-variant-numeric: tabular-nums; color: var(--bx-text); }
+.bx-row.is-unread .bx-row-main strong::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: var(--bx-brand); vertical-align: middle; }
+.bx-row.is-danger .bx-row-value { color: var(--bx-danger-text); }
+.bx-row.is-success .bx-row-value { color: var(--bx-success-text); }
+.bx-row.is-warning .bx-row-value { color: var(--bx-warning-text); }
+@supports (animation-timeline: view()) {
+  .bx-motion-scroll-fadeup .bx-panel { animation: bx-in-up linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+  .bx-motion-scroll-scale .bx-panel { animation: bx-in-scale linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+  .bx-motion-scroll-slide .bx-panel { animation: bx-in-slide linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+  .bx-motion-scroll-blur .bx-panel { animation: bx-in-blur linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+}
+.bx-thing-action:focus-visible { outline: none; box-shadow: var(--bx-focus); }
+.bx-thing-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.bx-thing-text { margin: 0; font-size: 14px; color: var(--bx-text-body); }
+.bx-thing-action { align-self: flex-start; min-height: 32px; padding: 0; border: 0; background: none; color: var(--bx-brand-text); font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }

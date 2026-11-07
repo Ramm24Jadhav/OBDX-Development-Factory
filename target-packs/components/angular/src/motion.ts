@@ -52,10 +52,10 @@ export function leave(element: Element | null | undefined, preset = 'fade'): Pro
   return a?.finished ? a.finished.then(() => undefined, () => undefined) : Promise.resolve();
 }
 
-export interface FxSettings extends FxParams { speed: number; intensity: number; density: number; sensitivity: number; /** The variant's class (' is-v-<id>'), or '' */ css: string }
+export interface FxSettings extends FxParams { speed: number; intensity: number; density: number; sensitivity: number; /** The variant's class (' bx-v-<id>'), or '' for the default */ css: string }
 
-/** An effect variant's settings (variants/*.json), with the defaults for any it leaves out; an unknown variant is the default. */
+/** An effect variant's settings (variants.json), with the defaults for any it leaves out; an unknown variant is the default. */
 export function fx(component: string, variant?: string): FxSettings {
   const p = variant ? FX[component]?.[variant] : undefined;
-  return { speed: 1, intensity: 1, density: 1, sensitivity: 1, ...p, css: p ? ` is-v-${variant}` : '' };
+  return { speed: 1, intensity: 1, density: 1, sensitivity: 1, ...p, css: p && variant !== 'default' ? ` bx-v-${variant}` : '' };
 }

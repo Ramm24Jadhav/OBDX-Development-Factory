@@ -244,7 +244,7 @@ export interface CarouselProps {
   value: string;
   onChange: (id: string) => void;
   width?: number;
-  /** A named preset (variants/v5.json): fade or scale play the motion library's change preset instead of paging across. */
+  /** A named preset (variants.json): fade or scale play the motion library's change preset instead of paging across. */
   variant?: string;
 }
 
@@ -322,7 +322,7 @@ export function OptionWheel({ testID, label, options, value, onChange }: OptionW
           onAccessibilityAction={(e) => pick(at + (e.nativeEvent.actionName === 'increment' ? 1 : -1))}
           style={{ height: ROW * 5, overflow: 'hidden', borderRadius: t.radius.card, backgroundColor: t.color.surface2 }}>
       <View pointerEvents="none" style={{ position: 'absolute', top: ROW * 2, left: 8, right: 8, height: ROW, borderRadius: t.radius.control,
-        backgroundColor: t.color.surface, borderWidth: 1, borderColor: t.color.border }} />
+        backgroundColor: t.card, borderWidth: t.border, borderColor: t.line }} />
       <Animated.ScrollView ref={scroll} snapToInterval={ROW} decelerationRate="fast" showsVerticalScrollIndicator={false}
                            contentContainerStyle={{ paddingVertical: ROW * 2 }} scrollEventThrottle={16}
                            onScroll={Animated.event([{ nativeEvent: { contentOffset: { y } } }], { useNativeDriver: true })}
@@ -460,7 +460,7 @@ export function DocumentFolder({ testID, title, documents, open, onOpenChange, o
              style={{ height: 120, justifyContent: 'flex-end' }}>
         {peek.map((d, i) => (
           <Animated.View key={d.id} importantForAccessibility="no-hide-descendants" style={{ position: 'absolute', left: 24 + i * 8, right: 24 - i * 8, bottom: 30, height: 70,
-            borderRadius: 6, backgroundColor: t.color.surface, borderWidth: 1, borderColor: t.color.border,
+            borderRadius: t.radius.small, backgroundColor: t.fill, borderWidth: t.border, borderColor: t.line,
             transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [0, -18 - i * 10] }) },
               { rotate: v.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${(i - 1) * 6}deg`] }) }] }} />
         ))}

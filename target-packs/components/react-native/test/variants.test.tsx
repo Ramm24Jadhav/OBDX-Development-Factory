@@ -11,10 +11,11 @@ import { makeTheme } from '../src/theme';
 import { DURATION } from '../src/presets';
 
 const json = (f: string) => JSON.parse(readFileSync(resolve(__dirname, '../..', f), 'utf8'));
-const v5 = json('variants/v5.json');
 const motion = json('motion.json');
 const tokens = json('tokens/tokens.json').motion;
-const components = v5.components as Record<string, { variants: { id: string; params: object }[] }>;
+const all = json('variants.json').components as Record<string, { css?: string; variants: { id: string; params?: object }[] }>;
+/** The effects of wave V5 (those with a css root), their default first. */
+const components = Object.fromEntries(Object.entries(all).filter(([, c]) => c.css));
 const noop = () => undefined;
 const later = async (ms: number) => { await act(async () => { jest.advanceTimersByTime(ms); }); };
 const byId = (id: string) => screen.getByTestId(id, { includeHiddenElements: true });
@@ -40,7 +41,7 @@ const SAMPLE: Record<string, (v: string) => ReactElement> = {
   'scroll-float-text': (v) => <ScrollFloatText variant={v} text="Grow" />,
   'rolling-digits': (v) => <RollingDigits variant={v} value="12.40" />,
   'count-up': (v) => <CountUp variant={v} value={12} />,
-  'scrub-field': (v) => <ScrubField variant={v} label="Amount" value={250} max={1000} />,
+  'scrub-field': (v) => <ScrubField testID="scrub" variant={v} label="Amount" value={250} max={1000} />,
   'fade-in-content': (v) => <FadeInContent variant={v}>{kid}</FadeInContent>,
   'scroll-reveal': (v) => <ScrollReveal variant={v}>{kid}</ScrollReveal>,
   'scroll-expand': (v) => <ScrollExpand variant={v}>{kid}</ScrollExpand>,
@@ -67,7 +68,7 @@ describe('the motion library and effect variants', () => {
     const { $comment: _, ...presets } = motion.presets;
     expect(PRESETS).toEqual(presets);
     expect(DURATION.slow).toBe(parseInt(tokens['duration-slow'].$value, 10));
-    for (const [id, c] of Object.entries(components)) { expect(FX[id]).toEqual(Object.fromEntries(c.variants.map((v) => [v.id, v.params]))); }
+    for (const [id, c] of Object.entries(components)) { expect(FX[id]).toEqual(Object.fromEntries(c.variants.map((v) => [v.id, v.params ?? {}]))); }
   });
 
   it('resolve a variant\'s settings and palette in the theme\'s colours', () => {

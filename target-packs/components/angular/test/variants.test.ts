@@ -9,10 +9,11 @@ import { DURATION, EASING, FX, G7_COMPONENTS, PRESETS, TypedText, fx, play } fro
 afterEach(() => { document.body.innerHTML = ''; TestBed.resetTestingModule(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 const json = (f: string) => JSON.parse(readFileSync(resolve(__dirname, '../..', f), 'utf8'));
-const v5 = json('variants/v5.json');
 const motion = json('motion.json');
 const tokens = json('tokens/tokens.json').motion;
-const components = v5.components as Record<string, { variants: { id: string; params: object }[] }>;
+const all = json('variants.json').components as Record<string, { css?: string; variants: { id: string; params?: object }[] }>;
+/** The effects of wave V5 (those with a css root), their default first. */
+const components = Object.fromEntries(Object.entries(all).filter(([, c]) => c.css));
 
 /** One of each effect of wave V5, all on the host's variant. */
 const SAMPLE: Record<string, string> = {
@@ -29,7 +30,7 @@ describe('the motion library and effect variants', () => {
     expect(PRESETS).toEqual(presets);
     expect(DURATION.base).toBe(parseInt(tokens['duration-base'].$value, 10));
     expect(EASING.exit).toBe(tokens['ease-exit'].$value);
-    for (const [id, c] of Object.entries(components)) { expect(FX[id]).toEqual(Object.fromEntries(c.variants.map((v) => [v.id, v.params]))); }
+    for (const [id, c] of Object.entries(components)) { expect(FX[id]).toEqual(Object.fromEntries(c.variants.map((v) => [v.id, v.params ?? {}]))); }
   });
 
   it('play an enter preset with its token timing; nothing under reduced motion', () => {
@@ -41,7 +42,7 @@ describe('the motion library and effect variants', () => {
     expect(animate).toHaveBeenCalledWith([{ opacity: 0, transform: 'scale(0.96)' }, { opacity: 1, transform: 'none' }], { duration: DURATION.base, easing: EASING.standard, fill: 'none' });
     vi.stubGlobal('matchMedia', () => ({ matches: true }));
     expect(play(el, 'scale', 'enter')).toBeNull();
-    expect(fx('marquee', 'reverse')).toEqual({ speed: 1, intensity: 1, density: 1, sensitivity: 1, direction: 'right', css: ' is-v-reverse' });
+    expect(fx('marquee', 'reverse')).toEqual({ speed: 1, intensity: 1, density: 1, sensitivity: 1, direction: 'right', css: ' bx-v-reverse' });
   });
 
   it('every variant of every effect is built: its class is on the component', async () => {
@@ -52,12 +53,12 @@ describe('the motion library and effect variants', () => {
     document.body.appendChild(fixture.nativeElement);
     const el = fixture.nativeElement as HTMLElement;
     const missing: string[] = [];
-    const ids = [...new Set(Object.values(components).flatMap((c) => c.variants.map((v) => v.id)))];
+    const ids = [...new Set(Object.values(components).flatMap((c) => c.variants.map((v) => v.id)))].filter((v) => v !== 'default');
     for (const v of ids) {
       fixture.componentInstance.v.set(v);
       await fixture.whenStable();
       for (const [id, c] of Object.entries(components)) {
-        if (c.variants.some((x) => x.id === v) && !el.querySelector(`bx-${id} .is-v-${v}`)) { missing.push(`${id}/${v}`); }
+        if (c.variants.some((x) => x.id === v) && !el.querySelector(`bx-${id} .bx-v-${v}`)) { missing.push(`${id}/${v}`); }
       }
     }
     expect(missing).toEqual([]);

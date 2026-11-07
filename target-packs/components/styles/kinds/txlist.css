@@ -1,0 +1,2 @@
+.bx-tx-amount { flex: none; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--bx-text); }
+.bx-tx-amount.is-in { color: var(--bx-success-text); }

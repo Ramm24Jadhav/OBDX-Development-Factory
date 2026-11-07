@@ -342,6 +342,29 @@
       }
     }
   },
+  "palettes": {
+    "$comment": "Token roles, darkest-safe ones so text effects keep their contrast. Web: --bx-<role>; React Native maps them to its theme colours.",
+    "brand": [
+      "brand-text",
+      "brand-2",
+      "info-text"
+    ],
+    "ocean": [
+      "info-text",
+      "success-text",
+      "brand-text"
+    ],
+    "sunset": [
+      "warning-text",
+      "danger-text",
+      "brand-2"
+    ],
+    "mono": [
+      "text",
+      "muted",
+      "border-strong"
+    ]
+  },
   "components": {
     "button": {
       "enter": null,

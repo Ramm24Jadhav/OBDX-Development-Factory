@@ -5,7 +5,7 @@
  */
 import { ReactElement, ReactNode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { SAMPLES } from './samples';
 
@@ -20,8 +20,8 @@ const params = new URLSearchParams(location.search);
 const mode = params.get('mode') === 'dark' ? 'dark' : 'light';
 // The factory's Component factory shows one section (?only=id) in the design, motion and brand its card has chosen
 const only = params.get('only');
-// An effect's variant (?variant=id, variants/v5.json): the sections and samples of the effects take it
-const variant = params.get('variant') || undefined;
+// ?samples=all also draws every sample at once (the design gates check them all in one page)
+const samples = params.get('samples') === 'all';
 const look = (params.get('look') || 'elevated') as NonNullable<ComponentStyle['look']>;
 const click = (params.get('click') || 'press') as NonNullable<NonNullable<ComponentStyle['motion']>['click']>;
 const scroll = (params.get('scroll') || 'fadeup') as NonNullable<NonNullable<ComponentStyle['motion']>['scroll']>;
@@ -48,6 +48,12 @@ function Section({ id, title, children }: { id: string; title: string; children:
   );
 }
 
+/** A variant of the section's component (variants.json): ?only=<id>&variant=<id> shows only it (index.html). */
+function Variant({ id, children }: { id: string; children: ReactNode }) {
+  // react-native-web writes dataSet as data-* attributes (React Native's own types do not list it)
+  return <View {...({ dataSet: { variant: id } } as object)}>{children}</View>;
+}
+
 /** A controlled component with its own state, so a section needs one line. */
 function Held<T>({ initial, children }: { initial: T; children: (value: T, set: (v: T) => void) => ReactElement }) {
   const [value, setValue] = useState<T>(initial);
@@ -58,8 +64,8 @@ function Gallery() {
   return (
     <ThemeProvider style={{ mode, look, motion: { click, scroll } }} brand={brand}>
       <main className={`gallery ${mode}`} data-gallery-ready>
-        {/* A component the sections below do not show, from the unit tests' examples, when the factory asks for it alone */}
-        {only && SAMPLES[only] ? <Section id={only} title={SAMPLES[only][0]}>{SAMPLES[only][1]}</Section> : null}
+        {/* A component the sections below do not show, from the unit tests' examples, when the factory asks for it alone (or the design gates for all) */}
+        {(only ? [only] : samples ? Object.keys(SAMPLES) : []).filter((id) => SAMPLES[id]).map((id) => <Section key={id} id={id} title={SAMPLES[id][0]}>{SAMPLES[id][1]}</Section>)}
         {/* The foundation and the forms wave (the same ids as the web packs' galleries) */}
         <Section id="button" title="Button"><Button label="Pay now" /><Button label="Paying" busy /></Section>
         <Section id="icon-button" title="Icon button"><IconButton label="More actions" /><IconButton label="Close" icon="close" chroming="outlined" /></Section>
@@ -90,7 +96,8 @@ function Gallery() {
           <Toast onClose={noop} messages={[{ id: '1', severity: 'error', summary: 'Payment failed', detail: 'The account is blocked. Call the bank.', autoTimeout: 0 },
             { id: '2', severity: 'confirmation', summary: 'Beneficiary added', autoTimeout: 0 }]} />
         </Section>
-        <Section id="card" title="Card"><Card heading="Savings •••• 4521" subheading="Available balance"><Line>₹85,000.00</Line></Card></Section>
+        <Section id="card" title="Card"><Card heading="Savings •••• 4521" subheading="Available balance"><Line>₹85,000.00</Line></Card>
+          <Variant id="outlined"><Card variant="outlined" heading="Savings •••• 4521" subheading="Available balance"><Line>₹85,000.00</Line></Card></Variant></Section>
         <Section id="tabs" title="Tabs">
           <Held initial="c">{(v, set) => <Tabs label="Accounts" selection={v} onSelectionChange={set} tabs={[{ id: 'c', label: 'Current', content: <Line>2 current accounts</Line> },
             { id: 's', label: 'Savings', content: <Line>1 savings account</Line> }]} />}</Held>
@@ -150,7 +157,7 @@ function Gallery() {
         <Section id="overview" title="Overview widget"><OverviewWidget testID="ov" tiles={[{ id: 'cs', title: 'Current and savings', value: '15,610.50', note: '3 accounts' }]} /></Section>
 
         {/* The five effect categories: one of each moving kind (under reduced motion they show their end state) */}
-        <Section id="rolling-digits" title="Rolling digits"><RollingDigits variant={variant} value="12,400.00" /></Section>
+        <Section id="rolling-digits" title="Rolling digits"><RollingDigits value="12,400.00" /><Variant id="smooth"><RollingDigits variant="smooth" value="12,400.00" /></Variant><Variant id="quick"><RollingDigits variant="quick" value="12,400.00" /></Variant><Variant id="slow"><RollingDigits variant="slow" value="12,400.00" /></Variant></Section>
         <Section id="slide-to-confirm" title="Slide to confirm"><SlideToConfirm label="Slide to pay 1,250.00" onConfirm={noop} /></Section>
         <Section id="success-check" title="Success check"><SuccessCheck label="Payment sent" /></Section>
       </main>

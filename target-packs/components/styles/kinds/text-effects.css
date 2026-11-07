@@ -1,0 +1,32 @@
+.bx-fx-text { position: relative; }
+.bx-ch, .bx-word { display: inline-block; animation: bx-settle var(--bx-dur-base) var(--bx-ease-standard) both; }
+.bx-blur-in .bx-word { animation: bx-blur-in calc(520ms / var(--bx-fx-speed, 1)) var(--bx-ease-standard) both; }
+.bx-text-reveal { display: inline-block; }
+.bx-text-reveal.is-animated { animation: bx-text-reveal calc(700ms / var(--bx-fx-speed, 1)) var(--bx-ease-standard) both; }
+/* From the end (a variant's direction left) or from below (up) */
+.bx-text-reveal.bx-v-from-end.is-animated { animation-name: bx-text-reveal-end; }
+.bx-text-reveal.bx-v-rise.is-animated { animation-name: bx-text-reveal-up; }
+.bx-rotating-word { display: inline-block; color: var(--bx-brand-text); font-weight: 700; animation: bx-roll-in calc(var(--bx-dur-slow) / var(--bx-fx-speed, 1)) var(--bx-ease-spring); }
+.bx-rotating.is-fade .bx-rotating-word { animation-name: bx-m-change-fade; animation-timing-function: var(--bx-ease-standard); }
+.bx-rotating.is-flip .bx-rotating-word { animation-name: bx-flip-in; transform-origin: 50% 0; }
+.bx-shimmer-text { background: linear-gradient(110deg, var(--bx-text) 35%, var(--bx-fx-c1, var(--bx-brand)) 50%, var(--bx-text) 65%); background-size: 250% 100%; background-position: 0 0;
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.bx-shimmer-text.is-animated { animation: bx-text-shine calc(2.6s / var(--bx-fx-speed, 1)) linear infinite; }
+.bx-gradient-text { background: var(--bx-fx-gradient, var(--bx-gradient)); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 800; background-size: 200% 200%; }
+.bx-gradient-text.is-animated { animation: bx-text-shine calc(6s / var(--bx-fx-speed, 1)) ease-in-out infinite alternate; }
+@media (forced-colors: active) {
+  .bx-shimmer-text, .bx-gradient-text { color: CanvasText; background: none; }
+}
+.bx-focus-word .bx-word { transition: filter calc(var(--bx-dur-slow) / var(--bx-fx-speed, 1)) var(--bx-ease-standard), opacity calc(var(--bx-dur-slow) / var(--bx-fx-speed, 1)) var(--bx-ease-standard);
+  filter: blur(calc(1.5px * var(--bx-fx-intensity, 1))); opacity: max(0.4, calc(1 - 0.2 * var(--bx-fx-intensity, 1))); animation: none; }
+.bx-focus-word .bx-word.is-focus { filter: none; opacity: 1; color: var(--bx-brand-text); }
+@supports (animation-timeline: view()) {
+  .bx-scroll-float .bx-ch { animation: bx-float-in linear both; animation-timeline: view(); animation-range: entry 0% cover 30%; }
+}
+@keyframes bx-blur-in { from { opacity: 0; filter: blur(calc(8px * var(--bx-fx-intensity, 1))); transform: translateY(4px); } }
+@keyframes bx-text-reveal { from { clip-path: inset(0 100% 0 0); } }
+@keyframes bx-text-reveal-end { from { clip-path: inset(0 0 0 100%); } }
+@keyframes bx-text-reveal-up { from { clip-path: inset(100% 0 0 0); } }
+@keyframes bx-flip-in { from { opacity: 0; transform: perspective(400px) rotateX(-80deg); } }
+@keyframes bx-text-shine { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+@keyframes bx-float-in { from { opacity: 0; transform: translateY(calc(0.6em * var(--bx-fx-intensity, 1) * (1 - 2 * var(--bx-fx-y, 0)))); } }

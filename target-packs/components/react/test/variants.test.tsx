@@ -11,7 +11,9 @@ import { BlurInText, Carousel, ClickBurst, CountUp, DotGrid, DURATION, EASING, E
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); delete (HTMLElement.prototype as Partial<HTMLElement>).animate; });
 
 const json = (f: string) => JSON.parse(readFileSync(resolve(__dirname, '../..', f), 'utf8'));
-const v5 = json('variants/v5.json');
+/** The effects of wave V5 in variants.json (those with a css root), their default first; v5.components is read as any. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const v5: { components: any } = { components: Object.fromEntries(Object.entries<{ css?: string }>(json('variants.json').components).filter(([, c]) => c.css)) };
 const motion = json('motion.json');
 const tokens = json('tokens/tokens.json').motion;
 const reduce = (on: boolean) => vi.stubGlobal('matchMedia', (q: string) => ({ matches: on && q.includes('reduce'), media: q }));
@@ -58,7 +60,7 @@ describe('the motion library', () => {
     expect(DURATION).toEqual({ fast: parseInt(tokens['duration-fast'].$value, 10), base: parseInt(tokens['duration-base'].$value, 10), slow: parseInt(tokens['duration-slow'].$value, 10) });
     expect([EASING.standard, EASING.exit]).toEqual([tokens['ease-standard'].$value, tokens['ease-exit'].$value]);
     for (const [id, c] of Object.entries<{ variants: { id: string; params: object }[] }>(v5.components)) {
-      expect(FX[id]).toEqual(Object.fromEntries(c.variants.map((v) => [v.id, v.params])));
+      expect(FX[id]).toEqual(Object.fromEntries(c.variants.map((v) => [v.id, v.params ?? {}])));
     }
   });
 
@@ -66,7 +68,7 @@ describe('the motion library', () => {
     const missing: string[] = [];
     for (const [id, c] of Object.entries<{ variants: { id: string; motion: Record<string, string | null> }[] }>(v5.components)) {
       for (const v of c.variants) {
-        for (const [phase, name] of Object.entries(v.motion)) {
+        for (const [phase, name] of Object.entries(v.motion ?? {})) {
           if (name !== null && name !== 'effect' && !motion.presets[phase]?.[name]) { missing.push(`${id}/${v.id}/${phase}: ${name}`); }
         }
       }
@@ -98,7 +100,8 @@ describe('the motion library', () => {
 
 describe('effect variants', () => {
   it('resolve to their settings with defaults; an unknown variant is the default', () => {
-    expect(fx('blur-in-text', 'gentle')).toEqual({ speed: 0.6, intensity: 0.5, density: 1, sensitivity: 1, css: ' is-v-gentle' });
+    expect(fx('blur-in-text', 'gentle')).toEqual({ speed: 0.6, intensity: 0.5, density: 1, sensitivity: 1, css: ' bx-v-gentle' });
+    expect(fx('blur-in-text', 'default').css).toBe('');
     expect(fx('blur-in-text', 'nope')).toEqual({ speed: 1, intensity: 1, density: 1, sensitivity: 1, css: '' });
     expect(fx('blur-in-text')).toEqual(fx('blur-in-text', 'nope'));
   });
@@ -109,7 +112,7 @@ describe('effect variants', () => {
     for (const [id, c] of Object.entries<{ variants: { id: string }[] }>(v5.components)) {
       for (const v of c.variants) {
         const { container, unmount } = render(SAMPLE[id](v.id));
-        if (!container.querySelector(`.is-v-${v.id}`)) { missing.push(`${id}/${v.id}`); }
+        if (v.id !== 'default' && !container.querySelector(`.bx-v-${v.id}`)) { missing.push(`${id}/${v.id}`); }
         unmount();
       }
     }
@@ -135,7 +138,7 @@ describe('effect variants', () => {
 
   it('a variant can choose the movement: the carousel fades, the content scales in', () => {
     const { container } = render(<><Carousel variant="fade" slides={[{ title: 'One', text: 'a' }]} /><FadeInContent variant="scale">{kid}</FadeInContent><FadeInContent variant="scale" effect="blur">{kid}</FadeInContent></>);
-    expect(container.querySelector('.bx-carousel')!.className).toBe('bx-carousel is-fade is-v-fade');
-    expect([...container.querySelectorAll('.bx-fade-in')].map((e) => e.className)).toEqual(['bx-fx bx-fade-in is-scale is-v-scale', 'bx-fx bx-fade-in is-blur is-v-scale']);
+    expect(container.querySelector('.bx-carousel')!.className).toBe('bx-carousel is-fade bx-v-fade');
+    expect([...container.querySelectorAll('.bx-fade-in')].map((e) => e.className)).toEqual(['bx-fx bx-fade-in is-scale bx-v-scale', 'bx-fx bx-fade-in is-blur bx-v-scale']);
   });
 });

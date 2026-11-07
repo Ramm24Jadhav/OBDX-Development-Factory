@@ -54,10 +54,10 @@ define(['./bx-presets'], function (presets) {
     return a && a.finished ? a.finished.then(function () { return undefined; }, function () { return undefined; }) : Promise.resolve();
   }
 
-  /** An effect variant's settings (variants/*.json), with the defaults for any it leaves out; an unknown variant is the default. */
+  /** An effect variant's settings (variants.json), with the defaults for any it leaves out; an unknown variant is the default. */
   function fx(component, variant) {
     var p = variant && presets.FX[component] ? presets.FX[component][variant] : undefined;
-    var out = { speed: 1, intensity: 1, density: 1, sensitivity: 1, css: p ? ' is-v-' + variant : '' };
+    var out = { speed: 1, intensity: 1, density: 1, sensitivity: 1, css: p && variant !== 'default' ? ' bx-v-' + variant : '' };
     Object.keys(p || {}).forEach(function (key) { out[key] = p[key]; });
     return out;
   }

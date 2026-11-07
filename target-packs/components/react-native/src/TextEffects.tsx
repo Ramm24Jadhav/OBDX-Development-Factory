@@ -12,7 +12,7 @@ import { useTheme } from './theme';
 export interface TextEffectProps {
   testID?: string;
   style?: StyleProp<TextStyle>;
-  /** A named preset of the effect's settings (variants/v5.json: speed, intensity, palette, direction). */
+  /** A named preset of the effect's settings (variants.json: speed, intensity, palette, direction). */
   variant?: string;
 }
 

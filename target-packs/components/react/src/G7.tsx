@@ -40,7 +40,7 @@ function pointer(e: PointerEvent<HTMLElement>, set: (s: CSSStyleDeclaration, x: 
   set(el.style, r.width ? (e.clientX - r.left) / r.width : 0.5, r.height ? (e.clientY - r.top) / r.height : 0.5);
 }
 
-/** Every effect takes a variant: a named preset of its settings (variants/v5.json), shown as is-v-<variant> and the --bx-fx-* variables. */
+/** Every effect takes a variant: a named preset of its settings (variants.json), shown as bx-v-<variant> and the --bx-fx-* variables. */
 export interface WrapProps { testID?: string; variant?: string; children?: ReactNode }
 
 const Hidden = ({ children }: { children: ReactNode }) => <span className="bx-visually-hidden">{children}</span>;

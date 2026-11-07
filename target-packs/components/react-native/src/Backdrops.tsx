@@ -15,7 +15,7 @@ export interface BackdropProps {
   colors?: ReadonlyArray<string>;
   /** Seconds for one cycle of the movement. */
   period?: number;
-  /** A named preset of its settings (variants/v5.json): ocean, sunset, calm. */
+  /** A named preset of its settings (variants.json): ocean, sunset, calm. */
   variant?: string;
 }
 

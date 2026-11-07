@@ -5,6 +5,7 @@ import com.obdx.factory.componentpack.ComponentRegistry.Entry;
 import com.obdx.factory.componentpack.ComponentRegistry.Gate;
 import com.obdx.factory.componentpack.ComponentRegistry.Pack;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -80,6 +81,11 @@ public class ComponentPackService {
     private static final Pattern CORE_PACK_ELEMENT = Pattern.compile("oj-c-[a-z]+(?:-[a-z]+)*");
 
     private final ComponentRegistry registry;
+
+    /** variants.json (see ComponentRegistry#variants), for the Component factory's variant carousel. */
+    public JsonNode variants() {
+        return registry.variants();
+    }
 
     public ComponentPackService(ComponentRegistry registry) {
         this.registry = registry;

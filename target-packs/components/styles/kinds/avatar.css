@@ -1,0 +1,4 @@
+.bx-avatar { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
+  background: var(--bx-avatar-bg); color: var(--bx-avatar-text); font-weight: 700; font-size: 14px; letter-spacing: 0.02em; }
+.bx-avatar.is-sm { width: 28px; height: 28px; font-size: 11px; }
+.bx-avatar.is-lg { width: 56px; height: 56px; font-size: 19px; }

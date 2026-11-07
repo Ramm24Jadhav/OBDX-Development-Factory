@@ -172,7 +172,7 @@ export interface SwipeRowProps {
   children: ReactNode;
   actions: ReadonlyArray<SwipeAction>;
   onAction: (id: string) => void;
-  /** A named preset of its settings (variants/v5.json): smooth, snappy. */
+  /** A named preset of its settings (variants.json): smooth, snappy. */
   variant?: string;
 }
 
@@ -384,7 +384,7 @@ export function RubberSegment({ testID, label, value, onChange, options, disable
   return (
     <View testID={testID} style={s.field} accessibilityRole="radiogroup" accessibilityLabel={label}>
       <Text style={s.label} importantForAccessibility="no">{label}</Text>
-      <View style={{ flexDirection: 'row', padding: 3, borderRadius: 999, backgroundColor: t.color.surface3 }}>
+      <View style={{ flexDirection: 'row', padding: 3, borderRadius: 999, backgroundColor: t.track, borderWidth: t.look === 'brutal' ? t.border : 0, borderColor: t.line }}>
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           <Animated.View style={{ position: 'absolute', top: 3, bottom: 3, width: `${100 / list.length}%`, borderRadius: 999, backgroundColor: t.color.surface,
             left: slide.interpolate({ inputRange: [0, list.length], outputRange: ['0%', '100%'] }),
@@ -404,7 +404,7 @@ export function RubberSegment({ testID, label, value, onChange, options, disable
 /* ---------- ScrubField ---------- */
 
 export interface ScrubFieldProps extends FieldProps<number> {
-  /** A named preset of its settings (variants/v5.json): fine, fast. */
+  /** A named preset of its settings (variants.json): fine, fast. */
   variant?: string;
   min?: number;
   max: number;
@@ -539,7 +539,7 @@ export function PromptBar({ testID, label = 'Ask the assistant', value, onChange
   const send = () => { if (value.trim() && !busy) { onSubmit(value.trim()); } };
   return (
     <View testID={testID} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 4, minHeight: t.minTouch + 8, borderRadius: 999,
-      backgroundColor: t.color.surface, borderWidth: 1, borderColor: t.color.border }}>
+      backgroundColor: t.fill, borderWidth: t.border, borderColor: t.line }}>
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: 999, borderWidth: 2, borderColor: t.color.primary,
         opacity: busy || focused ? glow.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.35, 1, 0.35] }) : 0 }]} />
       <TextInput testID={testID ? `${testID}-input` : undefined} style={{ flex: 1, minHeight: t.minTouch, fontSize: 16, color: t.color.text, paddingVertical: 10 }} value={value}

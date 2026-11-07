@@ -13,8 +13,6 @@ const params = new URLSearchParams(location.search);
 const mode = params.get('mode') === 'dark' ? 'dark' : 'light';
 // The factory's Component factory shows one section (?only=id) in the design and motion its card has chosen
 const only = params.get('only');
-// An effect's variant (?variant=id, variants/v5.json): the sections of the effects take it
-const variant = params.get('variant') || undefined;
 const look = (params.get('look') || 'elevated') as ComponentStyle['look'];
 const motion = { hover: params.get('hover') || undefined, click: params.get('click') || undefined, scroll: params.get('scroll') || undefined } as ComponentStyle['motion'];
 const accounts = [{ value: 'S', label: 'Savings •••• 4521' }, { value: 'C', label: 'Current •••• 0187' }];
@@ -121,6 +119,7 @@ function Gallery() {
         <div className="gate-row">
           <Card heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</Card>
           <Card heading="Current •••• 0187" subheading="Open the account" onAction={() => undefined} selected={false}>₹12,410.50</Card>
+          <div data-variant="outlined"><Card variant="outlined" heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</Card></div>
         </div>
       </Section>
       <Section id="tabs" title="Tabs">
@@ -648,10 +647,10 @@ function Gallery() {
         <PendingApprovalsWidget items={[{title: 'Payroll Feb · prioritized', meta: 'Financial · 182,400.00', value: 'PAY-4410'}, {title: 'Add payee J. Mehta', meta: 'Non-financial', value: 'BEN-218'}]} />
       </Section>
       <Section id="rolling-digits" title="Rolling digits">
-        <RollingDigits variant={variant} value={12400.5} currency="USD" />
+        <RollingDigits value={12400.5} currency="USD" /><div data-variant="smooth"><RollingDigits variant="smooth" value={12400.5} currency="USD" /></div><div data-variant="quick"><RollingDigits variant="quick" value={12400.5} currency="USD" /></div><div data-variant="slow"><RollingDigits variant="slow" value={12400.5} currency="USD" /></div>
       </Section>
       <Section id="count-up" title="Count up">
-        <CountUp variant={variant} value={1840.2} currency="USD" />
+        <CountUp value={1840.2} currency="USD" /><div data-variant="quick"><CountUp variant="quick" value={1840.2} currency="USD" /></div><div data-variant="slow"><CountUp variant="slow" value={1840.2} currency="USD" /></div><div data-variant="steady"><CountUp variant="steady" value={1840.2} currency="USD" /></div>
       </Section>
       <Section id="split-flap-board" title="Split-flap board">
         <SplitFlapBoard items={[{label: 'USD', value: '0.92 EUR'}, {label: 'GBP', value: '1.17 EUR'}]} />
@@ -660,55 +659,55 @@ function Gallery() {
         <RevealDigits value="GB29 NWBK 6016 1331 9268 19" />
       </Section>
       <Section id="blur-in-text" title="Blur-in text">
-        <BlurInText variant={variant} text="Your money, clearly." />
+        <BlurInText text="Your money, clearly." /><div data-variant="gentle"><BlurInText variant="gentle" text="Your money, clearly." /></div><div data-variant="crisp"><BlurInText variant="crisp" text="Your money, clearly." /></div><div data-variant="dramatic"><BlurInText variant="dramatic" text="Your money, clearly." /></div>
       </Section>
       <Section id="text-reveal" title="Text reveal">
-        <TextReveal variant={variant} text="Welcome back, Asha" />
+        <TextReveal text="Welcome back, Asha" /><div data-variant="from-end"><TextReveal variant="from-end" text="Welcome back, Asha" /></div><div data-variant="rise"><TextReveal variant="rise" text="Welcome back, Asha" /></div><div data-variant="quick"><TextReveal variant="quick" text="Welcome back, Asha" /></div>
       </Section>
       <Section id="rotating-text" title="Rotating text">
-        <RotatingText variant={variant} prefix="Pay" words={['bills', 'friends', 'cards']} />
+        <RotatingText prefix="Pay" words={['bills', 'friends', 'cards']} /><div data-variant="fade"><RotatingText variant="fade" prefix="Pay" words={['bills', 'friends', 'cards']} /></div><div data-variant="flip"><RotatingText variant="flip" prefix="Pay" words={['bills', 'friends', 'cards']} /></div><div data-variant="brisk"><RotatingText variant="brisk" prefix="Pay" words={['bills', 'friends', 'cards']} /></div>
       </Section>
       <Section id="shimmer-text" title="Shimmer text">
-        <ShimmerText variant={variant} text="New: instant transfers" />
+        <ShimmerText text="New: instant transfers" /><div data-variant="slow"><ShimmerText variant="slow" text="New: instant transfers" /></div><div data-variant="ocean"><ShimmerText variant="ocean" text="New: instant transfers" /></div><div data-variant="gold"><ShimmerText variant="gold" text="New: instant transfers" /></div>
       </Section>
       <Section id="gradient-text" title="Gradient text">
-        <GradientText variant={variant} text="Platinum" />
+        <GradientText text="Platinum" /><div data-variant="ocean"><GradientText variant="ocean" text="Platinum" /></div><div data-variant="sunset"><GradientText variant="sunset" text="Platinum" /></div><div data-variant="graphite"><GradientText variant="graphite" text="Platinum" /></div>
       </Section>
       <Section id="typed-text" title="Typed text">
-        <TypedText variant={variant} text="You spent 320.00 on groceries this month, 40.00 less than last month." />
+        <TypedText text="You spent 320.00 on groceries this month, 40.00 less than last month." /><div data-variant="quick"><TypedText variant="quick" text="You spent 320.00 on groceries this month, 40.00 less than last month." /></div><div data-variant="deliberate"><TypedText variant="deliberate" text="You spent 320.00 on groceries this month, 40.00 less than last month." /></div>
       </Section>
       <Section id="focus-word" title="Focus word">
-        <FocusWord variant={variant} text="Save a little every day" />
+        <FocusWord text="Save a little every day" /><div data-variant="slow"><FocusWord variant="slow" text="Save a little every day" /></div><div data-variant="soft"><FocusWord variant="soft" text="Save a little every day" /></div><div data-variant="sharp"><FocusWord variant="sharp" text="Save a little every day" /></div>
       </Section>
       <Section id="scroll-float-text" title="Scroll float text">
-        <ScrollFloatText variant={variant} text="Grow your savings" />
+        <ScrollFloatText text="Grow your savings" /><div data-variant="sink"><ScrollFloatText variant="sink" text="Grow your savings" /></div><div data-variant="gentle"><ScrollFloatText variant="gentle" text="Grow your savings" /></div><div data-variant="bold"><ScrollFloatText variant="bold" text="Grow your savings" /></div>
       </Section>
       <Section id="fade-in-content" title="Fade-in content">
-        <FadeInContent variant={variant}><p>The screen's own content</p></FadeInContent>
+        <FadeInContent effect="fadeup"><p>The screen's own content</p></FadeInContent><div data-variant="scale"><FadeInContent variant="scale"><p>The screen's own content</p></FadeInContent></div><div data-variant="slide"><FadeInContent variant="slide"><p>The screen's own content</p></FadeInContent></div><div data-variant="blur"><FadeInContent variant="blur"><p>The screen's own content</p></FadeInContent></div>
       </Section>
       <Section id="scroll-reveal" title="Scroll reveal">
-        <ScrollReveal variant={variant} effect={variant ? undefined : 'scale'}><p>The screen's own content</p></ScrollReveal>
+        <ScrollReveal effect="scale"><p>The screen's own content</p></ScrollReveal><div data-variant="scale"><ScrollReveal variant="scale"><p>The screen's own content</p></ScrollReveal></div><div data-variant="slide"><ScrollReveal variant="slide"><p>The screen's own content</p></ScrollReveal></div><div data-variant="blur"><ScrollReveal variant="blur"><p>The screen's own content</p></ScrollReveal></div>
       </Section>
       <Section id="scroll-expand" title="Scroll expand">
-        <ScrollExpand variant={variant}><p>The screen's own content</p></ScrollExpand>
+        <ScrollExpand><p>The screen's own content</p></ScrollExpand><div data-variant="subtle"><ScrollExpand variant="subtle"><p>The screen's own content</p></ScrollExpand></div><div data-variant="bold"><ScrollExpand variant="bold"><p>The screen's own content</p></ScrollExpand></div>
       </Section>
       <Section id="edge-blur" title="Edge blur">
-        <EdgeBlur variant={variant}><p>The screen's own content</p></EdgeBlur>
+        <EdgeBlur><p>The screen's own content</p></EdgeBlur><div data-variant="soft"><EdgeBlur variant="soft"><p>The screen's own content</p></EdgeBlur></div><div data-variant="tight"><EdgeBlur variant="tight"><p>The screen's own content</p></EdgeBlur></div>
       </Section>
       <Section id="glare-hover" title="Glare hover">
-        <GlareHover variant={variant}><p>The screen's own content</p></GlareHover>
+        <GlareHover><p>The screen's own content</p></GlareHover><div data-variant="subtle"><GlareHover variant="subtle"><p>The screen's own content</p></GlareHover></div><div data-variant="bright"><GlareHover variant="bright"><p>The screen's own content</p></GlareHover></div>
       </Section>
       <Section id="magnetic-button" title="Magnetic button">
         <MagneticButton label="Open an account" />
       </Section>
       <Section id="highlight-border" title="Highlight border">
-        <HighlightBorder variant={variant}><p>The screen's own content</p></HighlightBorder>
+        <HighlightBorder><p>The screen's own content</p></HighlightBorder><div data-variant="ocean"><HighlightBorder variant="ocean"><p>The screen's own content</p></HighlightBorder></div><div data-variant="sunset"><HighlightBorder variant="sunset"><p>The screen's own content</p></HighlightBorder></div><div data-variant="graphite"><HighlightBorder variant="graphite"><p>The screen's own content</p></HighlightBorder></div>
       </Section>
       <Section id="click-burst" title="Click burst">
-        <ClickBurst variant={variant}><p>The screen's own content</p></ClickBurst>
+        <ClickBurst><p>The screen's own content</p></ClickBurst><div data-variant="confetti"><ClickBurst variant="confetti"><p>The screen's own content</p></ClickBurst></div><div data-variant="quiet"><ClickBurst variant="quiet"><p>The screen's own content</p></ClickBurst></div>
       </Section>
       <Section id="marquee" title="Marquee">
-        <Marquee variant={variant} items={['USD 0.92 EUR', 'GBP 1.17 EUR', 'AED 0.25 EUR']} />
+        <Marquee items={['USD 0.92 EUR', 'GBP 1.17 EUR', 'AED 0.25 EUR']} /><div data-variant="slow"><Marquee variant="slow" items={['USD 0.92 EUR', 'GBP 1.17 EUR', 'AED 0.25 EUR']} /></div><div data-variant="fast"><Marquee variant="fast" items={['USD 0.92 EUR', 'GBP 1.17 EUR', 'AED 0.25 EUR']} /></div><div data-variant="reverse"><Marquee variant="reverse" items={['USD 0.92 EUR', 'GBP 1.17 EUR', 'AED 0.25 EUR']} /></div>
       </Section>
       <Section id="animated-list" title="Animated list">
         <AnimatedList label="Recent" items={['Coffee House', {title: 'Salary', meta: '31 Dec'}]} />
@@ -732,7 +731,7 @@ function Gallery() {
         <BentoGrid label="Dashboard" items={[{id: 'spend', title: 'Spending', figure: '1,240.00', size: 'wide'}, {id: 'save', title: 'Saved', figure: '320.00'}, {id: 'score', title: 'Credit score', figure: '742'}]} />
       </Section>
       <Section id="carousel" title="Carousel">
-        <Carousel variant={variant} slides={[{title: 'Travel insurance', text: 'Cover for the whole family'}, {title: 'Home loans', text: 'From 6.9% a year'}]} />
+        <Carousel slides={[{title: 'Travel insurance', text: 'Cover for the whole family'}, {title: 'Home loans', text: 'From 6.9% a year'}]} /><div data-variant="fade"><Carousel variant="fade" slides={[{title: 'Travel insurance', text: 'Cover for the whole family'}, {title: 'Home loans', text: 'From 6.9% a year'}]} /></div><div data-variant="scale"><Carousel variant="scale" slides={[{title: 'Travel insurance', text: 'Cover for the whole family'}, {title: 'Home loans', text: 'From 6.9% a year'}]} /></div>
       </Section>
       <Section id="elastic-slider" title="Elastic slider">
         <ElasticSlider label="Amount" value={500} prefix="USD" />
@@ -762,31 +761,31 @@ function Gallery() {
         <ProfileCard name="Priya Nair" jobTitle="Relationship manager" items={[{label: 'Phone', value: '+44 20 7946 0123'}]} actionLabel="Send a message" />
       </Section>
       <Section id="glass-panel" title="Glass panel">
-        <GlassPanel variant={variant}><p>The screen's own content</p></GlassPanel>
+        <GlassPanel><p>The screen's own content</p></GlassPanel><div data-variant="frosted"><GlassPanel variant="frosted"><p>The screen's own content</p></GlassPanel></div><div data-variant="clear"><GlassPanel variant="clear"><p>The screen's own content</p></GlassPanel></div>
       </Section>
       <Section id="gradient-backdrop" title="Gradient backdrop">
-        <GradientBackdrop variant={variant}><p>The screen's own content</p></GradientBackdrop>
+        <GradientBackdrop><p>The screen's own content</p></GradientBackdrop><div data-variant="ocean"><GradientBackdrop variant="ocean"><p>The screen's own content</p></GradientBackdrop></div><div data-variant="sunset"><GradientBackdrop variant="sunset"><p>The screen's own content</p></GradientBackdrop></div><div data-variant="calm"><GradientBackdrop variant="calm"><p>The screen's own content</p></GradientBackdrop></div>
       </Section>
       <Section id="soft-aurora" title="Soft aurora">
-        <SoftAurora variant={variant}><p>The screen's own content</p></SoftAurora>
+        <SoftAurora><p>The screen's own content</p></SoftAurora><div data-variant="ocean"><SoftAurora variant="ocean"><p>The screen's own content</p></SoftAurora></div><div data-variant="sunset"><SoftAurora variant="sunset"><p>The screen's own content</p></SoftAurora></div><div data-variant="calm"><SoftAurora variant="calm"><p>The screen's own content</p></SoftAurora></div>
       </Section>
       <Section id="silk-backdrop" title="Silk backdrop">
-        <SilkBackdrop variant={variant}><p>The screen's own content</p></SilkBackdrop>
+        <SilkBackdrop><p>The screen's own content</p></SilkBackdrop><div data-variant="ocean"><SilkBackdrop variant="ocean"><p>The screen's own content</p></SilkBackdrop></div><div data-variant="sunset"><SilkBackdrop variant="sunset"><p>The screen's own content</p></SilkBackdrop></div><div data-variant="calm"><SilkBackdrop variant="calm"><p>The screen's own content</p></SilkBackdrop></div>
       </Section>
       <Section id="dot-grid" title="Dot grid">
-        <DotGrid variant={variant}><p>The screen's own content</p></DotGrid>
+        <DotGrid><p>The screen's own content</p></DotGrid><div data-variant="ocean"><DotGrid variant="ocean"><p>The screen's own content</p></DotGrid></div><div data-variant="sunset"><DotGrid variant="sunset"><p>The screen's own content</p></DotGrid></div><div data-variant="calm"><DotGrid variant="calm"><p>The screen's own content</p></DotGrid></div>
       </Section>
       <Section id="line-waves" title="Line waves">
-        <LineWaves variant={variant}><p>The screen's own content</p></LineWaves>
+        <LineWaves><p>The screen's own content</p></LineWaves><div data-variant="ocean"><LineWaves variant="ocean"><p>The screen's own content</p></LineWaves></div><div data-variant="sunset"><LineWaves variant="sunset"><p>The screen's own content</p></LineWaves></div><div data-variant="calm"><LineWaves variant="calm"><p>The screen's own content</p></LineWaves></div>
       </Section>
       <Section id="light-beams" title="Light beams">
-        <LightBeams variant={variant}><p>The screen's own content</p></LightBeams>
+        <LightBeams><p>The screen's own content</p></LightBeams><div data-variant="ocean"><LightBeams variant="ocean"><p>The screen's own content</p></LightBeams></div><div data-variant="sunset"><LightBeams variant="sunset"><p>The screen's own content</p></LightBeams></div><div data-variant="calm"><LightBeams variant="calm"><p>The screen's own content</p></LightBeams></div>
       </Section>
       <Section id="topography" title="Topography">
-        <Topography variant={variant}><p>The screen's own content</p></Topography>
+        <Topography><p>The screen's own content</p></Topography><div data-variant="ocean"><Topography variant="ocean"><p>The screen's own content</p></Topography></div><div data-variant="sunset"><Topography variant="sunset"><p>The screen's own content</p></Topography></div><div data-variant="calm"><Topography variant="calm"><p>The screen's own content</p></Topography></div>
       </Section>
       <Section id="particle-backdrop" title="Particle backdrop">
-        <ParticleBackdrop variant={variant}><p>The screen's own content</p></ParticleBackdrop>
+        <ParticleBackdrop><p>The screen's own content</p></ParticleBackdrop><div data-variant="ocean"><ParticleBackdrop variant="ocean"><p>The screen's own content</p></ParticleBackdrop></div><div data-variant="sunset"><ParticleBackdrop variant="sunset"><p>The screen's own content</p></ParticleBackdrop></div><div data-variant="calm"><ParticleBackdrop variant="calm"><p>The screen's own content</p></ParticleBackdrop></div>
       </Section>
       <Section id="slide-to-confirm" title="Slide to confirm">
         <SlideToConfirm label="Slide to pay 1,250.00" />
@@ -804,7 +803,7 @@ function Gallery() {
         <SuccessCheck label="Payment sent" text="1,250.00 USD to A. Rao" />
       </Section>
       <Section id="swipe-row" title="Swipe row">
-        <SwipeRow variant={variant} heading="Coffee House" meta="Today 08:14" value="-4.50" actions={[{value: 'split', label: 'Split'}, {value: 'dispute', label: 'Dispute', tone: 'danger'}]} />
+        <SwipeRow heading="Coffee House" meta="Today 08:14" value="-4.50" actions={[{value: 'split', label: 'Split'}, {value: 'dispute', label: 'Dispute', tone: 'danger'}]} /><div data-variant="smooth"><SwipeRow variant="smooth" heading="Coffee House" meta="Today 08:14" value="-4.50" actions={[{value: 'split', label: 'Split'}, {value: 'dispute', label: 'Dispute', tone: 'danger'}]} /></div><div data-variant="snappy"><SwipeRow variant="snappy" heading="Coffee House" meta="Today 08:14" value="-4.50" actions={[{value: 'split', label: 'Split'}, {value: 'dispute', label: 'Dispute', tone: 'danger'}]} /></div>
       </Section>
       <Section id="swipe-toast" title="Swipe toast">
         <SwipeToast message="Saved as a payee" />
@@ -825,7 +824,7 @@ function Gallery() {
         <RubberSegment label="Period" options={['1M', '3M', '1Y']} value="1M" />
       </Section>
       <Section id="scrub-field" title="Scrub field">
-        <ScrubField variant={variant} value={250} currency="USD" />
+        <ScrubField value={250} currency="USD" /><div data-variant="fine"><ScrubField variant="fine" value={250} currency="USD" /></div><div data-variant="fast"><ScrubField variant="fast" value={250} currency="USD" /></div>
       </Section>
       <Section id="budget-gauge" title="Budget gauge">
         <BudgetGauge label="Groceries" value={320} max={400} unit="USD" />

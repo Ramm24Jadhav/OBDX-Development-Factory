@@ -36,8 +36,8 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     return vm.disconnected;
   };
   /**
-   * A kind with a variant property: a named preset of the effect's settings (variants/v5.json). Its view model gets fx(), the
-   * settings (before its own model runs, so timers can use them), and fxCss(), the class (' is-v-<variant>') that turns on the
+   * A kind with a variant property: a named preset of the effect's settings (variants.json). Its view model gets fx(), the
+   * settings (before its own model runs, so timers can use them), and fxCss(), the class (' bx-v-<variant>') that turns on the
    * variant's --bx-fx-* variables.
    */
   var varied = function (kind, id) {

@@ -1,0 +1,7 @@
+.bx-marquee { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--bx-radius); background: var(--bx-surface-2); border: var(--bx-bw) solid var(--bx-border); box-shadow: var(--bx-shadow-1); }
+.bx-marquee-window { flex: 1 1 auto; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.bx-marquee-track { display: flex; width: max-content; animation: bx-marquee calc(24s / var(--bx-fx-speed, 1)) linear infinite; animation-direction: var(--bx-fx-play, normal); }
+.bx-marquee-track.is-slow { animation-duration: calc(40s / var(--bx-fx-speed, 1)); }
+.bx-marquee-track.is-paused, .bx-marquee:hover .bx-marquee-track, .bx-marquee:focus-within .bx-marquee-track { animation-play-state: paused; }
+.bx-marquee-list { display: flex; gap: 32px; margin: 0; padding: 0 16px; list-style: none; white-space: nowrap; font-size: 14px; font-weight: 600; }
+@keyframes bx-marquee { 100% { transform: translateX(-50%); } }

@@ -1,0 +1,16 @@
+.bx-rolling { display: inline-flex; font-variant-numeric: tabular-nums; font-weight: 750; }
+.bx-rolling-face { display: inline-flex; }
+.bx-roll-col { display: inline-block; height: 1.2em; overflow: hidden; line-height: 1.2em; }
+.bx-roll-strip { display: flex; flex-direction: column; transition: transform calc(var(--bx-dur-slow) / var(--bx-fx-speed, 1)) var(--bx-fx-ease, var(--bx-ease-spring)); }
+.bx-roll-strip.is-d-1 { transform: translateY(-1.2em); }
+.bx-roll-strip.is-d-2 { transform: translateY(-2.4em); }
+.bx-roll-strip.is-d-3 { transform: translateY(-3.6em); }
+.bx-roll-strip.is-d-4 { transform: translateY(-4.8em); }
+.bx-roll-strip.is-d-5 { transform: translateY(-6em); }
+.bx-roll-strip.is-d-6 { transform: translateY(-7.2em); }
+.bx-roll-strip.is-d-7 { transform: translateY(-8.4em); }
+.bx-roll-strip.is-d-8 { transform: translateY(-9.6em); }
+.bx-roll-strip.is-d-9 { transform: translateY(-10.8em); }
+.bx-roll-sep { line-height: 1.2em; }
+.bx-count-up { font-variant-numeric: tabular-nums; font-weight: 750; }
+.bx-scrub-handle { padding: 2px 8px; border-radius: var(--bx-radius); background: var(--bx-surface-3); color: var(--bx-muted); cursor: ew-resize; user-select: none; touch-action: none; }

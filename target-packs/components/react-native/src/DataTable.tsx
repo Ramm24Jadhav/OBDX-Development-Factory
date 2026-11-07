@@ -66,8 +66,8 @@ export function DataTable<R extends object>({ caption, rows, columns, keyField, 
             return (
               <Pressable key={c.field} testID={testID ? `${testID}-sort-${c.field}` : undefined} accessibilityRole="button"
                          accessibilityLabel={`Sort by ${c.headerText}, ${dir}`} onPress={() => toggleSort(c.field)}
-                         style={{ minHeight: t.minTouch - 4, paddingHorizontal: 12, justifyContent: 'center', borderRadius: 999, borderWidth: 1,
-                           borderColor: on ? t.color.primary : t.color.border, backgroundColor: on ? t.color.primarySoft : t.color.surface }}>
+                         style={{ minHeight: t.minTouch - 4, paddingHorizontal: 12, justifyContent: 'center', borderRadius: 999, borderWidth: t.border,
+                           borderColor: on ? t.color.primary : t.line, backgroundColor: on ? t.color.primarySoft : t.fill }}>
                 <Text style={{ fontSize: 13, color: on ? t.color.primaryText : t.color.textBody }}>{c.headerText}{on ? (sort!.asc ? ' ↑' : ' ↓') : ''}</Text>
               </Pressable>
             );
@@ -87,8 +87,8 @@ export function DataTable<R extends object>({ caption, rows, columns, keyField, 
                 </Text>}
           </View>
         ));
-        const box = { gap: 6, padding: 14, borderRadius: t.radius.card, borderWidth: on ? 1.5 : 1, borderColor: on ? t.color.primary : t.color.border,
-          backgroundColor: on ? t.color.primarySoft : t.color.surface };
+        const box = { gap: 6, padding: 14, borderRadius: t.radius.card, borderWidth: on ? Math.max(t.border, 1.5) : t.border, borderColor: on ? t.color.primary : t.line,
+          backgroundColor: on ? t.color.primarySoft : t.card, ...t.elevation(1) };
         return selectionMode === 'none'
           ? <Enter key={key} effect="settle" testID={testID ? `${testID}-row-${key}` : undefined} style={box}>{cells}</Enter>
           : (

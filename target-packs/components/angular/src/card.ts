@@ -25,9 +25,11 @@ export class Card {
   /** Makes the whole card a button (an account to open). Do not put other buttons in it then. */
   readonly interactive = input(false);
   readonly selected = input<boolean | undefined>(undefined);
+  /** A style variant from variants.json; the default look when empty. */
+  readonly variant = input<'' | 'outlined'>('');
   readonly testID = input('');
   readonly action = output<void>();
-  protected readonly css = computed(() => 'bx-card' + (this.interactive() ? ' is-interactive' : '') + (this.selected() ? ' is-selected' : ''));
+  protected readonly css = computed(() => 'bx-card' + (this.variant() ? ' bx-v-' + this.variant() : '') + (this.interactive() ? ' is-interactive' : '') + (this.selected() ? ' is-selected' : ''));
 
   protected press(): void { if (this.interactive()) { this.action.emit(); } }
 

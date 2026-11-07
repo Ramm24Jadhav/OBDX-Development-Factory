@@ -326,7 +326,7 @@ export function Motion({ phase = 'enter', preset, on, style, children, ...props 
 
 export interface FxSettings extends FxParams { speed: number; intensity: number; density: number; sensitivity: number }
 
-/** An effect variant's settings (variants/*.json), with the defaults for any it leaves out; an unknown variant is the default. */
+/** An effect variant's settings (variants.json), with the defaults for any it leaves out; an unknown variant is the default. */
 export function fx(component: string, variant?: string): FxSettings {
   return { speed: 1, intensity: 1, density: 1, sensitivity: 1, ...(variant ? FX[component]?.[variant] : undefined) };
 }

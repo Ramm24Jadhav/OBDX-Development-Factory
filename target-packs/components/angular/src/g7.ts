@@ -21,7 +21,7 @@ const words = (text: string) => (text || '').split(/\s+/).filter(Boolean);
 /** What the effects share: their variant, and a timer loop that stops with the component and under reduced motion. */
 @Directive()
 export abstract class Fx extends Part {
-  /** A named preset of the effect's settings (variants/v5.json), shown as is-v-<variant> and the --bx-fx-* variables. */
+  /** A named preset of the effect's settings (variants.json), shown as bx-v-<variant> and the --bx-fx-* variables. */
   readonly variant = input('');
   /** The component's id in the variants, for the effects that have them. */
   protected readonly fxId: string = '';

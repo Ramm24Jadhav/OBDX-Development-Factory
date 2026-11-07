@@ -14,7 +14,7 @@ export interface WrapProps {
   testID?: string;
   children?: ReactNode;
   style?: StyleProp<ViewStyle>;
-  /** A named preset of the effect's settings (variants/v5.json). */
+  /** A named preset of the effect's settings (variants.json). */
   variant?: string;
 }
 
@@ -211,7 +211,7 @@ export interface MarqueeProps {
   items: ReadonlyArray<string>;
   /** Points a second. */
   speed?: number;
-  /** A named preset of its settings (variants/v5.json): slow, fast, reverse. */
+  /** A named preset of its settings (variants.json): slow, fast, reverse. */
   variant?: string;
 }
 

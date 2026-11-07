@@ -1,0 +1,10 @@
+.bx-quick-item:focus-visible { outline: none; box-shadow: var(--bx-focus); }
+.bx-quick ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.bx-quick-item { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; min-height: 88px; padding: 12px 8px; border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-lg);
+  background: var(--bx-card); box-shadow: var(--bx-shadow-1); color: var(--bx-text); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: transform var(--bx-dur-base) var(--bx-ease-standard), box-shadow var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-quick-icon { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; background: color-mix(in srgb, var(--bx-brand) 12%, var(--bx-surface));
+  color: var(--bx-brand-text); font-size: 18px; }
+.bx-motion-hover-lift .bx-quick-item:hover { transform: translateY(-2px); box-shadow: var(--bx-shadow-2); }
+.bx-motion-hover-glow .bx-quick-item:hover { box-shadow: 0 0 0 4px color-mix(in srgb, var(--bx-brand) 18%, transparent), 0 8px 24px color-mix(in srgb, var(--bx-brand) 22%, transparent); }
+.bx-motion-click-press .bx-quick-item:active { transform: scale(0.97); }
+.bx-motion-click-bounce .bx-quick-item:active { animation: bx-bounce 300ms var(--bx-ease-spring); }
