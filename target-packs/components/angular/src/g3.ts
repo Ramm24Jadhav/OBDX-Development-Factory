@@ -9,6 +9,7 @@ import { Dialog } from './dialog';
 import { FieldMessage } from './field';
 import { ALERT, AlertBase, Part, ROWS, RowsBase, SEGMENTS, SLIDER, STEPS, SegmentsBase, Severity, SliderBase, StepsBase, TIMELINE, TimelineBase } from './g1';
 import { DETAILS, DetailsBase, FORM, FormBase, TILES, TilesBase } from './g2';
+import { TimeoutVariant, ringOffset, vx } from './variants';
 
 /** The last four digits behind dots, as banks show a card or account number. */
 export function masked(number: string): string {
@@ -217,7 +218,11 @@ export function expiryText(s: number): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Dialog],
   template: `
-    <bx-dialog [open]="open()" [dialogTitle]="heading()" cancelBehavior="none" [testID]="testID()">
+    <bx-dialog [open]="open()" [dialogTitle]="heading()" cancelBehavior="none" [testID]="testID()" [dialogClass]="'bx-timeout ' + vcss()">
+      @if (variant() === 'countdown') {
+        <span class="bx-countdown" aria-hidden="true"><svg viewBox="0 0 44 44" focusable="false"><circle class="bx-countdown-track" cx="22" cy="22" r="20"></circle>
+          <circle class="bx-countdown-fill" cx="22" cy="22" r="20" stroke-dasharray="125.7" [attr.stroke-dashoffset]="ring()"></circle></svg><span class="bx-countdown-num">{{ left() }}</span></span>
+      }
       <p>{{ text() }}</p>
       <span class="bx-visually-hidden" aria-live="assertive">{{ spoken() }}</span>
       <button footer type="button" class="bx-btn bx-btn--borderless" (click)="end('signOut')">Sign out</button>
@@ -228,6 +233,10 @@ export class SessionExpiryWarning extends Part {
   readonly open = model(false);
   readonly seconds = input(60);
   readonly heading = input('Are you still there?');
+  /** The style: standard (dialog), countdown (a ring that empties) or sheet. */
+  readonly variant = input<TimeoutVariant>('standard');
+  protected readonly vcss = computed(() => vx('timeout', this.variant()));
+  protected readonly ring = computed(() => ringOffset(this.left() / (this.seconds() || 1), 20));
   readonly stay = output<void>();
   readonly signOut = output<void>();
   readonly expired = output<void>();

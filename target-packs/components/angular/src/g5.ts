@@ -8,6 +8,7 @@ import { ChangeDetectionStrategy, Component, Directive, computed, input, model, 
 import { ACCORDION, AccordionBase, Part, ROWS, RowsBase, SEGMENTS, SLIDER, STEPS, SegmentsBase, SliderBase, StepsBase, TIMELINE, TimelineBase } from './g1';
 import { FORM, FormBase, THING, ThingBase, money } from './g2';
 import { CHECKS, ChecksBase } from './g4';
+import { FACES, RatingVariant, vx } from './variants';
 
 /** The monthly instalment of a loan: principal, yearly rate in %, months. */
 export function instalment(principal: number, rate: number, months: number): number {
@@ -266,13 +267,13 @@ const WORDS = ['', 'Very poor', 'Poor', 'Fine', 'Good', 'Very good'];
   selector: 'bx-feedback',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <fieldset class="bx-field bx-rating" [attr.data-testid]="testID() || null">
+    <fieldset [class]="'bx-field bx-rating ' + vcss()" [attr.data-testid]="testID() || null">
       <legend class="bx-label">{{ label() }}</legend>
       <div class="bx-stars">
         @for (s of stars(); track s.i) {
-          <label [class]="s.i <= value() ? 'bx-star is-on' : 'bx-star'">
+          <label [class]="'bx-star' + (s.i <= value() ? ' is-on' : '') + (s.i === value() ? ' is-chosen' : '')">
             <input type="radio" class="bx-visually-hidden" [name]="id" [checked]="s.i === value()" (change)="value.set(s.i)" />
-            <span aria-hidden="true">★</span><span class="bx-visually-hidden">{{ s.label }}</span>
+            <span aria-hidden="true">{{ s.glyph }}</span><span class="bx-visually-hidden">{{ s.label }}</span>
           </label>
         }
         @if (word()) { <span class="bx-rating-word" aria-hidden="true">{{ word() }}</span> }
@@ -282,7 +283,11 @@ const WORDS = ['', 'Very poor', 'Poor', 'Fine', 'Good', 'Very good'];
 export class FeedbackRating extends Part {
   readonly label = input('How was it?');
   readonly value = model(0);
-  protected readonly stars = computed(() => [1, 2, 3, 4, 5].map((i) => ({ i, label: `${i} ${i === 1 ? 'star' : 'stars'}, ${WORDS[i]}` })));
+  /** The style: standard (stars), emoji (faces) or numbers. */
+  readonly variant = input<RatingVariant>('standard');
+  protected readonly vcss = computed(() => vx('rating', this.variant()));
+  protected readonly stars = computed(() => [1, 2, 3, 4, 5].map((i) => ({ i, label: `${i} ${i === 1 ? 'star' : 'stars'}, ${WORDS[i]}`,
+    glyph: this.variant() === 'emoji' ? FACES[i - 1] : this.variant() === 'numbers' ? String(i) : '★' })));
   protected readonly word = computed(() => WORDS[this.value()] || '');
 }
 

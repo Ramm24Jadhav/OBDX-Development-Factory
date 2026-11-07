@@ -15,7 +15,7 @@ import { nextId } from './field';
   template: `
     @if (open()) {
       <div class="bx-dialog-backdrop" (click)="cancel()"></div>
-      <div class="bx-dialog" role="dialog" aria-modal="true" tabindex="-1" [attr.aria-labelledby]="id + '-title'"
+      <div [class]="dialogClass() ? 'bx-dialog ' + dialogClass() : 'bx-dialog'" role="dialog" aria-modal="true" tabindex="-1" [attr.aria-labelledby]="id + '-title'"
            [attr.aria-describedby]="description() ? id + '-desc' : null" [attr.data-testid]="testID() || null"
            cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (keydown.escape)="cancel()">
         <div class="bx-dialog-header">
@@ -41,6 +41,8 @@ export class Dialog {
   /** 'none' keeps it open on Escape and backdrop clicks and hides the close button (a step that must be answered). */
   readonly cancelBehavior = input<'icon' | 'escape' | 'none'>('icon');
   readonly testID = input('');
+  /** Extra classes on the dialog (a variant). */
+  readonly dialogClass = input('');
   readonly id = nextId('bx-dialog');
   private opener: HTMLElement | null = null;
   private readonly host = inject(ElementRef<HTMLElement>);

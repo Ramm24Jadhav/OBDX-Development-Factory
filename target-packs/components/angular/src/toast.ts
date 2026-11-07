@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, output, untracked } from '@angular/core';
 
+import { ToastVariant, vx } from './variants';
+
 export type Severity = 'error' | 'warning' | 'confirmation' | 'info';
 
 export interface Message {
@@ -21,7 +23,7 @@ const ICON: Record<Severity, string> = { error: '!', warning: '!', confirmation:
   selector: 'bx-toast',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div [class]="'bx-toasts is-' + display()" [attr.data-testid]="testID() || null">
+    <div [class]="'bx-toasts is-' + display() + ' ' + vx('toast', variant())" [attr.data-testid]="testID() || null">
       @for (m of messages(); track m.id) {
         <div [class]="'bx-toast is-' + (m.severity || 'info')" [attr.role]="m.severity === 'error' ? 'alert' : 'status'">
           <span class="bx-toast-icon" aria-hidden="true">{{ icon(m) }}</span>
@@ -37,6 +39,9 @@ const ICON: Record<Severity, string> = { error: '!', warning: '!', confirmation:
 export class Toast {
   readonly messages = input<ReadonlyArray<Message>>([]);
   readonly display = input<'notification' | 'general'>('notification');
+  /** The style: standard, snackbar, stacked or pill. */
+  readonly variant = input<ToastVariant>('standard');
+  protected readonly vx = vx;
   readonly testID = input('');
   readonly closed = output<Message>();
   private readonly timers = new Map<string, ReturnType<typeof setTimeout>>();

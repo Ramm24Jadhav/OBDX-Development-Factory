@@ -9,6 +9,7 @@ import { Dropdown } from './dropdown';
 import { ACCORDION, ALERT, AccordionBase, AlertBase, CHIPS, ChipsBase, Part, ROWS, RowsBase, SEGMENTS, SegmentsBase, Severity, TIMELINE, TimelineBase } from './g1';
 import { DETAILS, DetailsBase, PICKER, PickerBase } from './g2';
 import { SETTING, SettingBase } from './g3';
+import { ChartVariant, ProgressVariant, ringOffset, vx } from './variants';
 
 /** A share in steps of 5% (0 to 100), for the bx-w-* and bx-h-* classes. */
 export function step(part: number, whole: number): number {
@@ -22,8 +23,9 @@ const figure = (n: number, unit: string) => n.toLocaleString() + (unit ? ` ${uni
 export interface Bar { label: string; value: number; display?: string; tone?: 'danger' | 'success' }
 
 export const CHART = `
-  <figure [class]="'bx-chart is-' + dir()" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
+  <figure [class]="'bx-chart is-' + dir() + ' ' + vcss()" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
     <figcaption class="bx-panel-title" [id]="id">{{ head() }}</figcaption>
+    @if (variant() === 'meter') { <span class="bx-meter-bar" aria-hidden="true">@for (s of segs(); track $index) {<span [class]="s"></span>}</span> }
     <ul class="bx-bars">
       @for (b of bars(); track $index) {
         <li class="bx-bar"><span class="bx-bar-label">{{ b.label }}</span><span class="bx-bar-track" aria-hidden="true"><span [class]="b.css"></span></span>
@@ -41,6 +43,14 @@ export abstract class ChartBase extends Part {
   readonly unit = input('');
   readonly orientation = input<'bars' | 'columns' | undefined>(undefined);
   readonly note = input('');
+  /** The style: standard, rounded, lollipop or meter (one bar split into the figures). */
+  readonly variant = input<ChartVariant>('standard');
+  protected readonly vcss = computed(() => vx('chart', this.variant()));
+  /** The meter chart's one bar: each figure's share of the total. */
+  protected readonly segs = computed(() => {
+    const total = this.items().reduce((s, o) => s + Math.max(0, o.value || 0), 0);
+    return this.items().map((o, i) => `bx-meter-seg bx-w-${step(Math.max(0, o.value || 0), total)} bx-seg-${i % 6}`);
+  });
   protected readonly defaultHeading: string = '';
   protected readonly defaultOrientation: 'bars' | 'columns' = 'bars';
   protected readonly head = computed(() => this.heading() ?? this.defaultHeading);
@@ -65,13 +75,21 @@ export class SpendingChart extends ChartBase {
 export interface Meter { id?: string; label: string; value: number; max: number }
 
 export const METERS = `
-  <section class="bx-panel bx-meters" [attr.aria-label]="head() || null" [attr.data-testid]="testID() || null">
+  <section [class]="'bx-panel bx-meters ' + vcss()" [attr.aria-label]="head() || null" [attr.data-testid]="testID() || null">
     @if (head()) { <h3 class="bx-panel-title">{{ head() }}</h3> }
     @for (m of rows(); track $index; let i = $index) {
       <div class="bx-meter">
         <div class="bx-meter-head"><span [id]="id + '-' + i">{{ m.label }}</span><span [class]="m.over ? 'bx-meter-text is-over' : 'bx-meter-text'">{{ m.text }}</span></div>
         <div class="bx-meter-track" role="progressbar" aria-valuemin="0" [attr.aria-valuemax]="m.max" [attr.aria-valuenow]="m.now" [attr.aria-valuetext]="m.text"
-             [attr.aria-labelledby]="id + '-' + i"><span [class]="m.css"></span></div>
+             [attr.aria-labelledby]="id + '-' + i">
+          @switch (variant()) {
+            @case ('ring') { <span [class]="'bx-meter-ring' + m.state" aria-hidden="true"><svg viewBox="0 0 44 44" focusable="false"><circle class="bx-ring-track" cx="22" cy="22" r="18"></circle>
+              <circle class="bx-ring-fill" cx="22" cy="22" r="18" stroke-dasharray="113.1" [attr.stroke-dashoffset]="m.offset"></circle></svg><span class="bx-meter-pct">{{ m.pct }}%</span></span> }
+            @case ('segmented') { <span [class]="'bx-meter-segs' + m.state" aria-hidden="true">@for (on of m.segs; track $index) {<span [class]="on ? 'is-on' : ''"></span>}</span> }
+            @case ('linear') { <span [class]="m.css"></span><span class="bx-meter-stop" aria-hidden="true"></span> }
+            @default { <span [class]="m.css"></span> }
+          }
+        </div>
       </div>
     }
   </section>`;
@@ -83,6 +101,9 @@ export abstract class MetersBase extends Part {
   readonly unit = input('');
   /** From this share (%) the bar turns amber; leave out for the component's own (90). */
   readonly warnAt = input<number | undefined>(undefined);
+  /** The style: standard, linear, ring or segmented. */
+  readonly variant = input<ProgressVariant>('standard');
+  protected readonly vcss = computed(() => vx('progress', this.variant()));
   protected readonly defaultWarnAt: number = 90;
   protected readonly defaultHeading: string = '';
   protected readonly head = computed(() => this.heading() ?? this.defaultHeading);
@@ -90,7 +111,10 @@ export abstract class MetersBase extends Part {
     const over = o.max > 0 && o.value > o.max;
     const share = step(o.value, o.max);
     const text = `${figure(o.value, this.unit())} of ${figure(o.max, this.unit())}` + (over ? `, over by ${figure(Math.round((o.value - o.max) * 100) / 100, this.unit())}` : '');
-    return { label: o.label, text, over, max: o.max, now: Math.min(o.value, o.max), css: `bx-meter-fill bx-w-${share}` + (over ? ' is-over' : share >= (this.warnAt() ?? this.defaultWarnAt) ? ' is-near' : '') };
+    const state = over ? ' is-over' : share >= (this.warnAt() ?? this.defaultWarnAt) ? ' is-near' : '';
+    const pct = o.max > 0 ? Math.round(Math.min(1, Math.max(0, o.value / o.max)) * 100) : 0;
+    return { label: o.label, text, over, max: o.max, now: Math.min(o.value, o.max), css: `bx-meter-fill bx-w-${share}` + state, state, pct, offset: ringOffset(pct / 100, 18),
+      segs: Array.from({ length: 10 }, (_, k) => k < Math.round(share / 10)) };
   }));
 }
 
