@@ -33,6 +33,7 @@
   .bx-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 /* Wave V2 variants (variants.json): on the tiles of a summary and of a bento grid. elevated and filled are MUI Cards in React. */
+.bx-tile.MuiPaper-root, .bx-bento-tile .MuiPaper-root { background: var(--bx-card); color: var(--bx-text); border-radius: var(--bx-radius-lg); }
 :is(.bx-tiles-wrap, .bx-bento).bx-v-elevated :is(.bx-tile, .bx-bento-tile) { background: var(--bx-raised); border-color: transparent; box-shadow: var(--bx-shadow-2); }
 :is(.bx-tiles-wrap, .bx-bento).bx-v-filled :is(.bx-tile, .bx-bento-tile) { background: var(--bx-track); border-color: transparent; box-shadow: none; }
 :is(.bx-tiles-wrap, .bx-bento).bx-v-outlined :is(.bx-tile, .bx-bento-tile) { border-color: var(--bx-border-strong); box-shadow: none; }
@@ -49,7 +50,6 @@
 .bx-tiles-wrap.bx-v-compact .bx-tile, .bx-bento.bx-v-compact :is(.bx-bento-button, .bx-bento-body) { padding: calc(var(--bx-pad) - 4px); gap: 2px; }
 .bx-tiles-wrap.bx-v-compact .bx-tile-value, .bx-bento.bx-v-compact .bx-tile-value { font-size: 18px; }
 .bx-bento.bx-v-compact { grid-auto-rows: minmax(84px, auto); }
-.bx-tile.MuiPaper-root, .bx-bento-tile .MuiPaper-root { color: var(--bx-text); border-radius: var(--bx-radius-lg); }
 @media (max-width: 480px) {
   .bx-tiles-wrap.bx-v-bento .bx-tiles > li:first-child { grid-row: auto; }
 }
