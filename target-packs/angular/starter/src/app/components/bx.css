@@ -284,6 +284,24 @@ bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pi
   background: var(--bx-avatar-bg); color: var(--bx-avatar-text); font-weight: 700; font-size: 14px; letter-spacing: 0.02em; }
 .bx-avatar.is-sm { width: 28px; height: 28px; font-size: 11px; }
 .bx-avatar.is-lg { width: 56px; height: 56px; font-size: 19px; }
+/* ---------- masked avatars (kind avatars; ported from Vengeance UI, MIT, Copyright (c) 2025-2026 Ashutoshx7) ---------- */
+.bx-masked-avatars { display: flex; align-items: center; margin: 0; padding: 0 0 0 12px; list-style: none; }
+.bx-masked-avatar { position: relative; margin-left: -12px; }
+.bx-masked-face { display: block; border-radius: 50%; transition: transform var(--bx-dur-base) var(--bx-ease-spring); }
+/* each avatar is cut where the next one (40px wide, 12px over it) sits, with a 3px gap */
+.bx-masked-avatar.is-cut .bx-masked-face { -webkit-mask: radial-gradient(circle at 48px 50%, transparent 23px, #000 23.5px); mask: radial-gradient(circle at 48px 50%, transparent 23px, #000 23.5px); }
+.bx-masked-face:hover, .bx-masked-face:focus-visible { transform: translateY(-4px); }
+.bx-masked-face:focus-visible { outline: 2px solid var(--bx-brand); outline-offset: 2px; }
+.bx-masked-name { position: absolute; bottom: calc(100% + 8px); left: 50%; z-index: 2; padding: 4px 8px; border-radius: var(--bx-radius-sm); background: var(--bx-text); color: var(--bx-surface);
+  font-size: 12px; white-space: nowrap; opacity: 0; transform: translateX(-50%) translateY(4px); pointer-events: none;
+  transition: opacity var(--bx-dur-fast) var(--bx-ease-standard), transform var(--bx-dur-fast) var(--bx-ease-standard); }
+.bx-masked-face:hover + .bx-masked-name, .bx-masked-face:focus-visible + .bx-masked-name { opacity: 1; transform: translateX(-50%); }
+.bx-masked-avatar.is-more .bx-avatar { background: var(--bx-track); color: var(--bx-text); font-size: 13px; font-weight: var(--bx-weight-title); }
+/* ringed: a brand ring round each face instead of the cut, for photos on busy backgrounds */
+.bx-masked-avatars.bx-v-ringed .bx-masked-avatar.is-cut .bx-masked-face { -webkit-mask: none; mask: none; }
+.bx-masked-avatars.bx-v-ringed .bx-avatar { box-shadow: 0 0 0 2px var(--bx-surface), 0 0 0 4px var(--bx-brand); }
+.bx-masked-avatars.bx-v-ringed .bx-masked-avatar { margin-left: -8px; }
+@media (forced-colors: active) { .bx-masked-name { background: Canvas; color: CanvasText; border: 1px solid CanvasText; } }
 .bx-backdrop { position: relative; overflow: hidden; border-radius: var(--bx-radius-lg); isolation: isolate; color: var(--bx-brand); }
 .bx-backdrop-layer { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }
 .bx-backdrop-content { position: relative; padding: 24px; color: var(--bx-text); }
@@ -335,6 +353,25 @@ bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pi
   .bx-motion-scroll-slide .bx-balance { animation: bx-in-slide linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
   .bx-motion-scroll-blur .bx-balance { animation: bx-in-blur linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
 }
+/* ---------- border beam (kind beam; ported from Vengeance UI, MIT, Copyright (c) 2025-2026 Ashutoshx7) ---------- */
+@property --bx-beam-a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.bx-border-beam { position: relative; isolation: isolate; }
+.bx-beam { position: absolute; inset: calc(var(--bx-bw) * -1); padding: calc(var(--bx-bw) + 0.5px); border-radius: inherit; pointer-events: none; --bx-beam-a: 360deg;
+  background: conic-gradient(from var(--bx-beam-a), transparent 0 72%, var(--bx-brand) 86%, var(--bx-brand-2) 94%, transparent);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: bx-beam-lap 8s linear infinite; }
+@keyframes bx-beam-lap { from { --bx-beam-a: 0deg; } }
+.bx-border-beam.is-lap-2 .bx-beam { animation-duration: 2s; } .bx-border-beam.is-lap-3 .bx-beam { animation-duration: 3s; } .bx-border-beam.is-lap-4 .bx-beam { animation-duration: 4s; }
+.bx-border-beam.is-lap-5 .bx-beam { animation-duration: 5s; } .bx-border-beam.is-lap-6 .bx-beam { animation-duration: 6s; } .bx-border-beam.is-lap-7 .bx-beam { animation-duration: 7s; }
+.bx-border-beam.is-lap-9 .bx-beam { animation-duration: 9s; } .bx-border-beam.is-lap-10 .bx-beam { animation-duration: 10s; } .bx-border-beam.is-lap-11 .bx-beam { animation-duration: 11s; }
+.bx-border-beam.is-lap-12 .bx-beam { animation-duration: 12s; } .bx-border-beam.is-lap-13 .bx-beam { animation-duration: 13s; } .bx-border-beam.is-lap-14 .bx-beam { animation-duration: 14s; }
+.bx-border-beam.is-lap-15 .bx-beam { animation-duration: 15s; } .bx-border-beam.is-lap-16 .bx-beam { animation-duration: 16s; } .bx-border-beam.is-lap-17 .bx-beam { animation-duration: 17s; }
+.bx-border-beam.is-lap-18 .bx-beam { animation-duration: 18s; } .bx-border-beam.is-lap-19 .bx-beam { animation-duration: 19s; } .bx-border-beam.is-lap-20 .bx-beam { animation-duration: 20s; }
+.bx-border-beam.is-still .bx-beam { animation: none; }
+/* double: two lights half a lap apart */
+.bx-border-beam.bx-v-double .bx-beam { background: conic-gradient(from var(--bx-beam-a), transparent 0 36%, var(--bx-brand) 43%, var(--bx-brand-2) 47%, transparent 50% 86%,
+  var(--bx-brand) 93%, var(--bx-brand-2) 97%, transparent); }
+@media (forced-colors: active) { .bx-beam { display: none; } }
 .bx-challenge { align-items: center; text-align: center; }
 .bx-challenge-icon { width: 64px; height: 64px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: color-mix(in srgb, var(--bx-brand) 12%, var(--bx-surface));
   color: var(--bx-brand-text); font-size: 30px; }
@@ -540,6 +577,34 @@ bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pi
 .bx-divider { margin: 16px 0; border: 0; border-top: var(--bx-bw) solid var(--bx-rule); }
 .bx-divider.has-label { display: flex; align-items: center; gap: 12px; border: 0; color: var(--bx-muted); font-size: 12.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
 .bx-divider.has-label::before, .bx-divider.has-label::after { content: ""; flex: 1 1 auto; border-top: var(--bx-bw) solid var(--bx-rule); }
+/* ---------- glass dock (kind dock; ported from Vengeance UI, MIT, Copyright (c) 2025-2026 Ashutoshx7) ---------- */
+.bx-glass-dock { position: relative; display: inline-block; }
+.bx-glass-dock ul { display: flex; gap: 8px; margin: 0; padding: 8px; list-style: none; border-radius: var(--bx-radius-xl); border: var(--bx-bw) solid var(--bx-rule);
+  background: color-mix(in srgb, var(--bx-raised) 78%, transparent); -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4); box-shadow: var(--bx-shadow-3); }
+.bx-dock-item { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: var(--bx-radius-control); background: transparent; color: var(--bx-muted);
+  font: inherit; font-size: 20px; cursor: pointer;
+  transition: transform var(--bx-dur-base) var(--bx-ease-spring), color var(--bx-dur-fast) var(--bx-ease-standard), background var(--bx-dur-fast) var(--bx-ease-standard); }
+.bx-dock-item:hover, .bx-dock-item:focus-visible { transform: translateY(-3px) scale(1.1); color: var(--bx-text); }
+.bx-dock-item:active { transform: scale(0.95); }
+.bx-dock-item:focus-visible { outline: none; box-shadow: var(--bx-focus); }
+.bx-dock-item[aria-current="page"] { color: var(--bx-brand-text); background: color-mix(in srgb, var(--bx-brand) 12%, transparent); }
+/* one label glides between items: 8px padding, then 44px items 8px apart, centred on the item */
+.bx-dock-label { position: absolute; bottom: calc(100% + 8px); left: 30px; transform: translateX(-50%); overflow: hidden; padding: 6px 12px; border-radius: var(--bx-radius-sm);
+  background: var(--bx-text); color: var(--bx-surface); font-size: 13px; font-weight: var(--bx-weight); white-space: nowrap; pointer-events: none;
+  transition: left var(--bx-dur-base) var(--bx-ease-spring); animation: bx-dock-label-in var(--bx-dur-base) var(--bx-ease-standard) both; }
+.bx-dock-label > span { display: inline-block; }
+.bx-dock-label.is-at-1 { left: 82px; } .bx-dock-label.is-at-2 { left: 134px; } .bx-dock-label.is-at-3 { left: 186px; } .bx-dock-label.is-at-4 { left: 238px; }
+.bx-dock-label.is-at-5 { left: 290px; } .bx-dock-label.is-at-6 { left: 342px; } .bx-dock-label.is-at-7 { left: 394px; } .bx-dock-label.is-at-8 { left: 446px; } .bx-dock-label.is-at-9 { left: 498px; }
+.bx-dock-label .is-from-right { animation: bx-dock-from-right var(--bx-dur-base) var(--bx-ease-standard) both; }
+.bx-dock-label .is-from-left { animation: bx-dock-from-left var(--bx-dur-base) var(--bx-ease-standard) both; }
+@keyframes bx-dock-label-in { from { opacity: 0; transform: translateX(-50%) translateY(6px) scale(0.92); } }
+@keyframes bx-dock-from-right { from { opacity: 0; transform: translateX(14px); filter: blur(4px); } }
+@keyframes bx-dock-from-left { from { opacity: 0; transform: translateX(-14px); filter: blur(4px); } }
+/* solid: an opaque dock for busy backgrounds and low-power phones */
+.bx-glass-dock.bx-v-solid ul { background: var(--bx-raised); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: var(--bx-shadow-2); }
+@media (forced-colors: active) {
+  .bx-glass-dock ul, .bx-dock-label { background: Canvas; color: CanvasText; border: 1px solid CanvasText; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
 .bx-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 32px 20px; text-align: center; }
 .bx-empty-icon { width: 56px; height: 56px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: color-mix(in srgb, var(--bx-brand) 10%, var(--bx-surface));
   color: var(--bx-brand-text); font-size: 24px; }
@@ -560,6 +625,27 @@ bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pi
 @media (max-width: 480px) {
   .bx-layout-grid[class*="is-cols-"] { grid-template-columns: minmax(0, 1fr); }
 }
+/* ---------- aurora hero (kind hero; ported from Vengeance UI, MIT, Copyright (c) 2025-2026 Ashutoshx7) ---------- */
+.bx-aurora-hero { position: relative; display: grid; align-items: end; min-height: 240px; overflow: hidden; isolation: isolate; border-radius: var(--bx-radius-lg);
+  border: var(--bx-bw) solid var(--bx-rule); background: var(--bx-card); color: var(--bx-text); }
+.bx-aurora-bands { position: absolute; inset: 0; z-index: -2; opacity: 0.6; filter: blur(10px) saturate(1.4);
+  background-image: repeating-linear-gradient(100deg, var(--bx-surface) 0%, var(--bx-surface) 7%, transparent 10%, transparent 12%, var(--bx-surface) 16%),
+    repeating-linear-gradient(100deg, var(--bx-brand) 10%, var(--bx-brand-2) 15%, var(--bx-brand) 20%, var(--bx-info) 25%, var(--bx-brand) 30%);
+  background-size: 300%, 200%; background-position: 350% 50%, 350% 50%;
+  -webkit-mask-image: radial-gradient(ellipse at 100% 0%, #000 40%, transparent 75%); mask-image: radial-gradient(ellipse at 100% 0%, #000 40%, transparent 75%);
+  animation: bx-aurora-drift 60s linear infinite; }
+@keyframes bx-aurora-drift { from { background-position: 50% 50%, 50% 50%; } }
+.bx-aurora-flutes { position: absolute; inset: 0; z-index: -1; background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--bx-surface) 22%, transparent) 0 1px, transparent 1px 3%);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.bx-aurora-content { display: grid; gap: 8px; max-width: 40rem; padding: 32px var(--bx-pad-card); }
+.bx-aurora-title { margin: 0; font-size: clamp(1.75rem, 1rem + 3vw, 3rem); font-weight: var(--bx-weight-title); line-height: 1.1; letter-spacing: -0.02em; }
+.bx-aurora-text { margin: 0; color: var(--bx-text-body); }
+.bx-aurora-hero.is-still .bx-aurora-bands { animation: none; }
+/* centered: the original's layout, the light from the top and the heading in the middle */
+.bx-aurora-hero.bx-v-centered { align-items: center; justify-items: center; text-align: center; }
+.bx-aurora-hero.bx-v-centered .bx-aurora-bands { -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 30%, transparent 70%); mask-image: radial-gradient(ellipse at 50% 0%, #000 30%, transparent 70%); }
+.bx-aurora-hero.bx-v-centered .bx-aurora-content { justify-items: center; }
+@media (forced-colors: active) { .bx-aurora-bands, .bx-aurora-flutes { display: none; } }
 .bx-kv-list { display: flex; flex-direction: column; margin: 0; }
 .bx-kv-row { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: var(--bx-bw) solid var(--bx-rule); font-size: 14px; }
 .bx-kv-row:first-child { border-top: 0; }
@@ -707,6 +793,31 @@ button.bx-payee:hover { background: var(--bx-surface-2); }
   mask: linear-gradient(#000 0 0) top / 100% calc(100% - 10px) no-repeat, radial-gradient(circle 7px at 10px 100%, transparent 98%, #000) bottom left / 20px 11px repeat-x;
   animation: bx-rise-in 520ms var(--bx-ease-spring); }
 @keyframes bx-rise-in { from { opacity: 0; transform: translateY(24px); } }
+/* ---------- reveal loader (kind reveal; ported from Vengeance UI, MIT, Copyright (c) 2025-2026 Ashutoshx7) ---------- */
+.bx-reveal { position: relative; min-height: 120px; overflow: hidden; border-radius: var(--bx-radius-lg); }
+.bx-reveal-content { padding: var(--bx-pad-card); }
+.bx-reveal-curtain { position: absolute; inset: 0; z-index: 1; display: flex; }
+.bx-reveal-bar { flex: 1; background: var(--bx-brand); }
+.bx-reveal-word { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--bx-on-brand);
+  font-size: clamp(1.5rem, 1rem + 3vw, 3rem); font-weight: var(--bx-weight-title); letter-spacing: 0.06em; text-transform: uppercase;
+  transition: opacity var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-reveal-word .bx-ch { display: inline-block; animation: bx-reveal-ch var(--bx-dur-base) var(--bx-ease-standard) both; }
+@keyframes bx-reveal-ch { from { opacity: 0; transform: translateY(100%); } }
+.bx-reveal.is-lifting .bx-reveal-word { opacity: 0; }
+/* longhands, so the bars keep the bx-d-* stagger delays */
+.bx-reveal.is-lifting .bx-reveal-bar { animation-name: bx-reveal-cover; animation-duration: 500ms; animation-timing-function: var(--bx-ease-standard); animation-fill-mode: both; }
+.bx-reveal.is-down.is-lifting .bx-reveal-bar { transform: translateY(100%); }
+.bx-reveal.is-up.is-lifting .bx-reveal-bar { transform: translateY(-100%); }
+.bx-reveal.is-fade.is-lifting .bx-reveal-bar { opacity: 0; }
+.bx-reveal.is-shrink.is-lifting .bx-reveal-bar { transform: scaleY(0); }
+@keyframes bx-reveal-cover { from { opacity: 1; transform: none; } }
+/* gradient: the bars share one brand gradient across the curtain */
+.bx-reveal.bx-v-gradient .bx-reveal-bar { background: var(--bx-gradient); background-size: 1000% 100%; }
+.bx-reveal.bx-v-gradient .bx-reveal-bar:nth-child(2) { background-position: 11.1% 0; } .bx-reveal.bx-v-gradient .bx-reveal-bar:nth-child(3) { background-position: 22.2% 0; }
+.bx-reveal.bx-v-gradient .bx-reveal-bar:nth-child(4) { background-position: 33.3% 0; } .bx-reveal.bx-v-gradient .bx-reveal-bar:nth-child(5) { background-position: 44.4% 0; }
+.bx-reveal.bx-v-gradient .bx-reveal-bar:nth-child(6) { background-position: 55.5% 0; } .bx-reveal.bx-v-gradient .bx-reveal-bar:nth-child(7) { background-position: 66.6% 0; }
+.bx-reveal.bx-v-gradient .bx-reveal-bar:nth-child(8) { background-position: 77.7% 0; } .bx-reveal.bx-v-gradient .bx-reveal-bar:nth-child(9) { background-position: 88.8% 0; }
+.bx-reveal.bx-v-gradient .bx-reveal-bar:nth-child(10) { background-position: 100% 0; }
 .bx-swipe-row { position: relative; overflow: hidden; border-bottom: var(--bx-bw) solid var(--bx-rule); }
 .bx-swipe-actions { position: absolute; right: 0; top: 0; bottom: 0; display: flex; }
 .bx-swipe-action { min-width: 84px; border: 0; background: var(--bx-surface-3); color: var(--bx-text); font: inherit; font-weight: 650; cursor: pointer; }
@@ -735,6 +846,27 @@ button.bx-payee:hover { background: var(--bx-surface-2); }
   transition: transform var(--bx-dur-base) var(--bx-ease-standard), color var(--bx-dur-base) var(--bx-ease-standard); }
 .bx-wheel-option.is-on { color: var(--bx-text); font-size: 18px; font-weight: 750; transform: scale(1.08); }
 .bx-sensitive-value { display: inline-flex; align-items: center; }
+/* ---------- share sheet (kind share; ported from Vengeance UI, MIT, Copyright (c) 2025-2026 Ashutoshx7) ---------- */
+.bx-share { display: inline-block; }
+.bx-share-trigger { gap: 8px; }
+.bx-share-text { margin: 0 0 12px; color: var(--bx-text-body); white-space: pre-line; overflow-wrap: anywhere; }
+.bx-share-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.bx-share-grid li { animation: bx-share-in var(--bx-dur-base) var(--bx-ease-spring) both; }
+@keyframes bx-share-in { from { opacity: 0; transform: translateY(8px) scale(0.96); } }
+.bx-share-dest { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; min-height: 76px; padding: 8px 4px; border: 0; border-radius: var(--bx-radius-control);
+  background: transparent; color: var(--bx-text); font: inherit; font-size: 13px; font-weight: var(--bx-weight); cursor: pointer;
+  transition: background var(--bx-dur-fast) var(--bx-ease-standard), transform var(--bx-dur-base) var(--bx-ease-spring); }
+.bx-share-dest:hover { background: var(--bx-track); transform: translateY(-2px); }
+.bx-share-dest:focus-visible { outline: none; box-shadow: var(--bx-focus); }
+.bx-share-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; font-size: 18px; color: var(--bx-brand-text);
+  background: color-mix(in srgb, var(--bx-brand) 12%, var(--bx-fill)); border: var(--bx-bw) solid var(--bx-rule); }
+.bx-share-icon.is-system { color: var(--bx-text); background: var(--bx-track); }
+.bx-share-note { min-height: 1.4em; margin: 12px 0 0; color: var(--bx-muted); font-size: 13px; }
+/* compact: icons in one row, the names kept for screen readers */
+.bx-share-body.bx-v-compact .bx-share-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.bx-share-body.bx-v-compact .bx-share-dest { width: auto; min-height: 52px; padding: 4px; }
+.bx-share-body.bx-v-compact .bx-share-dest > span:last-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.bx-share-body.bx-v-compact .bx-share-text { text-align: center; }
 .bx-skeleton { display: flex; flex-direction: column; gap: 10px; }
 .bx-skeleton.is-card { padding: var(--bx-pad-card); border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-1); }
 .bx-skeleton.is-circle { flex-direction: row; align-items: center; }
