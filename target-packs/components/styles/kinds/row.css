@@ -1,4 +1,4 @@
-.bx-swipe-row { position: relative; overflow: hidden; border-bottom: 1px solid var(--bx-border); }
+.bx-swipe-row { position: relative; overflow: hidden; border-bottom: var(--bx-bw) solid var(--bx-rule); }
 .bx-swipe-actions { position: absolute; right: 0; top: 0; bottom: 0; display: flex; }
 .bx-swipe-action { min-width: 84px; border: 0; background: var(--bx-surface-3); color: var(--bx-text); font: inherit; font-weight: 650; cursor: pointer; }
 .bx-swipe-action.is-danger { background: var(--bx-danger); color: #fff; }

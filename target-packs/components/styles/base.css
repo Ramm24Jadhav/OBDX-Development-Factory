@@ -9,18 +9,33 @@
   --bx-brand: #4f46e5; --bx-brand-2: #7c3aed; --bx-on-brand: #ffffff;
   --bx-text: #0f172a; --bx-text-body: #334155; --bx-muted: #64748b; --bx-surface: #ffffff; --bx-surface-2: #f8fafc; --bx-surface-3: #f1f5f9;
   --bx-border: #e2e8f0; --bx-border-strong: #cbd5e1; --bx-danger: #dc2626; --bx-danger-soft: #fef2f2; --bx-success: #059669; --bx-success-soft: #ecfdf5;
-  --bx-danger-text: #b91c1c; --bx-success-text: #047857; --bx-warning-text: #b45309; --bx-info-text: #0369a1; --bx-brand-text: var(--bx-brand);
-  --bx-danger-button: #dc2626; --bx-on-danger: #ffffff; --bx-avatar-bg: var(--bx-gradient); --bx-avatar-text: var(--bx-on-brand); --bx-warning: #d97706; --bx-warning-soft: #fffbeb; --bx-info: #0284c7; --bx-info-soft: #f0f9ff;
+  --bx-danger-text: #b91c1c; --bx-success-text: #047857; --bx-warning-text: #b45309; --bx-info-text: #0369a1;
+  --bx-danger-button: #dc2626; --bx-on-danger: #ffffff; --bx-avatar-text: var(--bx-on-brand); --bx-warning: #d97706; --bx-warning-soft: #fffbeb; --bx-info: #0284c7; --bx-info-soft: #f0f9ff;
   --bx-radius: 10px; --bx-radius-lg: 14px; --bx-radius-pill: 999px; --bx-height: 44px;
   --bx-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
   --bx-shadow-2: 0 4px 14px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.06);
   --bx-shadow-3: 0 18px 40px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(15, 23, 42, 0.08);
-  --bx-focus: 0 0 0 4px color-mix(in srgb, var(--bx-brand) 22%, transparent);
-  --bx-gradient: linear-gradient(135deg, var(--bx-brand), var(--bx-brand-2));
   --bx-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --bx-dur: 140ms; --bx-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --bx-dur-fast: 120ms; --bx-dur-base: 200ms; --bx-dur-slow: 320ms;
   --bx-ease-standard: cubic-bezier(0.2, 0, 0, 1); --bx-ease-exit: cubic-bezier(0.4, 0, 1, 1); --bx-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* The shared settings the nine designs drive (designs.css). Every kind reads these and --bx-radius, --bx-radius-lg,
+   --bx-border, --bx-border-strong, --bx-shadow-1..3 and --bx-height instead of fixed values, so a design reaches every
+   component. Set again on a bx-look-* element so a design on a nested element works. Elevated, the default, is these values.
+   radius-control: single-line controls (fields, buttons, choices, tabs); radius-sm: small marks; radius-xl: dialogs, sheets.
+   bw: border width; rule: separators; fill: controls; card: cards, panels, tiles; raised: dialogs, menus, toasts; track:
+   recessed tracks (tabs, bars); blur: the backdrop filter of fill, card and raised; pad: a control's side padding; pad-card:
+   a card's padding; weight: labels and buttons; weight-title: titles; cta-*: the call to action; accent-edge: the rim of a
+   brand-filled surface (balance). */
+:root, .bx-theme, [class*="bx-look-"] {
+  --bx-radius-control: var(--bx-radius); --bx-radius-sm: 6px; --bx-radius-xl: 18px; --bx-bw: 1px; --bx-rule: var(--bx-border);
+  --bx-fill: var(--bx-surface); --bx-card: var(--bx-surface); --bx-raised: var(--bx-surface); --bx-track: var(--bx-surface-3); --bx-blur: none;
+  --bx-pad: 14px; --bx-pad-card: 18px; --bx-weight: 600; --bx-weight-title: 700;
+  --bx-focus: 0 0 0 4px color-mix(in srgb, var(--bx-brand) 22%, transparent);
+  --bx-gradient: linear-gradient(135deg, var(--bx-brand), var(--bx-brand-2)); --bx-brand-text: var(--bx-brand); --bx-avatar-bg: var(--bx-gradient);
+  --bx-cta-bg: var(--bx-gradient); --bx-cta-text: var(--bx-on-brand); --bx-cta-border: transparent;
+  --bx-cta-shadow: 0 6px 16px color-mix(in srgb, var(--bx-brand) 32%, transparent); --bx-accent-edge: transparent;
 }
 .bx-dark, .bx-dark .bx-theme {
   --bx-danger-text: #f87171; --bx-success-text: #34d399; --bx-warning-text: #fbbf24; --bx-info-text: #38bdf8; --bx-brand-text: color-mix(in srgb, var(--bx-brand) 45%, #ffffff);
@@ -30,6 +45,8 @@
   --bx-warning-soft: rgba(217, 119, 6, 0.14); --bx-info-soft: rgba(2, 132, 199, 0.14);
   --bx-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4); --bx-shadow-2: 0 4px 14px rgba(0, 0, 0, 0.45); --bx-shadow-3: 0 18px 40px rgba(0, 0, 0, 0.55);
 }
+/* the settings above that the dark theme changes, again for a design on an element inside a dark one */
+.bx-dark [class*="bx-look-"] { --bx-brand-text: color-mix(in srgb, var(--bx-brand) 45%, #ffffff); --bx-avatar-bg: color-mix(in srgb, var(--bx-brand) 35%, var(--bx-surface-3)); }
 bx-button, bx-icon-button, bx-text-field, bx-amount, bx-select, bx-checkbox-group, bx-choice-group, bx-date, bx-dialog, bx-toast, bx-card, bx-tabs, bx-data-grid,
 bx-text-area, bx-password, bx-number-input, bx-currency-picker, bx-multi-select, bx-switch, bx-date-range, bx-search, bx-autocomplete, bx-document-upload {
   display: block; font-family: var(--bx-font); color: var(--bx-text);

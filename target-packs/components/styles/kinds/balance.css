@@ -1,4 +1,4 @@
-.bx-balance { display: flex; flex-direction: column; gap: 6px; padding: 20px; border-radius: var(--bx-radius-lg); background: var(--bx-gradient); color: var(--bx-on-brand); box-shadow: var(--bx-shadow-2); }
+.bx-balance { display: flex; flex-direction: column; gap: 6px; padding: 20px; border-radius: var(--bx-radius-lg); background: var(--bx-gradient); color: var(--bx-on-brand); border: var(--bx-bw) solid var(--bx-accent-edge); box-shadow: var(--bx-shadow-2); }
 .bx-balance-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .bx-balance-label { margin: 0; font-size: 14px; font-weight: 600; opacity: 0.92; }
 .bx-balance .bx-reveal { color: var(--bx-on-brand); background: rgba(255, 255, 255, 0.16); }

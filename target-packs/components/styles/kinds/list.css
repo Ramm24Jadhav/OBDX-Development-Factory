@@ -1,5 +1,5 @@
 .bx-alist-item { animation: bx-settle var(--bx-dur-slow) var(--bx-ease-standard) both; }
-.bx-folder { border-radius: var(--bx-radius-lg); background: var(--bx-surface); border: 1px solid var(--bx-border); box-shadow: var(--bx-shadow-1); }
+.bx-folder { border-radius: var(--bx-radius-lg); background: var(--bx-card); border: var(--bx-bw) solid var(--bx-border); box-shadow: var(--bx-shadow-1); }
 .bx-folder-tab { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px; padding: 10px 16px; border: 0; background: none; color: var(--bx-text); font: inherit; text-align: left; cursor: pointer; }
 .bx-folder-tab:focus-visible { outline: none; box-shadow: inset var(--bx-focus); border-radius: var(--bx-radius-lg); }
 .bx-folder-icon { position: relative; width: 36px; height: 28px; flex: none; border-radius: 4px 6px 6px 6px; background: color-mix(in srgb, var(--bx-warning) 70%, var(--bx-surface)); }

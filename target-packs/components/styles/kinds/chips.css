@@ -7,7 +7,7 @@
 .bx-filter-chip:focus-visible { outline: none; box-shadow: var(--bx-focus); }
 .bx-filter { display: flex; flex-direction: column; gap: 8px; margin: 0 0 16px; }
 .bx-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
-.bx-filter-chip { min-height: 34px; padding: 0 14px; border: 1px solid var(--bx-border-strong); border-radius: var(--bx-radius-pill); background: var(--bx-surface); color: var(--bx-text-body);
+.bx-filter-chip { min-height: 34px; padding: 0 14px; border: var(--bx-bw) solid var(--bx-border-strong); border-radius: var(--bx-radius-pill); background: var(--bx-fill); color: var(--bx-text-body);
   font: inherit; font-size: 13.5px; font-weight: 500; cursor: pointer; transition: all var(--bx-dur-base) var(--bx-ease-standard); }
 .bx-filter-chip.is-on { border-color: var(--bx-brand); background: color-mix(in srgb, var(--bx-brand) 12%, var(--bx-surface)); color: var(--bx-brand-text); font-weight: 600; animation: bx-pop var(--bx-dur-slow) var(--bx-ease-spring); }
 .bx-filter-chip:disabled { opacity: 0.5; cursor: not-allowed; }

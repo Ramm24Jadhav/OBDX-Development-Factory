@@ -57,9 +57,8 @@ export function Toast({ messages, onClose, testID }: ToastProps) {
         const severity = m.severity ?? 'info';
         return (
           <Enter key={m.id} effect="slide-down" testID={`toast-${m.id}`}
-                style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 12, borderRadius: 14, backgroundColor: t.color.surface,
-                  borderWidth: 1, borderColor: t.color.border, borderLeftWidth: 4, borderLeftColor: tone(t, severity),
-                  shadowColor: '#0f172a', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 3 }}>
+                style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 12, borderRadius: t.radius.card, backgroundColor: t.raised,
+                  borderWidth: t.border, borderColor: t.line, borderLeftWidth: 4, borderLeftColor: tone(t, severity), ...t.elevation(2) }}>
             <View importantForAccessibility="no-hide-descendants"
                   style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: tone(t, severity), alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>{ICON[severity]}</Text>

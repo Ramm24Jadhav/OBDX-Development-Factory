@@ -1,5 +1,5 @@
 .bx-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 32px 20px; text-align: center; }
 .bx-empty-icon { width: 56px; height: 56px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: color-mix(in srgb, var(--bx-brand) 10%, var(--bx-surface));
   color: var(--bx-brand-text); font-size: 24px; }
-.bx-empty-title { margin: 4px 0 0; font-size: 16px; font-weight: 700; color: var(--bx-text); }
+.bx-empty-title { margin: 4px 0 0; font-size: 16px; font-weight: var(--bx-weight-title); color: var(--bx-text); }
 .bx-empty-text { margin: 0 0 8px; max-width: 360px; color: var(--bx-muted); font-size: 14px; }

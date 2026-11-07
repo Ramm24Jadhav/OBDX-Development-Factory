@@ -1,12 +1,12 @@
 .bx-choices { display: flex; flex-direction: column; gap: 8px; }
 .bx-choices.is-row { flex-direction: row; flex-wrap: wrap; }
-.bx-choice { position: relative; display: flex; align-items: center; gap: 10px; min-height: var(--bx-height); padding: 0 14px; border: 1px solid var(--bx-border-strong); border-radius: var(--bx-radius);
-  background: var(--bx-surface); cursor: pointer; transition: border-color var(--bx-dur) var(--bx-ease), background var(--bx-dur) var(--bx-ease); }
+.bx-choice { position: relative; display: flex; align-items: center; gap: 10px; min-height: var(--bx-height); padding: 0 var(--bx-pad); border: var(--bx-bw) solid var(--bx-border-strong); border-radius: var(--bx-radius-control);
+  background: var(--bx-fill); box-shadow: var(--bx-shadow-1); cursor: pointer; transition: border-color var(--bx-dur) var(--bx-ease), background var(--bx-dur) var(--bx-ease); }
 .bx-choice:hover { border-color: color-mix(in srgb, var(--bx-brand) 45%, var(--bx-border-strong)); }
 .bx-choice.is-on { border-color: var(--bx-brand); background: color-mix(in srgb, var(--bx-brand) 7%, var(--bx-surface)); }
 .bx-choice.is-disabled { opacity: 0.55; cursor: not-allowed; }
 .bx-choice-input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.bx-choice-mark { width: 18px; height: 18px; flex: none; border: 1.5px solid var(--bx-border-strong); border-radius: 6px; background: var(--bx-surface); transition: all var(--bx-dur) var(--bx-ease); }
+.bx-choice-mark { width: 18px; height: 18px; flex: none; border: calc(var(--bx-bw) * 1.5) solid var(--bx-border-strong); border-radius: var(--bx-radius-sm); background: var(--bx-surface); transition: all var(--bx-dur) var(--bx-ease); }
 .bx-choice-input[type="radio"] + .bx-choice-mark { border-radius: 50%; }
 .bx-choice.is-on .bx-choice-mark { border-color: var(--bx-brand); background: var(--bx-brand); box-shadow: inset 0 0 0 3px var(--bx-surface); }
 .bx-choice-input:focus-visible + .bx-choice-mark { box-shadow: var(--bx-focus); }

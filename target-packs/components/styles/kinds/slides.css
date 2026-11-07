@@ -1,6 +1,6 @@
 .bx-carousel { display: flex; flex-direction: column; gap: 10px; }
 .bx-slides { display: grid; }
-.bx-slide { grid-area: 1 / 1; padding: 18px; border-radius: var(--bx-radius-lg); background: var(--bx-surface); border: 1px solid var(--bx-border); box-shadow: var(--bx-shadow-1);
+.bx-slide { grid-area: 1 / 1; padding: var(--bx-pad-card); border-radius: var(--bx-radius-lg); background: var(--bx-card); border: var(--bx-bw) solid var(--bx-border); box-shadow: var(--bx-shadow-1);
   animation: bx-in-slide var(--bx-dur-slow) var(--bx-ease-standard); }
 .bx-slide[hidden] { display: none; }
 .bx-dots { display: inline-flex; gap: 6px; }

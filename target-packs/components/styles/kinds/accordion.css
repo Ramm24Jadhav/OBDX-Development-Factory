@@ -1,6 +1,6 @@
 .bx-acc-button:focus-visible { outline: none; box-shadow: var(--bx-focus); }
-.bx-accordion { display: flex; flex-direction: column; border: 1px solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-surface); overflow: hidden; }
-.bx-acc-item + .bx-acc-item { border-top: 1px solid var(--bx-border); }
+.bx-accordion { display: flex; flex-direction: column; border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-1); overflow: hidden; }
+.bx-acc-item + .bx-acc-item { border-top: var(--bx-bw) solid var(--bx-rule); }
 .bx-acc-head { margin: 0; font-size: 15px; }
 .bx-acc-button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 52px; padding: 0 18px; border: 0; background: transparent; color: var(--bx-text);
   font: inherit; font-weight: 600; text-align: left; cursor: pointer; }

@@ -28,7 +28,7 @@
 .bx-burst-5 { --bx-bx: -20px; --bx-by: 20px; }
 .bx-burst-6 { --bx-bx: -28px; --bx-by: 0px; }
 .bx-burst-7 { --bx-bx: -20px; --bx-by: -20px; }
-.bx-glass-panel { padding: 18px; border-radius: var(--bx-radius-lg); background: color-mix(in srgb, var(--bx-surface) 55%, transparent); border: 1px solid color-mix(in srgb, var(--bx-surface) 70%, var(--bx-border));
+.bx-glass-panel { padding: var(--bx-pad-card); border-radius: var(--bx-radius-lg); background: color-mix(in srgb, var(--bx-surface) 55%, transparent); border: 1px solid color-mix(in srgb, var(--bx-surface) 70%, var(--bx-border));
   backdrop-filter: blur(16px) saturate(150%); -webkit-backdrop-filter: blur(16px) saturate(150%); box-shadow: var(--bx-shadow-2); }
 @keyframes bx-expand { from { transform: scale(0.9); border-radius: 28px; } }
 @keyframes bx-burst { 100% { transform: translate(var(--bx-bx), var(--bx-by)) scale(0.4); opacity: 0; } }

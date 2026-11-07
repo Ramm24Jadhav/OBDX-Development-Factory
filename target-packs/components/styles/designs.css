@@ -1,19 +1,62 @@
-.bx-look-soft .bx-control, .bx-look-soft .bx-choice { border-color: transparent; background: var(--bx-surface-3); box-shadow: none; }
-.bx-look-soft .bx-btn--outlined { border-color: transparent; background: var(--bx-surface-3); box-shadow: none; }
-.bx-look-glass .bx-control, .bx-look-glass .bx-card, .bx-look-glass .bx-choice { background: color-mix(in srgb, var(--bx-surface) 62%, transparent); backdrop-filter: blur(12px) saturate(140%);
-  border-color: color-mix(in srgb, var(--bx-surface) 70%, var(--bx-border)); }
-.bx-look-outline .bx-control, .bx-look-outline .bx-card, .bx-look-outline .bx-btn--outlined, .bx-look-outline .bx-choice { box-shadow: none; border-width: 1.5px; }
-.bx-look-outline .bx-btn--callToAction { background: transparent; color: var(--bx-brand-text); border: 1.5px solid var(--bx-brand); box-shadow: none; }
-.bx-look-vivid .bx-btn--callToAction { background: linear-gradient(135deg, var(--bx-brand), var(--bx-brand-2) 60%, #ec4899); }
-.bx-look-vivid .bx-field.is-focus .bx-control { box-shadow: 0 0 0 4px color-mix(in srgb, var(--bx-brand-2) 28%, transparent), 0 8px 24px color-mix(in srgb, var(--bx-brand) 20%, transparent); }
-.bx-look-pill .bx-control, .bx-look-pill .bx-btn, .bx-look-pill .bx-choice, .bx-look-pill .bx-tabs, .bx-look-pill .bx-tab { border-radius: var(--bx-radius-pill); }
-.bx-look-brutal .bx-control, .bx-look-brutal .bx-btn, .bx-look-brutal .bx-card, .bx-look-brutal .bx-choice { border: 2px solid var(--bx-text); border-radius: 4px; box-shadow: 4px 4px 0 var(--bx-text); }
-.bx-look-brutal .bx-btn--callToAction { background: var(--bx-brand); }
-.bx-look-redwood { --bx-brand: #c74634; --bx-brand-2: #a33b2b; --bx-radius: 6px; --bx-radius-lg: 8px; }
-.bx-look-redwood .bx-btn--callToAction { background: var(--bx-brand); box-shadow: none; }
+/*
+ * The nine designs. A design sets the shared settings (base.css), so it reaches every component; a rule below is only for
+ * what a setting cannot say. Colours come from theme tokens (--bx-text, --bx-surface*) so each design works in light and
+ * dark. Elevated, the default, is base.css as it is.
+ */
+/* Soft: no outlines; filled controls, gentle depth, rounder corners */
+.bx-look-soft {
+  --bx-border: transparent; --bx-rule: var(--bx-surface-3); --bx-fill: var(--bx-surface-2); --bx-track: var(--bx-surface-3);
+  --bx-radius: 12px; --bx-radius-lg: 18px; --bx-radius-xl: 22px; --bx-radius-sm: 7px;
+  --bx-shadow-1: 0 1px 3px rgba(15, 23, 42, 0.06), 0 6px 16px rgba(15, 23, 42, 0.04); --bx-shadow-2: 0 4px 18px rgba(15, 23, 42, 0.08); --bx-shadow-3: 0 16px 40px rgba(15, 23, 42, 0.12);
+  --bx-cta-shadow: none; --bx-weight-title: 650;
+}
+.bx-look-soft :where(.bx-control, .bx-choice, .bx-btn--outlined, .bx-btn--full, .bx-btn--half, .bx-drop-button, .bx-slot, .bx-filter-chip, .bx-voice-pill, .bx-tip-button) { border-color: transparent; box-shadow: none; }
+/* Glass: frosted, see-through surfaces with a hairline rim */
+.bx-look-glass {
+  --bx-fill: color-mix(in srgb, var(--bx-surface) 62%, transparent); --bx-card: color-mix(in srgb, var(--bx-surface) 58%, transparent);
+  --bx-raised: color-mix(in srgb, var(--bx-surface) 80%, transparent); --bx-track: color-mix(in srgb, var(--bx-surface-3) 62%, transparent);
+  --bx-blur: blur(12px) saturate(140%); --bx-border: color-mix(in srgb, var(--bx-text) 12%, transparent);
+  --bx-radius: 12px; --bx-radius-lg: 18px; --bx-radius-xl: 24px;
+  --bx-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.05); --bx-shadow-2: 0 8px 32px rgba(15, 23, 42, 0.1); --bx-shadow-3: 0 24px 56px rgba(15, 23, 42, 0.18);
+}
+/* Outline: flat, every edge drawn; the call to action is hollow */
+.bx-look-outline {
+  --bx-bw: 1.5px; --bx-border: var(--bx-border-strong); --bx-shadow-1: none; --bx-shadow-2: none; --bx-shadow-3: 0 12px 32px rgba(15, 23, 42, 0.14);
+  --bx-cta-bg: transparent; --bx-cta-text: var(--bx-brand-text); --bx-cta-border: var(--bx-brand); --bx-cta-shadow: none;
+}
+.bx-look-outline :where(.bx-tabs, .bx-segmented, .bx-bar-track, .bx-meter-track) { box-shadow: inset 0 0 0 var(--bx-bw) var(--bx-border-strong); }
+/* Vivid: a three-colour gradient, brand-tinted depth, a glowing focus */
+.bx-look-vivid {
+  --bx-gradient: linear-gradient(135deg, var(--bx-brand), var(--bx-brand-2) 60%, #db2777);
+  --bx-radius: 12px; --bx-radius-lg: 18px; --bx-radius-xl: 24px; --bx-track: color-mix(in srgb, var(--bx-brand) 8%, var(--bx-surface-3));
+  --bx-shadow-1: 0 1px 3px color-mix(in srgb, var(--bx-brand) 14%, transparent);
+  --bx-shadow-2: 0 8px 24px color-mix(in srgb, var(--bx-brand) 16%, transparent), 0 2px 6px rgba(15, 23, 42, 0.06);
+  --bx-shadow-3: 0 24px 48px color-mix(in srgb, var(--bx-brand) 24%, transparent);
+  --bx-focus: 0 0 0 4px color-mix(in srgb, var(--bx-brand-2) 28%, transparent), 0 8px 24px color-mix(in srgb, var(--bx-brand) 20%, transparent);
+  --bx-cta-shadow: 0 10px 24px color-mix(in srgb, var(--bx-brand-2) 38%, transparent); --bx-weight-title: 800;
+}
+/* Pill: single-line controls are fully round, containers very round, a little more room */
+.bx-look-pill { --bx-radius-control: var(--bx-radius-pill); --bx-radius: 16px; --bx-radius-lg: 22px; --bx-radius-xl: 28px; --bx-pad: 18px; --bx-pad-card: 20px; }
+.bx-look-pill :where(.bx-tabs, .bx-segmented, .bx-chip-row .bx-filter-chip) { border-radius: var(--bx-radius-pill); }
+.bx-look-pill .bx-control.is-multiline { border-radius: var(--bx-radius-lg); }
+/* Neo-brutalist: thick ink edges, hard offset shadows, square corners, flat brand colour, heavy type */
+.bx-look-brutal {
+  --bx-bw: 2px; --bx-border: var(--bx-text); --bx-border-strong: var(--bx-text); --bx-rule: var(--bx-text);
+  --bx-radius: 4px; --bx-radius-lg: 6px; --bx-radius-xl: 8px; --bx-radius-sm: 2px; --bx-track: var(--bx-surface);
+  --bx-shadow-1: 3px 3px 0 var(--bx-text); --bx-shadow-2: 4px 4px 0 var(--bx-text); --bx-shadow-3: 6px 6px 0 var(--bx-text);
+  --bx-gradient: var(--bx-brand); --bx-cta-border: var(--bx-text); --bx-cta-shadow: 4px 4px 0 var(--bx-text); --bx-accent-edge: var(--bx-text);
+  --bx-focus: 0 0 0 3px var(--bx-surface), 0 0 0 6px var(--bx-brand); --bx-weight: 700; --bx-weight-title: 800;
+}
+.bx-look-brutal :where(.bx-tabs, .bx-segmented) { border: var(--bx-bw) solid var(--bx-text); }
+/* Redwood: Oracle's own look; the Redwood brand, flat colour, tight corners, quiet depth */
+.bx-look-redwood {
+  --bx-brand: #c74634; --bx-brand-2: #a33b2b; --bx-gradient: var(--bx-brand); --bx-radius: 6px; --bx-radius-lg: 8px; --bx-radius-xl: 10px; --bx-radius-sm: 3px;
+  --bx-track: color-mix(in srgb, var(--bx-brand) 5%, var(--bx-surface-3)); --bx-pad-card: 16px; --bx-weight-title: 600; --bx-cta-shadow: none;
+  --bx-shadow-1: 0 1px 1px rgba(15, 23, 42, 0.08); --bx-shadow-2: 0 2px 6px rgba(15, 23, 42, 0.1); --bx-shadow-3: 0 10px 24px rgba(15, 23, 42, 0.16);
+}
 /* Liquid glass (target-packs/components/glass.json): controls and floating surfaces are frosted, saturated glass with a lit rim;
    fields and tables keep a solid fill behind their text. React adds a bending lens (.bx-lens, Glisse) on its controls. */
-.bx-look-liquid { --bx-lg-tint: rgb(255 255 255 / 0.6); --bx-lg-blur: 3px; --bx-lg-saturate: 1.5; --bx-lg-hover: rgb(255 255 255 / 0.72);
+.bx-look-liquid { --bx-radius-lg: 20px; --bx-radius-xl: 26px; --bx-lg-tint: rgb(255 255 255 / 0.6); --bx-lg-blur: 3px; --bx-lg-saturate: 1.5; --bx-lg-hover: rgb(255 255 255 / 0.72);
   --bx-lg-rim: inset 0 0 0 1px rgb(255 255 255 / 0.3), inset 0 1px 1px rgb(255 255 255 / 0.6); --bx-lg-drop: 0 6px 20px rgba(15, 23, 42, 0.12), 0 1px 3px rgba(15, 23, 42, 0.08); }
 .bx-look-liquid.bx-dark, .bx-dark .bx-look-liquid, .bx-look-liquid .bx-dark { --bx-lg-tint: rgb(40 40 40 / 0.62); --bx-lg-hover: rgb(56 56 56 / 0.7);
   --bx-lg-rim: inset 0 0 0 1px rgb(255 255 255 / 0.13), inset 0 1px 1px rgb(255 255 255 / 0.2); --bx-lg-drop: 0 6px 20px rgba(0, 0, 0, 0.45); }

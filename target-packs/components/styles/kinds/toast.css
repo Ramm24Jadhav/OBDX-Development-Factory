@@ -1,7 +1,7 @@
 .bx-toasts { position: fixed; z-index: 1100; right: 16px; top: 16px; display: flex; flex-direction: column; gap: 10px; width: min(380px, calc(100vw - 32px)); }
 .bx-toasts.is-general { position: static; width: auto; }
-.bx-toast { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 14px; border-radius: var(--bx-radius-lg); background: var(--bx-surface);
-  box-shadow: var(--bx-shadow-2); border: 1px solid var(--bx-border); border-left: 4px solid var(--bx-info); animation: bx-slide 200ms var(--bx-ease); }
+.bx-toast { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 14px; border-radius: var(--bx-radius-lg); background: var(--bx-raised);
+  box-shadow: var(--bx-shadow-2); border: var(--bx-bw) solid var(--bx-border); -webkit-backdrop-filter: var(--bx-blur); backdrop-filter: var(--bx-blur); border-left: 4px solid var(--bx-info); animation: bx-slide 200ms var(--bx-ease); }
 .bx-toast.is-error { border-left-color: var(--bx-danger); }
 .bx-toast.is-warning { border-left-color: var(--bx-warning); }
 .bx-toast.is-confirmation { border-left-color: var(--bx-success); }

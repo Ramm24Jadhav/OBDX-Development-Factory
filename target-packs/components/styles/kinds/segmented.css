@@ -1,7 +1,7 @@
-.bx-segmented { display: inline-flex; gap: 4px; padding: 4px; border-radius: var(--bx-radius-lg); background: var(--bx-surface-3); max-width: 100%; overflow-x: auto; }
-.bx-segment { min-height: 36px; padding: 0 16px; border: 0; border-radius: var(--bx-radius); background: transparent; color: var(--bx-text-body); font: inherit; font-size: 14px; font-weight: 500;
+.bx-segmented { display: inline-flex; gap: 4px; padding: 4px; border-radius: var(--bx-radius-lg); background: var(--bx-track); max-width: 100%; overflow-x: auto; }
+.bx-segment { min-height: 36px; padding: 0 16px; border: 0; border-radius: var(--bx-radius-control); background: transparent; color: var(--bx-text-body); font: inherit; font-size: 14px; font-weight: 500;
   cursor: pointer; white-space: nowrap; transition: background var(--bx-dur-base) var(--bx-ease-standard), color var(--bx-dur-base) var(--bx-ease-standard), box-shadow var(--bx-dur-base) var(--bx-ease-standard); }
-.bx-segment.is-on { background: var(--bx-surface); color: var(--bx-brand-text); font-weight: 650; box-shadow: var(--bx-shadow-1); animation: bx-tab-in var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-segment.is-on { background: var(--bx-fill); color: var(--bx-brand-text); font-weight: 650; box-shadow: var(--bx-shadow-1); animation: bx-tab-in var(--bx-dur-base) var(--bx-ease-standard); }
 .bx-segment:focus-visible { outline: none; box-shadow: var(--bx-focus); }
 .bx-segment:disabled { opacity: 0.5; cursor: not-allowed; }
 .bx-motion-hover-lift .bx-segment:hover:not(.is-on) { transform: translateY(-1px); }

@@ -43,6 +43,24 @@ class ComponentStylesTest {
         }
     }
 
+    @Test
+    void everyDesignSetsTheSharedSettingsAndTheKindsReadThem() throws IOException {
+        String designs = read(COMPONENTS.resolve("styles/designs.css"));
+        for (String look : List.of("soft", "glass", "outline", "vivid", "pill", "brutal", "redwood", "liquid")) {
+            int at = designs.indexOf(".bx-look-" + look + " {");
+            assertThat(at).as(look + " has no settings block").isGreaterThanOrEqualTo(0);
+            String block = designs.substring(at, designs.indexOf('}', at));
+            assertThat(block.split("--bx-", -1).length - 1).as(look + " sets too few shared settings").isGreaterThanOrEqualTo(3);
+        }
+        // a fixed edge or corner would not follow the design
+        try (Stream<Path> kinds = Files.list(COMPONENTS.resolve("styles/kinds"))) {
+            for (Path kind : kinds.toList()) {
+                assertThat(read(kind)).as(kind.getFileName() + ": use var(--bx-bw) and var(--bx-rule) or var(--bx-border*)")
+                        .doesNotContain("1px solid var(--bx-border").doesNotContain("border-radius: 18px");
+            }
+        }
+    }
+
     static String join() throws IOException {
         Path styles = COMPONENTS.resolve("styles");
         List<Path> parts = new ArrayList<>();

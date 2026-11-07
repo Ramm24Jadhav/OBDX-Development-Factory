@@ -1,5 +1,5 @@
 .bx-skeleton { display: flex; flex-direction: column; gap: 10px; }
-.bx-skeleton.is-card { padding: 18px; border: 1px solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-surface); }
+.bx-skeleton.is-card { padding: var(--bx-pad-card); border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-1); }
 .bx-skeleton.is-circle { flex-direction: row; align-items: center; }
 .bx-skel-line, .bx-skel-block { display: block; height: 12px; border-radius: 6px; background: linear-gradient(90deg, var(--bx-surface-3) 25%, var(--bx-surface-2) 50%, var(--bx-surface-3) 75%);
   background-size: 200% 100%; animation: bx-skel 1.4s ease-in-out infinite; }

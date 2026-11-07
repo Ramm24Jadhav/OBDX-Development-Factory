@@ -1,7 +1,7 @@
 .bx-menu-item:focus-visible { outline: none; box-shadow: var(--bx-focus); }
 .bx-menu { position: relative; display: inline-block; }
 .bx-menu-caret { width: 7px; height: 7px; margin-top: -3px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); }
-.bx-menu-list { position: absolute; z-index: 30; right: 0; top: calc(100% + 6px); min-width: 220px; margin: 0; padding: 6px; list-style: none; background: var(--bx-surface); border: 1px solid var(--bx-border);
+.bx-menu-list { position: absolute; z-index: 30; right: 0; top: calc(100% + 6px); min-width: 220px; margin: 0; padding: 6px; list-style: none; background: var(--bx-raised); border: var(--bx-bw) solid var(--bx-border);
   border-radius: var(--bx-radius-lg); box-shadow: var(--bx-shadow-3); transform-origin: top right; animation: bx-drop var(--bx-dur-fast) var(--bx-ease-standard); }
 .bx-menu-item { display: flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: var(--bx-radius); color: var(--bx-text); font-size: 14px; cursor: pointer; }
 .bx-menu-item:hover, .bx-menu-item:focus { background: var(--bx-surface-3); outline: none; }

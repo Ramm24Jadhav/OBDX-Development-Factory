@@ -1,10 +1,10 @@
-.bx-card { display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: var(--bx-radius-lg); background: var(--bx-surface); border: 1px solid var(--bx-border); box-shadow: var(--bx-shadow-2);
+.bx-card { display: flex; flex-direction: column; gap: 12px; padding: var(--bx-pad-card); border-radius: var(--bx-radius-lg); background: var(--bx-card); -webkit-backdrop-filter: var(--bx-blur); backdrop-filter: var(--bx-blur); border: var(--bx-bw) solid var(--bx-border); box-shadow: var(--bx-shadow-2);
   transition: transform var(--bx-dur) var(--bx-ease), box-shadow var(--bx-dur) var(--bx-ease), border-color var(--bx-dur) var(--bx-ease); }
 .bx-card.is-interactive { cursor: pointer; outline: none; }
 .bx-card.is-interactive:focus-visible { box-shadow: var(--bx-focus), var(--bx-shadow-2); }
 .bx-card.is-selected { border-color: var(--bx-brand); }
 .bx-card-head { display: flex; flex-direction: column; gap: 2px; }
-.bx-card-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--bx-text); }
+.bx-card-title { margin: 0; font-size: 16px; font-weight: var(--bx-weight-title); color: var(--bx-text); }
 .bx-card-sub { font-size: 13px; color: var(--bx-muted); }
 .bx-card-actions:empty { display: none; }
 .bx-card-actions { display: flex; gap: 8px; justify-content: flex-end; }
@@ -29,7 +29,7 @@
 .bx-spotlight-card:hover::before { opacity: 1; }
 .bx-tilt-card { transform: perspective(800px) rotateX(var(--bx-rx, 0deg)) rotateY(var(--bx-ry, 0deg)); transition: transform var(--bx-dur-base) var(--bx-ease-standard); }
 .bx-glow-border-card, .bx-glow-card { position: relative; border-color: transparent; box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--bx-brand) 55%, transparent), 0 8px 30px color-mix(in srgb, var(--bx-brand) 22%, transparent); }
-.bx-glow-card { padding: 18px; border-radius: var(--bx-radius-lg); background: var(--bx-surface); }
+.bx-glow-card { padding: var(--bx-pad-card); border-radius: var(--bx-radius-lg); background: var(--bx-card); }
 .bx-flip-card { perspective: 1000px; }
 .bx-flip-inner { position: relative; display: grid; transform-style: preserve-3d; transition: transform 560ms var(--bx-ease-spring); }
 .bx-flip-card.is-flipped .bx-flip-inner { transform: rotateY(180deg); }

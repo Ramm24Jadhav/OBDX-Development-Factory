@@ -1,8 +1,8 @@
 .bx-page:focus-visible { outline: none; box-shadow: var(--bx-focus); }
 .bx-pages { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
-.bx-page { min-width: 36px; min-height: 36px; padding: 0 8px; border: 1px solid transparent; border-radius: var(--bx-radius); background: transparent; color: var(--bx-text-body); font: inherit;
+.bx-page { min-width: 36px; min-height: 36px; padding: 0 8px; border: var(--bx-bw) solid transparent; border-radius: var(--bx-radius-control); background: transparent; color: var(--bx-text-body); font: inherit;
   font-size: 14px; font-variant-numeric: tabular-nums; cursor: pointer; }
-.bx-page:hover:not(:disabled) { background: var(--bx-surface-3); }
+.bx-page:hover:not(:disabled) { background: var(--bx-track); }
 .bx-page.is-on { border-color: var(--bx-brand); background: color-mix(in srgb, var(--bx-brand) 10%, var(--bx-surface)); color: var(--bx-brand-text); font-weight: 700; }
 .bx-page:disabled { opacity: 0.4; cursor: default; }
 .bx-page-gap { min-width: 24px; text-align: center; color: var(--bx-muted); }

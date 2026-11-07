@@ -1,5 +1,5 @@
 .bx-alert-action:focus-visible { outline: none; box-shadow: var(--bx-focus); }
-.bx-alert { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: var(--bx-radius-lg); border: 1px solid var(--bx-border); background: var(--bx-info-soft);
+.bx-alert { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: var(--bx-radius-lg); border: var(--bx-bw) solid var(--bx-border); background: var(--bx-info-soft); box-shadow: var(--bx-shadow-1);
   color: var(--bx-text-body); font-size: 14px; animation: bx-slide var(--bx-dur-base) var(--bx-ease-standard); }
 .bx-alert.is-error { background: var(--bx-danger-soft); border-color: color-mix(in srgb, var(--bx-danger) 30%, transparent); }
 .bx-alert.is-warning { background: var(--bx-warning-soft); border-color: color-mix(in srgb, var(--bx-warning) 30%, transparent); }

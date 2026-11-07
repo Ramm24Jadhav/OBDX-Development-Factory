@@ -1,9 +1,9 @@
 .bx-kv-list { display: flex; flex-direction: column; margin: 0; }
-.bx-kv-row { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid var(--bx-border); font-size: 14px; }
+.bx-kv-row { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: var(--bx-bw) solid var(--bx-rule); font-size: 14px; }
 .bx-kv-row:first-child { border-top: 0; }
 .bx-kv-row dt { color: var(--bx-muted); }
 .bx-kv-row dd { margin: 0; color: var(--bx-text); font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
-.bx-kv-row.is-total { border-top: 1.5px solid var(--bx-border-strong); }
+.bx-kv-row.is-total { border-top: calc(var(--bx-bw) * 1.5) solid var(--bx-border-strong); }
 .bx-kv-row.is-total dt, .bx-kv-row.is-total dd { color: var(--bx-text); font-size: 15.5px; font-weight: 750; }
 .bx-kv-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 12px; }
 .bx-kv-actions:empty { display: none; }

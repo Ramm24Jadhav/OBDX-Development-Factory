@@ -9,11 +9,11 @@
 .bx-motion-click-press .bx-switch:not(:disabled):active { transform: scale(0.96); }
 .bx-switch::after { transition: transform var(--bx-dur-base) var(--bx-ease-spring); }
 .bx-checks { gap: 2px; }
-.bx-checks .bx-switch-row { border-top: 1px solid var(--bx-border); }
+.bx-checks .bx-switch-row { border-top: var(--bx-bw) solid var(--bx-rule); }
 .bx-checks .bx-switch-row:first-of-type { border-top: 0; }
 .bx-toggle.is-danger .bx-switch[aria-checked="true"] { background: var(--bx-danger); }
 .bx-toggle.is-danger .bx-help { color: var(--bx-danger-text); font-weight: 500; }
-.bx-press-toggle { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 1px solid var(--bx-border); border-radius: 50%; background: var(--bx-surface);
+.bx-press-toggle { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: var(--bx-bw) solid var(--bx-border); border-radius: 50%; background: var(--bx-fill);
   color: var(--bx-muted); font-size: 20px; cursor: pointer; transition: color var(--bx-dur-base) var(--bx-ease-standard), background var(--bx-dur-base) var(--bx-ease-standard); }
 .bx-press-toggle:focus-visible { outline: none; box-shadow: var(--bx-focus); }
 .bx-press-toggle .bx-press-glyph { filter: grayscale(1); opacity: 0.6; }
