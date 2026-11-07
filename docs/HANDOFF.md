@@ -80,6 +80,25 @@ issue notifications in the bell menu, read-only live checks of hosts the issue m
 factory with Groq on 2026-11-07: diagnosis, live check, question, fix check, SR draft, bank link, release, follow
 page, "still fails" check and notifications all worked; Library text is not sent to Groq (KnowledgePolicy).
 
+**Modernization, released 2026-11-07** (plan and progress: `docs/MODERNIZATION-PARALLEL-PLAN.md`, dashboard rows from
+`tools/progress/build.mjs`; 32 of 34 rows done, the two left are iOS-only and need a Mac or a macOS CI job):
+- Every screen matches its approved board. The **Component factory** previews every component in every pack: JET from
+  the gates' JET gallery (`gates/jet-gallery.html` + `jet-samples.js`, served at `/packs/samples/`), React, Angular and
+  React Native from their galleries built by `target-packs/components/previews/build.sh` (the build job runs it; served
+  at `/packs/previews/`), framed one component at a time with `?only=<id>` in the card's design, theme and brand.
+- All four packs carry all 245 catalogue components (React Native 227: the corporate widgets are web only); browser
+  gates, parity on all 47 JET element replacements (JET 6.2 and 21), React Native gates for every component, and the
+  Liquid glass gates (`gates/specs/liquid.spec.ts`) pass on GitHub. JET, React and Angular: 245 Available; React
+  Native: 180 (its 47 element replacements have no parity spec).
+- **Liquid glass** is the ninth design (`liquid`, opt-in): `.bx-look-liquid` in the four identical `bx.css` copies,
+  Glisse's lens in React (loaded only for that design), expo-blur (optional) in React Native. Vue, Capacitor, JET Core
+  Pack and Flutter starters take the bank's component style from one JSON file, which the workspace starter download
+  (`/api/workspaces/{id}/targets/{target}/starter.zip`) and changes fill in.
+- **Capacitor** wraps the Angular app too (`target-packs/capacitor/wrap-angular.mjs`); a wrapped Angular app gets Angular
+  screens. The **native** starters have certificate pinning (release builds refuse empty pins), XcodeGen, ViewInspector
+  tests, a Gradle wrapper and `scripts/run-on-device.sh`; Android is checked on an emulator, iOS is not built.
+- Only the integration branch publishes the `latest` release (build.yml); other branches build and test only.
+
 ## The user's installation
 
 - The Windows download from `https://github.com/Ramm24Jadhav/OBDX-Development-Factory/releases/download/latest/obdx-factory-windows-x64.zip`,
