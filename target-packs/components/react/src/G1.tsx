@@ -4,10 +4,11 @@
  * reused by the later groups, which give them their own names and defaults.
  */
 import * as RadixDialog from '@radix-ui/react-dialog';
-import { KeyboardEvent, ReactNode, useEffect, useId, useRef, useState } from 'react';
+import { CSSProperties, KeyboardEvent, ReactNode, useEffect, useId, useRef, useState } from 'react';
 
 import { Button, ButtonProps } from './Button';
 import { Lens } from './lens';
+import { AvatarVariant, BillsVariant, hueOf, withVariant } from './variant';
 
 /* ---------- items: strings or objects, each with an id and a label ---------- */
 
@@ -380,12 +381,14 @@ export function Divider({ testID, label }: { testID?: string; label?: string }) 
     : <hr className="bx-divider" data-testid={testID} />;
 }
 
-export interface AvatarProps { testID?: string; name: string; src?: string; size?: 'sm' | 'md' | 'lg' }
+export interface AvatarProps { testID?: string; name: string; src?: string; size?: 'sm' | 'md' | 'lg'; variant?: AvatarVariant }
 /** A photo, or the initials of a name; the name is what a screen reader says. */
-export function Avatar({ testID, name, src, size = 'md' }: AvatarProps) {
+export function Avatar({ testID, name, src, size = 'md', variant }: AvatarProps) {
+  const css = withVariant(`bx-avatar is-${size}`, 'avatar', variant);
   return src
-    ? <img className={`bx-avatar is-${size}`} src={src} alt={name} data-testid={testID} />
-    : <span className={`bx-avatar is-${size}`} role="img" aria-label={name} data-testid={testID}><span aria-hidden="true">{initials(name)}</span></span>;
+    ? <img className={css} src={src} alt={name} data-testid={testID} />
+    : <span className={css} style={variant === 'tonal' ? { '--bx-avatar-hue': hueOf(name) } as CSSProperties : undefined} role="img" aria-label={name} data-testid={testID}>
+      <span aria-hidden="true">{initials(name)}</span></span>;
 }
 
 /* ---------- Pagination (oj-paging-control) ---------- */
@@ -540,13 +543,16 @@ export interface RowsProps {
   actionLabel?: string;
   onAction?: (item: RowItem) => void;
   emptyText?: string;
+  variant?: BillsVariant;
+  /** Skeleton rows while the screen fetches the items. */
+  loading?: boolean;
 }
 
-export function Rows({ testID, heading, items, actionLabel, onAction, emptyText = 'Nothing here yet.' }: RowsProps) {
+export function Rows({ testID, heading, items, actionLabel, onAction, emptyText = 'Nothing here yet.', variant, loading }: RowsProps) {
   return (
-    <section className="bx-panel" aria-label={heading || undefined} data-testid={testID}>
+    <section className={withVariant('bx-panel', 'bills', variant)} aria-label={heading || undefined} data-testid={testID}>
       {heading ? <h3 className="bx-panel-title">{heading}</h3> : null}
-      {items.length === 0 ? <p className="bx-panel-empty">{emptyText}</p> : (
+      {loading ? <Skeleton /> : items.length === 0 ? <p className="bx-panel-empty">{emptyText}</p> : (
         <ul className="bx-rows">
           {items.map((o, i) => (
             <li key={o.id ?? i} className={'bx-row' + (o.tone ? ` is-${o.tone}` : '') + (o.unread ? ' is-unread' : '')}>

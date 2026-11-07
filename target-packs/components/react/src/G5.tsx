@@ -5,9 +5,10 @@
  */
 import { KeyboardEvent, useId, useState } from 'react';
 
-import { Accordion, AccordionProps, Rows, RowsProps, SegmentsProps, Slider, SliderProps, StepperProps, Stepper, Timeline, TimelineProps, ToggleGroup } from './G1';
+import { Accordion, AccordionProps, Rows, RowsProps, SegmentsProps, Skeleton, Slider, SliderProps, StepperProps, Stepper, Timeline, TimelineProps, ToggleGroup } from './G1';
 import { StepForm, StepFormProps, ThingCard, ThingCardProps, money } from './G2';
 import { Checks, ChecksProps } from './G3';
+import { CalcVariant, ChatVariant, LocatorVariant, withVariant } from './variant';
 
 type Opt<P, K extends keyof P> = Omit<P, K> & Partial<Pick<P, K>>;
 
@@ -96,11 +97,12 @@ export interface CalculatorProps {
   note?: string;
   actionLabel?: string;
   onAction?: (figures: { amount: number; rate: number; months: number; result: number }) => void;
+  variant?: CalcVariant;
 }
 
 /** A loan, a deposit or an exchange, worked out as the customer types. */
 export function Calculator({ testID, heading = 'Loan calculator', mode = 'loan', amount = 10000, rate = 9.5, months = 36, currency = '', toCurrency = '', compounding = 4,
-  note = 'An estimate. The bank confirms the figures when you apply.', actionLabel, onAction }: CalculatorProps) {
+  note = 'An estimate. The bank confirms the figures when you apply.', actionLabel, onAction, variant }: CalculatorProps) {
   const id = useId();
   const [a, setA] = useState(String(amount));
   const [r, setR] = useState(String(rate));
@@ -129,7 +131,7 @@ export function Calculator({ testID, heading = 'Loan calculator', mode = 'loan',
       <input type="number" className="bx-input bx-num" inputMode="decimal" id={`${id}-${key}`} value={v} min={extra.min} step={extra.step} onChange={(e) => set(e.target.value)} /></div></div>
   );
   return (
-    <section className="bx-card bx-calc" aria-labelledby={id} data-testid={testID}>
+    <section className={withVariant('bx-card bx-calc', 'calc', variant)} aria-labelledby={id} data-testid={testID}>
       <h3 className="bx-card-title" id={id}>{heading}</h3>
       <div className="bx-calc-fields">
         {field('a', amountLabel, a, setA, { min: 0 })}
@@ -145,17 +147,18 @@ export function Calculator({ testID, heading = 'Loan calculator', mode = 'loan',
 /* ---------- Locator ---------- */
 
 export interface Place { id: string; name: string; type: 'branch' | 'atm'; address?: string; distance?: string; hours?: string }
-export interface LocatorProps { testID?: string; heading?: string; items: ReadonlyArray<Place>; emptyText?: string; onAction?: (place: Place) => void }
+export interface LocatorProps { testID?: string; heading?: string; items: ReadonlyArray<Place>; emptyText?: string; onAction?: (place: Place) => void; variant?: LocatorVariant;
+  loading?: boolean }
 
 /** Branches and ATMs near the customer, filtered by kind and name; Directions is the screen's (a map app). */
-export function Locator({ testID, heading = 'Find a branch or ATM', items, emptyText = 'Nothing matches. Try another name or area.', onAction }: LocatorProps) {
+export function Locator({ testID, heading = 'Find a branch or ATM', items, emptyText = 'Nothing matches. Try another name or area.', onAction, variant, loading }: LocatorProps) {
   const id = useId();
   const [query, setQuery] = useState('');
   const [kind, setKind] = useState<'all' | 'branch' | 'atm'>('all');
   const q = query.trim().toLowerCase();
   const rows = items.filter((o) => (kind === 'all' || o.type === kind) && (!q || `${o.name} ${o.address ?? ''}`.toLowerCase().includes(q)));
   return (
-    <section className="bx-panel bx-locator" aria-labelledby={id} data-testid={testID}>
+    <section className={withVariant('bx-panel bx-locator', 'locator', variant)} aria-labelledby={id} data-testid={testID}>
       <h3 className="bx-panel-title" id={id}>{heading}</h3>
       <div className="bx-control bx-payee-search"><span className="bx-search-icon" aria-hidden="true" />
         <input type="search" className="bx-input bx-search" aria-label="Search by name or area" placeholder="Name or area" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
@@ -164,8 +167,8 @@ export function Locator({ testID, heading = 'Find a branch or ATM', items, empty
           <button key={k} type="button" className={'bx-filter-chip' + (kind === k ? ' is-on' : '')} aria-pressed={kind === k} onClick={() => setKind(k)}>{label}</button>
         ))}
       </div>
-      {rows.length === 0 ? <p className="bx-panel-empty" role="status">{emptyText}</p> : null}
-      <ul className="bx-rows">
+      {loading ? <Skeleton /> : rows.length === 0 ? <p className="bx-panel-empty" role="status">{emptyText}</p> : null}
+      {loading ? null : <ul className="bx-rows">
         {rows.map((o) => (
           <li key={o.id} className="bx-row">
             <span className="bx-row-main"><strong>{o.name}</strong><span className="bx-row-meta">{[o.type === 'atm' ? 'ATM' : 'Branch', o.address, o.distance].filter(Boolean).join(' · ')}</span>
@@ -173,7 +176,7 @@ export function Locator({ testID, heading = 'Find a branch or ATM', items, empty
             <button type="button" className="bx-btn bx-btn--borderless bx-btn--sm" aria-label={`Directions to ${o.name}`} onClick={() => onAction?.(o)}>Directions</button>
           </li>
         ))}
-      </ul>
+      </ul>}
     </section>
   );
 }
@@ -181,18 +184,20 @@ export function Locator({ testID, heading = 'Find a branch or ATM', items, empty
 /* ---------- LiveChat ---------- */
 
 export interface ChatMessage { id: string; from: 'customer' | 'agent'; text: string; name?: string; time?: string }
-export interface LiveChatProps { testID?: string; heading?: string; messages: ReadonlyArray<ChatMessage>; typing?: boolean; disabled?: boolean; placeholder?: string; onSend?: (text: string) => void }
+export interface LiveChatProps { testID?: string; heading?: string; messages: ReadonlyArray<ChatMessage>; typing?: boolean; disabled?: boolean; placeholder?: string; onSend?: (text: string) => void;
+  variant?: ChatVariant; loading?: boolean }
 
 /** A conversation with the bank: new messages are announced (a log), Enter sends. */
-export function LiveChat({ testID, heading = 'Chat with us', messages, typing, disabled, placeholder = 'Write a message', onSend }: LiveChatProps) {
+export function LiveChat({ testID, heading = 'Chat with us', messages, typing, disabled, placeholder = 'Write a message', onSend, variant, loading }: LiveChatProps) {
   const id = useId();
   const [draft, setDraft] = useState('');
   const off = !draft.trim() || disabled;
   const send = () => { if (off) { return; } const t = draft.trim(); setDraft(''); onSend?.(t); };
   const key = (e: KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } };
   return (
-    <section className="bx-panel bx-chat" aria-labelledby={id} data-testid={testID}>
+    <section className={withVariant('bx-panel bx-chat', 'chat', variant)} aria-labelledby={id} data-testid={testID}>
       <h3 className="bx-panel-title" id={id}>{heading}</h3>
+      {loading ? <Skeleton /> : null}
       <div className="bx-chat-log" role="log" aria-live="polite" aria-labelledby={id}>
         {messages.map((m) => (
           <div key={m.id} className={'bx-msg' + (m.from === 'customer' ? ' is-mine' : '')}>

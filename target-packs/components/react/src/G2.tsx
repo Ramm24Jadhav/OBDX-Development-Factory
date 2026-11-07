@@ -7,8 +7,9 @@ import { ReactNode, useId, useState } from 'react';
 
 import { Dropdown, DropdownProps } from './Dropdown';
 import { FieldProps, FieldShell, useField } from './field';
-import { ChipsProps, FilterChips, Rows, RowsProps, SegmentsProps, StepperProps, Stepper, ToggleGroup, initials } from './G1';
+import { ChipsProps, FilterChips, Rows, RowsProps, SegmentsProps, Skeleton, StepperProps, Stepper, ToggleGroup, initials } from './G1';
 import { decimalsOf } from './TextField';
+import { BalanceVariant, FormVariant, PayeesVariant, ReceiptVariant, TxListVariant, withVariant } from './variant';
 
 /** An amount with its currency's decimals and the code after it; text is shown as given. */
 export function money(amount: number | string | null | undefined, currency?: string): string {
@@ -66,22 +67,25 @@ export function Tiles({ testID, heading, items, onAction }: TilesProps) {
 
 /* ---------- AccountBalance ---------- */
 
-export interface BalanceProps { testID?: string; label: string; amount: number | string; currency?: string; meta?: string; hideable?: boolean; amountHidden?: boolean; onAmountHiddenChange?: (hidden: boolean) => void }
+export interface BalanceProps { testID?: string; label: string; amount: number | string; currency?: string; meta?: string; hideable?: boolean; amountHidden?: boolean; onAmountHiddenChange?: (hidden: boolean) => void;
+  variant?: BalanceVariant; loading?: boolean }
 
 /** An account's balance in its currency, hidden on request. */
-export function AccountBalance({ testID, label, amount, currency, meta, hideable = true, amountHidden, onAmountHiddenChange }: BalanceProps) {
+export function AccountBalance({ testID, label, amount, currency, meta, hideable = true, amountHidden, onAmountHiddenChange, variant, loading }: BalanceProps) {
   const id = useId();
   const [own, setOwn] = useState(false);
   const off = amountHidden ?? own;
   const toggle = () => { setOwn(!off); onAmountHiddenChange?.(!off); };
   return (
-    <section className="bx-balance" aria-labelledby={id} data-testid={testID}>
+    <section className={withVariant('bx-balance', 'balance', variant)} aria-labelledby={id} data-testid={testID}>
       <div className="bx-balance-head">
         <h3 className="bx-balance-label" id={id}>{label}</h3>
-        {hideable ? <button type="button" className="bx-reveal" aria-pressed={!off} onClick={toggle}>{off ? 'Show balance' : 'Hide balance'}</button> : null}
+        {hideable && !loading ? <button type="button" className="bx-reveal" aria-pressed={!off} onClick={toggle}>{off ? 'Show balance' : 'Hide balance'}</button> : null}
       </div>
-      <p className="bx-balance-amount">{off ? '••••••' : money(amount, currency)}</p>
-      {meta && !off ? <p className="bx-balance-meta">{meta}</p> : null}
+      {loading ? <Skeleton /> : <>
+        <p className="bx-balance-amount">{off ? '••••••' : money(amount, currency)}</p>
+        {meta && !off ? <p className="bx-balance-meta">{meta}</p> : null}
+      </>}
     </section>
   );
 }
@@ -166,32 +170,33 @@ export function QuickActions({ testID, label = 'Quick actions', items, onAction 
 /* ---------- BeneficiarySelector (payee list) ---------- */
 
 export interface Payee { id: string; name: string; meta?: string }
-export interface PayeesProps { testID?: string; heading?: string; items: ReadonlyArray<Payee>; searchable?: boolean; emptyText?: string; onAction?: (payee: Payee) => void }
+export interface PayeesProps { testID?: string; heading?: string; items: ReadonlyArray<Payee>; searchable?: boolean; emptyText?: string; onAction?: (payee: Payee) => void;
+  variant?: PayeesVariant; loading?: boolean }
 
 /** The saved payees, found by name, picked to pay. */
-export function BeneficiarySelector({ testID, heading = 'Payees', items, searchable = true, emptyText = 'No payees match.', onAction }: PayeesProps) {
+export function BeneficiarySelector({ testID, heading = 'Payees', items, searchable = true, emptyText = 'No payees match.', onAction, variant, loading }: PayeesProps) {
   const id = useId();
   const [query, setQuery] = useState('');
   const q = query.trim().toLowerCase();
   const rows = items.filter((o) => !q || o.name.toLowerCase().includes(q));
   return (
-    <section className="bx-panel" aria-labelledby={id} data-testid={testID}>
+    <section className={withVariant('bx-panel', 'payees', variant)} aria-labelledby={id} data-testid={testID}>
       <h3 className="bx-panel-title" id={id}>{heading}</h3>
-      {searchable ? (
+      {searchable && !loading ? (
         <div className="bx-control bx-payee-search"><span className="bx-search-icon" aria-hidden="true" />
           <input type="search" className="bx-input bx-search" aria-label={`Search ${heading}`} placeholder="Name" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
       ) : null}
-      {rows.length === 0 ? <p className="bx-panel-empty" role="status">{emptyText}</p> : null}
-      <ul className="bx-rows">
+      {loading ? <Skeleton /> : rows.length === 0 ? <p className="bx-panel-empty" role="status">{emptyText}</p> : null}
+      {loading ? null : <ul className="bx-rows">
         {rows.map((o) => (
           <li key={o.id} className="bx-row">
             <button type="button" className="bx-payee" onClick={() => onAction?.(o)}>
-              <span className="bx-avatar is-sm" aria-hidden="true">{initials(o.name)}</span>
+              {variant === 'compact' ? null : <span className="bx-avatar is-sm" aria-hidden="true">{initials(o.name)}</span>}
               <span className="bx-row-main"><strong>{o.name}</strong>{o.meta ? <span className="bx-row-meta">{o.meta}</span> : null}</span>
             </button>
           </li>
         ))}
-      </ul>
+      </ul>}
     </section>
   );
 }
@@ -210,13 +215,14 @@ export interface StepFormProps {
   onCancel?: () => void;
   /** The screen's fields. */
   children?: ReactNode;
+  variant?: FormVariant;
 }
 
 /** The screen's fields in a titled step, a summary, and Submit and Cancel. Checks and the service call are the screen's. */
-export function StepForm({ testID, heading, items = [], submitLabel = 'Continue', cancelLabel, busy, onSubmit, onCancel, children }: StepFormProps) {
+export function StepForm({ testID, heading, items = [], submitLabel = 'Continue', cancelLabel, busy, onSubmit, onCancel, children, variant }: StepFormProps) {
   const id = useId();
   return (
-    <section className="bx-card bx-form" aria-labelledby={id} data-testid={testID}>
+    <section className={withVariant('bx-card bx-form', 'form', variant)} aria-labelledby={id} data-testid={testID}>
       <h3 className="bx-card-title" id={id}>{heading}</h3>
       <div className="bx-form-body">{children}</div>
       {items.length ? <DetailList items={items} /> : null}
@@ -231,44 +237,45 @@ export function StepForm({ testID, heading, items = [], submitLabel = 'Continue'
 /* ---------- TransactionHistory ---------- */
 
 export interface Transaction { id: string; description: string; date?: string; meta?: string; amount: number | string; currency?: string }
-export interface TransactionsProps { testID?: string; heading?: string; items: ReadonlyArray<Transaction>; currency?: string; emptyText?: string; onAction?: (item: Transaction) => void }
+export interface TransactionsProps { testID?: string; heading?: string; items: ReadonlyArray<Transaction>; currency?: string; emptyText?: string; onAction?: (item: Transaction) => void;
+  variant?: TxListVariant; loading?: boolean }
 
 /** What came in and went out; money in is green with a plus, and a screen reader says which. */
-export function Transactions({ testID, heading = 'Transactions', items, currency, emptyText = 'No transactions in this period.', onAction }: TransactionsProps) {
+export function Transactions({ testID, heading = 'Transactions', items, currency, emptyText = 'No transactions in this period.', onAction, variant, loading }: TransactionsProps) {
   const id = useId();
   return (
-    <section className="bx-panel" aria-labelledby={id} data-testid={testID}>
+    <section className={withVariant('bx-panel', 'txlist', variant)} aria-labelledby={id} data-testid={testID}>
       <h3 className="bx-panel-title" id={id}>{heading}</h3>
-      {items.length === 0 ? <p className="bx-panel-empty">{emptyText}</p> : null}
-      <ul className="bx-rows">
+      {loading ? <Skeleton /> : items.length === 0 ? <p className="bx-panel-empty">{emptyText}</p> : null}
+      {loading ? null : <ul className="bx-rows">
         {items.map((o) => {
           const n = typeof o.amount === 'number' ? o.amount : Number(String(o.amount).replace(/[^\d.-]/g, ''));
           const shown = typeof o.amount === 'number' ? (n > 0 ? '+' : n < 0 ? '−' : '') + money(Math.abs(n), o.currency ?? currency) : o.amount;
           const meta = [o.date, o.meta].filter(Boolean).join(' · ');
           const body = (
             <>
-              <span className="bx-avatar is-sm" aria-hidden="true">{initials(o.description)}</span>
+              {variant === 'compact' ? null : <span className="bx-avatar is-sm" aria-hidden="true">{initials(o.description)}</span>}
               <span className="bx-row-main"><strong>{o.description}</strong>{meta ? <span className="bx-row-meta">{meta}</span> : null}</span>
               <span className={'bx-tx-amount' + (n > 0 ? ' is-in' : '')}><span className="bx-visually-hidden">{n > 0 ? 'Money in' : n < 0 ? 'Money out' : ''}</span>{shown}</span>
             </>
           );
           return <li key={o.id} className="bx-row">{onAction ? <button type="button" className="bx-payee bx-tx" onClick={() => onAction(o)}>{body}</button> : <div className="bx-payee bx-tx">{body}</div>}</li>;
         })}
-      </ul>
+      </ul>}
     </section>
   );
 }
 
 /* ---------- TransactionReceipt ---------- */
 
-export interface ReceiptProps { testID?: string; heading?: string; amount?: number | string; currency?: string; items?: ReadonlyArray<Detail>; reference?: string; children?: ReactNode }
+export interface ReceiptProps { testID?: string; heading?: string; amount?: number | string; currency?: string; items?: ReadonlyArray<Detail>; reference?: string; children?: ReactNode; variant?: ReceiptVariant }
 
 /** Done: the amount, the reference, the details and what to do with it (the actions go in children). */
-export function TransactionReceipt({ testID, heading = 'Payment sent', amount, currency, items = [], reference, children }: ReceiptProps) {
+export function TransactionReceipt({ testID, heading = 'Payment sent', amount, currency, items = [], reference, children, variant }: ReceiptProps) {
   const id = useId();
   const shown = money(amount, currency);
   return (
-    <section className="bx-card bx-receipt" aria-labelledby={id} data-testid={testID}>
+    <section className={withVariant('bx-card bx-receipt', 'receipt', variant)} aria-labelledby={id} data-testid={testID}>
       <span className="bx-receipt-mark" aria-hidden="true">✓</span>
       <h3 className="bx-receipt-title" id={id}>{heading}</h3>
       {shown ? <p className="bx-receipt-amount">{shown}</p> : null}

@@ -9,6 +9,7 @@ import { Dialog } from './Dialog';
 import { FieldMessage, fieldClass, useField } from './field';
 import { Alert, AlertProps, Rows, RowsProps, SegmentsProps, Slider, SliderProps, StepperProps, Stepper, Timeline, TimelineProps, ToggleGroup } from './G1';
 import { Details, DetailsProps, StepForm, StepFormProps, Tiles, TilesProps } from './G2';
+import { BiometricVariant, CardTileVariant, withVariant } from './variant';
 
 type Opt<P, K extends keyof P> = Omit<P, K> & Partial<Pick<P, K>>;
 
@@ -46,14 +47,14 @@ export function RepaymentSchedule({ testID, caption = 'Repayment schedule', colu
 
 /* ---------- CardTile ---------- */
 
-export interface CardTileProps { testID?: string; label: string; number: string; holder?: string; expiry?: string; network?: string; frozen?: boolean }
+export interface CardTileProps { testID?: string; label: string; number: string; holder?: string; expiry?: string; network?: string; frozen?: boolean; variant?: CardTileVariant }
 
 /** The card's picture with the number masked; grey when blocked. A screen reader hears one line about it. */
-export function CardTile({ testID, label, number, holder, expiry, network, frozen }: CardTileProps) {
+export function CardTile({ testID, label, number, holder, expiry, network, frozen, variant }: CardTileProps) {
   const last = (number || '').replace(/\D/g, '').slice(-4);
   const name = [label, network, `ending ${last}`, frozen ? 'blocked' : ''].filter(Boolean).join(', ');
   return (
-    <div className={'bx-card-face' + (frozen ? ' is-frozen' : '')} role="img" aria-label={name} data-testid={testID}>
+    <div className={withVariant('bx-card-face' + (frozen ? ' is-frozen' : ''), 'cardtile', variant)} role="img" aria-label={name} data-testid={testID}>
       <span className="bx-card-face-label" aria-hidden="true">{label}</span>
       <span className="bx-card-face-number bx-mono" aria-hidden="true">{masked(number)}</span>
       <span className="bx-card-face-foot" aria-hidden="true"><span>{holder}</span><span>{expiry}</span><strong>{network}</strong></span>
@@ -182,17 +183,18 @@ export interface ChallengeProps {
   failedText?: string;
   onVerify?: () => void;
   onOther?: () => void;
+  variant?: BiometricVariant;
 }
 
 const METHOD_ICON = { face: '☺', fingerprint: '◉', passkey: '⚿' };
 
 /** Asks for a biometric or a passkey; the screen does the asking (WebAuthn or the app) and sets the state. */
 export function AuthChallenge({ testID, heading = 'Confirm it is you', text, method = 'fingerprint', actionLabel = 'Use fingerprint', otherLabel = 'Use a code instead', state = 'ready',
-  failedText = 'That did not work. Try again, or use a code.', onVerify, onOther }: ChallengeProps) {
+  failedText = 'That did not work. Try again, or use a code.', onVerify, onOther, variant }: ChallengeProps) {
   const id = useId();
   const waiting = state === 'waiting';
   return (
-    <section className="bx-card bx-challenge" aria-labelledby={id} data-testid={testID}>
+    <section className={withVariant('bx-card bx-challenge', 'biometric', variant)} aria-labelledby={id} data-testid={testID}>
       <span className={'bx-challenge-icon' + (waiting ? ' is-waiting' : '')} aria-hidden="true">{METHOD_ICON[method]}</span>
       <h3 className="bx-card-title" id={id}>{heading}</h3>
       {text ? <p className="bx-thing-text">{text}</p> : null}

@@ -11,6 +11,7 @@ import { ChoiceCards, ChoiceCardsProps, Detail, DetailList, QuickActions, QuickA
 import { CodeInput, CodeProps, Setting, SettingProps, masked } from './G3';
 import { FeedbackRating, RatingProps } from './G5';
 import { reducedMotion } from './motion';
+import { BoardVariant, PromptVariant, SensitiveVariant, withVariant } from './variant';
 
 type Opt<P, K extends keyof P> = Omit<P, K> & Partial<Pick<P, K>>;
 type Vars = CSSProperties & Record<`--${string}`, string>;
@@ -74,9 +75,10 @@ export function CountUp({ testID, value, from = 0, duration = 1200, currency, pr
 }
 
 /** Rates on flip tiles, each row read as a whole. */
-export function SplitFlapBoard({ testID, heading = 'Exchange rates', items }: { testID?: string; heading?: string; items: ReadonlyArray<{ label: string; value: string }> }) {
+export function SplitFlapBoard({ testID, heading = 'Exchange rates', items, variant }: { testID?: string; heading?: string; items: ReadonlyArray<{ label: string; value: string }>;
+  variant?: BoardVariant }) {
   return (
-    <section className="bx-panel bx-flap" aria-label={heading || undefined} data-testid={testID}>
+    <section className={withVariant('bx-panel bx-flap', 'board', variant)} aria-label={heading || undefined} data-testid={testID}>
       {heading ? <h3 className="bx-panel-title">{heading}</h3> : null}
       <ul className="bx-flap-rows">
         {items.map((o) => (
@@ -89,12 +91,12 @@ export function SplitFlapBoard({ testID, heading = 'Exchange rates', items }: { 
 }
 
 /** An account number masked to its last four digits; Show reveals it digit by digit. */
-export function RevealDigits({ testID, label = 'Account number', value }: { testID?: string; label?: string; value: string }) {
+export function RevealDigits({ testID, label = 'Account number', value, variant }: { testID?: string; label?: string; value: string; variant?: SensitiveVariant }) {
   const id = useId();
   const [shown, setShown] = useState(false);
   const text = shown ? value : masked(value);
   return (
-    <div className="bx-field bx-reveal-digits" data-testid={testID}>
+    <div className={withVariant('bx-field bx-reveal-digits', 'sensitive', variant)} data-testid={testID}>
       <span className="bx-label" id={id}>{label}</span>
       <div className="bx-control is-readonly" role="group" aria-labelledby={id}>
         <span className="bx-input bx-mono bx-sensitive-value"><Hidden>{text}</Hidden><span aria-hidden="true">{chars(text).map((t, i) => <span key={`${shown}${i}`} className={t.css}>{t.ch}</span>)}</span></span>
@@ -625,15 +627,15 @@ export function PeekRating(p: RatingProps) { return <div className="bx-fx-peek">
 /** A tooltip in warm colours. */
 export function WarmTooltip(p: { testID?: string; label: string; text: string }) { return <div className="bx-fx-warm"><Tooltip {...p} /></div>; }
 
-export interface PromptBarProps { testID?: string; label?: string; placeholder?: string; suggestions?: ReadonlyArray<string>; busy?: boolean; onAsk?: (text: string) => void }
+export interface PromptBarProps { testID?: string; label?: string; placeholder?: string; suggestions?: ReadonlyArray<string>; busy?: boolean; onAsk?: (text: string) => void; variant?: PromptVariant }
 /** The assistant's question box with suggestions; Enter or Ask sends. */
-export function PromptBar({ testID, label = 'Ask the assistant', placeholder = 'Ask about your accounts', suggestions = [], busy, onAsk }: PromptBarProps) {
+export function PromptBar({ testID, label = 'Ask the assistant', placeholder = 'Ask about your accounts', suggestions = [], busy, onAsk, variant }: PromptBarProps) {
   const [draft, setDraft] = useState('');
   const input = useRef<HTMLInputElement>(null);
   const off = !draft.trim() || busy;
   const send = () => { if (off) { return; } const t = draft.trim(); setDraft(''); onAsk?.(t); };
   return (
-    <div className="bx-prompt-bar" data-testid={testID}>
+    <div className={withVariant('bx-prompt-bar', 'chat', variant)} data-testid={testID}>
       <div className="bx-chip-row" role="group" aria-label={`Suggestions for ${label}`}>{suggestions.map((s) => <button key={s} type="button" className="bx-filter-chip" onClick={() => { setDraft(s); input.current?.focus(); }}>{s}</button>)}</div>
       <div className="bx-prompt-row">
         <div className="bx-control"><span className="bx-prompt-spark" aria-hidden="true">✦</span>
