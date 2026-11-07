@@ -28,10 +28,13 @@
 .bx-grid-wrap.bx-v-material .bx-th { background: var(--bx-card); color: var(--bx-text); font-size: 13px; text-transform: none; letter-spacing: 0; }
 .bx-grid-wrap.bx-v-material .bx-td { padding: 14px 16px; }
 .bx-grid-wrap .MuiTableCell-root { color: var(--bx-text); border-bottom-color: var(--bx-rule); font: inherit; font-size: 14px; }
+/* MUI draws the caption under the table in its own grey */
+.bx-grid-wrap .MuiTable-root caption { caption-side: top; padding: 12px 14px 4px; color: var(--bx-text); font: inherit; font-weight: 600; text-align: left; }
 .bx-grid-wrap .MuiTableCell-head { font-size: 13px; font-weight: var(--bx-weight-title); }
 .bx-grid-wrap.bx-v-striped .bx-tr:nth-child(even) .bx-td { background: var(--bx-surface-2); }
 .bx-grid-wrap.bx-v-striped .bx-td { border-bottom: 0; }
 .bx-grid-wrap.bx-v-striped .bx-th { background: var(--bx-track); }
+.bx-grid-wrap.bx-v-striped { --bx-muted: var(--bx-text-body); }
 .bx-grid-wrap.bx-v-dense .bx-th, .bx-grid-wrap.bx-v-dense .bx-td { padding: 6px 10px; }
 .bx-grid-wrap.bx-v-dense .bx-grid { font-size: 13px; }
 .bx-grid-wrap.bx-v-sticky { max-height: 360px; overflow: auto; }

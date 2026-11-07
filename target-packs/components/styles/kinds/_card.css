@@ -45,6 +45,8 @@
 .bx-card.bx-v-elevated, .bx-flip-card.bx-v-elevated .bx-flip-face { background: var(--bx-raised); border-color: transparent; box-shadow: var(--bx-shadow-2); }
 .bx-card.bx-v-elevated.is-interactive:hover { box-shadow: var(--bx-shadow-3); }
 .bx-card.bx-v-filled, .bx-flip-card.bx-v-filled .bx-flip-face { background: var(--bx-track); border-color: transparent; box-shadow: none; }
+/* muted text on the tinted fill would fall under 4.5:1 */
+.bx-card.bx-v-filled, .bx-flip-card.bx-v-filled { --bx-muted: var(--bx-text-body); }
 .bx-card.bx-v-glass, .bx-flip-card.bx-v-glass .bx-flip-face { background: color-mix(in srgb, var(--bx-card) 62%, transparent); border-color: color-mix(in srgb, var(--bx-border) 55%, transparent);
   -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4); box-shadow: var(--bx-shadow-2); }
 .bx-card.bx-v-gradient, .bx-flip-card.bx-v-gradient .bx-flip-face { border: calc(var(--bx-bw) + 1px) solid transparent;

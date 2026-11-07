@@ -19,6 +19,7 @@
 .bx-kv.bx-v-columns .bx-kv-row dt { flex: 0 0 42%; }
 .bx-kv.bx-v-columns .bx-kv-row dd { text-align: left; }
 /* cards: each detail in its own small card */
+.bx-kv.bx-v-cards { --bx-muted: var(--bx-text-body); }
 .bx-kv.bx-v-cards .bx-kv-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
 .bx-kv.bx-v-cards .bx-kv-row { flex-direction: column; gap: 4px; padding: 10px 12px; border: 0; border-radius: var(--bx-radius-control); background: var(--bx-track); }
 .bx-kv.bx-v-cards .bx-kv-row dd { text-align: left; }

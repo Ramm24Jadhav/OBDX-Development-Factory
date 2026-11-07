@@ -36,6 +36,8 @@
 .bx-tile.MuiPaper-root, .bx-bento-tile .MuiPaper-root { background: var(--bx-card); color: var(--bx-text); border-radius: var(--bx-radius-lg); }
 :is(.bx-tiles-wrap, .bx-bento).bx-v-elevated :is(.bx-tile, .bx-bento-tile) { background: var(--bx-raised); border-color: transparent; box-shadow: var(--bx-shadow-2); }
 :is(.bx-tiles-wrap, .bx-bento).bx-v-filled :is(.bx-tile, .bx-bento-tile) { background: var(--bx-track); border-color: transparent; box-shadow: none; }
+/* muted text on the tinted fills would fall under 4.5:1 */
+:is(.bx-tiles-wrap, .bx-bento).bx-v-filled, .bx-tiles-wrap.bx-v-bento { --bx-muted: var(--bx-text-body); }
 :is(.bx-tiles-wrap, .bx-bento).bx-v-outlined :is(.bx-tile, .bx-bento-tile) { border-color: var(--bx-border-strong); box-shadow: none; }
 :is(.bx-tiles-wrap, .bx-bento).bx-v-glass :is(.bx-tile, .bx-bento-tile) { background: color-mix(in srgb, var(--bx-card) 62%, transparent); border-color: color-mix(in srgb, var(--bx-border) 55%, transparent);
   -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4); }

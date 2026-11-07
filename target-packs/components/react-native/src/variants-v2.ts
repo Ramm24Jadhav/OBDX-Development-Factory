@@ -44,7 +44,7 @@ function table(t: Theme): Record<VariantKind, Record<string, ViewStyle>> {
   const glass: ViewStyle = { backgroundColor: t.glass ? t.glass.fill : alpha(c.surface, 0.62), borderColor: t.glass ? t.glass.rim : alpha(c.border, 0.5), borderWidth: t.border, overflow: 'hidden' };
   const surface = {
     elevated: { backgroundColor: t.raised, borderWidth: 0, ...t.elevation(2) },
-    filled: { backgroundColor: t.track, borderWidth: 0, ...flat },
+    filled: { backgroundColor: c.surface2, borderWidth: 0, ...flat },
     outlined: { backgroundColor: t.card, ...edge, ...flat },
     glass,
   };
@@ -55,7 +55,7 @@ function table(t: Theme): Record<VariantKind, Record<string, ViewStyle>> {
     tiles: { ...surface, bento: { minHeight: 96, borderRadius: t.radius.overlay }, compact: { padding: t.pad - 4, gap: 2 } },
     kv: {
       list: { backgroundColor: 'transparent', borderWidth: 0, paddingHorizontal: 0, ...flat }, columns: { paddingHorizontal: t.padCard + 2 },
-      cards: { backgroundColor: t.track, borderWidth: 0, ...flat }, compact: { padding: t.pad - 4, gap: 6 },
+      cards: { backgroundColor: c.surface2, borderWidth: 0, ...flat }, compact: { padding: t.pad - 4, gap: 6 },
       receipt: { borderStyle: 'dashed', ...edge, ...flat },
     },
     tabs: {
@@ -70,7 +70,7 @@ function table(t: Theme): Record<VariantKind, Record<string, ViewStyle>> {
     nav: {
       drawer: { backgroundColor: t.card, borderRadius: t.radius.card, padding: 8 }, rail: { width: 88, alignItems: 'center' },
       bottom: { flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: t.border, borderColor: t.line, backgroundColor: t.raised },
-      pill: { flexDirection: 'row', gap: 6, backgroundColor: t.track, borderRadius: 999, padding: 4 },
+      pill: { flexDirection: 'row', gap: 6, backgroundColor: c.surface2, borderRadius: 999, padding: 4 },
       dock: { ...glass, flexDirection: 'row', alignSelf: 'center', borderRadius: t.radius.overlay, padding: 8, ...t.elevation(3) },
     },
     menu: { list: { borderRadius: t.radius.small, ...t.elevation(2) }, dense: { paddingVertical: 2 }, glass, sheet: { borderTopLeftRadius: t.radius.overlay, borderTopRightRadius: t.radius.overlay } },
@@ -80,13 +80,15 @@ function table(t: Theme): Record<VariantKind, Record<string, ViewStyle>> {
     },
     pages: { rounded: { gap: 4 }, outlined: { gap: 6 }, compact: { justifyContent: 'space-between' }, pill: { backgroundColor: t.track, borderRadius: 999, paddingHorizontal: 6 } },
     grid: { compact: { rowGap: 6 }, airy: { rowGap: 24 }, bordered: { borderWidth: StyleSheet.hairlineWidth, borderColor: t.line }, masonry: { alignItems: 'flex-start' } },
-    divider: { full: { marginHorizontal: 0 }, inset: { marginLeft: 16 }, middle: { marginHorizontal: 16 }, dashed: { borderStyle: 'dashed' }, gradient: { opacity: 0.6 } },
+    divider: { full: { marginHorizontal: 0 }, inset: { marginLeft: 16 }, middle: { marginHorizontal: 16 }, dashed: { borderStyle: 'dashed' },
+      // shortcut: no gradient without a gradient library, so the line is shorter and centred; upgrade with expo-linear-gradient
+      gradient: { marginHorizontal: '15%' } },
     list: {
       divided: { gap: 0 }, inset: { marginHorizontal: 16, borderRadius: t.radius.card, backgroundColor: t.card, overflow: 'hidden' },
       cards: { gap: 8 }, plain: { gap: 2 },
     },
     quick: { chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, circles: { gap: 14 }, list: { flexDirection: 'column' }, glass },
-    table: { material: { borderRadius: t.radius.small, ...t.elevation(1) }, striped: { backgroundColor: t.track }, dense: { padding: 8, gap: 2 }, cards: { borderRadius: t.radius.overlay },
+    table: { material: { borderRadius: t.radius.small, ...t.elevation(1) }, striped: { backgroundColor: c.surface2 }, dense: { padding: 8, gap: 2 }, cards: { borderRadius: t.radius.overlay },
       sticky: { borderTopWidth: Math.max(2, t.border), borderColor: t.line } },
   };
 }

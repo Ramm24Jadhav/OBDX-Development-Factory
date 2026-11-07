@@ -82,12 +82,12 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       <section class="gate" data-component="tabs" aria-labelledby="tb-h"><h2 id="tb-h">Tabs</h2><div class="gate-body">
         <bx-tabs #t label="Accounts" [tabs]="tabs" [(selection)]="tab" />
         <p role="tabpanel" [id]="t.panelId(tab())" [attr.aria-labelledby]="t.tabId(tab())">{{ panel[tab()] }}</p>
-        <div data-variant="underline"><bx-tabs variant="underline" #t label="Accounts" [tabs]="tabs" [(selection)]="tab" /></div>
-        <div data-variant="scrollable"><bx-tabs variant="scrollable" #t label="Accounts" [tabs]="tabs" [(selection)]="tab" /></div>
-        <div data-variant="pill"><bx-tabs variant="pill" #t label="Accounts" [tabs]="tabs" [(selection)]="tab" /></div>
-        <div data-variant="enclosed"><bx-tabs variant="enclosed" #t label="Accounts" [tabs]="tabs" [(selection)]="tab" /></div>
-        <div data-variant="segmented"><bx-tabs variant="segmented" #t label="Accounts" [tabs]="tabs" [(selection)]="tab" /></div>
-        <div data-variant="vertical"><bx-tabs variant="vertical" #t label="Accounts" [tabs]="tabs" [(selection)]="tab" /></div>
+        <div data-variant="underline"><bx-tabs variant="underline" #t1 label="Accounts" [tabs]="tabs" [(selection)]="tab" /><p role="tabpanel" [id]="t1.panelId(tab())" [attr.aria-labelledby]="t1.tabId(tab())">{{ panel[tab()] }}</p></div>
+        <div data-variant="scrollable"><bx-tabs variant="scrollable" #t2 label="Accounts" [tabs]="tabs" [(selection)]="tab" /><p role="tabpanel" [id]="t2.panelId(tab())" [attr.aria-labelledby]="t2.tabId(tab())">{{ panel[tab()] }}</p></div>
+        <div data-variant="pill"><bx-tabs variant="pill" #t3 label="Accounts" [tabs]="tabs" [(selection)]="tab" /><p role="tabpanel" [id]="t3.panelId(tab())" [attr.aria-labelledby]="t3.tabId(tab())">{{ panel[tab()] }}</p></div>
+        <div data-variant="enclosed"><bx-tabs variant="enclosed" #t4 label="Accounts" [tabs]="tabs" [(selection)]="tab" /><p role="tabpanel" [id]="t4.panelId(tab())" [attr.aria-labelledby]="t4.tabId(tab())">{{ panel[tab()] }}</p></div>
+        <div data-variant="segmented"><bx-tabs variant="segmented" #t5 label="Accounts" [tabs]="tabs" [(selection)]="tab" /><p role="tabpanel" [id]="t5.panelId(tab())" [attr.aria-labelledby]="t5.tabId(tab())">{{ panel[tab()] }}</p></div>
+        <div data-variant="vertical"><bx-tabs variant="vertical" #t6 label="Accounts" [tabs]="tabs" [(selection)]="tab" /><p role="tabpanel" [id]="t6.panelId(tab())" [attr.aria-labelledby]="t6.tabId(tab())">{{ panel[tab()] }}</p></div>
       </div></section>
       <section class="gate" data-component="data-grid" aria-labelledby="dg-h"><h2 id="dg-h">Data table</h2><div class="gate-body">
         <bx-data-grid caption="Recent transactions" [rows]="rows" [columns]="columns" selectionMode="multiple" [(selected)]="selected" />

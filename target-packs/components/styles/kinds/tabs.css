@@ -24,12 +24,12 @@
 .bx-tabs.bx-v-pill { background: transparent; padding: 0; gap: 6px; }
 .bx-tabs.bx-v-pill .bx-tab { border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-pill); }
 .bx-tabs.bx-v-pill .bx-tab.is-on { border-color: transparent; background: var(--bx-brand); color: var(--bx-on-brand); box-shadow: none; }
-.bx-tabs.bx-v-enclosed { display: flex; padding: 0; gap: 0; border-radius: 0; background: transparent; border-bottom: var(--bx-bw) solid var(--bx-border); overflow: visible; }
-.bx-tabs.bx-v-enclosed .bx-tab { margin-bottom: calc(var(--bx-bw) * -1); border: var(--bx-bw) solid transparent; border-radius: var(--bx-radius-control) var(--bx-radius-control) 0 0; }
+.bx-tabs.bx-v-enclosed { display: flex; padding: 0; gap: 0; border-radius: 0; background: transparent; box-shadow: inset 0 calc(var(--bx-bw) * -1) 0 var(--bx-border); }
+.bx-tabs.bx-v-enclosed .bx-tab { border: var(--bx-bw) solid transparent; border-bottom: 0; border-radius: var(--bx-radius-control) var(--bx-radius-control) 0 0; }
 .bx-tabs.bx-v-enclosed .bx-tab.is-on { background: var(--bx-card); border-color: var(--bx-border); border-bottom-color: var(--bx-card); box-shadow: none; }
 .bx-tabs.bx-v-segmented { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: 100%; padding: 2px; gap: 2px; border-radius: var(--bx-radius-control); }
 .bx-tabs.bx-v-segmented .bx-tab { padding: 6px 12px; font-size: 13px; border-radius: calc(var(--bx-radius-control) - 2px); text-align: center; }
-.bx-tabs.bx-v-vertical { display: flex; flex-direction: column; align-items: stretch; padding: 4px; gap: 2px; background: transparent; overflow: visible; }
+.bx-tabs.bx-v-vertical { display: flex; flex-direction: column; align-items: stretch; padding: 4px; gap: 2px; background: transparent; }
 .bx-tabs.bx-v-vertical .bx-tab { text-align: left; }
 .bx-tabs.bx-v-vertical .bx-tab.is-on { background: color-mix(in srgb, var(--bx-brand) 10%, var(--bx-card)); box-shadow: inset 3px 0 0 var(--bx-brand); }
 .bx-tabs-vertical { display: flex; gap: 16px; align-items: flex-start; }

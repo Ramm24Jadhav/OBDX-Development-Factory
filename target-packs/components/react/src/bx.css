@@ -166,6 +166,8 @@ bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pi
 .bx-card.bx-v-elevated, .bx-flip-card.bx-v-elevated .bx-flip-face { background: var(--bx-raised); border-color: transparent; box-shadow: var(--bx-shadow-2); }
 .bx-card.bx-v-elevated.is-interactive:hover { box-shadow: var(--bx-shadow-3); }
 .bx-card.bx-v-filled, .bx-flip-card.bx-v-filled .bx-flip-face { background: var(--bx-track); border-color: transparent; box-shadow: none; }
+/* muted text on the tinted fill would fall under 4.5:1 */
+.bx-card.bx-v-filled, .bx-flip-card.bx-v-filled { --bx-muted: var(--bx-text-body); }
 .bx-card.bx-v-glass, .bx-flip-card.bx-v-glass .bx-flip-face { background: color-mix(in srgb, var(--bx-card) 62%, transparent); border-color: color-mix(in srgb, var(--bx-border) 55%, transparent);
   -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4); box-shadow: var(--bx-shadow-2); }
 .bx-card.bx-v-gradient, .bx-flip-card.bx-v-gradient .bx-flip-face { border: calc(var(--bx-bw) + 1px) solid transparent;
@@ -690,6 +692,7 @@ bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pi
 .bx-kv.bx-v-columns .bx-kv-row dt { flex: 0 0 42%; }
 .bx-kv.bx-v-columns .bx-kv-row dd { text-align: left; }
 /* cards: each detail in its own small card */
+.bx-kv.bx-v-cards { --bx-muted: var(--bx-text-body); }
 .bx-kv.bx-v-cards .bx-kv-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
 .bx-kv.bx-v-cards .bx-kv-row { flex-direction: column; gap: 4px; padding: 10px 12px; border: 0; border-radius: var(--bx-radius-control); background: var(--bx-track); }
 .bx-kv.bx-v-cards .bx-kv-row dd { text-align: left; }
@@ -785,7 +788,7 @@ bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pi
 .bx-card-nav-button:hover, .bx-card-nav-button:focus-visible { transform: translateY(-3px); box-shadow: var(--bx-shadow-2); outline: none; }
 .bx-card-nav-button:focus-visible { box-shadow: var(--bx-focus), var(--bx-shadow-2); }
 /* Wave V2 variants (variants.json): on the side nav, the dock (its quick actions) and the card nav. drawer is a MUI List in React. */
-.bx-nav.bx-v-drawer { padding: 12px; border-radius: var(--bx-radius-xl); background: var(--bx-raised); }
+.bx-nav.bx-v-drawer { box-sizing: border-box; padding: 12px; border-radius: var(--bx-radius-xl); background: var(--bx-raised); }
 .bx-nav.bx-v-drawer .bx-nav-item { min-height: 56px; padding: 0 24px; border-radius: var(--bx-radius-pill); }
 .bx-nav.bx-v-drawer .bx-nav-item.is-on, .bx-nav.bx-v-drawer .bx-nav-item.Mui-selected { background: color-mix(in srgb, var(--bx-brand) 14%, var(--bx-card)); color: var(--bx-brand-text); }
 .bx-nav.bx-v-drawer .MuiList-root { padding: 0; }
@@ -794,16 +797,16 @@ bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pi
 .bx-nav.bx-v-rail ul { align-items: center; gap: 12px; }
 .bx-nav.bx-v-rail .bx-nav-item { position: relative; flex-direction: column; justify-content: center; gap: 4px; width: 72px; min-height: 56px; padding: 4px; border-radius: var(--bx-radius-lg); font-size: 12px; text-align: center; }
 .bx-nav.bx-v-rail .bx-nav-badge { position: absolute; top: 2px; right: 6px; }
-:is(.bx-nav, .bx-card-nav).bx-v-bottom ul, .bx-fx-dock.bx-v-bottom .bx-quick ul { display: flex; flex-direction: row; justify-content: space-around; gap: 4px; padding: 6px; border-top: var(--bx-bw) solid var(--bx-rule); background: var(--bx-raised); }
+:is(.bx-nav, .bx-card-nav).bx-v-bottom ul, .bx-fx-dock.bx-v-bottom .bx-quick ul { box-sizing: border-box; display: flex; flex-direction: row; justify-content: space-around; gap: 4px; padding: 6px; border-top: var(--bx-bw) solid var(--bx-rule); background: var(--bx-raised); }
 .bx-nav.bx-v-bottom .bx-nav-item, .bx-card-nav.bx-v-bottom .bx-card-nav-button { flex: 1 1 0; flex-direction: column; justify-content: center; min-height: 56px; padding: 4px; border-radius: var(--bx-radius-pill); font-size: 12px; text-align: center; }
 .bx-card-nav.bx-v-bottom .bx-card-nav-button { border: 0; background: transparent; box-shadow: none; align-items: center; }
 .bx-card-nav.bx-v-bottom .bx-card-nav-button span { display: none; }
-.bx-nav.bx-v-pill ul, .bx-card-nav.bx-v-pill ul { display: flex; flex-direction: row; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: var(--bx-radius-pill); background: var(--bx-track); }
+.bx-nav.bx-v-pill ul, .bx-card-nav.bx-v-pill ul { box-sizing: border-box; display: flex; flex-direction: row; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: var(--bx-radius-pill); background: var(--bx-track); }
 .bx-nav.bx-v-pill .bx-nav-item, .bx-card-nav.bx-v-pill .bx-card-nav-button { width: auto; min-height: 40px; border: 0; border-radius: var(--bx-radius-pill); box-shadow: none; background: transparent; }
 .bx-card-nav.bx-v-pill .bx-card-nav-button { flex-direction: row; align-items: center; padding: 0 16px; }
 .bx-card-nav.bx-v-pill .bx-card-nav-button span { display: none; }
 .bx-nav.bx-v-pill .bx-nav-item.is-on { background: var(--bx-fill); box-shadow: var(--bx-shadow-1); }
-:is(.bx-nav, .bx-card-nav).bx-v-dock ul, .bx-fx-dock.bx-v-dock .bx-quick ul { display: flex; flex-direction: row; justify-content: center; gap: 6px; width: fit-content; max-width: 100%; margin: 0 auto; padding: 8px;
+:is(.bx-nav, .bx-card-nav).bx-v-dock ul, .bx-fx-dock.bx-v-dock .bx-quick ul { box-sizing: border-box; display: flex; flex-direction: row; justify-content: center; gap: 6px; width: fit-content; max-width: 100%; margin: 0 auto; padding: 8px;
   border: var(--bx-bw) solid color-mix(in srgb, var(--bx-border) 60%, transparent); border-radius: var(--bx-radius-xl); background: color-mix(in srgb, var(--bx-card) 70%, transparent);
   -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4); box-shadow: var(--bx-shadow-3); }
 .bx-nav.bx-v-dock .bx-nav-item, .bx-card-nav.bx-v-dock .bx-card-nav-button { width: auto; min-height: 48px; border: 0; background: transparent; box-shadow: none; }
@@ -1069,10 +1072,13 @@ button.bx-payee:hover { background: var(--bx-surface-2); }
 .bx-grid-wrap.bx-v-material .bx-th { background: var(--bx-card); color: var(--bx-text); font-size: 13px; text-transform: none; letter-spacing: 0; }
 .bx-grid-wrap.bx-v-material .bx-td { padding: 14px 16px; }
 .bx-grid-wrap .MuiTableCell-root { color: var(--bx-text); border-bottom-color: var(--bx-rule); font: inherit; font-size: 14px; }
+/* MUI draws the caption under the table in its own grey */
+.bx-grid-wrap .MuiTable-root caption { caption-side: top; padding: 12px 14px 4px; color: var(--bx-text); font: inherit; font-weight: 600; text-align: left; }
 .bx-grid-wrap .MuiTableCell-head { font-size: 13px; font-weight: var(--bx-weight-title); }
 .bx-grid-wrap.bx-v-striped .bx-tr:nth-child(even) .bx-td { background: var(--bx-surface-2); }
 .bx-grid-wrap.bx-v-striped .bx-td { border-bottom: 0; }
 .bx-grid-wrap.bx-v-striped .bx-th { background: var(--bx-track); }
+.bx-grid-wrap.bx-v-striped { --bx-muted: var(--bx-text-body); }
 .bx-grid-wrap.bx-v-dense .bx-th, .bx-grid-wrap.bx-v-dense .bx-td { padding: 6px 10px; }
 .bx-grid-wrap.bx-v-dense .bx-grid { font-size: 13px; }
 .bx-grid-wrap.bx-v-sticky { max-height: 360px; overflow: auto; }
@@ -1112,12 +1118,12 @@ button.bx-payee:hover { background: var(--bx-surface-2); }
 .bx-tabs.bx-v-pill { background: transparent; padding: 0; gap: 6px; }
 .bx-tabs.bx-v-pill .bx-tab { border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-pill); }
 .bx-tabs.bx-v-pill .bx-tab.is-on { border-color: transparent; background: var(--bx-brand); color: var(--bx-on-brand); box-shadow: none; }
-.bx-tabs.bx-v-enclosed { display: flex; padding: 0; gap: 0; border-radius: 0; background: transparent; border-bottom: var(--bx-bw) solid var(--bx-border); overflow: visible; }
-.bx-tabs.bx-v-enclosed .bx-tab { margin-bottom: calc(var(--bx-bw) * -1); border: var(--bx-bw) solid transparent; border-radius: var(--bx-radius-control) var(--bx-radius-control) 0 0; }
+.bx-tabs.bx-v-enclosed { display: flex; padding: 0; gap: 0; border-radius: 0; background: transparent; box-shadow: inset 0 calc(var(--bx-bw) * -1) 0 var(--bx-border); }
+.bx-tabs.bx-v-enclosed .bx-tab { border: var(--bx-bw) solid transparent; border-bottom: 0; border-radius: var(--bx-radius-control) var(--bx-radius-control) 0 0; }
 .bx-tabs.bx-v-enclosed .bx-tab.is-on { background: var(--bx-card); border-color: var(--bx-border); border-bottom-color: var(--bx-card); box-shadow: none; }
 .bx-tabs.bx-v-segmented { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: 100%; padding: 2px; gap: 2px; border-radius: var(--bx-radius-control); }
 .bx-tabs.bx-v-segmented .bx-tab { padding: 6px 12px; font-size: 13px; border-radius: calc(var(--bx-radius-control) - 2px); text-align: center; }
-.bx-tabs.bx-v-vertical { display: flex; flex-direction: column; align-items: stretch; padding: 4px; gap: 2px; background: transparent; overflow: visible; }
+.bx-tabs.bx-v-vertical { display: flex; flex-direction: column; align-items: stretch; padding: 4px; gap: 2px; background: transparent; }
 .bx-tabs.bx-v-vertical .bx-tab { text-align: left; }
 .bx-tabs.bx-v-vertical .bx-tab.is-on { background: color-mix(in srgb, var(--bx-brand) 10%, var(--bx-card)); box-shadow: inset 3px 0 0 var(--bx-brand); }
 .bx-tabs-vertical { display: flex; gap: 16px; align-items: flex-start; }
@@ -1186,6 +1192,8 @@ button.bx-payee:hover { background: var(--bx-surface-2); }
 .bx-tile.MuiPaper-root, .bx-bento-tile .MuiPaper-root { background: var(--bx-card); color: var(--bx-text); border-radius: var(--bx-radius-lg); }
 :is(.bx-tiles-wrap, .bx-bento).bx-v-elevated :is(.bx-tile, .bx-bento-tile) { background: var(--bx-raised); border-color: transparent; box-shadow: var(--bx-shadow-2); }
 :is(.bx-tiles-wrap, .bx-bento).bx-v-filled :is(.bx-tile, .bx-bento-tile) { background: var(--bx-track); border-color: transparent; box-shadow: none; }
+/* muted text on the tinted fills would fall under 4.5:1 */
+:is(.bx-tiles-wrap, .bx-bento).bx-v-filled, .bx-tiles-wrap.bx-v-bento { --bx-muted: var(--bx-text-body); }
 :is(.bx-tiles-wrap, .bx-bento).bx-v-outlined :is(.bx-tile, .bx-bento-tile) { border-color: var(--bx-border-strong); box-shadow: none; }
 :is(.bx-tiles-wrap, .bx-bento).bx-v-glass :is(.bx-tile, .bx-bento-tile) { background: color-mix(in srgb, var(--bx-card) 62%, transparent); border-color: color-mix(in srgb, var(--bx-border) 55%, transparent);
   -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4); }
