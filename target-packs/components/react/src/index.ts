@@ -65,3 +65,8 @@ export { AnimatedList, BellToggle, BentoGrid, BlurInText, BudgetGauge, CallChip,
   TypedText, VoicePill, WarmTooltip, stagger } from './G7';
 export type { BackdropProps, BentoTile, CardNavItem, CountUpProps, DeckItem, FlipCardProps, FolderDoc, FxCardProps, GaugeProps, HoldProps, ListEntry, PressToggleProps,
   ProfileCardProps, PromptBarProps, RotatingTextProps, ScrubProps, SlideConfirmProps, SwipeAction, SwipeRowProps, WheelProps, WrapProps } from './G7';
+export { FACES, vx } from './variants';
+export type { AlertVariant, BadgeVariant, ChartVariant, EmptyVariant, GaugeVariant, OrbState, ProgressVariant, RatingVariant, SkeletonVariant, SpinnerVariant,
+  StatusVariant, StepperVariant, TimelineVariant, TimeoutVariant, ToastVariant, TooltipVariant } from './variants';
+export { CountdownRing } from './G3';
+export type { SpinnerProps } from './G1';

@@ -3,11 +3,14 @@
  * pack. Charts and meters show the figures the screen gives; bars are widths in steps of 5% (classes, no inline
  * style), and every figure is also text, so a screen reader hears the numbers.
  */
+import CircularProgress from '@mui/material/CircularProgress';
+import LinearProgress from '@mui/material/LinearProgress';
 import { useId } from 'react';
 
 import { Accordion, AccordionProps, Alert, AlertProps, ChipsProps, FilterChips, Rows, RowsProps, SegmentsProps, Timeline, TimelineProps, ToggleGroup } from './G1';
 import { AccountSelector, AccountSelectorProps, Details, DetailsProps } from './G2';
 import { Checks, ChecksProps, Setting, SettingProps } from './G3';
+import { ChartVariant, ProgressVariant, vx } from './variants';
 
 type Opt<P, K extends keyof P> = Omit<P, K> & Partial<Pick<P, K>>;
 
@@ -21,16 +24,17 @@ const figure = (n: number, unit?: string) => n.toLocaleString() + (unit ? ` ${un
 /* ---------- BarChart ---------- */
 
 export interface Bar { label: string; value: number; display?: string; tone?: 'danger' | 'success' }
-export interface BarChartProps { testID?: string; heading: string; items: ReadonlyArray<Bar>; max?: number; unit?: string; orientation?: 'bars' | 'columns'; note?: string }
+export interface BarChartProps { testID?: string; heading: string; items: ReadonlyArray<Bar>; max?: number; unit?: string; orientation?: 'bars' | 'columns'; note?: string; /** The style: standard, rounded, lollipop or meter (one bar split into the figures). */ variant?: ChartVariant }
 
 /** Bars of figures, each with its label and value as text. */
-export function BarChart({ testID, heading, items, max, unit, orientation = 'bars', note }: BarChartProps) {
+export function BarChart({ testID, heading, items, max, unit, orientation = 'bars', note, variant = 'standard' }: BarChartProps) {
   const id = useId();
   const top = max || Math.max(0, ...items.map((o) => o.value || 0));
   const dir = orientation === 'columns' ? 'h' : 'w';
   return (
-    <figure className={`bx-chart is-${orientation}`} aria-labelledby={id} data-testid={testID}>
+    <figure className={`bx-chart is-${orientation} ${vx('chart', variant)}`} aria-labelledby={id} data-testid={testID}>
       <figcaption className="bx-panel-title" id={id}>{heading}</figcaption>
+      {variant === 'meter' ? <MeterBar items={items} /> : null}
       <ul className="bx-bars">
         {items.map((o, i) => (
           <li key={i} className="bx-bar">
@@ -45,16 +49,22 @@ export function BarChart({ testID, heading, items, max, unit, orientation = 'bar
   );
 }
 
+/** The meter chart's one bar: each figure's share of the total, in steps of 5%; the figures are the list below it. */
+function MeterBar({ items }: { items: ReadonlyArray<Bar> }) {
+  const total = items.reduce((s, o) => s + Math.max(0, o.value || 0), 0);
+  return <span className="bx-meter-bar" aria-hidden="true">{items.map((o, i) => <span key={i} className={`bx-meter-seg bx-w-${step(Math.max(0, o.value || 0), total)} bx-seg-${i % 6}`} />)}</span>;
+}
+
 /* ---------- meters ---------- */
 
 export interface Meter { id?: string; label: string; value: number; max: number }
-export interface MetersProps { testID?: string; heading?: string; items: ReadonlyArray<Meter>; unit?: string; /** From this share (%) the bar turns amber. */ warnAt?: number }
+export interface MetersProps { testID?: string; heading?: string; items: ReadonlyArray<Meter>; unit?: string; /** From this share (%) the bar turns amber. */ warnAt?: number; /** The style: standard, linear (Material, on MUI), ring (Material, on MUI) or segmented. */ variant?: ProgressVariant }
 
 /** How much of each limit, budget or goal is used; over the limit says by how much. */
-export function Meters({ testID, heading, items, unit, warnAt = 90 }: MetersProps) {
+export function Meters({ testID, heading, items, unit, warnAt = 90, variant = 'standard' }: MetersProps) {
   const id = useId();
   return (
-    <section className="bx-panel bx-meters" aria-label={heading || undefined} data-testid={testID}>
+    <section className={`bx-panel bx-meters ${vx('progress', variant)}`} aria-label={heading || undefined} data-testid={testID}>
       {heading ? <h3 className="bx-panel-title">{heading}</h3> : null}
       {items.map((o, i) => {
         const over = o.max > 0 && o.value > o.max;
@@ -64,13 +74,26 @@ export function Meters({ testID, heading, items, unit, warnAt = 90 }: MetersProp
           <div key={o.id ?? i} className="bx-meter">
             <div className="bx-meter-head"><span id={`${id}-${i}`}>{o.label}</span><span className={'bx-meter-text' + (over ? ' is-over' : '')}>{text}</span></div>
             <div className="bx-meter-track" role="progressbar" aria-valuemin={0} aria-valuemax={o.max} aria-valuenow={Math.min(o.value, o.max)} aria-valuetext={text} aria-labelledby={`${id}-${i}`}>
-              <span className={`bx-meter-fill bx-w-${share}` + (over ? ' is-over' : share >= warnAt ? ' is-near' : '')} />
+              <MeterMark variant={variant} share={share} pct={o.max > 0 ? Math.round(Math.min(1, Math.max(0, o.value / o.max)) * 100) : 0}
+                         state={over ? ' is-over' : share >= warnAt ? ' is-near' : ''} />
             </div>
           </div>
         );
       })}
     </section>
   );
+}
+
+/** The filled part of one meter, drawn for its variant; the track around it carries the figures for screen readers. */
+function MeterMark({ variant, share, pct, state }: { variant: ProgressVariant; share: number; pct: number; state: string }) {
+  if (variant === 'linear') { return <LinearProgress variant="determinate" value={pct} aria-hidden="true" className={'bx-meter-mui' + state} />; }
+  if (variant === 'ring') {
+    return <span className={'bx-meter-ring' + state} aria-hidden="true"><CircularProgress variant="determinate" value={pct} size={44} thickness={5} /><span className="bx-meter-pct">{pct}%</span></span>;
+  }
+  if (variant === 'segmented') {
+    return <span className={'bx-meter-segs' + state} aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <span key={i} className={i < Math.round(share / 10) ? 'is-on' : ''} />)}</span>;
+  }
+  return <span className={`bx-meter-fill bx-w-${share}` + state} />;
 }
 
 /* ---------- group 4 ---------- */

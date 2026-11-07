@@ -1,0 +1,3886 @@
+{
+  "$comment": "Wave V3 (feedback and status) of docs/COMPONENT-VARIANTS-PLAN.md: per component its variants and motion, and per pack whether each is built. The class is bx-<kind>--<variant> on the component root; React Native reads the variant from its theme (variantStyles). Merged into variants.json.",
+  "wave": "V3",
+  "components": {
+    "stepper": {
+      "kind": "stepper",
+      "default": "standard",
+      "className": "bx-stepper--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "Numbered marks in a row with labels beside them",
+          "pattern": "Oracle Redwood train",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "material",
+          "name": "Material",
+          "purpose": "Marks joined by lines, labels under the marks",
+          "pattern": "Material 3 / MUI Stepper alternative label",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "react": "drawn: MUI Stepper leaves out the ordered list and aria-current the stepper keeps"
+        },
+        {
+          "id": "vertical",
+          "name": "Vertical",
+          "purpose": "Steps down the side, for long journeys and phones",
+          "pattern": "Carbon vertical progress indicator",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "segmented",
+          "name": "Segmented",
+          "purpose": "A bar of segments with the current step named",
+          "pattern": "Atlassian progress tracker",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": null,
+        "hover": null,
+        "press": null,
+        "change": "slide",
+        "reduced": "The current step changes at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-stepper",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        },
+        "react": {
+          "name": "Stepper",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        },
+        "angular": {
+          "name": "bx-stepper",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        },
+        "react-native": {
+          "name": "Stepper",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        }
+      }
+    },
+    "status-badge": {
+      "kind": "badges",
+      "default": "standard",
+      "className": "bx-badges--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "A tinted pill with a dot",
+          "pattern": "Carbon tag",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "filled",
+          "name": "Filled",
+          "purpose": "A solid chip for the one status that matters most on a row",
+          "pattern": "Material 3 / MUI Chip filled",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "outlined",
+          "name": "Outlined",
+          "purpose": "A bordered chip for lists with many statuses",
+          "pattern": "Material 3 / MUI Chip outlined",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "dot",
+          "name": "Dot",
+          "purpose": "A coloured dot and the word, no container: dense tables",
+          "pattern": "Apple HIG status indicator",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "pop",
+        "hover": null,
+        "press": null,
+        "change": "pop",
+        "reduced": "Shows the end state at once: no movement, no looping animation; colour and text carry the state"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-status-badge",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "dot"
+          ]
+        },
+        "react": {
+          "name": "StatusBadge",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "dot"
+          ]
+        },
+        "angular": {
+          "name": "bx-status-badge",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "dot"
+          ]
+        },
+        "react-native": {
+          "name": "StatusBadge",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "dot"
+          ]
+        }
+      }
+    },
+    "timeline": {
+      "kind": "timeline",
+      "default": "standard",
+      "className": "bx-timeline--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "Dots on a line, each event with who and when",
+          "pattern": "Oracle Redwood timeline",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "Dense one-line events for long histories",
+          "pattern": "Carbon structured list (condensed)",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "cards",
+          "name": "Cards",
+          "purpose": "Each event on its own card, for few rich events",
+          "pattern": "Fluent 2 card list",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "horizontal",
+          "name": "Horizontal",
+          "purpose": "Events left to right, like tracking an order",
+          "pattern": "Apple order tracking",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "settle",
+        "hover": null,
+        "press": null,
+        "change": "fade",
+        "reduced": "Shows the end state at once: no movement, no looping animation; colour and text carry the state"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-timeline",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "react": {
+          "name": "Timeline",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "angular": {
+          "name": "bx-timeline",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "react-native": {
+          "name": "Timeline",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        }
+      }
+    },
+    "spinner": {
+      "kind": "spinner",
+      "default": "standard",
+      "className": "bx-spinner--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Ring",
+          "purpose": "A turning ring",
+          "pattern": "Oracle Redwood progress circle",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "material",
+          "name": "Material",
+          "purpose": "An arc that grows and shrinks as it turns",
+          "pattern": "Material 3 circular indeterminate / MUI CircularProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "dots",
+          "name": "Dots",
+          "purpose": "Three dots that pulse in turn: waiting on a person or a reply",
+          "pattern": "Apple HIG typing indicator",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "orbs",
+          "name": "Thinking orb",
+          "purpose": "An AI assistant at work: dotted orb in one of nine states (working, searching, solving, listening, connecting, weaving, composing, breathing, shaping)",
+          "pattern": "thinking-orbs by Jakub Antalik",
+          "source": "thinking-orbs 0.3.1 (github.com/Jakubantalik/thinking-orbs)",
+          "licence": "MIT"
+        }
+      ],
+      "motion": {
+        "enter": "fade",
+        "hover": null,
+        "press": null,
+        "change": null,
+        "loading": "spin",
+        "reduced": "Shows one still frame and the label; nothing turns"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-spinner",
+          "variants": [
+            "standard",
+            "material",
+            "dots",
+            "orbs"
+          ]
+        },
+        "react": {
+          "name": "Spinner",
+          "variants": [
+            "standard",
+            "material",
+            "dots",
+            "orbs"
+          ]
+        },
+        "angular": {
+          "name": "bx-spinner",
+          "variants": [
+            "standard",
+            "material",
+            "dots",
+            "orbs"
+          ]
+        },
+        "react-native": {
+          "name": "ActivityIndicator",
+          "variants": [
+            "standard",
+            "material",
+            "dots",
+            "orbs"
+          ]
+        }
+      }
+    },
+    "skeleton": {
+      "kind": "skeleton",
+      "default": "standard",
+      "className": "bx-skeleton--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Shimmer",
+          "purpose": "Grey lines with a light sweeping across",
+          "pattern": "Carbon skeleton",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "pulse",
+          "name": "Pulse",
+          "purpose": "Grey lines that fade in and out together",
+          "pattern": "Material 3 / MUI Skeleton pulse",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT",
+          "motion": {
+            "loading": "pulse"
+          }
+        },
+        {
+          "id": "soft",
+          "name": "Soft",
+          "purpose": "Rounded, low-contrast placeholders that keep the shape of the content",
+          "pattern": "Apple HIG redacted placeholder",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "motion": {
+            "loading": "fade"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "fade",
+        "hover": null,
+        "press": null,
+        "change": "fade",
+        "loading": "shimmer",
+        "reduced": "Still grey shapes, no shimmer or pulse"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-skeleton",
+          "variants": [
+            "standard",
+            "pulse",
+            "soft"
+          ]
+        },
+        "react": {
+          "name": "Skeleton",
+          "variants": [
+            "standard",
+            "pulse",
+            "soft"
+          ]
+        },
+        "angular": {
+          "name": "bx-skeleton",
+          "variants": [
+            "standard",
+            "pulse",
+            "soft"
+          ]
+        },
+        "react-native": {
+          "name": "Skeleton",
+          "variants": [
+            "standard",
+            "pulse",
+            "soft"
+          ]
+        }
+      }
+    },
+    "empty-state": {
+      "kind": "empty",
+      "default": "standard",
+      "className": "bx-empty--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "Icon, heading, a line and an action, centred",
+          "pattern": "Oracle Redwood empty state",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "illustrated",
+          "name": "Illustrated",
+          "purpose": "A large tinted icon disc for whole empty pages",
+          "pattern": "Fluent 2 empty state",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One row aligned left, for empty panels and lists",
+          "pattern": "Carbon empty state (small)",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "A dashed card that invites the first item",
+          "pattern": "Material 3 outlined card",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "rise",
+        "hover": null,
+        "press": "style",
+        "change": null,
+        "reduced": "Shows the end state at once: no movement, no looping animation; colour and text carry the state"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-empty-state",
+          "variants": [
+            "standard",
+            "illustrated",
+            "compact",
+            "card"
+          ]
+        },
+        "react": {
+          "name": "EmptyState",
+          "variants": [
+            "standard",
+            "illustrated",
+            "compact",
+            "card"
+          ]
+        },
+        "angular": {
+          "name": "bx-empty-state",
+          "variants": [
+            "standard",
+            "illustrated",
+            "compact",
+            "card"
+          ]
+        },
+        "react-native": {
+          "name": "EmptyState",
+          "variants": [
+            "standard",
+            "illustrated",
+            "compact",
+            "card"
+          ]
+        }
+      }
+    },
+    "tooltip": {
+      "kind": "tooltip",
+      "default": "standard",
+      "className": "bx-tooltip--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "A short note on a term",
+          "pattern": "Oracle Redwood note window",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "plain",
+          "name": "Plain",
+          "purpose": "One short line on the inverse surface",
+          "pattern": "Material 3 plain tooltip",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "react": "drawn: MUI Tooltip moves the note into a portal and changes the focus and Escape behaviour the parity test checks"
+        },
+        {
+          "id": "rich",
+          "name": "Rich",
+          "purpose": "A longer note on a raised surface with a heading line",
+          "pattern": "Material 3 rich tooltip",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "react": "drawn, as plain"
+        },
+        {
+          "id": "beak",
+          "name": "With beak",
+          "purpose": "Points at its term with a small arrow",
+          "pattern": "Fluent 2 tooltip",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "fade",
+        "hover": null,
+        "press": null,
+        "change": null,
+        "reduced": "Appears and hides at once, no fade"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-tooltip",
+          "variants": [
+            "standard",
+            "plain",
+            "rich",
+            "beak"
+          ]
+        },
+        "react": {
+          "name": "Tooltip",
+          "variants": [
+            "standard",
+            "plain",
+            "rich",
+            "beak"
+          ]
+        },
+        "angular": {
+          "name": "bx-tooltip",
+          "variants": [
+            "standard",
+            "plain",
+            "rich",
+            "beak"
+          ]
+        },
+        "react-native": {
+          "name": "Tooltip",
+          "variants": [
+            "standard",
+            "plain",
+            "rich",
+            "beak"
+          ]
+        }
+      }
+    },
+    "toast": {
+      "kind": "toast",
+      "default": "standard",
+      "className": "bx-toast--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "A card with severity icon, title and detail",
+          "pattern": "Oracle Redwood message",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "snackbar",
+          "name": "Snackbar",
+          "purpose": "A short note at the bottom on the inverse surface, one action at most",
+          "pattern": "Material 3 snackbar",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "stacked",
+          "name": "Stacked",
+          "purpose": "Several messages as one stack of cards that fans out on hover or focus",
+          "pattern": "Sonner-style stack (written from scratch, sonner is inspiration only)",
+          "source": "own, inspired by sonner",
+          "licence": "UNLICENSED",
+          "motion": {
+            "enter": "settle",
+            "hover": "spring"
+          }
+        },
+        {
+          "id": "pill",
+          "name": "Pill",
+          "purpose": "A compact capsule for a one-line confirmation",
+          "pattern": "Apple HIG notification capsule",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "motion": {
+            "enter": "spring"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "rise",
+        "hover": null,
+        "press": "style",
+        "change": "fade",
+        "reduced": "Shows the end state at once: no movement, no looping animation; colour and text carry the state"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-toast",
+          "variants": [
+            "standard",
+            "snackbar",
+            "stacked",
+            "pill"
+          ]
+        },
+        "react": {
+          "name": "Toast",
+          "variants": [
+            "standard",
+            "snackbar",
+            "stacked",
+            "pill"
+          ]
+        },
+        "angular": {
+          "name": "bx-toast",
+          "variants": [
+            "standard",
+            "snackbar",
+            "stacked",
+            "pill"
+          ]
+        },
+        "react-native": {
+          "name": "Toast",
+          "variants": [
+            "standard",
+            "snackbar",
+            "stacked",
+            "pill"
+          ]
+        }
+      }
+    },
+    "alert-banner": {
+      "kind": "alert",
+      "default": "standard",
+      "className": "bx-alert--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "A tinted message with its icon, in the flow of the page",
+          "pattern": "Carbon inline notification",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "filled",
+          "name": "Filled",
+          "purpose": "A strong message that must be seen first: solid severity colour, white text",
+          "pattern": "Material 3 / MUI Alert filled",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "outlined",
+          "name": "Outlined",
+          "purpose": "A quiet message on busy screens: severity border on the page surface",
+          "pattern": "Material 3 / MUI Alert outlined",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "banner",
+          "name": "Banner",
+          "purpose": "A message for the whole page or app: full width, square, accent edge",
+          "pattern": "Fluent 2 MessageBar",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "motion": {
+            "enter": "slide-down"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "rise",
+        "hover": null,
+        "press": "style",
+        "change": "fade",
+        "reduced": "Shows the end state at once: no movement, no looping animation; colour and text carry the state"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-alert-banner",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        },
+        "react": {
+          "name": "Alert",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        },
+        "angular": {
+          "name": "bx-alert-banner",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        },
+        "react-native": {
+          "name": "Alert",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        }
+      }
+    },
+    "error-message": {
+      "kind": "alert",
+      "default": "standard",
+      "className": "bx-alert--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "A tinted message with its icon, in the flow of the page",
+          "pattern": "Carbon inline notification",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "filled",
+          "name": "Filled",
+          "purpose": "A strong message that must be seen first: solid severity colour, white text",
+          "pattern": "Material 3 / MUI Alert filled",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "outlined",
+          "name": "Outlined",
+          "purpose": "A quiet message on busy screens: severity border on the page surface",
+          "pattern": "Material 3 / MUI Alert outlined",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "banner",
+          "name": "Banner",
+          "purpose": "A message for the whole page or app: full width, square, accent edge",
+          "pattern": "Fluent 2 MessageBar",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "motion": {
+            "enter": "slide-down"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "rise",
+        "hover": null,
+        "press": "style",
+        "change": "fade",
+        "reduced": "Shows the end state at once: no movement, no looping animation; colour and text carry the state"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-error-message",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        },
+        "react": {
+          "name": "ErrorMessage",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        },
+        "angular": {
+          "name": "bx-error-message",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        },
+        "react-native": {
+          "name": "ErrorMessage",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        }
+      }
+    },
+    "success-message": {
+      "kind": "alert",
+      "default": "standard",
+      "className": "bx-alert--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "A tinted message with its icon, in the flow of the page",
+          "pattern": "Carbon inline notification",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "filled",
+          "name": "Filled",
+          "purpose": "A strong message that must be seen first: solid severity colour, white text",
+          "pattern": "Material 3 / MUI Alert filled",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "outlined",
+          "name": "Outlined",
+          "purpose": "A quiet message on busy screens: severity border on the page surface",
+          "pattern": "Material 3 / MUI Alert outlined",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "banner",
+          "name": "Banner",
+          "purpose": "A message for the whole page or app: full width, square, accent edge",
+          "pattern": "Fluent 2 MessageBar",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "motion": {
+            "enter": "slide-down"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "rise",
+        "hover": null,
+        "press": "style",
+        "change": "fade",
+        "reduced": "Shows the end state at once: no movement, no looping animation; colour and text carry the state"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-success-message",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        },
+        "react": {
+          "name": "SuccessMessage",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        },
+        "angular": {
+          "name": "bx-success-message",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        },
+        "react-native": {
+          "name": "SuccessMessage",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        }
+      }
+    },
+    "payment-status": {
+      "kind": "stepper",
+      "default": "standard",
+      "className": "bx-stepper--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "Numbered marks in a row with labels beside them",
+          "pattern": "Oracle Redwood train",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "material",
+          "name": "Material",
+          "purpose": "Marks joined by lines, labels under the marks",
+          "pattern": "Material 3 / MUI Stepper alternative label",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "react": "drawn: MUI Stepper leaves out the ordered list and aria-current the stepper keeps"
+        },
+        {
+          "id": "vertical",
+          "name": "Vertical",
+          "purpose": "Steps down the side, for long journeys and phones",
+          "pattern": "Carbon vertical progress indicator",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "segmented",
+          "name": "Segmented",
+          "purpose": "A bar of segments with the current step named",
+          "pattern": "Atlassian progress tracker",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": null,
+        "hover": null,
+        "press": null,
+        "change": "slide",
+        "reduced": "The current step changes at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-payment-status",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        },
+        "react": {
+          "name": "PaymentStatus",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        },
+        "angular": {
+          "name": "bx-payment-status",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        },
+        "react-native": {
+          "name": "PaymentStatus",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        }
+      }
+    },
+    "disbursement": {
+      "kind": "timeline",
+      "default": "standard",
+      "className": "bx-timeline--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "Dots on a line, each event with who and when",
+          "pattern": "Oracle Redwood timeline",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "Dense one-line events for long histories",
+          "pattern": "Carbon structured list (condensed)",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "cards",
+          "name": "Cards",
+          "purpose": "Each event on its own card, for few rich events",
+          "pattern": "Fluent 2 card list",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "horizontal",
+          "name": "Horizontal",
+          "purpose": "Events left to right, like tracking an order",
+          "pattern": "Apple order tracking",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "settle",
+        "hover": null,
+        "press": null,
+        "change": "fade",
+        "reduced": "Shows the end state at once: no movement, no looping animation; colour and text carry the state"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-disbursement",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "react": {
+          "name": "DisbursementTimeline",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "angular": {
+          "name": "bx-disbursement",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "react-native": {
+          "name": "DisbursementTimeline",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        }
+      }
+    },
+    "session-timeout": {
+      "kind": "timeout",
+      "default": "standard",
+      "className": "bx-timeout--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Dialog",
+          "purpose": "A centred dialog with the countdown in words",
+          "pattern": "Oracle Redwood dialog",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "countdown",
+          "name": "Countdown ring",
+          "purpose": "The seconds left inside a ring that empties",
+          "pattern": "Apple HIG timer",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "sheet",
+          "name": "Sheet",
+          "purpose": "The same dialog rising from the bottom, for phones",
+          "pattern": "Material 3 bottom sheet",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "spring",
+        "hover": null,
+        "press": "style",
+        "change": "roll",
+        "reduced": "The dialog appears at once and the count changes without motion"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-session-timeout",
+          "variants": [
+            "standard",
+            "countdown",
+            "sheet"
+          ]
+        },
+        "react": {
+          "name": "SessionExpiryWarning",
+          "variants": [
+            "standard",
+            "countdown",
+            "sheet"
+          ]
+        },
+        "angular": {
+          "name": "bx-session-timeout",
+          "variants": [
+            "standard",
+            "countdown",
+            "sheet"
+          ]
+        },
+        "react-native": {
+          "name": "SessionExpiryWarning",
+          "variants": [
+            "standard",
+            "countdown",
+            "sheet"
+          ]
+        }
+      }
+    },
+    "kyc-steps": {
+      "kind": "stepper",
+      "default": "standard",
+      "className": "bx-stepper--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "Numbered marks in a row with labels beside them",
+          "pattern": "Oracle Redwood train",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "material",
+          "name": "Material",
+          "purpose": "Marks joined by lines, labels under the marks",
+          "pattern": "Material 3 / MUI Stepper alternative label",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "react": "drawn: MUI Stepper leaves out the ordered list and aria-current the stepper keeps"
+        },
+        {
+          "id": "vertical",
+          "name": "Vertical",
+          "purpose": "Steps down the side, for long journeys and phones",
+          "pattern": "Carbon vertical progress indicator",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "segmented",
+          "name": "Segmented",
+          "purpose": "A bar of segments with the current step named",
+          "pattern": "Atlassian progress tracker",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": null,
+        "hover": null,
+        "press": null,
+        "change": "slide",
+        "reduced": "The current step changes at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-kyc-steps",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        },
+        "react": {
+          "name": "KycSteps",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        },
+        "angular": {
+          "name": "bx-kyc-steps",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        },
+        "react-native": {
+          "name": "KycSteps",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        }
+      }
+    },
+    "fraud-alert": {
+      "kind": "alert",
+      "default": "standard",
+      "className": "bx-alert--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "A tinted message with its icon, in the flow of the page",
+          "pattern": "Carbon inline notification",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "filled",
+          "name": "Filled",
+          "purpose": "A strong message that must be seen first: solid severity colour, white text",
+          "pattern": "Material 3 / MUI Alert filled",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "outlined",
+          "name": "Outlined",
+          "purpose": "A quiet message on busy screens: severity border on the page surface",
+          "pattern": "Material 3 / MUI Alert outlined",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "banner",
+          "name": "Banner",
+          "purpose": "A message for the whole page or app: full width, square, accent edge",
+          "pattern": "Fluent 2 MessageBar",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "motion": {
+            "enter": "slide-down"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "rise",
+        "hover": null,
+        "press": "style",
+        "change": "fade",
+        "reduced": "Shows the end state at once: no movement, no looping animation; colour and text carry the state"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-fraud-alert",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        },
+        "react": {
+          "name": "FraudAlert",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        },
+        "angular": {
+          "name": "bx-fraud-alert",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        },
+        "react-native": {
+          "name": "FraudAlert",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        }
+      }
+    },
+    "spending-chart": {
+      "kind": "chart",
+      "default": "standard",
+      "className": "bx-chart--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Bars",
+          "purpose": "A bar per figure with label and value",
+          "pattern": "Oracle Redwood bar chart",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "rounded",
+          "name": "Rounded",
+          "purpose": "Thick rounded bars with soft tracks",
+          "pattern": "Apple Health charts",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "lollipop",
+          "name": "Lollipop",
+          "purpose": "A thin stem and a dot per figure: light on the page",
+          "pattern": "Carbon lollipop chart",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "meter",
+          "name": "Meter",
+          "purpose": "One bar split into the figures, with a legend",
+          "pattern": "Carbon meter chart",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "grow",
+        "hover": "tint",
+        "press": null,
+        "change": "grow",
+        "reduced": "Bars sit at their value at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-spending-chart",
+          "variants": [
+            "standard",
+            "rounded",
+            "lollipop",
+            "meter"
+          ]
+        },
+        "react": {
+          "name": "BarChart",
+          "variants": [
+            "standard",
+            "rounded",
+            "lollipop",
+            "meter"
+          ]
+        },
+        "angular": {
+          "name": "bx-spending-chart",
+          "variants": [
+            "standard",
+            "rounded",
+            "lollipop",
+            "meter"
+          ]
+        },
+        "react-native": {
+          "name": "BarChart",
+          "variants": [
+            "standard",
+            "rounded",
+            "lollipop",
+            "meter"
+          ]
+        }
+      }
+    },
+    "budget-progress": {
+      "kind": "progress",
+      "default": "standard",
+      "className": "bx-progress--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Bar",
+          "purpose": "A rounded bar per limit, budget or goal",
+          "pattern": "Oracle Redwood progress bar",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "linear",
+          "name": "Linear",
+          "purpose": "A thin track with a gap and a stop mark at the end",
+          "pattern": "Material 3 linear determinate / MUI LinearProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "ring",
+          "name": "Ring",
+          "purpose": "A ring per figure with the share in its centre",
+          "pattern": "Material 3 circular determinate / MUI CircularProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "segmented",
+          "name": "Segmented",
+          "purpose": "Ten segments that fill: easy to read at a glance",
+          "pattern": "Carbon / Atlassian segmented meter",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "grow",
+        "hover": null,
+        "press": null,
+        "change": "grow",
+        "reduced": "Bars and rings sit at their value at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-budget-progress",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react": {
+          "name": "ProgressBar",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "angular": {
+          "name": "bx-budget-progress",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react-native": {
+          "name": "ProgressBar",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        }
+      }
+    },
+    "savings-goal": {
+      "kind": "progress",
+      "default": "standard",
+      "className": "bx-progress--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Bar",
+          "purpose": "A rounded bar per limit, budget or goal",
+          "pattern": "Oracle Redwood progress bar",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "linear",
+          "name": "Linear",
+          "purpose": "A thin track with a gap and a stop mark at the end",
+          "pattern": "Material 3 linear determinate / MUI LinearProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "ring",
+          "name": "Ring",
+          "purpose": "A ring per figure with the share in its centre",
+          "pattern": "Material 3 circular determinate / MUI CircularProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "segmented",
+          "name": "Segmented",
+          "purpose": "Ten segments that fill: easy to read at a glance",
+          "pattern": "Carbon / Atlassian segmented meter",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "grow",
+        "hover": null,
+        "press": null,
+        "change": "grow",
+        "reduced": "Bars and rings sit at their value at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-savings-goal",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react": {
+          "name": "SavingsGoal",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "angular": {
+          "name": "bx-savings-goal",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react-native": {
+          "name": "SavingsGoal",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        }
+      }
+    },
+    "approval-journey": {
+      "kind": "timeline",
+      "default": "standard",
+      "className": "bx-timeline--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "Dots on a line, each event with who and when",
+          "pattern": "Oracle Redwood timeline",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "Dense one-line events for long histories",
+          "pattern": "Carbon structured list (condensed)",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "cards",
+          "name": "Cards",
+          "purpose": "Each event on its own card, for few rich events",
+          "pattern": "Fluent 2 card list",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "horizontal",
+          "name": "Horizontal",
+          "purpose": "Events left to right, like tracking an order",
+          "pattern": "Apple order tracking",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "settle",
+        "hover": null,
+        "press": null,
+        "change": "fade",
+        "reduced": "Shows the end state at once: no movement, no looping animation; colour and text carry the state"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-approval-journey",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "react": {
+          "name": "ApprovalJourney",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "angular": {
+          "name": "bx-approval-journey",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "react-native": {
+          "name": "ApprovalJourney",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        }
+      }
+    },
+    "modification-requested": {
+      "kind": "alert",
+      "default": "standard",
+      "className": "bx-alert--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "A tinted message with its icon, in the flow of the page",
+          "pattern": "Carbon inline notification",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "filled",
+          "name": "Filled",
+          "purpose": "A strong message that must be seen first: solid severity colour, white text",
+          "pattern": "Material 3 / MUI Alert filled",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "outlined",
+          "name": "Outlined",
+          "purpose": "A quiet message on busy screens: severity border on the page surface",
+          "pattern": "Material 3 / MUI Alert outlined",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "banner",
+          "name": "Banner",
+          "purpose": "A message for the whole page or app: full width, square, accent edge",
+          "pattern": "Fluent 2 MessageBar",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "motion": {
+            "enter": "slide-down"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "rise",
+        "hover": null,
+        "press": "style",
+        "change": "fade",
+        "reduced": "Shows the end state at once: no movement, no looping animation; colour and text carry the state"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-modification-requested",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        },
+        "react": {
+          "name": "ModificationNotice",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        },
+        "angular": {
+          "name": "bx-modification-requested",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        },
+        "react-native": {
+          "name": "ModificationNotice",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        }
+      }
+    },
+    "intercompany-limits": {
+      "kind": "progress",
+      "default": "standard",
+      "className": "bx-progress--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Bar",
+          "purpose": "A rounded bar per limit, budget or goal",
+          "pattern": "Oracle Redwood progress bar",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "linear",
+          "name": "Linear",
+          "purpose": "A thin track with a gap and a stop mark at the end",
+          "pattern": "Material 3 linear determinate / MUI LinearProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "ring",
+          "name": "Ring",
+          "purpose": "A ring per figure with the share in its centre",
+          "pattern": "Material 3 circular determinate / MUI CircularProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "segmented",
+          "name": "Segmented",
+          "purpose": "Ten segments that fill: easy to read at a glance",
+          "pattern": "Carbon / Atlassian segmented meter",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "grow",
+        "hover": null,
+        "press": null,
+        "change": "grow",
+        "reduced": "Bars and rings sit at their value at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-intercompany-limits",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react": {
+          "name": "LendLimits",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "angular": {
+          "name": "bx-intercompany-limits",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react-native": null
+      }
+    },
+    "sweep-monitor": {
+      "kind": "timeline",
+      "default": "standard",
+      "className": "bx-timeline--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "Dots on a line, each event with who and when",
+          "pattern": "Oracle Redwood timeline",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "Dense one-line events for long histories",
+          "pattern": "Carbon structured list (condensed)",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "cards",
+          "name": "Cards",
+          "purpose": "Each event on its own card, for few rich events",
+          "pattern": "Fluent 2 card list",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "horizontal",
+          "name": "Horizontal",
+          "purpose": "Events left to right, like tracking an order",
+          "pattern": "Apple order tracking",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "settle",
+        "hover": null,
+        "press": null,
+        "change": "fade",
+        "reduced": "Shows the end state at once: no movement, no looping animation; colour and text carry the state"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-sweep-monitor",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "react": {
+          "name": "SweepMonitor",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "angular": {
+          "name": "bx-sweep-monitor",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "react-native": null
+      }
+    },
+    "transaction-limits": {
+      "kind": "progress",
+      "default": "standard",
+      "className": "bx-progress--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Bar",
+          "purpose": "A rounded bar per limit, budget or goal",
+          "pattern": "Oracle Redwood progress bar",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "linear",
+          "name": "Linear",
+          "purpose": "A thin track with a gap and a stop mark at the end",
+          "pattern": "Material 3 linear determinate / MUI LinearProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "ring",
+          "name": "Ring",
+          "purpose": "A ring per figure with the share in its centre",
+          "pattern": "Material 3 circular determinate / MUI CircularProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "segmented",
+          "name": "Segmented",
+          "purpose": "Ten segments that fill: easy to read at a glance",
+          "pattern": "Carbon / Atlassian segmented meter",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "grow",
+        "hover": null,
+        "press": null,
+        "change": "grow",
+        "reduced": "Bars and rings sit at their value at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-transaction-limits",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react": {
+          "name": "TransactionLimits",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "angular": {
+          "name": "bx-transaction-limits",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react-native": {
+          "name": "TransactionLimits",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        }
+      }
+    },
+    "session-summary": {
+      "kind": "timeline",
+      "default": "standard",
+      "className": "bx-timeline--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "Dots on a line, each event with who and when",
+          "pattern": "Oracle Redwood timeline",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "Dense one-line events for long histories",
+          "pattern": "Carbon structured list (condensed)",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "cards",
+          "name": "Cards",
+          "purpose": "Each event on its own card, for few rich events",
+          "pattern": "Fluent 2 card list",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "horizontal",
+          "name": "Horizontal",
+          "purpose": "Events left to right, like tracking an order",
+          "pattern": "Apple order tracking",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "settle",
+        "hover": null,
+        "press": null,
+        "change": "fade",
+        "reduced": "Shows the end state at once: no movement, no looping animation; colour and text carry the state"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-session-summary",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "react": {
+          "name": "SessionSummary",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "angular": {
+          "name": "bx-session-summary",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "react-native": {
+          "name": "SessionSummary",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        }
+      }
+    },
+    "track-requests": {
+      "kind": "timeline",
+      "default": "standard",
+      "className": "bx-timeline--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "Dots on a line, each event with who and when",
+          "pattern": "Oracle Redwood timeline",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "Dense one-line events for long histories",
+          "pattern": "Carbon structured list (condensed)",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "cards",
+          "name": "Cards",
+          "purpose": "Each event on its own card, for few rich events",
+          "pattern": "Fluent 2 card list",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "horizontal",
+          "name": "Horizontal",
+          "purpose": "Events left to right, like tracking an order",
+          "pattern": "Apple order tracking",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "settle",
+        "hover": null,
+        "press": null,
+        "change": "fade",
+        "reduced": "Shows the end state at once: no movement, no looping animation; colour and text carry the state"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-track-requests",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "react": {
+          "name": "TrackRequests",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "angular": {
+          "name": "bx-track-requests",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "react-native": {
+          "name": "TrackRequests",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        }
+      }
+    },
+    "self-register": {
+      "kind": "stepper",
+      "default": "standard",
+      "className": "bx-stepper--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "Numbered marks in a row with labels beside them",
+          "pattern": "Oracle Redwood train",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "material",
+          "name": "Material",
+          "purpose": "Marks joined by lines, labels under the marks",
+          "pattern": "Material 3 / MUI Stepper alternative label",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "react": "drawn: MUI Stepper leaves out the ordered list and aria-current the stepper keeps"
+        },
+        {
+          "id": "vertical",
+          "name": "Vertical",
+          "purpose": "Steps down the side, for long journeys and phones",
+          "pattern": "Carbon vertical progress indicator",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "segmented",
+          "name": "Segmented",
+          "purpose": "A bar of segments with the current step named",
+          "pattern": "Atlassian progress tracker",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": null,
+        "hover": null,
+        "press": null,
+        "change": "slide",
+        "reduced": "The current step changes at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-self-register",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        },
+        "react": {
+          "name": "SelfRegister",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        },
+        "angular": {
+          "name": "bx-self-register",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        },
+        "react-native": {
+          "name": "SelfRegister",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        }
+      }
+    },
+    "fatca-crs": {
+      "kind": "stepper",
+      "default": "standard",
+      "className": "bx-stepper--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "Numbered marks in a row with labels beside them",
+          "pattern": "Oracle Redwood train",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "material",
+          "name": "Material",
+          "purpose": "Marks joined by lines, labels under the marks",
+          "pattern": "Material 3 / MUI Stepper alternative label",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "react": "drawn: MUI Stepper leaves out the ordered list and aria-current the stepper keeps"
+        },
+        {
+          "id": "vertical",
+          "name": "Vertical",
+          "purpose": "Steps down the side, for long journeys and phones",
+          "pattern": "Carbon vertical progress indicator",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "segmented",
+          "name": "Segmented",
+          "purpose": "A bar of segments with the current step named",
+          "pattern": "Atlassian progress tracker",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": null,
+        "hover": null,
+        "press": null,
+        "change": "slide",
+        "reduced": "The current step changes at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-fatca-crs",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        },
+        "react": {
+          "name": "TaxSelfCertification",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        },
+        "angular": {
+          "name": "bx-fatca-crs",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        },
+        "react-native": {
+          "name": "TaxSelfCertification",
+          "variants": [
+            "standard",
+            "material",
+            "vertical",
+            "segmented"
+          ]
+        }
+      }
+    },
+    "application-tracker": {
+      "kind": "timeline",
+      "default": "standard",
+      "className": "bx-timeline--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "Dots on a line, each event with who and when",
+          "pattern": "Oracle Redwood timeline",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "Dense one-line events for long histories",
+          "pattern": "Carbon structured list (condensed)",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "cards",
+          "name": "Cards",
+          "purpose": "Each event on its own card, for few rich events",
+          "pattern": "Fluent 2 card list",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "horizontal",
+          "name": "Horizontal",
+          "purpose": "Events left to right, like tracking an order",
+          "pattern": "Apple order tracking",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "settle",
+        "hover": null,
+        "press": null,
+        "change": "fade",
+        "reduced": "Shows the end state at once: no movement, no looping animation; colour and text carry the state"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-application-tracker",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "react": {
+          "name": "ApplicationTracker",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "angular": {
+          "name": "bx-application-tracker",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        },
+        "react-native": {
+          "name": "ApplicationTracker",
+          "variants": [
+            "standard",
+            "compact",
+            "cards",
+            "horizontal"
+          ]
+        }
+      }
+    },
+    "feedback": {
+      "kind": "rating",
+      "default": "standard",
+      "className": "bx-rating--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Stars",
+          "purpose": "One to five stars",
+          "pattern": "Material 3 / MUI Rating look",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "react": "drawn: MUI Rating names its radios differently from the parity test"
+        },
+        {
+          "id": "emoji",
+          "name": "Faces",
+          "purpose": "Five faces from very poor to very good",
+          "pattern": "Fluent 2 emoji scale",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "numbers",
+          "name": "Numbers",
+          "purpose": "Five numbered segments, like a survey scale",
+          "pattern": "Carbon / Material segmented buttons",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "pop",
+        "press": "pop",
+        "change": "pop",
+        "reduced": "The chosen mark changes colour at once, no pop"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-feedback",
+          "variants": [
+            "standard",
+            "emoji",
+            "numbers"
+          ]
+        },
+        "react": {
+          "name": "FeedbackRating",
+          "variants": [
+            "standard",
+            "emoji",
+            "numbers"
+          ]
+        },
+        "angular": {
+          "name": "bx-feedback",
+          "variants": [
+            "standard",
+            "emoji",
+            "numbers"
+          ]
+        },
+        "react-native": {
+          "name": "FeedbackRating",
+          "variants": [
+            "standard",
+            "emoji",
+            "numbers"
+          ]
+        }
+      }
+    },
+    "spend-analysis": {
+      "kind": "chart",
+      "default": "standard",
+      "className": "bx-chart--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Bars",
+          "purpose": "A bar per figure with label and value",
+          "pattern": "Oracle Redwood bar chart",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "rounded",
+          "name": "Rounded",
+          "purpose": "Thick rounded bars with soft tracks",
+          "pattern": "Apple Health charts",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "lollipop",
+          "name": "Lollipop",
+          "purpose": "A thin stem and a dot per figure: light on the page",
+          "pattern": "Carbon lollipop chart",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "meter",
+          "name": "Meter",
+          "purpose": "One bar split into the figures, with a legend",
+          "pattern": "Carbon meter chart",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "grow",
+        "hover": "tint",
+        "press": null,
+        "change": "grow",
+        "reduced": "Bars sit at their value at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-spend-analysis",
+          "variants": [
+            "standard",
+            "rounded",
+            "lollipop",
+            "meter"
+          ]
+        },
+        "react": {
+          "name": "SpendAnalysisWidget",
+          "variants": [
+            "standard",
+            "rounded",
+            "lollipop",
+            "meter"
+          ]
+        },
+        "angular": {
+          "name": "bx-spend-analysis",
+          "variants": [
+            "standard",
+            "rounded",
+            "lollipop",
+            "meter"
+          ]
+        },
+        "react-native": {
+          "name": "SpendAnalysisWidget",
+          "variants": [
+            "standard",
+            "rounded",
+            "lollipop",
+            "meter"
+          ]
+        }
+      }
+    },
+    "goals": {
+      "kind": "progress",
+      "default": "standard",
+      "className": "bx-progress--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Bar",
+          "purpose": "A rounded bar per limit, budget or goal",
+          "pattern": "Oracle Redwood progress bar",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "linear",
+          "name": "Linear",
+          "purpose": "A thin track with a gap and a stop mark at the end",
+          "pattern": "Material 3 linear determinate / MUI LinearProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "ring",
+          "name": "Ring",
+          "purpose": "A ring per figure with the share in its centre",
+          "pattern": "Material 3 circular determinate / MUI CircularProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "segmented",
+          "name": "Segmented",
+          "purpose": "Ten segments that fill: easy to read at a glance",
+          "pattern": "Carbon / Atlassian segmented meter",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "grow",
+        "hover": null,
+        "press": null,
+        "change": "grow",
+        "reduced": "Bars and rings sit at their value at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-goals",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react": {
+          "name": "GoalsWidget",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "angular": {
+          "name": "bx-goals",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react-native": {
+          "name": "GoalsWidget",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        }
+      }
+    },
+    "budgets": {
+      "kind": "progress",
+      "default": "standard",
+      "className": "bx-progress--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Bar",
+          "purpose": "A rounded bar per limit, budget or goal",
+          "pattern": "Oracle Redwood progress bar",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "linear",
+          "name": "Linear",
+          "purpose": "A thin track with a gap and a stop mark at the end",
+          "pattern": "Material 3 linear determinate / MUI LinearProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "ring",
+          "name": "Ring",
+          "purpose": "A ring per figure with the share in its centre",
+          "pattern": "Material 3 circular determinate / MUI CircularProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "segmented",
+          "name": "Segmented",
+          "purpose": "Ten segments that fill: easy to read at a glance",
+          "pattern": "Carbon / Atlassian segmented meter",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "grow",
+        "hover": null,
+        "press": null,
+        "change": "grow",
+        "reduced": "Bars and rings sit at their value at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-budgets",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react": {
+          "name": "BudgetsWidget",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "angular": {
+          "name": "bx-budgets",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react-native": {
+          "name": "BudgetsWidget",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        }
+      }
+    },
+    "credit-score": {
+      "kind": "progress",
+      "default": "standard",
+      "className": "bx-progress--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Bar",
+          "purpose": "A rounded bar per limit, budget or goal",
+          "pattern": "Oracle Redwood progress bar",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "linear",
+          "name": "Linear",
+          "purpose": "A thin track with a gap and a stop mark at the end",
+          "pattern": "Material 3 linear determinate / MUI LinearProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "ring",
+          "name": "Ring",
+          "purpose": "A ring per figure with the share in its centre",
+          "pattern": "Material 3 circular determinate / MUI CircularProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "segmented",
+          "name": "Segmented",
+          "purpose": "Ten segments that fill: easy to read at a glance",
+          "pattern": "Carbon / Atlassian segmented meter",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "grow",
+        "hover": null,
+        "press": null,
+        "change": "grow",
+        "reduced": "Bars and rings sit at their value at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-credit-score",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react": {
+          "name": "CreditScoreWidget",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "angular": {
+          "name": "bx-credit-score",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react-native": {
+          "name": "CreditScoreWidget",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        }
+      }
+    },
+    "delinquency-notice": {
+      "kind": "alert",
+      "default": "standard",
+      "className": "bx-alert--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "A tinted message with its icon, in the flow of the page",
+          "pattern": "Carbon inline notification",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "filled",
+          "name": "Filled",
+          "purpose": "A strong message that must be seen first: solid severity colour, white text",
+          "pattern": "Material 3 / MUI Alert filled",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "outlined",
+          "name": "Outlined",
+          "purpose": "A quiet message on busy screens: severity border on the page surface",
+          "pattern": "Material 3 / MUI Alert outlined",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "banner",
+          "name": "Banner",
+          "purpose": "A message for the whole page or app: full width, square, accent edge",
+          "pattern": "Fluent 2 MessageBar",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "motion": {
+            "enter": "slide-down"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "rise",
+        "hover": null,
+        "press": "style",
+        "change": "fade",
+        "reduced": "Shows the end state at once: no movement, no looping animation; colour and text carry the state"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-delinquency-notice",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        },
+        "react": {
+          "name": "DelinquencyNotice",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        },
+        "angular": {
+          "name": "bx-delinquency-notice",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        },
+        "react-native": {
+          "name": "DelinquencyNotice",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "banner"
+          ]
+        }
+      }
+    },
+    "position-by-currency": {
+      "kind": "chart",
+      "default": "standard",
+      "className": "bx-chart--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Bars",
+          "purpose": "A bar per figure with label and value",
+          "pattern": "Oracle Redwood bar chart",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "rounded",
+          "name": "Rounded",
+          "purpose": "Thick rounded bars with soft tracks",
+          "pattern": "Apple Health charts",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "lollipop",
+          "name": "Lollipop",
+          "purpose": "A thin stem and a dot per figure: light on the page",
+          "pattern": "Carbon lollipop chart",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "meter",
+          "name": "Meter",
+          "purpose": "One bar split into the figures, with a legend",
+          "pattern": "Carbon meter chart",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "grow",
+        "hover": "tint",
+        "press": null,
+        "change": "grow",
+        "reduced": "Bars sit at their value at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-position-by-currency",
+          "variants": [
+            "standard",
+            "rounded",
+            "lollipop",
+            "meter"
+          ]
+        },
+        "react": {
+          "name": "CurrencyPositionWidget",
+          "variants": [
+            "standard",
+            "rounded",
+            "lollipop",
+            "meter"
+          ]
+        },
+        "angular": {
+          "name": "bx-position-by-currency",
+          "variants": [
+            "standard",
+            "rounded",
+            "lollipop",
+            "meter"
+          ]
+        },
+        "react-native": null
+      }
+    },
+    "credit-line-usage": {
+      "kind": "progress",
+      "default": "standard",
+      "className": "bx-progress--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Bar",
+          "purpose": "A rounded bar per limit, budget or goal",
+          "pattern": "Oracle Redwood progress bar",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "linear",
+          "name": "Linear",
+          "purpose": "A thin track with a gap and a stop mark at the end",
+          "pattern": "Material 3 linear determinate / MUI LinearProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "ring",
+          "name": "Ring",
+          "purpose": "A ring per figure with the share in its centre",
+          "pattern": "Material 3 circular determinate / MUI CircularProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "segmented",
+          "name": "Segmented",
+          "purpose": "Ten segments that fill: easy to read at a glance",
+          "pattern": "Carbon / Atlassian segmented meter",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "grow",
+        "hover": null,
+        "press": null,
+        "change": "grow",
+        "reduced": "Bars and rings sit at their value at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-credit-line-usage",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react": {
+          "name": "CreditLineWidget",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "angular": {
+          "name": "bx-credit-line-usage",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react-native": null
+      }
+    },
+    "corporate-limits": {
+      "kind": "progress",
+      "default": "standard",
+      "className": "bx-progress--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Bar",
+          "purpose": "A rounded bar per limit, budget or goal",
+          "pattern": "Oracle Redwood progress bar",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "linear",
+          "name": "Linear",
+          "purpose": "A thin track with a gap and a stop mark at the end",
+          "pattern": "Material 3 linear determinate / MUI LinearProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "ring",
+          "name": "Ring",
+          "purpose": "A ring per figure with the share in its centre",
+          "pattern": "Material 3 circular determinate / MUI CircularProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "segmented",
+          "name": "Segmented",
+          "purpose": "Ten segments that fill: easy to read at a glance",
+          "pattern": "Carbon / Atlassian segmented meter",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "grow",
+        "hover": null,
+        "press": null,
+        "change": "grow",
+        "reduced": "Bars and rings sit at their value at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-corporate-limits",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react": {
+          "name": "CorporateLimitsWidget",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "angular": {
+          "name": "bx-corporate-limits",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react-native": null
+      }
+    },
+    "pending-for-action": {
+      "kind": "chart",
+      "default": "standard",
+      "className": "bx-chart--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Bars",
+          "purpose": "A bar per figure with label and value",
+          "pattern": "Oracle Redwood bar chart",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "rounded",
+          "name": "Rounded",
+          "purpose": "Thick rounded bars with soft tracks",
+          "pattern": "Apple Health charts",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "lollipop",
+          "name": "Lollipop",
+          "purpose": "A thin stem and a dot per figure: light on the page",
+          "pattern": "Carbon lollipop chart",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "meter",
+          "name": "Meter",
+          "purpose": "One bar split into the figures, with a legend",
+          "pattern": "Carbon meter chart",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "grow",
+        "hover": "tint",
+        "press": null,
+        "change": "grow",
+        "reduced": "Bars sit at their value at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-pending-for-action",
+          "variants": [
+            "standard",
+            "rounded",
+            "lollipop",
+            "meter"
+          ]
+        },
+        "react": {
+          "name": "PendingActionWidget",
+          "variants": [
+            "standard",
+            "rounded",
+            "lollipop",
+            "meter"
+          ]
+        },
+        "angular": {
+          "name": "bx-pending-for-action",
+          "variants": [
+            "standard",
+            "rounded",
+            "lollipop",
+            "meter"
+          ]
+        },
+        "react-native": {
+          "name": "PendingActionWidget",
+          "variants": [
+            "standard",
+            "rounded",
+            "lollipop",
+            "meter"
+          ]
+        }
+      }
+    },
+    "my-limits": {
+      "kind": "progress",
+      "default": "standard",
+      "className": "bx-progress--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Bar",
+          "purpose": "A rounded bar per limit, budget or goal",
+          "pattern": "Oracle Redwood progress bar",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "linear",
+          "name": "Linear",
+          "purpose": "A thin track with a gap and a stop mark at the end",
+          "pattern": "Material 3 linear determinate / MUI LinearProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "ring",
+          "name": "Ring",
+          "purpose": "A ring per figure with the share in its centre",
+          "pattern": "Material 3 circular determinate / MUI CircularProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "segmented",
+          "name": "Segmented",
+          "purpose": "Ten segments that fill: easy to read at a glance",
+          "pattern": "Carbon / Atlassian segmented meter",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "grow",
+        "hover": null,
+        "press": null,
+        "change": "grow",
+        "reduced": "Bars and rings sit at their value at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-my-limits",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react": {
+          "name": "MyLimitsWidget",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "angular": {
+          "name": "bx-my-limits",
+          "variants": [
+            "standard",
+            "linear",
+            "ring",
+            "segmented"
+          ]
+        },
+        "react-native": null
+      }
+    },
+    "success-check": {
+      "kind": "status",
+      "default": "standard",
+      "className": "bx-status--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Drawn",
+          "purpose": "A ring and a tick that draw themselves",
+          "pattern": "Apple HIG completion",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "filled",
+          "name": "Filled",
+          "purpose": "A solid disc with a white tick that pops in",
+          "pattern": "Material 3 success",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "soft",
+          "name": "Soft",
+          "purpose": "A tick on a soft tinted halo",
+          "pattern": "Fluent 2 success",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "pop",
+        "hover": null,
+        "press": null,
+        "change": null,
+        "reduced": "The finished mark shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-success-check",
+          "variants": [
+            "standard",
+            "filled",
+            "soft"
+          ]
+        },
+        "react": {
+          "name": "SuccessCheck",
+          "variants": [
+            "standard",
+            "filled",
+            "soft"
+          ]
+        },
+        "angular": {
+          "name": "bx-success-check",
+          "variants": [
+            "standard",
+            "filled",
+            "soft"
+          ]
+        },
+        "react-native": {
+          "name": "SuccessCheck",
+          "variants": [
+            "standard",
+            "filled",
+            "soft"
+          ]
+        }
+      }
+    },
+    "swipe-toast": {
+      "kind": "toast",
+      "default": "standard",
+      "className": "bx-toast--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "A card with severity icon, title and detail",
+          "pattern": "Oracle Redwood message",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "snackbar",
+          "name": "Snackbar",
+          "purpose": "A short note at the bottom on the inverse surface, one action at most",
+          "pattern": "Material 3 snackbar",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "stacked",
+          "name": "Stacked",
+          "purpose": "Several messages as one stack of cards that fans out on hover or focus",
+          "pattern": "Sonner-style stack (written from scratch, sonner is inspiration only)",
+          "source": "own, inspired by sonner",
+          "licence": "UNLICENSED",
+          "motion": {
+            "enter": "settle",
+            "hover": "spring"
+          }
+        },
+        {
+          "id": "pill",
+          "name": "Pill",
+          "purpose": "A compact capsule for a one-line confirmation",
+          "pattern": "Apple HIG notification capsule",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "motion": {
+            "enter": "spring"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "rise",
+        "hover": null,
+        "press": "style",
+        "change": "fade",
+        "reduced": "Shows the end state at once: no movement, no looping animation; colour and text carry the state"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-swipe-toast",
+          "variants": [
+            "standard",
+            "snackbar",
+            "stacked",
+            "pill"
+          ]
+        },
+        "react": {
+          "name": "SwipeToast",
+          "variants": [
+            "standard",
+            "snackbar",
+            "stacked",
+            "pill"
+          ]
+        },
+        "angular": {
+          "name": "bx-swipe-toast",
+          "variants": [
+            "standard",
+            "snackbar",
+            "stacked",
+            "pill"
+          ]
+        },
+        "react-native": {
+          "name": "SwipeToast",
+          "variants": [
+            "standard",
+            "snackbar",
+            "stacked",
+            "pill"
+          ]
+        }
+      }
+    },
+    "budget-gauge": {
+      "kind": "progress",
+      "default": "standard",
+      "className": "bx-progress--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Half circle",
+          "purpose": "A half-circle gauge",
+          "pattern": "Apple Watch gauge",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "ring",
+          "name": "Ring",
+          "purpose": "A full ring with the share in the centre",
+          "pattern": "Material 3 circular determinate",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "thin",
+          "name": "Thin",
+          "purpose": "A thin arc for small widgets",
+          "pattern": "Fluent 2 gauge",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "grow",
+        "hover": null,
+        "press": null,
+        "change": "grow",
+        "reduced": "Bars and rings sit at their value at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-budget-gauge",
+          "variants": [
+            "standard",
+            "ring",
+            "thin"
+          ]
+        },
+        "react": {
+          "name": "BudgetGauge",
+          "variants": [
+            "standard",
+            "ring",
+            "thin"
+          ]
+        },
+        "angular": {
+          "name": "bx-budget-gauge",
+          "variants": [
+            "standard",
+            "ring",
+            "thin"
+          ]
+        },
+        "react-native": {
+          "name": "BudgetGauge",
+          "variants": [
+            "standard",
+            "ring",
+            "thin"
+          ]
+        }
+      }
+    },
+    "status-mark": {
+      "kind": "badges",
+      "default": "standard",
+      "className": "bx-badges--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "A tinted pill with a dot",
+          "pattern": "Carbon tag",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "filled",
+          "name": "Filled",
+          "purpose": "A solid chip for the one status that matters most on a row",
+          "pattern": "Material 3 / MUI Chip filled",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "outlined",
+          "name": "Outlined",
+          "purpose": "A bordered chip for lists with many statuses",
+          "pattern": "Material 3 / MUI Chip outlined",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "dot",
+          "name": "Dot",
+          "purpose": "A coloured dot and the word, no container: dense tables",
+          "pattern": "Apple HIG status indicator",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "pop",
+        "hover": null,
+        "press": null,
+        "change": "pop",
+        "reduced": "Shows the end state at once: no movement, no looping animation; colour and text carry the state"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-status-mark",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "dot"
+          ]
+        },
+        "react": {
+          "name": "StatusMark",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "dot"
+          ]
+        },
+        "angular": {
+          "name": "bx-status-mark",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "dot"
+          ]
+        },
+        "react-native": {
+          "name": "StatusMark",
+          "variants": [
+            "standard",
+            "filled",
+            "outlined",
+            "dot"
+          ]
+        }
+      }
+    },
+    "peek-rating": {
+      "kind": "rating",
+      "default": "standard",
+      "className": "bx-rating--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Stars",
+          "purpose": "One to five stars",
+          "pattern": "Material 3 / MUI Rating look",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "react": "drawn: MUI Rating names its radios differently from the parity test"
+        },
+        {
+          "id": "emoji",
+          "name": "Faces",
+          "purpose": "Five faces from very poor to very good",
+          "pattern": "Fluent 2 emoji scale",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "numbers",
+          "name": "Numbers",
+          "purpose": "Five numbered segments, like a survey scale",
+          "pattern": "Carbon / Material segmented buttons",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "pop",
+        "press": "pop",
+        "change": "pop",
+        "reduced": "The chosen mark changes colour at once, no pop"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-peek-rating",
+          "variants": [
+            "standard",
+            "emoji",
+            "numbers"
+          ]
+        },
+        "react": {
+          "name": "PeekRating",
+          "variants": [
+            "standard",
+            "emoji",
+            "numbers"
+          ]
+        },
+        "angular": {
+          "name": "bx-peek-rating",
+          "variants": [
+            "standard",
+            "emoji",
+            "numbers"
+          ]
+        },
+        "react-native": {
+          "name": "PeekRating",
+          "variants": [
+            "standard",
+            "emoji",
+            "numbers"
+          ]
+        }
+      }
+    },
+    "warm-tooltip": {
+      "kind": "tooltip",
+      "default": "standard",
+      "className": "bx-tooltip--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "A short note on a term",
+          "pattern": "Oracle Redwood note window",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "plain",
+          "name": "Plain",
+          "purpose": "One short line on the inverse surface",
+          "pattern": "Material 3 plain tooltip",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "react": "drawn: MUI Tooltip moves the note into a portal and changes the focus and Escape behaviour the parity test checks"
+        },
+        {
+          "id": "rich",
+          "name": "Rich",
+          "purpose": "A longer note on a raised surface with a heading line",
+          "pattern": "Material 3 rich tooltip",
+          "source": "own",
+          "licence": "UNLICENSED",
+          "react": "drawn, as plain"
+        },
+        {
+          "id": "beak",
+          "name": "With beak",
+          "purpose": "Points at its term with a small arrow",
+          "pattern": "Fluent 2 tooltip",
+          "source": "own",
+          "licence": "UNLICENSED"
+        }
+      ],
+      "motion": {
+        "enter": "fade",
+        "hover": null,
+        "press": null,
+        "change": null,
+        "reduced": "Appears and hides at once, no fade"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-warm-tooltip",
+          "variants": [
+            "standard",
+            "plain",
+            "rich",
+            "beak"
+          ]
+        },
+        "react": {
+          "name": "WarmTooltip",
+          "variants": [
+            "standard",
+            "plain",
+            "rich",
+            "beak"
+          ]
+        },
+        "angular": {
+          "name": "bx-warm-tooltip",
+          "variants": [
+            "standard",
+            "plain",
+            "rich",
+            "beak"
+          ]
+        },
+        "react-native": {
+          "name": "WarmTooltip",
+          "variants": [
+            "standard",
+            "plain",
+            "rich",
+            "beak"
+          ]
+        }
+      }
+    },
+    "lattice-loader": {
+      "kind": "spinner",
+      "default": "standard",
+      "className": "bx-spinner--<variant>",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Ring",
+          "purpose": "A turning ring",
+          "pattern": "Oracle Redwood progress circle",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "material",
+          "name": "Material",
+          "purpose": "An arc that grows and shrinks as it turns",
+          "pattern": "Material 3 circular indeterminate / MUI CircularProgress",
+          "source": "@mui/material (React only; the other packs draw it themselves)",
+          "licence": "MIT"
+        },
+        {
+          "id": "dots",
+          "name": "Dots",
+          "purpose": "Three dots that pulse in turn: waiting on a person or a reply",
+          "pattern": "Apple HIG typing indicator",
+          "source": "own",
+          "licence": "UNLICENSED"
+        },
+        {
+          "id": "orbs",
+          "name": "Thinking orb",
+          "purpose": "An AI assistant at work: dotted orb in one of nine states (working, searching, solving, listening, connecting, weaving, composing, breathing, shaping)",
+          "pattern": "thinking-orbs by Jakub Antalik",
+          "source": "thinking-orbs 0.3.1 (github.com/Jakubantalik/thinking-orbs)",
+          "licence": "MIT"
+        }
+      ],
+      "motion": {
+        "enter": "fade",
+        "hover": null,
+        "press": null,
+        "change": null,
+        "loading": "spin",
+        "reduced": "Shows one still frame and the label; nothing turns"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-lattice-loader",
+          "variants": [
+            "standard",
+            "material",
+            "dots",
+            "orbs"
+          ]
+        },
+        "react": {
+          "name": "LatticeLoader",
+          "variants": [
+            "standard",
+            "material",
+            "dots",
+            "orbs"
+          ]
+        },
+        "angular": {
+          "name": "bx-lattice-loader",
+          "variants": [
+            "standard",
+            "material",
+            "dots",
+            "orbs"
+          ]
+        },
+        "react-native": {
+          "name": "LatticeLoader",
+          "variants": [
+            "standard",
+            "material",
+            "dots",
+            "orbs"
+          ]
+        }
+      }
+    }
+  }
+}

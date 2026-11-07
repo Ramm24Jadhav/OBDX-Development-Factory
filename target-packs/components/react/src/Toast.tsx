@@ -1,4 +1,7 @@
+import SnackbarContent from '@mui/material/SnackbarContent';
 import { useEffect, useRef } from 'react';
+
+import { ToastVariant, vx } from './variants';
 
 export type Severity = 'error' | 'warning' | 'confirmation' | 'info';
 
@@ -17,6 +20,8 @@ export interface ToastProps {
   /** 'notification' floats at the top right; 'general' sits in the page. */
   display?: 'notification' | 'general';
   testID?: string;
+  /** The style: standard, snackbar (Material, on MUI), stacked or pill. */
+  variant?: ToastVariant;
 }
 
 const ICON: Record<Severity, string> = { error: '!', warning: '!', confirmation: '✓', info: 'i' };
@@ -25,7 +30,7 @@ const ICON: Record<Severity, string> = { error: '!', warning: '!', confirmation:
  * Messages (oj-messages): errors are announced at once and stay until closed; others are announced politely and close
  * after five seconds. The screen owns the list; onClose says which one to remove.
  */
-export function Toast({ messages, onClose, display = 'notification', testID }: ToastProps) {
+export function Toast({ messages, onClose, display = 'notification', testID, variant = 'standard' }: ToastProps) {
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const close = useRef(onClose);
   close.current = onClose;
@@ -42,9 +47,18 @@ export function Toast({ messages, onClose, display = 'notification', testID }: T
   }, [messages]);
   useEffect(() => () => { timers.current.forEach((t) => clearTimeout(t)); timers.current.clear(); }, []);
   return (
-    <div className={`bx-toasts is-${display}`} data-testid={testID}>
+    <div className={`bx-toasts is-${display} ${vx('toast', variant)}`} data-testid={testID}>
       {messages.map((m) => {
         const severity = m.severity ?? 'info';
+        const close = (
+          <button type="button" className="bx-btn bx-btn--borderless bx-btn--icon bx-btn--sm" aria-label="Close the message" onClick={() => onClose(m)}>
+            <span aria-hidden="true">×</span>
+          </button>
+        );
+        if (variant === 'snackbar') {
+          return <SnackbarContent key={m.id} className={`bx-toast is-${severity}`} role={severity === 'error' ? 'alert' : 'status'}
+                                  message={<span className="bx-toast-text"><strong>{m.summary}</strong>{m.detail ? <span>{m.detail}</span> : null}</span>} action={close} />;
+        }
         return (
           <div key={m.id} className={`bx-toast is-${severity}`} role={severity === 'error' ? 'alert' : 'status'}>
             <span className="bx-toast-icon" aria-hidden="true">{ICON[severity]}</span>

@@ -6,8 +6,15 @@
 import * as RadixDialog from '@radix-ui/react-dialog';
 import { KeyboardEvent, ReactNode, useEffect, useId, useRef, useState } from 'react';
 
+import MuiAlert from '@mui/material/Alert';
+import MuiChip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
+import MuiSkeleton from '@mui/material/Skeleton';
+import { ThinkingOrb } from 'thinking-orbs';
+
 import { Button, ButtonProps } from './Button';
 import { Lens } from './lens';
+import { AlertVariant, BadgeVariant, EmptyVariant, MUI_SEVERITY, MUI_TONE, OrbState, SkeletonVariant, SpinnerVariant, StepperVariant, TimelineVariant, TooltipVariant, vx } from './variants';
 
 /* ---------- items: strings or objects, each with an id and a label ---------- */
 
@@ -263,14 +270,16 @@ export interface StepperProps {
   steps: ReadonlyArray<string | StepItem>;
   /** The current step's id; the ones before it are done. */
   selectedStep?: string;
+  /** The style: standard, material (labels under the marks), vertical or segmented. */
+  variant?: StepperVariant;
 }
 
 /** Done, current and next steps of a journey. */
-export function Stepper({ testID, label = 'Progress', steps, selectedStep }: StepperProps) {
+export function Stepper({ testID, label = 'Progress', steps, selectedStep, variant = 'standard' }: StepperProps) {
   const list = toItems(steps);
   const at = list.findIndex((s) => s.id === selectedStep);
   return (
-    <ol className="bx-steps" aria-label={label} data-testid={testID}>
+    <ol className={`bx-steps ${vx('stepper', variant)}`} aria-label={label} data-testid={testID}>
       {list.map((s, i) => {
         const state = (s as StepItem).state ?? (i < at ? 'done' : i === at ? 'current' : 'next');
         return (
@@ -421,17 +430,20 @@ export function Pagination({ testID, label = 'Pages', page, pageCount, onPageCha
 
 export type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 /** A status in a word. */
-export function StatusBadge({ testID, label, tone = 'neutral' }: { testID?: string; label: string; tone?: Tone }) {
-  return <span className={`bx-badge is-${tone}`} data-testid={testID}><span className="bx-badge-dot" aria-hidden="true" />{label}</span>;
+export function StatusBadge({ testID, label, tone = 'neutral', variant = 'standard' }: { testID?: string; label: string; tone?: Tone; /** standard, filled, outlined or dot */ variant?: BadgeVariant }) {
+  if (variant === 'filled' || variant === 'outlined') {
+    return <MuiChip size="small" variant={variant} color={MUI_TONE[tone]} label={label} className={`bx-badge is-${tone} ${vx('badges', variant)}`} data-testid={testID} />;
+  }
+  return <span className={`bx-badge is-${tone} ${vx('badges', variant)}`} data-testid={testID}><span className="bx-badge-dot" aria-hidden="true" />{label}</span>;
 }
 
 export interface TimelineItem { id?: string; label: string; meta?: string; state?: 'done' | 'current' | 'pending' | 'failed' }
-export interface TimelineProps { testID?: string; label?: string; items: ReadonlyArray<TimelineItem> }
+export interface TimelineProps { testID?: string; label?: string; items: ReadonlyArray<TimelineItem>; /** The style: standard, compact, cards or horizontal. */ variant?: TimelineVariant }
 
 /** Events in order, with who and when. */
-export function Timeline({ testID, label = 'Timeline', items }: TimelineProps) {
+export function Timeline({ testID, label = 'Timeline', items, variant = 'standard' }: TimelineProps) {
   return (
-    <ol className="bx-timeline" aria-label={label} data-testid={testID}>
+    <ol className={`bx-timeline ${vx('timeline', variant)}`} aria-label={label} data-testid={testID}>
       {items.map((o, i) => {
         const state = o.state ?? 'done';
         const status = state === 'done' ? '' : state === 'current' ? 'In progress' : state === 'failed' ? 'Failed' : 'Not yet';
@@ -448,27 +460,45 @@ export function Timeline({ testID, label = 'Timeline', items }: TimelineProps) {
 }
 
 /** Waiting: a turning circle, said to screen readers once. */
-export function Spinner({ testID, label = 'Loading', size = 'md' }: { testID?: string; label?: string; size?: 'sm' | 'md' | 'lg' }) {
-  return <span className="bx-spinner-wrap" role="status" data-testid={testID}><span className={`bx-spinner is-${size}`} aria-hidden="true" /><span className="bx-visually-hidden">{label}</span></span>;
+export interface SpinnerProps {
+  testID?: string;
+  label?: string;
+  size?: 'sm' | 'md' | 'lg';
+  /** The style: a ring (standard), material, dots, or orbs (a thinking orb for an AI assistant). */
+  variant?: SpinnerVariant;
+  /** What the orb shows when variant is orbs. */
+  orbState?: OrbState;
+}
+const SPIN_PX = { sm: 16, md: 24, lg: 40 };
+export function Spinner({ testID, label = 'Loading', size = 'md', variant = 'standard', orbState = 'working' }: SpinnerProps) {
+  const mark = variant === 'material' ? <CircularProgress size={SPIN_PX[size]} thickness={4.5} aria-hidden="true" className={`bx-spinner-mui is-${size}`} />
+    : variant === 'dots' ? <span className={`bx-spinner-dots is-${size}`} aria-hidden="true"><span /><span /><span /></span>
+    : variant === 'orbs' ? <ThinkingOrb state={orbState} size={size === 'lg' ? 64 : 20} aria-hidden="true" className={`bx-orb is-${size}`} />
+    : <span className={`bx-spinner is-${size}`} aria-hidden="true" />;
+  return <span className={`bx-spinner-wrap ${vx('spinner', variant)}`} role="status" data-testid={testID}>{mark}<span className="bx-visually-hidden">{label}</span></span>;
 }
 
 /** Where content is coming: grey lines that shimmer. */
-export function Skeleton({ testID, label = 'Loading', lines = 3, shape = 'text' }: { testID?: string; label?: string; lines?: number; shape?: 'text' | 'card' | 'circle' }) {
+export function Skeleton({ testID, label = 'Loading', lines = 3, shape = 'text', variant = 'standard' }: { testID?: string; label?: string; lines?: number; shape?: 'text' | 'card' | 'circle'; /** standard (shimmer), pulse or soft */ variant?: SkeletonVariant }) {
   const n = Math.max(1, lines);
+  // pulse is Material's: MUI Skeleton draws each shape
+  const part = (css: string, key?: number) => (variant === 'pulse'
+    ? <MuiSkeleton key={key} animation="pulse" variant={css === 'bx-skel-block' && shape === 'circle' ? 'circular' : 'rounded'} className={css} aria-hidden="true" />
+    : <span key={key} className={css} aria-hidden="true" />);
   return (
-    <div className={`bx-skeleton is-${shape}`} role="status" aria-busy="true" data-testid={testID}>
+    <div className={`bx-skeleton is-${shape} ${vx('skeleton', variant)}`} role="status" aria-busy="true" data-testid={testID}>
       <span className="bx-visually-hidden">{label}</span>
-      {shape !== 'text' ? <span className="bx-skel-block" aria-hidden="true" /> : null}
-      {Array.from({ length: n }, (_, i) => <span key={i} className={'bx-skel-line' + (i === n - 1 && n > 1 ? ' is-short' : '')} aria-hidden="true" />)}
+      {shape !== 'text' ? part('bx-skel-block') : null}
+      {Array.from({ length: n }, (_, i) => part('bx-skel-line' + (i === n - 1 && n > 1 ? ' is-short' : ''), i))}
     </div>
   );
 }
 
-export interface EmptyStateProps { testID?: string; heading: string; text?: string; actionLabel?: string; onAction?: () => void; icon?: string }
+export interface EmptyStateProps { testID?: string; heading: string; text?: string; actionLabel?: string; onAction?: () => void; icon?: string; /** The style: standard, illustrated, compact or card. */ variant?: EmptyVariant }
 /** Nothing to show yet, and what to do. */
-export function EmptyState({ testID, heading, text, actionLabel, onAction, icon = '○' }: EmptyStateProps) {
+export function EmptyState({ testID, heading, text, actionLabel, onAction, icon = '○', variant = 'standard' }: EmptyStateProps) {
   return (
-    <div className="bx-empty" data-testid={testID}>
+    <div className={`bx-empty ${vx('empty', variant)}`} data-testid={testID}>
       <span className="bx-empty-icon" aria-hidden="true">{icon}</span>
       <h3 className="bx-empty-title">{heading}</h3>
       {text ? <p className="bx-empty-text">{text}</p> : null}
@@ -478,11 +508,11 @@ export function EmptyState({ testID, heading, text, actionLabel, onAction, icon 
 }
 
 /** A short note on a term, on hover and focus; Escape hides it. */
-export function Tooltip({ testID, label, text }: { testID?: string; label: string; text: string }) {
+export function Tooltip({ testID, label, text, variant = 'standard' }: { testID?: string; label: string; text: string; /** The style: standard, plain, rich or beak. */ variant?: TooltipVariant }) {
   const id = useId();
   const [open, setOpen] = useState(false);
   return (
-    <span className="bx-tooltip" data-testid={testID} onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+    <span className={`bx-tooltip ${vx('tooltip', variant)}`} data-testid={testID} onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
       <span>{label}</span>
       <button type="button" className="bx-tip-button" aria-label={`About ${label}`} aria-describedby={id} onFocus={() => setOpen(true)} onBlur={() => setOpen(false)}
               onKeyDown={(e) => { if (e.key === 'Escape') { setOpen(false); } }}>i</button>
@@ -506,20 +536,31 @@ export interface AlertProps {
   /** Shows Dismiss; the alert hides and onClose tells the screen. */
   dismissible?: boolean;
   onClose?: () => void;
+  /** The style: standard, filled, outlined or banner. */
+  variant?: AlertVariant;
 }
 
 /** A message with its severity: errors are announced at once, the others politely. */
-export function Alert({ testID, heading, message, severity = 'info', actionLabel, onAction, dismissible, onClose }: AlertProps) {
+export function Alert({ testID, heading, message, severity = 'info', actionLabel, onAction, dismissible, onClose, variant = 'standard' }: AlertProps) {
   const [gone, setGone] = useState(false);
   if (gone) { return null; }
+  const css = `bx-alert is-${severity} ${vx('alert', variant)}`;
+  const role = severity === 'error' ? 'alert' : 'status';
+  const text = <div className="bx-alert-text">{heading ? <strong>{heading}</strong> : null}<span>{message}</span></div>;
+  const actions = actionLabel || dismissible ? <>
+    {actionLabel ? <button type="button" className="bx-alert-action" onClick={onAction}>{actionLabel}</button> : null}
+    {dismissible
+      ? <button type="button" className="bx-btn bx-btn--borderless bx-btn--icon bx-btn--sm" aria-label="Dismiss" onClick={() => { setGone(true); onClose?.(); }}><span aria-hidden="true">×</span></button>
+      : null}
+  </> : null;
+  // Material's filled and outlined alerts are MUI's
+  if (variant === 'filled' || variant === 'outlined') {
+    return <MuiAlert variant={variant} severity={MUI_SEVERITY[severity]} role={role} className={css} data-testid={testID} action={actions}>{text}</MuiAlert>;
+  }
   return (
-    <div className={`bx-alert is-${severity}`} role={severity === 'error' ? 'alert' : 'status'} data-testid={testID}>
+    <div className={css} role={role} data-testid={testID}>
       <span className="bx-alert-icon" aria-hidden="true">{ICON[severity]}</span>
-      <div className="bx-alert-text">{heading ? <strong>{heading}</strong> : null}<span>{message}</span></div>
-      {actionLabel ? <button type="button" className="bx-alert-action" onClick={onAction}>{actionLabel}</button> : null}
-      {dismissible
-        ? <button type="button" className="bx-btn bx-btn--borderless bx-btn--icon bx-btn--sm" aria-label="Dismiss" onClick={() => { setGone(true); onClose?.(); }}><span aria-hidden="true">×</span></button>
-        : null}
+      {text}{actions}
     </div>
   );
 }

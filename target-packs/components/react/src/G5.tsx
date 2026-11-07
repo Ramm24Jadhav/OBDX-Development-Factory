@@ -8,6 +8,7 @@ import { KeyboardEvent, useId, useState } from 'react';
 import { Accordion, AccordionProps, Rows, RowsProps, SegmentsProps, Slider, SliderProps, StepperProps, Stepper, Timeline, TimelineProps, ToggleGroup } from './G1';
 import { StepForm, StepFormProps, ThingCard, ThingCardProps, money } from './G2';
 import { Checks, ChecksProps } from './G3';
+import { FACES, RatingVariant, vx } from './variants';
 
 type Opt<P, K extends keyof P> = Omit<P, K> & Partial<Pick<P, K>>;
 
@@ -212,19 +213,19 @@ export function LiveChat({ testID, heading = 'Chat with us', messages, typing, d
 /* ---------- FeedbackRating ---------- */
 
 const WORDS = ['', 'Very poor', 'Poor', 'Fine', 'Good', 'Very good'];
-export interface RatingProps { testID?: string; label?: string; value: number; onChange?: (value: number) => void }
+export interface RatingProps { testID?: string; label?: string; value: number; onChange?: (value: number) => void; /** The style: standard (stars), emoji (faces) or numbers. */ variant?: RatingVariant }
 
 /** One to five stars, as radios, and the word for what was chosen. */
-export function FeedbackRating({ testID, label = 'How was it?', value, onChange }: RatingProps) {
+export function FeedbackRating({ testID, label = 'How was it?', value, onChange, variant = 'standard' }: RatingProps) {
   const id = useId();
   return (
-    <fieldset className="bx-field bx-rating" data-testid={testID}>
+    <fieldset className={`bx-field bx-rating ${vx('rating', variant)}`} data-testid={testID}>
       <legend className="bx-label">{label}</legend>
       <div className="bx-stars">
         {[1, 2, 3, 4, 5].map((i) => (
-          <label key={i} className={'bx-star' + (i <= value ? ' is-on' : '')}>
+          <label key={i} className={'bx-star' + (i <= value ? ' is-on' : '') + (i === value ? ' is-chosen' : '')}>
             <input type="radio" className="bx-visually-hidden" name={id} checked={i === value} onChange={() => onChange?.(i)} />
-            <span aria-hidden="true">★</span><span className="bx-visually-hidden">{`${i} ${i === 1 ? 'star' : 'stars'}, ${WORDS[i]}`}</span>
+            <span aria-hidden="true">{variant === 'emoji' ? FACES[i - 1] : variant === 'numbers' ? i : '★'}</span><span className="bx-visually-hidden">{`${i} ${i === 1 ? 'star' : 'stars'}, ${WORDS[i]}`}</span>
           </label>
         ))}
         {WORDS[value] ? <span className="bx-rating-word" aria-hidden="true">{WORDS[value]}</span> : null}
