@@ -1,9 +1,12 @@
 import { ReactNode } from 'react';
-import { Animated, Modal, Pressable, Text, View } from 'react-native';
+import { Animated, Modal, Platform, Pressable, Text, View } from 'react-native';
 
 import { IconButton } from './Button';
 import { MODAL_FADE, useOpen } from './motion';
 import { useTheme } from './theme';
+
+/** The modal panel is the dialog on a device; on the web react-native-web draws the Modal itself as the named dialog, so there is one. */
+export const panelRole = (title: string) => (Platform.OS === 'web' ? {} : { role: 'dialog' as const, 'aria-modal': true, accessibilityLabel: title });
 
 export interface DialogProps {
   open: boolean;
@@ -28,7 +31,7 @@ export function Dialog({ open, onOpenChange, title, description, children, foote
       <View style={{ flex: 1, justifyContent: 'center', padding: 16 }}>
         <Pressable style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(15, 23, 42, 0.45)' }}
                    accessible={false} onPress={close} />
-        <Animated.View testID={testID} role="dialog" accessibilityViewIsModal aria-modal accessibilityLabel={title}
+        <Animated.View testID={testID} accessibilityViewIsModal {...panelRole(title)}
               style={[spring, { backgroundColor: t.color.surface, borderRadius: 18, padding: 20, gap: 12, maxHeight: '90%',
                 shadowColor: '#0f172a', shadowOpacity: 0.18, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 8 }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>

@@ -83,12 +83,21 @@ describe('group 2', () => {
     const input = screen.getByLabelText('IBAN');
     await fireEvent(input, 'focus');
     await fireEvent.changeText(input, 'gb28 nwbk 6016 1331 9268 19');
-    expect(seen).toBe('GB28NWBK60161331926819');
+    // An IBAN that fails the check is not written back (as a JET field with a validator)
+    expect(seen).toBe('');
     await fireEvent(input, 'blur');
     expect(screen.getByRole('alert')).toHaveTextContent('Check the IBAN: the check digits do not match.');
     await fireEvent.changeText(input, 'GB29NWBK60161331926819');
+    expect(seen).toBe('GB29NWBK60161331926819');
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByLabelText('IBAN').props.value).toBe('GB29 •••• 6819');
+  });
+
+  it('PaymentStatus marks the step the payment is at, and every step done when complete', async () => {
+    await render(<PaymentStatus testID="p" value={2} />);
+    expect(screen.getByLabelText('Payment status, Step 3 of 4: Sent')).toBeTruthy();
+    await render(<PaymentStatus testID="q" value={4} />);
+    expect(screen.getByLabelText('Payment status, All 4 steps done')).toBeTruthy();
   });
 
   it('BeneficiarySelector picks a payee by id and offers Add a new payee', async () => {

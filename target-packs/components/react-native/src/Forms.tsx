@@ -102,18 +102,20 @@ export function NumberInput(props: NumberInputProps) {
   const [own, setOwn] = useState('');
   const f = useField(props, value, own);
   const round = (n: number) => Math.round(n * 10 ** decimals) / 10 ** decimals;
+  /** Writes the number back, or keeps it out of the value with a message when it is out of range (as oj-input-number does). */
   const set = (n: number | null) => {
-    setOwn(n !== null && min !== undefined && n < min ? `Enter ${min} or more.` : n !== null && max !== undefined && n > max ? `Enter ${max} or less.` : '');
-    onChange?.(n);
+    const wrong = n !== null && min !== undefined && n < min ? `Enter ${min} or more.` : n !== null && max !== undefined && n > max ? `Enter ${max} or less.` : '';
+    setOwn(wrong);
+    if (!wrong) { onChange?.(n); }
+    return !wrong;
   };
   const commit = () => {
     if (typed === null) { return; }
     const text = typed.trim();
-    setTyped(null);
-    if (text === '') { set(null); return; }
+    if (text === '') { setTyped(null); set(null); return; }
     const n = Number(text);
     if (!Number.isFinite(n)) { setOwn(decimals ? 'Enter a number, for example 12.5.' : 'Enter a whole number.'); return; }
-    set(round(n));
+    if (set(round(n))) { setTyped(null); }
   };
   const nudge = (by: number) => {
     const base = value ?? (min ?? 0) - by;
@@ -423,7 +425,8 @@ export function Autocomplete(props: AutocompleteProps) {
                    accessibilityHint={f.error || helpText || 'Type to see suggestions'} aria-required={required} aria-invalid={!!f.error}
                    onFocus={f.onFocus} onBlur={leave} onChangeText={(x) => { setTyped(x); setOwn(''); }} />
       </View>
-      {matches.length && f.focused
+      {/* Kept while the text is not yet a choice: a tap on a suggestion blurs the field first on the web */}
+      {matches.length && (f.focused || own)
         ? <Enter effect="slide-down" testID={`${testID}-suggestions`} accessibilityLabel={`${matches.length} suggestions`}
                 style={{ marginTop: 4, borderWidth: t.border, borderColor: t.color.border, borderRadius: t.radius.control, backgroundColor: t.color.surface, overflow: 'hidden' }}>
             {matches.map((o) => (
@@ -457,6 +460,8 @@ export interface FileUploadProps extends FieldProps<PickedFile[]> {
   multiple?: boolean;
   /** The largest file, in bytes. */
   maxSize?: number;
+  /** Called when a picked file is refused (wrong type or too large), with the message shown (oj-file-picker's ojInvalidSelect). */
+  onRefuse?: (file: PickedFile, message: string) => void;
 }
 
 export function fileSize(bytes: number): string {
@@ -465,7 +470,7 @@ export function fileSize(bytes: number): string {
 
 /** Documents to send: a button that opens the document picker, then the list with each file's size and Remove. */
 export function FileUpload(props: FileUploadProps) {
-  const { testID, label, value, onChange, required, disabled, helpText, error, accept, multiple, maxSize, pick } = props;
+  const { testID, label, value, onChange, required, disabled, helpText, error, accept, multiple, maxSize, pick, onRefuse } = props;
   const t = useTheme();
   const s = styles(t);
   const files = value ?? [];
@@ -480,8 +485,13 @@ export function FileUpload(props: FileUploadProps) {
     if (!picked.length) { return; }
     const wrongType = picked.find((f) => !allowed(f));
     const tooBig = picked.find((f) => maxSize !== undefined && f.size > maxSize);
-    if (wrongType) { setOwn(`${wrongType.name} is not a file type this accepts (${accept}).`); return; }
-    if (tooBig) { setOwn(`${tooBig.name} is larger than ${fileSize(maxSize!)}.`); return; }
+    const refused = wrongType ?? tooBig;
+    if (refused) {
+      const text = wrongType ? `${refused.name} is not a file type this accepts (${accept}).` : `${refused.name} is larger than ${fileSize(maxSize!)}.`;
+      setOwn(text);
+      onRefuse?.(refused, text);
+      return;
+    }
     setOwn('');
     onChange?.(multiple ? [...files, ...picked] : picked.slice(0, 1));
   };

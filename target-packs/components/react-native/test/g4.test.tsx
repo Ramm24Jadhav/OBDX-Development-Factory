@@ -53,8 +53,9 @@ describe('group 4', () => {
 
   it('ProgressBar says when a budget is over its limit', async () => {
     await render(<ProgressBar testID="p" currency="USD" items={[{ label: 'Eating out', value: 210, max: 200 }]} />);
-    const bar = screen.getByLabelText('Eating out, 210.00 of 200.00 used, over the limit');
-    expect(bar.props.accessibilityValue).toEqual({ min: 0, max: 200, now: 200 });
+    const bar = screen.getByLabelText('Eating out');
+    expect(bar.props['aria-valuetext']).toBe('210.00 of 200.00 used, over the limit');
+    expect([bar.props['aria-valuemin'], bar.props['aria-valuemax'], bar.props['aria-valuenow']]).toEqual([0, 200, 200]);
   });
 
   it('SavingsGoal says what is left to save', async () => {

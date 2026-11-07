@@ -199,8 +199,11 @@ export function AccountNumber(props: AccountNumberProps) {
   const { testID, label, value, onChange, required, readOnly, disabled, helpText, placeholder, format = 'iban' } = props;
   const t = useTheme();
   const s = styles(t);
-  const v = value ?? '';
-  const ok = format === 'iban' ? ibanValid(v) : /^\d{6,18}$/.test(v);
+  // What is typed but fails the check stays here, not in the value (as a JET field with a validator)
+  const [typed, setTyped] = useState<string | null>(null);
+  const v = typed ?? value ?? '';
+  const valid = (x: string) => (format === 'iban' ? ibanValid(x) : /^\d{6,18}$/.test(x));
+  const ok = valid(v);
   const own = v && !ok ? (format === 'iban' ? 'Check the IBAN: the check digits do not match.' : 'Enter 6 to 18 digits.') : '';
   const [left, setLeft] = useState(false);
   const f = useField(props, value, left ? own : '');
@@ -213,7 +216,10 @@ export function AccountNumber(props: AccountNumberProps) {
                    keyboardType={format === 'account' ? 'number-pad' : 'default'} editable={!readOnly && !disabled}
                    accessibilityLabel={label} accessibilityHint={f.error || helpText} aria-required={required} aria-invalid={!!f.error}
                    onFocus={f.onFocus} onBlur={() => { f.onBlur(); setLeft(true); }}
-                   onChangeText={(x) => onChange?.(format === 'iban' ? x.replace(/\s/g, '').toUpperCase() : x.replace(/\D/g, ''))} />
+                   onChangeText={(x) => {
+                     const next = format === 'iban' ? x.replace(/\s/g, '').toUpperCase() : x.replace(/\D/g, '');
+                     if (next === '' || valid(next)) { setTyped(null); onChange?.(next); } else { setTyped(next); }
+                   }} />
         {ok ? <Text style={[s.side, { color: t.color.successText }]} accessibilityLabel="Checked">✓</Text> : null}
       </View>
     </FieldShell>
@@ -388,8 +394,10 @@ export interface PaymentStatusProps {
 }
 
 /** Where the payment is now. */
-export function PaymentStatus({ steps = ['Initiated', 'Approved', 'Sent', 'Completed'], label = 'Payment status', ...props }: PaymentStatusProps) {
-  return <Steps {...props} label={label} steps={steps} />;
+export function PaymentStatus({ testID, steps = ['Initiated', 'Approved', 'Sent', 'Completed'], label = 'Payment status', value }: PaymentStatusProps) {
+  // Past the last step the payment is complete: every step done
+  const list = value >= steps.length ? steps.map((s) => ({ label: s, state: 'done' as const })) : steps;
+  return <Steps testID={testID} label={label} steps={list} selectedStep={steps[value]} />;
 }
 
 /* ---------- TransactionHistory ---------- */

@@ -222,13 +222,17 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - run: npm ci --prefix .. --no-audit --no-fund && npm install --no-audit --no-fund
+      # Parity with the JET elements: both JET releases, served from target-packs/components/gates
+      - run: for d in jet6 jet21; do (cd ../../gates/$d && npm ci --no-audit --no-fund); done
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test --update-snapshots=missing
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: react-native-gates
-          path: target-packs/components/react-native/gates/snapshots/
+          path: |
+            target-packs/components/react-native/gates/snapshots/
+            target-packs/components/react-native/gates/results/
           retention-days: 14
 
   # The browser gates of the web packs (target-packs/components/gates): React, Angular and the premium JET pack on

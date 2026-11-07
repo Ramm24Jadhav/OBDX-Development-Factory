@@ -80,7 +80,7 @@ describe('group 6', () => {
 
   it('CreditScoreWidget reads the bureau band with the score', async () => {
     await render(<CreditScoreWidget testID="s" score={742} max={900} band="Good" />);
-    expect(screen.getByLabelText('Good, 742 of 900')).toBeTruthy();
+    expect(screen.getByLabelText('Good').props['aria-valuetext']).toBe('742 of 900');
   });
 
   it('PendingActionWidget lays bars across and reads each count', async () => {

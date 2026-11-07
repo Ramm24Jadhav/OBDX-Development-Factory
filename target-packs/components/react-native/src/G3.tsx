@@ -503,13 +503,15 @@ export interface SessionExpiryWarningProps {
   open: boolean;
   /** Seconds left when it opens. */
   seconds?: number;
+  /** The dialog's title, "Are you still there?" as on the web packs. */
+  heading?: string;
   onStay: () => void;
   /** Called when the customer signs out, or when the time runs out. */
   onSignOut: () => void;
 }
 
 /** Warns before the session ends, counting down; it stays until the customer chooses, and signs out at zero. */
-export function SessionExpiryWarning({ testID, open, seconds = 60, onStay, onSignOut }: SessionExpiryWarningProps) {
+export function SessionExpiryWarning({ testID, open, seconds = 60, heading = 'Are you still there?', onStay, onSignOut }: SessionExpiryWarningProps) {
   const [left, setLeft] = useState(seconds);
   const out = useRef(onSignOut);
   out.current = onSignOut;
@@ -521,7 +523,7 @@ export function SessionExpiryWarning({ testID, open, seconds = 60, onStay, onSig
     return () => clearTimeout(timer);
   }, [open, left]);
   return (
-    <Dialog testID={testID} open={open} onOpenChange={() => undefined} cancelBehavior="none" title="Your session is about to end"
+    <Dialog testID={testID} open={open} onOpenChange={() => undefined} cancelBehavior="none" title={heading}
             description={`For your security you will be signed out in ${left} seconds.`}
             footer={<>
               <Button testID={`${testID}-out`} label="Sign out" chroming="outlined" onAction={onSignOut} />

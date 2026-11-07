@@ -457,8 +457,10 @@ export function Tooltip({ testID, label, text, children }: TooltipProps) {
   const t = useTheme();
   const [open, setOpen] = useState(false);
   const flip = () => { if (!open) { AccessibilityInfo.announceForAccessibility(text); } setOpen(!open); };
+  // Escape (a keyboard on the web or a tablet) and the screen reader's escape gesture close it (WCAG 1.4.13)
+  const escape = { onKeyDown: (e: { nativeEvent: { key?: string } }) => { if (e.nativeEvent.key === 'Escape') { setOpen(false); } } };
   return (
-    <View testID={testID} style={{ gap: 6 }}>
+    <View testID={testID} style={{ gap: 6 }} onAccessibilityEscape={() => setOpen(false)} {...escape}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
         {children ?? <Text style={{ fontSize: 14, color: t.color.textBody }}>{label}</Text>}
         <Touch testID={testID ? `${testID}-button` : undefined} label={`About ${label}`} selected={open} onPress={flip} style={{ width: t.minTouch, alignItems: 'center' }}>
@@ -468,7 +470,7 @@ export function Tooltip({ testID, label, text, children }: TooltipProps) {
         </Touch>
       </View>
       {open ? (
-        <View testID={testID ? `${testID}-text` : undefined} style={{ padding: 10, borderRadius: t.radius.control, backgroundColor: t.color.text, alignSelf: 'flex-start',
+        <View testID={testID ? `${testID}-text` : undefined} role="tooltip" style={{ padding: 10, borderRadius: t.radius.control, backgroundColor: t.color.text, alignSelf: 'flex-start',
           maxWidth: 280 }}>
           <Text style={{ fontSize: 13, color: t.color.surface }}>{text}</Text>
         </View>

@@ -11,6 +11,7 @@ each web pack's gallery. Every foundation component sits in its own `<section da
 | Visual | light and dark screenshots match the accepted ones in `snapshots/<platform>/` |
 | Parity (premium JET) | the JET element and the `bx-` element that replaces it are driven the same way in one JET app, and the screen's view model must see the same values, events and methods |
 | Parity (React, Angular) | `specs/parity-web.ts`: the pack's component in its gallery and the JET element on `jet-parity.html` are driven the same way and show the same values, names and messages; every catalogue component that replaces a JET element (`workspace.kind` is `element`) has a test, skipped where the pack does not build it |
+| Parity (React Native) | `../react-native/gates/specs/parity.spec.ts`: each of the 47 element components on `../react-native/gates/parity.html` (react-native-web, held in the page's state) and the JET element on `jet-parity.html` get the same action, the React Native way (a sheet of choices, a pressable switch), and must write back the same values and show the same messages, roles and names; `record.mjs` reads its report too |
 
 The galleries:
 

@@ -145,6 +145,7 @@ describe('group 3', () => {
     const out = jest.fn();
     await render(<SessionExpiryWarning testID="s" open seconds={2} onStay={noop} onSignOut={out} />);
     expect(screen.getByText('For your security you will be signed out in 2 seconds.')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Are you still there?' })).toBeTruthy();
     await act(async () => { jest.advanceTimersByTime(1000); });
     await act(async () => { jest.advanceTimersByTime(1000); });
     expect(out).toHaveBeenCalledTimes(1);

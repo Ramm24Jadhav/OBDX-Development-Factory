@@ -47,6 +47,9 @@ describe('NumberInput', () => {
     await fireEvent.changeText(input, '9');
     await fireEvent(input, 'blur');
     expect(screen.getByRole('alert')).toHaveTextContent('Enter 3 or less.');
+    // Out of range is not written back, and the text stays for the customer to correct (as oj-input-number)
+    expect(seen).toBe(3);
+    expect(screen.getByLabelText('Copies').props.value).toBe('9');
     await fireEvent.changeText(input, 'x');
     await fireEvent(input, 'blur');
     expect(screen.getByRole('alert')).toHaveTextContent('Enter a whole number.');
@@ -181,9 +184,11 @@ describe('FileUpload', () => {
   });
 
   it('refuses a type it does not accept, and says why', async () => {
-    await render(<FileUpload testID="f" label="Proof of address" value={[]} accept=".pdf,image/*" pick={async () => [exe]} />);
+    const refuse = jest.fn();
+    await render(<FileUpload testID="f" label="Proof of address" value={[]} accept=".pdf,image/*" pick={async () => [exe]} onRefuse={refuse} />);
     await act(async () => { await fireEvent.press(screen.getByRole('button', { name: /^Choose a file.*Proof of address$/ })); });
     expect(screen.getByRole('alert')).toHaveTextContent(/setup.exe is not a file type this accepts/);
+    expect(refuse).toHaveBeenCalledWith(exe, expect.stringMatching(/^setup.exe is not a file type/));
     expect(fileSize(2621440)).toBe('2.5 MB');
   });
 });

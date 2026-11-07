@@ -7,6 +7,7 @@ import { ComponentRef, ReactNode, useRef, useState } from 'react';
 import { Animated, Modal, PanResponder, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Button } from './Button';
+import { panelRole } from './Dialog';
 import { formatAmount } from './TextField';
 import type { Severity } from './Toast';
 import { FieldProps, styles, useField } from './field';
@@ -73,7 +74,7 @@ export function Sheet({ testID, open, title, onClose, children, side }: {
       <View style={{ flex: 1, flexDirection: start ? 'row' : 'column', justifyContent: start ? 'flex-start' : 'flex-end' }}>
         <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: t.color.overlay }]} accessibilityRole="button" accessibilityLabel={`Close ${title}`}
                    onPress={onClose} />
-        <Animated.View testID={testID} role="dialog" accessibilityViewIsModal aria-modal accessibilityLabel={title}
+        <Animated.View testID={testID} accessibilityViewIsModal {...panelRole(title)}
               style={[spring, { backgroundColor: t.color.surface, padding: 16, paddingBottom: 28, gap: 8, ...(start
                 ? { width: '82%', maxWidth: 360, height: '100%' }
                 : { maxHeight: '80%', borderTopLeftRadius: t.radius.card, borderTopRightRadius: t.radius.card }) }]}>
@@ -451,8 +452,9 @@ export function ProgressList({ testID, label, items, currency, measure = 'used' 
         const over = measure === 'used' && share > 1;
         const text = measure === 'score' ? `${show(m.value)} of ${show(m.max)}` : `${show(m.value)} of ${show(m.max)} ${measure}`;
         return (
-          <View key={m.label} testID={`${testID}-${m.label}`} accessible accessibilityRole="progressbar"
-                accessibilityLabel={`${m.label}, ${text}${over ? ', over the limit' : ''}`} accessibilityValue={{ min: 0, max: m.max, now: Math.min(m.value, m.max) }}
+          // Named by its label (as oj-progress-bar by its label); the numbers are its value, read after the name
+          <View key={m.label} testID={`${testID}-${m.label}`} accessible accessibilityRole="progressbar" accessibilityLabel={m.label}
+                aria-valuemin={0} aria-valuemax={m.max} aria-valuenow={Math.min(m.value, m.max)} aria-valuetext={`${text}${over ? ', over the limit' : ''}`}
                 style={{ gap: 6 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
               <Text style={{ fontSize: 14, color: t.color.text, fontWeight: '500' }}>{m.label}</Text>

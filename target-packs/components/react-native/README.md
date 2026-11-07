@@ -32,7 +32,9 @@ app's document picker (expo-document-picker, for example) and resolves with the 
 `npm ci` then `npm run check` (Node 22): the typecheck, then Jest with React Native Testing Library for behaviour,
 writeback and announcements. The same run checks every control's role, name, state and touch target. `gates/` renders
 the pack in a browser through react-native-web for screenshots, the light and dark themes, contrast and touch targets
-(`cd gates && npm install && npm run gates`); screen reader runs stay on devices.
+(`cd gates && npm install && npm run gates`); screen reader runs stay on devices. The same run checks parity with the
+JET elements (`gates/specs/parity.spec.ts`, on JET 6.2 and 21; `npm ci` in `../gates/jet6` and `../gates/jet21` first), and
+`node ../gates/record.mjs` writes its results into `packs.json`.
 
 ## The banking groups
 
