@@ -1,6 +1,6 @@
 {
   "name": "obdx-angular",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "The premium Angular components for a bank's OBDX UI: the foundation set, standalone components on the Angular CDK, themed from the bank tokens.",
   "license": "UNLICENSED",
   "private": true,

@@ -5,7 +5,7 @@
       "id": "jet-premium",
       "name": "Premium Oracle JET",
       "package": "obdx-jet",
-      "version": "0.2.0",
+      "version": "1.0.0",
       "path": "ui",
       "frameworkRange": "Oracle JET 6 and later, the release found in the bank’s code",
       "builds": [
@@ -6890,31 +6890,13 @@
           }
         }
       },
-      "folder": "target-packs/components/jet-premium",
-      "next": {
-        "version": "0.3.0",
-        "state": "in progress",
-        "adds": [
-          "account-picker",
-          "iban",
-          "balance-card",
-          "account-card",
-          "payee-list",
-          "beneficiary-card",
-          "transfer-summary",
-          "payment-status",
-          "receipt"
-        ],
-        "notes": [
-          "The banking wave: account selector, masked account number, account balance, account card, beneficiary selector and card, transfer summary, payment status and transaction receipt, each through every check before the version ships. Payment confirmation is the confirmation dialog with the transfer summary; amount and currency is the foundation amount input."
-        ]
-      }
+      "folder": "target-packs/components/jet-premium"
     },
     {
       "id": "react",
       "name": "React",
       "package": "obdx-react",
-      "version": "0.2.0",
+      "version": "1.0.0",
       "path": "migration",
       "frameworkRange": "React 19, TypeScript 5.9, Vite 8",
       "state": "preview",
@@ -13750,31 +13732,13 @@
           }
         }
       },
-      "folder": "target-packs/components/react",
-      "next": {
-        "version": "0.3.0",
-        "state": "in progress",
-        "adds": [
-          "account-picker",
-          "iban",
-          "balance-card",
-          "account-card",
-          "payee-list",
-          "beneficiary-card",
-          "transfer-summary",
-          "payment-status",
-          "receipt"
-        ],
-        "notes": [
-          "The banking wave: account selector, masked account number, account balance, account card, beneficiary selector and card, transfer summary, payment status and transaction receipt, each through every check before the version ships. Payment confirmation is the confirmation dialog with the transfer summary; amount and currency is the foundation amount input."
-        ]
-      }
+      "folder": "target-packs/components/react"
     },
     {
       "id": "react-native",
       "name": "React Native",
       "package": "obdx-react-native",
-      "version": "0.2.0",
+      "version": "1.0.0",
       "path": "migration",
       "frameworkRange": "React Native 0.88, Expo 58",
       "state": "preview",
@@ -20114,31 +20078,13 @@
           }
         }
       },
-      "folder": "target-packs/components/react-native",
-      "next": {
-        "version": "0.3.0",
-        "state": "in progress",
-        "adds": [
-          "account-picker",
-          "iban",
-          "balance-card",
-          "account-card",
-          "payee-list",
-          "beneficiary-card",
-          "transfer-summary",
-          "payment-status",
-          "receipt"
-        ],
-        "notes": [
-          "The banking wave: account selector, masked account number, account balance, account card, beneficiary selector and card, transfer summary, payment status and transaction receipt, each through every check before the version ships. Payment confirmation is the confirmation dialog with the transfer summary; amount and currency is the foundation amount input."
-        ]
-      }
+      "folder": "target-packs/components/react-native"
     },
     {
       "id": "angular",
       "name": "Angular",
       "package": "obdx-angular",
-      "version": "0.2.0",
+      "version": "1.0.0",
       "path": "migration",
       "frameworkRange": "Angular 20 and later (built and tested on 22.2), CDK 22.2",
       "state": "preview",
@@ -26963,25 +26909,7 @@
           }
         }
       },
-      "folder": "target-packs/components/angular",
-      "next": {
-        "version": "0.3.0",
-        "state": "in progress",
-        "adds": [
-          "account-picker",
-          "iban",
-          "balance-card",
-          "account-card",
-          "payee-list",
-          "beneficiary-card",
-          "transfer-summary",
-          "payment-status",
-          "receipt"
-        ],
-        "notes": [
-          "The banking wave: account selector, masked account number, account balance, account card, beneficiary selector and card, transfer summary, payment status and transaction receipt, each through every check before the version ships. Payment confirmation is the confirmation dialog with the transfer summary; amount and currency is the foundation amount input."
-        ]
-      }
+      "folder": "target-packs/components/angular"
     }
   ]
 }

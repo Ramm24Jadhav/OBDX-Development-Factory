@@ -81,8 +81,13 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       self.dashboard = ko.observable('all');
       self.limits = ko.observable({});
 
-      self.readinessChips = [['all', 'All'], ['available', 'Available'], ['in-test', 'In test'], ['planned', 'Planned']].map((g) => ({ label: g[1],
-        pressed: ko.pureComputed(() => (self.readiness() === g[0] ? 'true' : 'false')), css: ko.pureComputed(() => 'factory-cf-chip' + (self.readiness() === g[0] ? ' is-on' : '')), pick: () => self.readiness(g[0]) }));
+      // Counts over the category (or the search) and the mapping filter, so each choice says how many it shows
+      const readinessCount = (key) => ko.pureComputed(() => { const p = self.packId(); const q = self.query().trim().toLowerCase();
+        return all().filter((e) => (q ? true : e.cat.id === self.category()) && (self.mapGroup() === 'all' || GROUP_OF[e.m.packs[p].mapping] === self.mapGroup())
+          && (key === 'all' || e.m.packs[p].readiness === key)).length; });
+      self.readinessChips = [['all', 'All'], ['available', 'Available'], ['in-test', 'In test'], ['planned', 'Planned']].map((g) => ({ label: g[1], count: readinessCount(g[0]),
+        pressed: ko.pureComputed(() => (self.readiness() === g[0] ? 'true' : 'false')), css: ko.pureComputed(() => 'factory-cf-seg-btn' + (self.readiness() === g[0] ? ' is-on' : '')), pick: () => self.readiness(g[0]) }));
+      self.mapOptions = MAP_GROUPS.map((g) => ({ value: g[0], label: g[0] === 'all' ? 'Any mapping' : g[1] }));
       self.readinessOptions = [{ value: 'all', label: 'All' }, { value: 'available', label: 'Available' }, { value: 'in-test', label: 'In test' }, { value: 'planned', label: 'Planned' }];
       self.mapChips = MAP_GROUPS.map((g) => ({ label: g[1], pressed: ko.pureComputed(() => (self.mapGroup() === g[0] ? 'true' : 'false')),
         css: ko.pureComputed(() => 'factory-cf-chip' + (self.mapGroup() === g[0] ? ' is-on' : '')), pick: () => self.mapGroup(g[0]) }));
@@ -107,7 +112,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           return {
             id: p.id, name: p.name, logo: LOGO[p.id] || p.name[0], pkg: p.packageName + ' ' + p.version,
             range: p.id === 'jet-premium' && c.jet && c.jet.major ? c.jet.found + ' · ' + c.jet.buildName + ' build' : p.frameworkRange,
-            state: inst ? pill('Installed ' + inst, 'green') : pill('Preview', 'amber'),
+            state: inst ? pill('Installed ' + inst, 'green') : pill('Ready to install', 'blue'),
             counts: p.counts.available + ' available · ' + p.counts.inTest + ' in test · ' + p.counts.planned + ' planned',
             available: { width: pct(p.counts.available) }, inTest: { width: pct(p.counts.inTest) },
             selected: ko.pureComputed(() => self.packId() === p.id),
@@ -117,16 +122,6 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         });
       });
 
-      // The pack's version: what is installed (or the preview) and the one being built
-      self.versionChips = ko.pureComputed(() => {
-        const p = pack();
-        if (!p) { return []; }
-        const inst = installedOf(p.id);
-        const list = [{ v: 'current', label: p.version + (inst === p.version ? ' installed' : ' preview') }];
-        if (p.next) { list.push({ v: 'next', label: p.next.version + ' next' }); }
-        return list.map((x) => ({ label: x.label, pressed: ko.pureComputed(() => (self.version() === x.v ? 'true' : 'false')),
-          css: ko.pureComputed(() => 'factory-cf-chip' + (self.version() === x.v ? ' is-on' : '')), pick: () => self.version(x.v) }));
-      });
       const nextAdds = ko.pureComputed(() => (self.version() === 'next' && pack() && pack().next ? pack().next.adds : []));
 
       // The JET release the premium pack is built for, from the workspace's Project Profile scan
@@ -306,6 +301,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       });
       self.filtered = ko.pureComputed(() => !!self.query().trim() || self.readiness() !== 'all' || self.mapGroup() !== 'all');
       self.clearFilters = () => { self.query(''); self.readiness('all'); self.mapGroup('all'); };
+      // (the search has its own clear button; Clear filters also empties it)
 
       // My copies ----------------------------------------------------------------------------------------------------
       self.copyCards = ko.pureComputed(() => copies().map((cp) => {

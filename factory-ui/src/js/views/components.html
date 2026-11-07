@@ -41,21 +41,14 @@
     <oj-bind-if test="[[!inCopies()]]">
       <div class="factory-mb-card factory-cf-toolbar">
         <div class="factory-cf-toolrow">
-        <fx-input id="cfSearch" class="factory-cf-search" type="search" icon="search" clearable label="Search components" hide-label placeholder="Search components, elements or what they are built on" value="{{query}}"></fx-input>
-        <div class="factory-cf-chips" role="group" aria-label="Version"><span class="factory-cf-chips-label">Version</span>
-          <oj-bind-for-each data="[[versionChips]]" as="v"><template><button type="button" :class="[[v.data.css]]" :aria-pressed="[[v.data.pressed]]" on-click="[[v.data.pick]]"><oj-bind-text value="[[v.data.label]]"></oj-bind-text></button></template></oj-bind-for-each>
-        </div>
-        <span class="factory-mb-spacer"></span>
-        <button type="button" id="cfManage" class="factory-mb-btn is-outline is-xs" on-click="[[openManage]]">Manage pack</button>
-        </div>
-        <div class="factory-cf-toolrow">
-        <div class="factory-cf-chips" role="group" aria-label="Readiness" id="cfReadiness"><span class="factory-cf-chips-label">Readiness</span>
-          <oj-bind-for-each data="[[readinessChips]]" as="r"><template><button type="button" :class="[[r.data.css]]" :aria-pressed="[[r.data.pressed]]" on-click="[[r.data.pick]]"><oj-bind-text value="[[r.data.label]]"></oj-bind-text></button></template></oj-bind-for-each>
-        </div>
-      <div class="factory-cf-chips factory-cf-mapchips" role="group" aria-label="Mapping"><span class="factory-cf-chips-label">Mapping</span>
-        <oj-bind-for-each data="[[mapChips]]" as="m"><template><button type="button" :class="[[m.data.css]]" :aria-pressed="[[m.data.pressed]]" on-click="[[m.data.pick]]"><oj-bind-text value="[[m.data.label]]"></oj-bind-text></button></template></oj-bind-for-each>
-        <oj-bind-if test="[[filtered()]]"><button type="button" id="cfClear" class="fx-btn fx-btn--link" on-click="[[clearFilters]]">Clear search and filters</button></oj-bind-if>
-      </div>
+          <fx-input id="cfSearch" class="factory-cf-search" type="search" icon="search" clearable label="Search components" hide-label placeholder="Search components, elements or what they are built on" value="{{query}}"></fx-input>
+          <div class="factory-cf-seg" role="group" aria-label="Readiness" id="cfReadiness">
+            <oj-bind-for-each data="[[readinessChips]]" as="r"><template><button type="button" :class="[[r.data.css]]" :aria-pressed="[[r.data.pressed]]" on-click="[[r.data.pick]]"><oj-bind-text value="[[r.data.label]]"></oj-bind-text><span class="factory-cf-seg-count"><oj-bind-text value="[[r.data.count]]"></oj-bind-text></span></button></template></oj-bind-for-each>
+          </div>
+          <fx-select id="cfMapping" class="factory-cf-mapselect" label="Mapping" hide-label options="[[mapOptions]]" value="{{mapGroup}}"></fx-select>
+          <oj-bind-if test="[[filtered()]]"><button type="button" id="cfClear" class="fx-btn fx-btn--link" on-click="[[clearFilters]]">Clear filters</button></oj-bind-if>
+          <span class="factory-mb-spacer"></span>
+          <button type="button" id="cfManage" class="factory-mb-btn is-outline is-xs" on-click="[[openManage]]">Manage pack</button>
         </div>
       </div>
     </oj-bind-if>

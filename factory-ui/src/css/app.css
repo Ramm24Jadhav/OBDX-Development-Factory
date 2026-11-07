@@ -10145,7 +10145,20 @@ button.factory-mb-chip:hover { border-color: var(--fx-primary-border); }
 .factory-cf.factory-mb { gap: 12px; }
 .factory-cf .factory-cf-toolbar { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 14px; margin: 0; }
 .factory-cf-toolrow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
-.factory-cf-toolrow .factory-cf-search { flex: 0 1 300px; min-width: 220px; }
+.factory-cf-toolrow .factory-cf-search { flex: 1 1 280px; min-width: 200px; max-width: 420px; }
+/* one row on a laptop and wider; it wraps only on a narrow window */
+@media (min-width: 1200px) { .factory-cf .factory-cf-toolbar .factory-cf-toolrow { flex-wrap: nowrap; } }
+.factory-cf-toolrow #cfManage { flex: none; white-space: nowrap; }
+/* The readiness segment: one control, each choice with its count */
+.factory-cf-seg { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border-radius: 999px; background: var(--fx-surface-2); border: 1px solid var(--fx-border); }
+.factory-cf-seg-btn { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--fx-text-muted);
+  font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; transition: background var(--fx-dur-hover) var(--fx-ease-out), color var(--fx-dur-hover) var(--fx-ease-out); }
+.factory-cf-seg-btn:hover { color: var(--fx-text); }
+.factory-cf-seg-btn:focus-visible { outline: none; box-shadow: var(--fx-focus); }
+.factory-cf-seg-btn.is-on { background: var(--fx-surface); color: var(--fx-text); box-shadow: 0 1px 2px rgb(15 23 42 / .08), 0 0 0 1px var(--fx-border); }
+.factory-cf-seg-count { min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--fx-surface-3); color: var(--fx-text-muted); font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: center; }
+.factory-cf-seg-btn.is-on .factory-cf-seg-count { background: var(--fx-primary-soft); color: var(--fx-primary-text); }
+.factory-cf-toolrow .factory-cf-mapselect { flex: 0 0 220px; }
 .factory-cf .factory-cf-mapchips { margin: 0; }
 .factory-cf .factory-cf-card { display: flex; flex-direction: column; gap: 10px; }
 .factory-cf .factory-cf-theme { padding: 8px 10px; border: var(--fx-border-width) solid var(--fx-border); border-radius: var(--fx-radius); background: var(--fx-surface-2); }

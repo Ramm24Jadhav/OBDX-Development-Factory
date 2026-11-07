@@ -1,6 +1,6 @@
 {
   "name": "obdx-react-native",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "The premium React Native components for a bank's OBDX app: the foundation set, themed from the bank tokens.",
   "license": "UNLICENSED",
   "private": true,
