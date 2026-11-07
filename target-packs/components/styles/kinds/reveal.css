@@ -1,0 +1,25 @@
+/* ---------- reveal loader (kind reveal; ported from Vengeance UI, MIT, Copyright (c) 2025-2026 Ashutoshx7) ---------- */
+.bx-reveal { position: relative; min-height: 120px; overflow: hidden; border-radius: var(--bx-radius-lg); }
+.bx-reveal-content { padding: var(--bx-pad-card); }
+.bx-reveal-curtain { position: absolute; inset: 0; z-index: 1; display: flex; }
+.bx-reveal-bar { flex: 1; background: var(--bx-brand); }
+.bx-reveal-word { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--bx-on-brand);
+  font-size: clamp(1.5rem, 1rem + 3vw, 3rem); font-weight: var(--bx-weight-title); letter-spacing: 0.06em; text-transform: uppercase;
+  transition: opacity var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-reveal-word .bx-ch { display: inline-block; animation: bx-reveal-ch var(--bx-dur-base) var(--bx-ease-standard) both; }
+@keyframes bx-reveal-ch { from { opacity: 0; transform: translateY(100%); } }
+.bx-reveal.is-lifting .bx-reveal-word { opacity: 0; }
+/* longhands, so the bars keep the bx-d-* stagger delays */
+.bx-reveal.is-lifting .bx-reveal-bar { animation-name: bx-reveal-cover; animation-duration: 500ms; animation-timing-function: var(--bx-ease-standard); animation-fill-mode: both; }
+.bx-reveal.is-down.is-lifting .bx-reveal-bar { transform: translateY(100%); }
+.bx-reveal.is-up.is-lifting .bx-reveal-bar { transform: translateY(-100%); }
+.bx-reveal.is-fade.is-lifting .bx-reveal-bar { opacity: 0; }
+.bx-reveal.is-shrink.is-lifting .bx-reveal-bar { transform: scaleY(0); }
+@keyframes bx-reveal-cover { from { opacity: 1; transform: none; } }
+/* gradient: the bars share one brand gradient across the curtain */
+.bx-reveal.bx-v-gradient .bx-reveal-bar { background: var(--bx-gradient); background-size: 1000% 100%; }
+.bx-reveal.bx-v-gradient .bx-reveal-bar:nth-child(2) { background-position: 11.1% 0; } .bx-reveal.bx-v-gradient .bx-reveal-bar:nth-child(3) { background-position: 22.2% 0; }
+.bx-reveal.bx-v-gradient .bx-reveal-bar:nth-child(4) { background-position: 33.3% 0; } .bx-reveal.bx-v-gradient .bx-reveal-bar:nth-child(5) { background-position: 44.4% 0; }
+.bx-reveal.bx-v-gradient .bx-reveal-bar:nth-child(6) { background-position: 55.5% 0; } .bx-reveal.bx-v-gradient .bx-reveal-bar:nth-child(7) { background-position: 66.6% 0; }
+.bx-reveal.bx-v-gradient .bx-reveal-bar:nth-child(8) { background-position: 77.7% 0; } .bx-reveal.bx-v-gradient .bx-reveal-bar:nth-child(9) { background-position: 88.8% 0; }
+.bx-reveal.bx-v-gradient .bx-reveal-bar:nth-child(10) { background-position: 100% 0; }

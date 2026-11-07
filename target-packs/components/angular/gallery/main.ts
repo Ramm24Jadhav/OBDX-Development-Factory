@@ -796,21 +796,27 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="share-sheet" aria-labelledby="av6-0-h"><h2 id="av6-0-h">Share sheet</h2><div class="gate-body">
         <bx-share-sheet text="Payment REF 20931, 250.00 USD to A. Rao" />
+        <div data-variant="compact"><bx-share-sheet variant="compact" text="Payment REF 20931, 250.00 USD to A. Rao" /></div>
       </div></section>
       <section class="gate" data-component="glass-dock" aria-labelledby="av6-1-h"><h2 id="av6-1-h">Glass dock</h2><div class="gate-body">
         <bx-glass-dock [items]="[{ id: 'pay', label: 'Pay', icon: '↗' }, { id: 'cards', label: 'Cards', icon: '▭' }, { id: 'help', label: 'Help', icon: '?' }]" value="pay" />
+        <div data-variant="solid"><bx-glass-dock variant="solid" [items]="[{ id: 'pay', label: 'Pay', icon: '↗' }, { id: 'cards', label: 'Cards', icon: '▭' }, { id: 'help', label: 'Help', icon: '?' }]" value="pay" /></div>
       </div></section>
       <section class="gate" data-component="reveal-loader" aria-labelledby="av6-2-h"><h2 id="av6-2-h">Reveal loader</h2><div class="gate-body">
         <bx-reveal-loader text="Loading" [loading]="false"><p>Savings •••• 4521: 12,500.00 USD</p></bx-reveal-loader>
+        <div data-variant="gradient"><bx-reveal-loader variant="gradient" text="Loading" [loading]="false"><p>Savings •••• 4521: 12,500.00 USD</p></bx-reveal-loader></div>
       </div></section>
       <section class="gate" data-component="border-beam" aria-labelledby="av6-3-h"><h2 id="av6-3-h">Border beam</h2><div class="gate-body">
         <bx-border-beam><p>Pre-approved loan up to 10,000.00</p></bx-border-beam>
+        <div data-variant="double"><bx-border-beam variant="double"><p>Pre-approved loan up to 10,000.00</p></bx-border-beam></div>
       </div></section>
       <section class="gate" data-component="masked-avatars" aria-labelledby="av6-4-h"><h2 id="av6-4-h">Masked avatars</h2><div class="gate-body">
         <bx-masked-avatars label="Joint holders" [people]="[{ name: 'Priya Nair' }, { name: 'Arjun Rao' }, { name: 'Meera Iyer' }]" />
+        <div data-variant="ringed"><bx-masked-avatars variant="ringed" label="Joint holders" [people]="[{ name: 'Priya Nair' }, { name: 'Arjun Rao' }, { name: 'Meera Iyer' }]" /></div>
       </div></section>
       <section class="gate" data-component="aurora-hero" aria-labelledby="av6-5-h"><h2 id="av6-5-h">Aurora hero</h2><div class="gate-body">
         <bx-aurora-hero heading="Good morning, Priya" text="Your salary has arrived." />
+        <div data-variant="centered"><bx-aurora-hero variant="centered" heading="Good morning, Priya" text="Your salary has arrived." /></div>
       </div></section>
     </main>
   `,

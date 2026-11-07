@@ -1,0 +1,19 @@
+/* ---------- border beam (kind beam; ported from Vengeance UI, MIT, Copyright (c) 2025-2026 Ashutoshx7) ---------- */
+@property --bx-beam-a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.bx-border-beam { position: relative; isolation: isolate; }
+.bx-beam { position: absolute; inset: calc(var(--bx-bw) * -1); padding: calc(var(--bx-bw) + 0.5px); border-radius: inherit; pointer-events: none; --bx-beam-a: 360deg;
+  background: conic-gradient(from var(--bx-beam-a), transparent 0 72%, var(--bx-brand) 86%, var(--bx-brand-2) 94%, transparent);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: bx-beam-lap 8s linear infinite; }
+@keyframes bx-beam-lap { from { --bx-beam-a: 0deg; } }
+.bx-border-beam.is-lap-2 .bx-beam { animation-duration: 2s; } .bx-border-beam.is-lap-3 .bx-beam { animation-duration: 3s; } .bx-border-beam.is-lap-4 .bx-beam { animation-duration: 4s; }
+.bx-border-beam.is-lap-5 .bx-beam { animation-duration: 5s; } .bx-border-beam.is-lap-6 .bx-beam { animation-duration: 6s; } .bx-border-beam.is-lap-7 .bx-beam { animation-duration: 7s; }
+.bx-border-beam.is-lap-9 .bx-beam { animation-duration: 9s; } .bx-border-beam.is-lap-10 .bx-beam { animation-duration: 10s; } .bx-border-beam.is-lap-11 .bx-beam { animation-duration: 11s; }
+.bx-border-beam.is-lap-12 .bx-beam { animation-duration: 12s; } .bx-border-beam.is-lap-13 .bx-beam { animation-duration: 13s; } .bx-border-beam.is-lap-14 .bx-beam { animation-duration: 14s; }
+.bx-border-beam.is-lap-15 .bx-beam { animation-duration: 15s; } .bx-border-beam.is-lap-16 .bx-beam { animation-duration: 16s; } .bx-border-beam.is-lap-17 .bx-beam { animation-duration: 17s; }
+.bx-border-beam.is-lap-18 .bx-beam { animation-duration: 18s; } .bx-border-beam.is-lap-19 .bx-beam { animation-duration: 19s; } .bx-border-beam.is-lap-20 .bx-beam { animation-duration: 20s; }
+.bx-border-beam.is-still .bx-beam { animation: none; }
+/* double: two lights half a lap apart */
+.bx-border-beam.bx-v-double .bx-beam { background: conic-gradient(from var(--bx-beam-a), transparent 0 36%, var(--bx-brand) 43%, var(--bx-brand-2) 47%, transparent 50% 86%,
+  var(--bx-brand) 93%, var(--bx-brand-2) 97%, transparent); }
+@media (forced-colors: active) { .bx-beam { display: none; } }

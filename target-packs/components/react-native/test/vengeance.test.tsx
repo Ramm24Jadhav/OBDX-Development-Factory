@@ -62,6 +62,18 @@ describe('Vengeance UI ports', () => {
     expect([0, 4, 5, 9].map((i) => revealStep(i, 'center'))).toEqual([4, 0, 0, 4]);
   });
 
+  it('the variants change the look, not the names: compact share keeps the names for screen readers', async () => {
+    await render(<ShareSheet variant="compact" text="Ref 1" />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Share' }));
+    expect(screen.getByRole('button', { name: 'Email' })).toBeTruthy();
+    expect(screen.queryByText('Email')).toBeNull();
+    for (const el of [<GlassDock variant="solid" items={[{ id: 'pay', label: 'Pay' }]} />, <AuroraHero variant="centered" heading="Hi" />, <RevealLoader variant="gradient"><Text>A</Text></RevealLoader>,
+      <BorderBeam variant="double"><Text>B</Text></BorderBeam>, <MaskedAvatars variant="ringed" people={[{ name: 'Priya Nair' }]} />]) {
+      await render(el);
+      expect(accessibilityProblems()).toEqual([]);
+    }
+  });
+
   it('masked avatars name everyone, count the rest and show a name on press', async () => {
     await render(<MaskedAvatars max={2} people={[{ name: 'Priya Nair' }, { name: 'Arjun Rao' }, { name: 'Meera Iyer' }]} />);
     expect(screen.getByLabelText('and 1 more')).toBeTruthy();

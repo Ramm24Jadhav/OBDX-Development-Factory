@@ -15885,7 +15885,7 @@
           "id": "share-sheet",
           "name": "Share sheet",
           "purpose": "A bottom sheet of ways to share a reference, account details or a receipt: copy, email, messages and the device share.",
-          "kind": "dialog",
+          "kind": "share",
           "foundation": false,
           "workspace": {
             "kind": "none",
@@ -15957,7 +15957,7 @@
           "id": "glass-dock",
           "name": "Glass dock",
           "purpose": "A frosted dock of shortcuts; the one under the pointer lifts and one label glides above it.",
-          "kind": "nav",
+          "kind": "dock",
           "foundation": false,
           "workspace": {
             "kind": "none",
@@ -16024,7 +16024,7 @@
           "id": "reveal-loader",
           "name": "Reveal loader",
           "purpose": "A curtain of bars and a word over a screen while it loads; the bars lift one after another when it is ready.",
-          "kind": "spinner",
+          "kind": "reveal",
           "foundation": false,
           "workspace": {
             "kind": "none",
@@ -16103,7 +16103,7 @@
           "id": "border-beam",
           "name": "Border beam",
           "purpose": "A card with a light that runs round its border, to draw the eye to an offer or a pending task.",
-          "kind": "wrapper",
+          "kind": "beam",
           "foundation": false,
           "workspace": {
             "kind": "none",
@@ -16161,7 +16161,7 @@
           "id": "masked-avatars",
           "name": "Masked avatars",
           "purpose": "People as overlapping avatars (joint holders, approvers), each cut out where the next sits; the rest are counted.",
-          "kind": "avatar",
+          "kind": "avatars",
           "foundation": false,
           "workspace": {
             "kind": "none",
@@ -16692,7 +16692,7 @@
           "id": "aurora-hero",
           "name": "Aurora hero",
           "purpose": "A welcome or offer hero: drifting bands of light behind fluted glass, the heading on top.",
-          "kind": "backdrop",
+          "kind": "hero",
           "foundation": false,
           "workspace": {
             "kind": "none",

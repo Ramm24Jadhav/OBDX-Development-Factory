@@ -1,0 +1,21 @@
+/* ---------- share sheet (kind share; ported from Vengeance UI, MIT, Copyright (c) 2025-2026 Ashutoshx7) ---------- */
+.bx-share { display: inline-block; }
+.bx-share-trigger { gap: 8px; }
+.bx-share-text { margin: 0 0 12px; color: var(--bx-text-body); white-space: pre-line; overflow-wrap: anywhere; }
+.bx-share-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.bx-share-grid li { animation: bx-share-in var(--bx-dur-base) var(--bx-ease-spring) both; }
+@keyframes bx-share-in { from { opacity: 0; transform: translateY(8px) scale(0.96); } }
+.bx-share-dest { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; min-height: 76px; padding: 8px 4px; border: 0; border-radius: var(--bx-radius-control);
+  background: transparent; color: var(--bx-text); font: inherit; font-size: 13px; font-weight: var(--bx-weight); cursor: pointer;
+  transition: background var(--bx-dur-fast) var(--bx-ease-standard), transform var(--bx-dur-base) var(--bx-ease-spring); }
+.bx-share-dest:hover { background: var(--bx-track); transform: translateY(-2px); }
+.bx-share-dest:focus-visible { outline: none; box-shadow: var(--bx-focus); }
+.bx-share-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; font-size: 18px; color: var(--bx-brand-text);
+  background: color-mix(in srgb, var(--bx-brand) 12%, var(--bx-fill)); border: var(--bx-bw) solid var(--bx-rule); }
+.bx-share-icon.is-system { color: var(--bx-text); background: var(--bx-track); }
+.bx-share-note { min-height: 1.4em; margin: 12px 0 0; color: var(--bx-muted); font-size: 13px; }
+/* compact: icons in one row, the names kept for screen readers */
+.bx-share-body.bx-v-compact .bx-share-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.bx-share-body.bx-v-compact .bx-share-dest { width: auto; min-height: 52px; padding: 4px; }
+.bx-share-body.bx-v-compact .bx-share-dest > span:last-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.bx-share-body.bx-v-compact .bx-share-text { text-align: center; }

@@ -856,21 +856,27 @@ function Gallery() {
       </Section>
       <Section id="share-sheet" title="Share sheet">
         <ShareSheet text="Payment REF 20931, 250.00 USD to A. Rao" />
+        <div data-variant="compact"><ShareSheet variant="compact" text="Payment REF 20931, 250.00 USD to A. Rao" /></div>
       </Section>
       <Section id="glass-dock" title="Glass dock">
         <GlassDock items={[{ id: 'pay', label: 'Pay', icon: '↗' }, { id: 'cards', label: 'Cards', icon: '▭' }, { id: 'help', label: 'Help', icon: '?' }]} value="pay" />
+        <div data-variant="solid"><GlassDock variant="solid" items={[{ id: 'pay', label: 'Pay', icon: '↗' }, { id: 'cards', label: 'Cards', icon: '▭' }, { id: 'help', label: 'Help', icon: '?' }]} value="pay" /></div>
       </Section>
       <Section id="reveal-loader" title="Reveal loader">
         <RevealLoader text="Loading" loading={false}><p>Savings •••• 4521: 12,500.00 USD</p></RevealLoader>
+        <div data-variant="gradient"><RevealLoader variant="gradient" text="Loading" loading={false}><p>Savings •••• 4521: 12,500.00 USD</p></RevealLoader></div>
       </Section>
       <Section id="border-beam" title="Border beam">
         <BorderBeam><p>Pre-approved loan up to 10,000.00</p></BorderBeam>
+        <div data-variant="double"><BorderBeam variant="double"><p>Pre-approved loan up to 10,000.00</p></BorderBeam></div>
       </Section>
       <Section id="masked-avatars" title="Masked avatars">
         <MaskedAvatars label="Joint holders" people={[{ name: 'Priya Nair' }, { name: 'Arjun Rao' }, { name: 'Meera Iyer' }]} />
+        <div data-variant="ringed"><MaskedAvatars variant="ringed" label="Joint holders" people={[{ name: 'Priya Nair' }, { name: 'Arjun Rao' }, { name: 'Meera Iyer' }]} /></div>
       </Section>
       <Section id="aurora-hero" title="Aurora hero">
         <AuroraHero heading="Good morning, Priya" text="Your salary has arrived." />
+        <div data-variant="centered"><AuroraHero variant="centered" heading="Good morning, Priya" text="Your salary has arrived." /></div>
       </Section>
     </main>
   );

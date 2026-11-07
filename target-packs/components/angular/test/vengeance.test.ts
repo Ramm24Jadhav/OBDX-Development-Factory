@@ -82,6 +82,15 @@ describe('Vengeance UI ports', () => {
     expect([0, 4, 5, 9].map((i) => revealStep(i, 'edges'))).toEqual([0, 4, 4, 0]);
   });
 
+  it('each takes its variant as a bx-v class on its root', async () => {
+    @Component({ imports: [...VENGEANCE_COMPONENTS], template: `<bx-glass-dock variant="solid" [items]="[{ id: 'pay', label: 'Pay' }]" /><bx-aurora-hero variant="centered" heading="Hi" />
+      <bx-reveal-loader variant="gradient" [loading]="false">A</bx-reveal-loader><bx-border-beam variant="double">B</bx-border-beam>
+      <bx-masked-avatars variant="ringed" [people]="[{ name: 'Priya Nair' }]" /><bx-share-sheet variant="compact" text="Ref 1" />` })
+    class Host {}
+    const { el } = await mount(Host);
+    expect(['.bx-glass-dock.bx-v-solid', '.bx-aurora-hero.bx-v-centered', '.bx-reveal.bx-v-gradient', '.bx-border-beam.bx-v-double', '.bx-masked-avatars.bx-v-ringed', '.bx-share.bx-v-compact'].filter((s) => !el.querySelector(s))).toEqual([]);
+  });
+
   it('the border beam keeps its lap between 2 and 20 seconds; masked avatars count the rest', async () => {
     @Component({ imports: [...VENGEANCE_COMPONENTS], template: `<bx-border-beam [duration]="60">A</bx-border-beam>
       <bx-masked-avatars label="Joint holders" [max]="2" [people]="[{ name: 'Priya Nair' }, { name: 'Arjun Rao' }, { name: 'Meera Iyer' }]" />` })

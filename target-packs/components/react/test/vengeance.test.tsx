@@ -95,6 +95,14 @@ describe('Vengeance UI ports', () => {
     expect(screen.getByLabelText('and 1 more').textContent).toBe('+1');
   });
 
+  it('each takes its variant as a bx-v class on its root', () => {
+    const { container } = render(<>
+      <GlassDock variant="solid" items={[{ id: 'pay', label: 'Pay' }]} /><AuroraHero variant="centered" heading="Hi" /><RevealLoader variant="gradient" loading={false}>A</RevealLoader>
+      <BorderBeam variant="double">B</BorderBeam><MaskedAvatars variant="ringed" people={[{ name: 'Priya Nair' }]} /><ShareSheet variant="compact" text="Ref 1" />
+    </>);
+    expect(['.bx-glass-dock.bx-v-solid', '.bx-aurora-hero.bx-v-centered', '.bx-reveal.bx-v-gradient', '.bx-border-beam.bx-v-double', '.bx-masked-avatars.bx-v-ringed', '.bx-share.bx-v-compact'].filter((s) => !container.querySelector(s))).toEqual([]);
+  });
+
   it('the aurora hero has its heading and stands still on request', () => {
     const { container } = render(<AuroraHero heading="Welcome" still><button type="button">Open an account</button></AuroraHero>);
     expect(screen.getByRole('heading', { name: 'Welcome' })).toBeTruthy();

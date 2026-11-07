@@ -1,0 +1,18 @@
+/* ---------- masked avatars (kind avatars; ported from Vengeance UI, MIT, Copyright (c) 2025-2026 Ashutoshx7) ---------- */
+.bx-masked-avatars { display: flex; align-items: center; margin: 0; padding: 0 0 0 12px; list-style: none; }
+.bx-masked-avatar { position: relative; margin-left: -12px; }
+.bx-masked-face { display: block; border-radius: 50%; transition: transform var(--bx-dur-base) var(--bx-ease-spring); }
+/* each avatar is cut where the next one (40px wide, 12px over it) sits, with a 3px gap */
+.bx-masked-avatar.is-cut .bx-masked-face { -webkit-mask: radial-gradient(circle at 48px 50%, transparent 23px, #000 23.5px); mask: radial-gradient(circle at 48px 50%, transparent 23px, #000 23.5px); }
+.bx-masked-face:hover, .bx-masked-face:focus-visible { transform: translateY(-4px); }
+.bx-masked-face:focus-visible { outline: 2px solid var(--bx-brand); outline-offset: 2px; }
+.bx-masked-name { position: absolute; bottom: calc(100% + 8px); left: 50%; z-index: 2; padding: 4px 8px; border-radius: var(--bx-radius-sm); background: var(--bx-text); color: var(--bx-surface);
+  font-size: 12px; white-space: nowrap; opacity: 0; transform: translateX(-50%) translateY(4px); pointer-events: none;
+  transition: opacity var(--bx-dur-fast) var(--bx-ease-standard), transform var(--bx-dur-fast) var(--bx-ease-standard); }
+.bx-masked-face:hover + .bx-masked-name, .bx-masked-face:focus-visible + .bx-masked-name { opacity: 1; transform: translateX(-50%); }
+.bx-masked-avatar.is-more .bx-avatar { background: var(--bx-track); color: var(--bx-text); font-size: 13px; font-weight: var(--bx-weight-title); }
+/* ringed: a brand ring round each face instead of the cut, for photos on busy backgrounds */
+.bx-masked-avatars.bx-v-ringed .bx-masked-avatar.is-cut .bx-masked-face { -webkit-mask: none; mask: none; }
+.bx-masked-avatars.bx-v-ringed .bx-avatar { box-shadow: 0 0 0 2px var(--bx-surface), 0 0 0 4px var(--bx-brand); }
+.bx-masked-avatars.bx-v-ringed .bx-masked-avatar { margin-left: -8px; }
+@media (forced-colors: active) { .bx-masked-name { background: Canvas; color: CanvasText; border: 1px solid CanvasText; } }

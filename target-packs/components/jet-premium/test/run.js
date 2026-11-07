@@ -1073,6 +1073,11 @@ test('vengeance bx-border-beam keeps its lap between 2 and 20 s; bx-masked-avata
   if (!/role="img" :aria-label="\[\[p\.data\.name\]\]"/.test(registry['bx-masked-avatars'].view)) { throw new Error('avatars have no name'); }
   if (!/<h2 class="bx-aurora-title">/.test(registry['bx-aurora-hero'].view)) { throw new Error('hero heading'); }
 });
+test('vengeance: each takes its variant as a bx-v class on its root', () => {
+  eq([create('bx-glass-dock', { variant: 'solid' }).vm.css(), create('bx-aurora-hero', { variant: 'centered' }).vm.css(), create('bx-reveal-loader', { variant: 'gradient', loading: false }).vm.css(),
+    create('bx-border-beam', { variant: 'double' }).vm.css(), create('bx-masked-avatars', { variant: 'ringed' }).vm.css(), create('bx-share-sheet', { variant: 'compact' }).vm.bodyCss()],
+  ['bx-glass-dock bx-v-solid', 'bx-aurora-hero bx-v-centered', 'bx-reveal is-down bx-v-gradient is-lifting', 'bx-card bx-border-beam is-lap-8 bx-v-double', 'bx-masked-avatars bx-v-ringed', 'bx-share-body bx-v-compact'], 'variants');
+});
 test('bx-number-input: a step rolls the number in', () => {
   const played = [];
   const n = create('bx-number-input', { value: 2, max: 3 });

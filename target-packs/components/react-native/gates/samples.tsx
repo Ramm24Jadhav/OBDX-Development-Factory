@@ -11,6 +11,8 @@ import {
 import { useTheme } from '../src';
 
 const noop = () => undefined;
+// The gallery's variant marker (gallery.tsx), for samples that show a variant: react-native-web writes dataSet as data-*
+function Variant({ id, children }: { id: string; children: ReactNode }) { return <View {...({ dataSet: { variant: id } } as object)}>{children}</View>; }
 /** Sample text in the theme's colour (the platform default is black in the dark theme). */
 const Line = ({ children }: { children: ReactNode }) => <Text style={{ color: useTheme().color.text }}>{children}</Text>;
 /** A backdrop fills its parent: give it a card-sized one. */
@@ -53,7 +55,7 @@ export const SAMPLES: Record<string, [string, ReactElement]> = {
   'application-tracker': ["Application tracker", <ApplicationTracker testID="application-tracker" items={[{ label: 'Submitted', meta: '12 Jan' }]} />],
   'approval-detail': ["Approval details", <ApprovalDetail testID="approval-detail" rows={rows_g4} onApprove={noop} onReject={noop} onSendBack={noop} />],
   'approval-journey': ["Approval journey", <ApprovalJourney testID="approval-journey" items={[{ label: 'Initiated', meta: 'A. Rao · 09:12' }, { label: 'Level 2', state: 'current' }]} />],
-  'aurora-hero': ["Aurora hero", <AuroraHero heading="Good morning, Priya" text="Your salary has arrived." />],
+  'aurora-hero': ["Aurora hero", <><AuroraHero heading="Good morning, Priya" text="Your salary has arrived." /><Variant id="centered"><AuroraHero variant="centered" heading="Good morning, Priya" text="Your salary has arrived." /></Variant></>],
   'avatar': ["Avatar", <Avatar name="Asha Rao" />],
   'bell-toggle': ["Bell toggle", <BellToggle label="Payment alerts" value={false} onChange={noop} />],
   'beneficiary-card': ["Beneficiary card", <BeneficiaryCard testID="beneficiary-card" payee={payees_g2[0]} note="added 12 Mar" onPay={noop} />],
@@ -62,7 +64,7 @@ export const SAMPLES: Record<string, [string, ReactElement]> = {
   'biometric': ["Authentication challenge", <AuthChallenge testID="biometric" label="Approve the payment" authenticate={async () => true} onSuccess={noop} onFallback={noop} />],
   'block-card': ["Block or unblock", <BlockCard testID="block-card" label="Block the card" value={false} />],
   'blur-in-text': ["Blur-in text", <BlurInText text="Welcome back, Asha" />],
-  'border-beam': ["Border beam", <BorderBeam><Line>Pre-approved loan up to 10,000.00</Line></BorderBeam>],
+  'border-beam': ["Border beam", <><BorderBeam><Line>Pre-approved loan up to 10,000.00</Line></BorderBeam><Variant id="double"><BorderBeam variant="double"><Line>Pre-approved loan up to 10,000.00</Line></BorderBeam></Variant></>],
   'budget-gauge': ["Budget gauge", <BudgetGauge label="Groceries" value={320} max={400} />],
   'budgets': ["Budgets", <BudgetsWidget testID="budgets" items={[{ label: 'Groceries', value: 320, max: 400 }]} />],
   'calculators': ["Calculators", <CalculatorsWidget testID="calculators" loan={loan_g6} onLoanChange={noop} deposit={loan_g6} onDepositChange={noop} />],
@@ -104,7 +106,7 @@ export const SAMPLES: Record<string, [string, ReactElement]> = {
   'focus-word': ["Focus word", <FocusWord text="Save a little every month" />],
   'fraud-alert': ["Fraud alert", <FraudAlert testID="fraud-alert" message="We stopped a payment of 899.00 to Unknown Ltd." onAllow={noop} onBlock={noop} />],
   'glare-hover': ["Glare hover", <GlareHover label="Platinum card" onPress={noop}><Line>Card</Line></GlareHover>],
-  'glass-dock': ["Glass dock", <GlassDock items={[{ id: 'pay', label: 'Pay', icon: '↗' }, { id: 'cards', label: 'Cards', icon: '▭' }, { id: 'help', label: 'Help', icon: '?' }]} value="pay" onAction={noop} />],
+  'glass-dock': ["Glass dock", <><GlassDock items={[{ id: 'pay', label: 'Pay', icon: '↗' }, { id: 'cards', label: 'Cards', icon: '▭' }, { id: 'help', label: 'Help', icon: '?' }]} value="pay" onAction={noop} /><Variant id="solid"><GlassDock variant="solid" items={[{ id: 'pay', label: 'Pay', icon: '↗' }, { id: 'cards', label: 'Cards', icon: '▭' }, { id: 'help', label: 'Help', icon: '?' }]} value="pay" onAction={noop} /></Variant></>],
   'glass-panel': ["Glass panel", <GlassPanel><Line>Hi</Line></GlassPanel>],
   'glide-select': ["Glide select", <GlideSelect testID="glide-select" label="Show" value="d" options={opts_effects} />],
   'glow-border-card': ["Glow border card", <GlowBorderCard><Line>Premium</Line></GlowBorderCard>],
@@ -131,7 +133,7 @@ export const SAMPLES: Record<string, [string, ReactElement]> = {
   'magnetic-button': ["Magnetic button", <MagneticButton label="Pay now" onPress={noop} />],
   'mailbox': ["Mailbox", <Mailbox testID="mailbox" messages={[{ id: 'm', title: 'Your cheque book is on the way', unread: true }]} onOpen={noop} />],
   'marquee': ["Marquee", <Marquee items={['USD 0.92 EUR', 'GBP 1.27 USD']} />],
-  'masked-avatars': ["Masked avatars", <MaskedAvatars label="Joint holders" people={[{ name: 'Priya Nair' }, { name: 'Arjun Rao' }, { name: 'Meera Iyer' }]} />],
+  'masked-avatars': ["Masked avatars", <><MaskedAvatars label="Joint holders" people={[{ name: 'Priya Nair' }, { name: 'Arjun Rao' }, { name: 'Meera Iyer' }]} /><Variant id="ringed"><MaskedAvatars variant="ringed" label="Joint holders" people={[{ name: 'Priya Nair' }, { name: 'Arjun Rao' }, { name: 'Meera Iyer' }]} /></Variant></>],
   'maturity-instructions': ["Maturity instructions", <MaturityInstructions testID="maturity-instructions" label="At maturity" value="close" />],
   'modification-requested': ["Modification requested", <ModificationNotice testID="modification-requested" message="PAY-4410 was sent back." onAction={noop} />],
   'new-td': ["Open a term deposit", <NewDepositForm testID="new-td" accounts={accounts_g2} value={{ from: '', amount: null, months: null }} onReview={noop} />],
@@ -167,7 +169,7 @@ export const SAMPLES: Record<string, [string, ReactElement]> = {
   'repeat': ["Payment schedule", <PaymentSchedule testID="repeat" label="Repeat" value="Once" />],
   'reset-pin': ["Reset PIN", <ResetPin testID="reset-pin" value="" />],
   'reveal-digits': ["Reveal digits", <RevealDigits value="0012 0048 21" masked />],
-  'reveal-loader': ["Reveal loader", <RevealLoader text="Loading" loading={false}><Line>Savings •••• 4521: 12,500.00 USD</Line></RevealLoader>],
+  'reveal-loader': ["Reveal loader", <><RevealLoader text="Loading" loading={false}><Line>Savings •••• 4521: 12,500.00 USD</Line></RevealLoader><Variant id="gradient"><RevealLoader variant="gradient" text="Loading" loading={false}><Line>Savings •••• 4521: 12,500.00 USD</Line></RevealLoader></Variant></>],
   'rewards': ["Rewards", <RewardsWidget testID="rewards" tiles={tiles_g6} />],
   'rotating-text': ["Rotating text", <RotatingText prefix="Pay your" words={['rent', 'bills']} />],
   'rubber-segment': ["Rubber segment", <RubberSegment testID="rubber-segment" label="Show" value="d" options={opts_effects} />],
@@ -183,7 +185,7 @@ export const SAMPLES: Record<string, [string, ReactElement]> = {
   'sensitive': ["Sensitive information masking", <SensitiveField testID="sensitive" label="Card number" value="4111 1111 1111 4821" />],
   'session-summary': ["Session summary", <SessionSummary testID="session-summary" items={[{ label: 'Today 08:12', meta: 'iPhone 15 · London' }]} />],
   'session-timeout': ["Session expiry warning", <SessionExpiryWarning testID="session-timeout" open onStay={noop} onSignOut={noop} />],
-  'share-sheet': ["Share sheet", <ShareSheet text="Payment REF 20931, 250.00 USD to A. Rao" />],
+  'share-sheet': ["Share sheet", <><ShareSheet text="Payment REF 20931, 250.00 USD to A. Rao" /><Variant id="compact"><ShareSheet variant="compact" text="Payment REF 20931, 250.00 USD to A. Rao" /></Variant></>],
   'sheet': ["Drawer and sheet", <BottomSheet testID="sheet" heading="Filter transactions" open onOpenChange={noop}><Line>Body</Line></BottomSheet>],
   'shimmer-text': ["Shimmer text", <ShimmerText text="Loading offers" />],
   'side-nav': ["Drawer navigation", <Drawer testID="side-nav" label="Menu" open items={[{ value: 'a', label: 'Accounts' }]} selection="a" onOpenChange={noop} />],

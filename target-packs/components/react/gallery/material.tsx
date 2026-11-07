@@ -14,7 +14,7 @@ const only = new URLSearchParams(location.search).get('only');
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   if (only && only !== id) { return null; }
-  return <section className="gate" data-component={id} data-variant="material" aria-labelledby={`${id}-h`}><h2 id={`${id}-h`}>{title}</h2><div className="gate-body">{children}</div></section>;
+  return <section className="gate" data-component={id} aria-labelledby={`${id}-h`}><h2 id={`${id}-h`}>{title}</h2><div className="gate-body"><div data-variant="material">{children}</div></div></section>;
 }
 
 const accounts = [{ value: 'S', label: 'Savings •••• 4521' }, { value: 'C', label: 'Current •••• 0187' }];

@@ -1,0 +1,28 @@
+/* ---------- glass dock (kind dock; ported from Vengeance UI, MIT, Copyright (c) 2025-2026 Ashutoshx7) ---------- */
+.bx-glass-dock { position: relative; display: inline-block; }
+.bx-glass-dock ul { display: flex; gap: 8px; margin: 0; padding: 8px; list-style: none; border-radius: var(--bx-radius-xl); border: var(--bx-bw) solid var(--bx-rule);
+  background: color-mix(in srgb, var(--bx-raised) 78%, transparent); -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4); box-shadow: var(--bx-shadow-3); }
+.bx-dock-item { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: var(--bx-radius-control); background: transparent; color: var(--bx-muted);
+  font: inherit; font-size: 20px; cursor: pointer;
+  transition: transform var(--bx-dur-base) var(--bx-ease-spring), color var(--bx-dur-fast) var(--bx-ease-standard), background var(--bx-dur-fast) var(--bx-ease-standard); }
+.bx-dock-item:hover, .bx-dock-item:focus-visible { transform: translateY(-3px) scale(1.1); color: var(--bx-text); }
+.bx-dock-item:active { transform: scale(0.95); }
+.bx-dock-item:focus-visible { outline: none; box-shadow: var(--bx-focus); }
+.bx-dock-item[aria-current="page"] { color: var(--bx-brand-text); background: color-mix(in srgb, var(--bx-brand) 12%, transparent); }
+/* one label glides between items: 8px padding, then 44px items 8px apart, centred on the item */
+.bx-dock-label { position: absolute; bottom: calc(100% + 8px); left: 30px; transform: translateX(-50%); overflow: hidden; padding: 6px 12px; border-radius: var(--bx-radius-sm);
+  background: var(--bx-text); color: var(--bx-surface); font-size: 13px; font-weight: var(--bx-weight); white-space: nowrap; pointer-events: none;
+  transition: left var(--bx-dur-base) var(--bx-ease-spring); animation: bx-dock-label-in var(--bx-dur-base) var(--bx-ease-standard) both; }
+.bx-dock-label > span { display: inline-block; }
+.bx-dock-label.is-at-1 { left: 82px; } .bx-dock-label.is-at-2 { left: 134px; } .bx-dock-label.is-at-3 { left: 186px; } .bx-dock-label.is-at-4 { left: 238px; }
+.bx-dock-label.is-at-5 { left: 290px; } .bx-dock-label.is-at-6 { left: 342px; } .bx-dock-label.is-at-7 { left: 394px; } .bx-dock-label.is-at-8 { left: 446px; } .bx-dock-label.is-at-9 { left: 498px; }
+.bx-dock-label .is-from-right { animation: bx-dock-from-right var(--bx-dur-base) var(--bx-ease-standard) both; }
+.bx-dock-label .is-from-left { animation: bx-dock-from-left var(--bx-dur-base) var(--bx-ease-standard) both; }
+@keyframes bx-dock-label-in { from { opacity: 0; transform: translateX(-50%) translateY(6px) scale(0.92); } }
+@keyframes bx-dock-from-right { from { opacity: 0; transform: translateX(14px); filter: blur(4px); } }
+@keyframes bx-dock-from-left { from { opacity: 0; transform: translateX(-14px); filter: blur(4px); } }
+/* solid: an opaque dock for busy backgrounds and low-power phones */
+.bx-glass-dock.bx-v-solid ul { background: var(--bx-raised); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: var(--bx-shadow-2); }
+@media (forced-colors: active) {
+  .bx-glass-dock ul, .bx-dock-label { background: Canvas; color: CanvasText; border: 1px solid CanvasText; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}

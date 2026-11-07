@@ -1,0 +1,21 @@
+/* ---------- aurora hero (kind hero; ported from Vengeance UI, MIT, Copyright (c) 2025-2026 Ashutoshx7) ---------- */
+.bx-aurora-hero { position: relative; display: grid; align-items: end; min-height: 240px; overflow: hidden; isolation: isolate; border-radius: var(--bx-radius-lg);
+  border: var(--bx-bw) solid var(--bx-rule); background: var(--bx-card); color: var(--bx-text); }
+.bx-aurora-bands { position: absolute; inset: 0; z-index: -2; opacity: 0.6; filter: blur(10px) saturate(1.4);
+  background-image: repeating-linear-gradient(100deg, var(--bx-surface) 0%, var(--bx-surface) 7%, transparent 10%, transparent 12%, var(--bx-surface) 16%),
+    repeating-linear-gradient(100deg, var(--bx-brand) 10%, var(--bx-brand-2) 15%, var(--bx-brand) 20%, var(--bx-info) 25%, var(--bx-brand) 30%);
+  background-size: 300%, 200%; background-position: 350% 50%, 350% 50%;
+  -webkit-mask-image: radial-gradient(ellipse at 100% 0%, #000 40%, transparent 75%); mask-image: radial-gradient(ellipse at 100% 0%, #000 40%, transparent 75%);
+  animation: bx-aurora-drift 60s linear infinite; }
+@keyframes bx-aurora-drift { from { background-position: 50% 50%, 50% 50%; } }
+.bx-aurora-flutes { position: absolute; inset: 0; z-index: -1; background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--bx-surface) 22%, transparent) 0 1px, transparent 1px 3%);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.bx-aurora-content { display: grid; gap: 8px; max-width: 40rem; padding: 32px var(--bx-pad-card); }
+.bx-aurora-title { margin: 0; font-size: clamp(1.75rem, 1rem + 3vw, 3rem); font-weight: var(--bx-weight-title); line-height: 1.1; letter-spacing: -0.02em; }
+.bx-aurora-text { margin: 0; color: var(--bx-text-body); }
+.bx-aurora-hero.is-still .bx-aurora-bands { animation: none; }
+/* centered: the original's layout, the light from the top and the heading in the middle */
+.bx-aurora-hero.bx-v-centered { align-items: center; justify-items: center; text-align: center; }
+.bx-aurora-hero.bx-v-centered .bx-aurora-bands { -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 30%, transparent 70%); mask-image: radial-gradient(ellipse at 50% 0%, #000 30%, transparent 70%); }
+.bx-aurora-hero.bx-v-centered .bx-aurora-content { justify-items: center; }
+@media (forced-colors: active) { .bx-aurora-bands, .bx-aurora-flutes { display: none; } }

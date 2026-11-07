@@ -27,6 +27,8 @@ import { Sheet, initials } from './G1';
 import { reducedMotion } from './motion';
 
 const stagger = (i: number) => `bx-d-${Math.max(0, Math.min(i, 19))}`;
+/** The class of a style variant (variants.json); nothing for the default look. */
+const vc = (variant?: string) => (variant ? ' bx-v-' + variant : '');
 
 /* ---------- ShareSheet ---------- */
 
@@ -41,6 +43,8 @@ export interface ShareSheetProps {
   /** A link shared with the text (http or https only). */
   url?: string;
   onShare?: (channel: ShareChannel) => void;
+  /** A style variant from variants.json; compact: icons in one row. */
+  variant?: 'compact';
 }
 
 const safeUrl = (u?: string) => { try { return u && /^https?:$/.test(new URL(u).protocol) ? u : ''; } catch { return ''; } };
@@ -48,7 +52,7 @@ const safeUrl = (u?: string) => { try { return u && /^https?:$/.test(new URL(u).
 export const shareBody = (text: string, url?: string) => [text, safeUrl(url)].filter(Boolean).join('\n');
 
 /** A bottom sheet of ways to share: copy, email, messages and the device's own share. */
-export function ShareSheet({ testID, label = 'Share', heading = 'Share', text, url, onShare }: ShareSheetProps) {
+export function ShareSheet({ testID, label = 'Share', heading = 'Share', text, url, onShare, variant }: ShareSheetProps) {
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState('');
   const body = shareBody(text, url);
@@ -66,14 +70,16 @@ export function ShareSheet({ testID, label = 'Share', heading = 'Share', text, u
   const items: [ShareChannel, string, string, () => void][] = [['copy', 'Copy', '⧉', copy], ['email', 'Email', '✉', () => go('email')], ['sms', 'Messages', '✆', () => go('sms')]];
   if (system) { items.push(['system', 'More', '⋯', share]); }
   return (
-    <span className="bx-share" data-testid={testID}>
+    <span className={'bx-share' + vc(variant)} data-testid={testID}>
       <button type="button" className="bx-btn bx-btn--outlined bx-share-trigger" onClick={() => { setNote(''); setOpen(true); }}><span aria-hidden="true">⇪</span> {label}</button>
       <Sheet open={open} onOpenChange={setOpen} heading={heading} position="bottom">
+        <div className={'bx-share-body' + vc(variant)}>
         <p className="bx-share-text">{body}</p>
         <ul className="bx-share-grid">
           {items.map(([c, name, icon, act], i) => <li key={c} className={stagger(i * 2)}><button type="button" className="bx-share-dest" onClick={act}><span className={`bx-share-icon is-${c}`} aria-hidden="true">{icon}</span><span>{name}</span></button></li>)}
         </ul>
         <p className="bx-share-note" role="status">{note}</p>
+        </div>
       </Sheet>
     </span>
   );
@@ -82,15 +88,15 @@ export function ShareSheet({ testID, label = 'Share', heading = 'Share', text, u
 /* ---------- GlassDock ---------- */
 
 export interface DockEntry { id: string; label: string; icon?: string }
-export interface GlassDockProps { testID?: string; label?: string; items: ReadonlyArray<DockEntry>; value?: string; onAction?: (id: string) => void }
+export interface GlassDockProps { testID?: string; label?: string; items: ReadonlyArray<DockEntry>; value?: string; onAction?: (id: string) => void; /** solid: an opaque dock. */ variant?: 'solid' }
 
 /** A frosted dock of shortcuts; the one under the pointer lifts and one label glides above it. */
-export function GlassDock({ testID, label = 'Shortcuts', items, value, onAction }: GlassDockProps) {
+export function GlassDock({ testID, label = 'Shortcuts', items, value, onAction, variant }: GlassDockProps) {
   const [at, setAt] = useState<number | null>(null);
   const [from, setFrom] = useState<'left' | 'right' | ''>('');
   const point = (i: number) => { setFrom(at === null || at === i ? '' : i > at ? 'right' : 'left'); setAt(i); };
   return (
-    <nav className="bx-glass-dock" aria-label={label} data-testid={testID} onPointerLeave={() => setAt(null)}
+    <nav className={'bx-glass-dock' + vc(variant)} aria-label={label} data-testid={testID} onPointerLeave={() => setAt(null)}
          onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) { setAt(null); } }}>
       {at !== null && items[at] ? <span className={'bx-dock-label is-at-' + Math.min(at, 9)} aria-hidden="true"><span key={items[at].id} className={from ? 'is-from-' + from : ''}>{items[at].label}</span></span> : null}
       <ul>
@@ -109,12 +115,12 @@ export function GlassDock({ testID, label = 'Shortcuts', items, value, onAction 
 
 /* ---------- AuroraHero ---------- */
 
-export interface AuroraHeroProps { testID?: string; heading: string; text?: string; still?: boolean; children?: ReactNode }
+export interface AuroraHeroProps { testID?: string; heading: string; text?: string; still?: boolean; children?: ReactNode; /** centered: the heading in the middle. */ variant?: 'centered' }
 
 /** A hero with drifting bands of light behind fluted glass and the heading on top. */
-export function AuroraHero({ testID, heading, text, still, children }: AuroraHeroProps) {
+export function AuroraHero({ testID, heading, text, still, children, variant }: AuroraHeroProps) {
   return (
-    <section className={'bx-aurora-hero' + (still ? ' is-still' : '')} data-testid={testID}>
+    <section className={'bx-aurora-hero' + vc(variant) + (still ? ' is-still' : '')} data-testid={testID}>
       <span className="bx-aurora-bands" aria-hidden="true" /><span className="bx-aurora-flutes" aria-hidden="true" />
       <div className="bx-aurora-content"><h2 className="bx-aurora-title">{heading}</h2>{text ? <p className="bx-aurora-text">{text}</p> : null}{children}</div>
     </section>
@@ -135,6 +141,8 @@ export interface RevealLoaderProps {
   exit?: RevealExit;
   onComplete?: () => void;
   children?: ReactNode;
+  /** gradient: the bars share one brand gradient. */
+  variant?: 'gradient';
 }
 
 const BARS = 10;
@@ -143,7 +151,7 @@ export const revealStep = (i: number, order: RevealOrder = 'start') =>
   order === 'end' ? BARS - 1 - i : order === 'center' ? Math.floor(Math.abs(i - (BARS - 1) / 2)) : order === 'edges' ? 4 - Math.floor(Math.abs(i - (BARS - 1) / 2)) : i;
 
 /** A curtain of bars and a word over the content; when loading ends the bars lift one after another. */
-export function RevealLoader({ testID, text = 'Loading', loading = true, order = 'start', exit = 'down', onComplete, children }: RevealLoaderProps) {
+export function RevealLoader({ testID, text = 'Loading', loading = true, order = 'start', exit = 'down', onComplete, children, variant }: RevealLoaderProps) {
   const [gone, setGone] = useState(!loading);
   const done = useRef(onComplete);
   done.current = onComplete;
@@ -153,7 +161,7 @@ export function RevealLoader({ testID, text = 'Loading', loading = true, order =
     return () => clearTimeout(t);
   }, [loading]);
   return (
-    <div className={`bx-reveal is-${exit}` + (loading ? '' : ' is-lifting')} data-testid={testID}>
+    <div className={`bx-reveal is-${exit}` + vc(variant) + (loading ? '' : ' is-lifting')} data-testid={testID}>
       <div className="bx-reveal-content" aria-busy={loading || undefined} inert={!gone || undefined}>{children}</div>
       {gone ? null : (
         <div className="bx-reveal-curtain" role="status">
@@ -167,25 +175,25 @@ export function RevealLoader({ testID, text = 'Loading', loading = true, order =
 
 /* ---------- BorderBeam ---------- */
 
-export interface BorderBeamProps { testID?: string; /** Seconds for one lap. */ duration?: number; still?: boolean; children?: ReactNode }
+export interface BorderBeamProps { testID?: string; /** Seconds for one lap. */ duration?: number; still?: boolean; children?: ReactNode; /** double: two lights. */ variant?: 'double' }
 
 /** A card with a light that runs round its border, to draw the eye to an offer or a pending task. */
-export function BorderBeam({ testID, duration = 8, still, children }: BorderBeamProps) {
+export function BorderBeam({ testID, duration = 8, still, children, variant }: BorderBeamProps) {
   const lap = Math.min(Math.max(Math.round(duration), 2), 20);
-  return <div className={`bx-card bx-border-beam is-lap-${lap}` + (still ? ' is-still' : '')} data-testid={testID}><span className="bx-beam" aria-hidden="true" />{children}</div>;
+  return <div className={`bx-card bx-border-beam is-lap-${lap}` + vc(variant) + (still ? ' is-still' : '')} data-testid={testID}><span className="bx-beam" aria-hidden="true" />{children}</div>;
 }
 
 /* ---------- MaskedAvatars ---------- */
 
 export interface Person { name: string; src?: string }
-export interface MaskedAvatarsProps { testID?: string; label?: string; people: ReadonlyArray<Person>; /** Shown before the rest are counted. */ max?: number }
+export interface MaskedAvatarsProps { testID?: string; label?: string; people: ReadonlyArray<Person>; /** Shown before the rest are counted. */ max?: number; /** ringed: a brand ring, no cut. */ variant?: 'ringed' }
 
 /** People as overlapping avatars, each cut out where the next one sits; the one under the pointer lifts and shows its name. */
-export function MaskedAvatars({ testID, label = 'People', people, max = 5 }: MaskedAvatarsProps) {
+export function MaskedAvatars({ testID, label = 'People', people, max = 5, variant }: MaskedAvatarsProps) {
   const shown = people.slice(0, max);
   const rest = people.length - shown.length;
   return (
-    <ul className="bx-masked-avatars" aria-label={label} data-testid={testID}>
+    <ul className={'bx-masked-avatars' + vc(variant)} aria-label={label} data-testid={testID}>
       {shown.map((p, i) => (
         <li key={`${p.name}-${i}`} className={'bx-masked-avatar' + (i < shown.length - 1 || rest ? ' is-cut' : '')}>
           <span className="bx-masked-face" role="img" aria-label={p.name} tabIndex={0}>

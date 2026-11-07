@@ -2866,6 +2866,60 @@
         { "id": "default", "name": "Default", "purpose": "The component as the pack draws it today", "pattern": "The pack's own design", "source": "own", "licence": "own", "built": ["jet-premium", "react", "angular", "react-native"] }
       ],
       "motion": { "enter": null, "hover": "style", "press": "effect", "change": "effect" }
+    },
+    "share-sheet": {
+      "kind": "share",
+      "wave": "V6",
+      "variants": [
+        { "id": "default", "name": "Default", "purpose": "The component as the pack draws it today, as ported", "pattern": "Vengeance UI", "source": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), ported", "licence": "MIT", "built": ["jet-premium", "react", "angular", "react-native"] },
+        { "id": "compact", "name": "Compact", "purpose": "Icons in one row, the names kept for screen readers", "pattern": "Vengeance UI share sheet, variant 'compact'", "source": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), ported", "licence": "MIT", "built": ["jet-premium", "react", "angular", "react-native"] }
+      ],
+      "motion": { "enter": "fade", "hover": null, "press": "style", "change": null }
+    },
+    "glass-dock": {
+      "kind": "dock",
+      "wave": "V6",
+      "variants": [
+        { "id": "default", "name": "Default", "purpose": "The component as the pack draws it today, as ported", "pattern": "Vengeance UI", "source": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), ported", "licence": "MIT", "built": ["jet-premium", "react", "angular", "react-native"] },
+        { "id": "solid", "name": "Solid", "purpose": "An opaque dock for busy backgrounds and low-power phones", "pattern": "Opaque bottom docks", "source": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), ported", "licence": "MIT", "built": ["jet-premium", "react", "angular", "react-native"] }
+      ],
+      "motion": { "enter": null, "hover": "effect", "press": "style", "change": "slide" }
+    },
+    "aurora-hero": {
+      "kind": "hero",
+      "wave": "V6",
+      "variants": [
+        { "id": "default", "name": "Default", "purpose": "The component as the pack draws it today, as ported", "pattern": "Vengeance UI", "source": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), ported", "licence": "MIT", "built": ["jet-premium", "react", "angular", "react-native"] },
+        { "id": "centered", "name": "Centred", "purpose": "The light from the top and the heading in the middle", "pattern": "Vengeance UI aurora hero layout", "source": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), ported", "licence": "MIT", "built": ["jet-premium", "react", "angular", "react-native"] }
+      ],
+      "motion": { "enter": "fade", "hover": null, "press": null, "change": null }
+    },
+    "reveal-loader": {
+      "kind": "reveal",
+      "wave": "V6",
+      "variants": [
+        { "id": "default", "name": "Default", "purpose": "The component as the pack draws it today, as ported", "pattern": "Vengeance UI", "source": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), ported", "licence": "MIT", "built": ["jet-premium", "react", "angular", "react-native"] },
+        { "id": "gradient", "name": "Gradient", "purpose": "The bars share one brand gradient", "pattern": "Vengeance UI reveal loader with several bgColors", "source": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), ported", "licence": "MIT", "built": ["jet-premium", "react", "angular", "react-native"] }
+      ],
+      "motion": { "enter": null, "hover": null, "press": null, "change": "effect" }
+    },
+    "border-beam": {
+      "kind": "beam",
+      "wave": "V6",
+      "variants": [
+        { "id": "default", "name": "Default", "purpose": "The component as the pack draws it today, as ported", "pattern": "Vengeance UI", "source": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), ported", "licence": "MIT", "built": ["jet-premium", "react", "angular", "react-native"] },
+        { "id": "double", "name": "Double beam", "purpose": "Two lights half a lap apart", "pattern": "Vengeance UI border beam with a delay", "source": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), ported", "licence": "MIT", "built": ["jet-premium", "react", "angular", "react-native"] }
+      ],
+      "motion": { "enter": null, "hover": "effect", "press": null, "change": null }
+    },
+    "masked-avatars": {
+      "kind": "avatars",
+      "wave": "V6",
+      "variants": [
+        { "id": "default", "name": "Default", "purpose": "The component as the pack draws it today, as ported", "pattern": "Vengeance UI", "source": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), ported", "licence": "MIT", "built": ["jet-premium", "react", "angular", "react-native"] },
+        { "id": "ringed", "name": "Ringed", "purpose": "A brand ring round each face instead of the cut", "pattern": "Vengeance UI masked avatars, 'ringed'", "source": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), ported", "licence": "MIT", "built": ["jet-premium", "react", "angular", "react-native"] }
+      ],
+      "motion": { "enter": "style", "hover": "effect", "press": null, "change": null }
     }
   }
 }

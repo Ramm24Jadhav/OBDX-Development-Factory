@@ -58,13 +58,15 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1'], function (Com
       return l.map(function (o, i) { return { id: o[0], name: o[1], icon: o[2], css: d(i * 2), iconCss: 'bx-share-icon is-' + o[0], act: function () { act(o[0]); } }; });
     });
     self.show = function () { self.note(''); self.open(true); };
+    self.css = ko.pureComputed(function () { return 'bx-share' + bx.variantClass(self.props.variant); });
+    self.bodyCss = ko.pureComputed(function () { return 'bx-share-body' + bx.variantClass(self.props.variant); });
   }
-  kinds.share = { model: ShareKind, events: { ojShare: { bubbles: true } }, props: { label: str('Share'), heading: str('Share'), text: str(), url: str() },
-    view: '<span class="bx-share"><button type="button" class="bx-btn bx-btn--outlined bx-share-trigger" on-click="[[show]]"><span aria-hidden="true">⇪</span> ' + txt('$properties.label') + '</button>'
-      + '<bx-sheet open="{{open}}" heading="[[$properties.heading]]" position="bottom"><p class="bx-share-text">' + txt('body') + '</p>'
+  kinds.share = { model: ShareKind, events: { ojShare: { bubbles: true } }, props: { label: str('Share'), heading: str('Share'), text: str(), url: str(), variant: str() },
+    view: '<span :class="[[css]]"><button type="button" class="bx-btn bx-btn--outlined bx-share-trigger" on-click="[[show]]"><span aria-hidden="true">⇪</span> ' + txt('$properties.label') + '</button>'
+      + '<bx-sheet open="{{open}}" heading="[[$properties.heading]]" position="bottom"><div :class="[[bodyCss]]"><p class="bx-share-text">' + txt('body') + '</p>'
       + '<ul class="bx-share-grid">' + each('dests', 's', '<li :class="[[s.data.css]]"><button type="button" class="bx-share-dest" on-click="[[s.data.act]]"><span :class="[[s.data.iconCss]]" aria-hidden="true">'
         + txt('s.data.icon') + '</span><span>' + txt('s.data.name') + '</span></button></li>') + '</ul>'
-      + '<p class="bx-share-note" role="status">' + txt('note') + '</p></bx-sheet></span>' };
+      + '<p class="bx-share-note" role="status">' + txt('note') + '</p></div></bx-sheet></span>' };
 
   /* ---------- bx-glass-dock: a frosted dock; one label glides to the shortcut under the pointer ---------- */
   function DockKind(context) {
@@ -87,11 +89,12 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1'], function (Com
     });
     // The label stays while it moves (so it glides); its text is rebuilt
     self.labelCss = ko.pureComputed(function () { return 'bx-dock-label is-at-' + Math.min(self.at() || 0, 9); });
+    self.css = ko.pureComputed(function () { return 'bx-glass-dock' + bx.variantClass(self.props.variant); });
     self.leave = function () { self.at(null); };
     self.focusOut = function (event) { if (!event.currentTarget.contains(event.relatedTarget)) { self.at(null); } };
   }
-  kinds.dock = { model: DockKind, events: k.ACTION, props: { label: str('Shortcuts'), items: arr(), value: str() },
-    view: '<nav class="bx-glass-dock" :aria-label="[[$properties.label]]" on-pointerleave="[[leave]]" on-focusout="[[focusOut]]">'
+  kinds.dock = { model: DockKind, events: k.ACTION, props: { label: str('Shortcuts'), items: arr(), value: str(), variant: str() },
+    view: '<nav :class="[[css]]" :aria-label="[[$properties.label]]" on-pointerleave="[[leave]]" on-focusout="[[focusOut]]">'
       + iff('at() !== null', '<span :class="[[labelCss]]" aria-hidden="true">' + each('label', 'l', '<span :class="[[l.data.from]]">' + txt('l.data.text') + '</span>') + '</span>')
       + '<ul>' + each('items', 'o', '<li><button type="button" class="bx-dock-item" :aria-label="[[o.data.label]]" :aria-current="[[o.data.current]]" on-pointerenter="[[o.data.point]]"'
         + ' on-focus="[[o.data.point]]" on-click="[[o.data.act]]"><span class="bx-dock-icon" aria-hidden="true">' + txt('o.data.icon') + '</span></button></li>') + '</ul></nav>' };
@@ -100,9 +103,9 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1'], function (Com
   function AuroraKind(context) {
     var self = this;
     base(self, context, 'bx-aurora');
-    self.css = ko.pureComputed(function () { return 'bx-aurora-hero' + (self.props.still ? ' is-still' : ''); });
+    self.css = ko.pureComputed(function () { return 'bx-aurora-hero' + bx.variantClass(self.props.variant) + (self.props.still ? ' is-still' : ''); });
   }
-  kinds.aurora = { model: AuroraKind, props: { heading: str(), text: str(), still: bool() },
+  kinds.aurora = { model: AuroraKind, props: { heading: str(), text: str(), still: bool(), variant: str() },
     view: '<section :class="[[css]]"><span class="bx-aurora-bands" aria-hidden="true"></span><span class="bx-aurora-flutes" aria-hidden="true"></span><div class="bx-aurora-content">'
       + '<h2 class="bx-aurora-title">' + txt('$properties.heading') + '</h2>' + iff('$properties.text', '<p class="bx-aurora-text">' + txt('$properties.text') + '</p>')
       + '<oj-bind-slot></oj-bind-slot></div></section>' };
@@ -118,7 +121,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1'], function (Com
     base(self, context, 'bx-reveal');
     var timer = null;
     self.gone = ko.observable(!self.props.loading);
-    self.css = ko.pureComputed(function () { return 'bx-reveal is-' + (self.props.exit || 'down') + (self.props.loading ? '' : ' is-lifting'); });
+    self.css = ko.pureComputed(function () { return 'bx-reveal is-' + (self.props.exit || 'down') + bx.variantClass(self.props.variant) + (self.props.loading ? '' : ' is-lifting'); });
     self.busy = ko.pureComputed(function () { return self.props.loading ? 'true' : null; });
     self.inert = ko.pureComputed(function () { return self.gone() ? null : true; });
     self.bars = ko.pureComputed(function () { var l = []; for (var i = 0; i < BARS; i++) { l.push('bx-reveal-bar ' + d(revealStep(i, self.props.order) * 2)); } return l; });
@@ -132,7 +135,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1'], function (Com
     self.propertyChanged = function (e) { if (e.property === 'loading') { lift(); } };
     self.disconnected = clear;
   }
-  kinds.reveal = { model: RevealKind, events: { ojComplete: { bubbles: true } }, props: { text: str('Loading'), loading: bool(true), order: str('start'), exit: str('down') },
+  kinds.reveal = { model: RevealKind, events: { ojComplete: { bubbles: true } }, props: { text: str('Loading'), loading: bool(true), order: str('start'), exit: str('down'), variant: str() },
     view: '<div :class="[[css]]"><div class="bx-reveal-content" :aria-busy="[[busy]]" :inert="[[inert]]"><oj-bind-slot></oj-bind-slot></div>'
       + iff('!gone()', '<div class="bx-reveal-curtain" role="status">' + each('bars', 'b', '<span :class="[[b.data]]" aria-hidden="true"></span>')
         + '<span class="bx-reveal-word">' + each('chars', 'c', '<span :class="[[c.data.css]]" aria-hidden="true">' + txt('c.data.ch') + '</span>')
@@ -144,10 +147,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1'], function (Com
     base(self, context, 'bx-beam');
     self.css = ko.pureComputed(function () {
       var lap = Math.min(Math.max(Math.round(Number(self.props.duration) || 8), 2), 20);
-      return 'bx-card bx-border-beam is-lap-' + lap + (self.props.still ? ' is-still' : '');
+      return 'bx-card bx-border-beam is-lap-' + lap + bx.variantClass(self.props.variant) + (self.props.still ? ' is-still' : '');
     });
   }
-  kinds.beam = { model: BeamKind, props: { duration: num(8), still: bool() },
+  kinds.beam = { model: BeamKind, props: { duration: num(8), still: bool(), variant: str() },
     view: '<div :class="[[css]]"><span class="bx-beam" aria-hidden="true"></span><oj-bind-slot></oj-bind-slot></div>' };
 
   /* ---------- bx-masked-avatars: overlapping avatars, each cut where the next sits ---------- */
@@ -156,6 +159,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1'], function (Com
     base(self, context, 'bx-masked');
     var max = function () { var m = Number(self.props.max); return m > 0 ? m : 5; };
     self.rest = ko.pureComputed(function () { return Math.max(0, (self.props.people || []).length - max()); });
+    self.css = ko.pureComputed(function () { return 'bx-masked-avatars' + bx.variantClass(self.props.variant); });
     self.restLabel = ko.pureComputed(function () { return 'and ' + self.rest() + ' more'; });
     self.restText = ko.pureComputed(function () { return '+' + self.rest(); });
     self.shown = ko.pureComputed(function () {
@@ -163,8 +167,8 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1'], function (Com
       return l.map(function (p, i) { return { name: p.name, src: p.src || '', initials: k.initials(p.name), css: 'bx-masked-avatar' + (i < l.length - 1 || self.rest() ? ' is-cut' : '') }; });
     });
   }
-  kinds.masked = { model: MaskedKind, props: { label: str('People'), people: arr(), max: num(5) },
-    view: '<ul class="bx-masked-avatars" :aria-label="[[$properties.label]]">' + each('shown', 'p', '<li :class="[[p.data.css]]"><span class="bx-masked-face" role="img" :aria-label="[[p.data.name]]" tabindex="0">'
+  kinds.masked = { model: MaskedKind, props: { label: str('People'), people: arr(), max: num(5), variant: str() },
+    view: '<ul :class="[[css]]" :aria-label="[[$properties.label]]">' + each('shown', 'p', '<li :class="[[p.data.css]]"><span class="bx-masked-face" role="img" :aria-label="[[p.data.name]]" tabindex="0">'
       + iff('p.data.src', '<img class="bx-avatar" :src="[[p.data.src]]" alt=""/>') + iff('!p.data.src', '<span class="bx-avatar" aria-hidden="true">' + txt('p.data.initials') + '</span>')
       + '</span><span class="bx-masked-name" aria-hidden="true">' + txt('p.data.name') + '</span></li>')
       + iff('rest() > 0', '<li class="bx-masked-avatar is-more"><span class="bx-avatar" :aria-label="[[restLabel]]">' + txt('restText') + '</span></li>') + '</ul>' };
