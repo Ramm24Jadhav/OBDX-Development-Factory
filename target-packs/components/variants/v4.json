@@ -1,0 +1,3436 @@
+{
+  "$comment": "Wave V4 of docs/COMPONENT-VARIANTS-PLAN.md: banking widgets. Per component, its variants (the class bx-<kind>--<id> on its root and the variant property in every pack; the default needs no class), its motion and its empty and loading states, and per pack whether each variant is built. Merged into variants.json.",
+  "wave": "V4",
+  "kinds": [
+    "bills",
+    "balance",
+    "payees",
+    "cardtile",
+    "txlist",
+    "receipt",
+    "form",
+    "calc",
+    "biometric",
+    "locator",
+    "chat",
+    "avatar",
+    "board",
+    "sensitive"
+  ],
+  "leftToOtherWaves": {
+    "number": "V5 (rolling-digits, count-up and scrub-field are effects)",
+    "iban": "V1 (kind text)",
+    "spend-limit": "V1 (built on the slider)"
+  },
+  "components": [
+    {
+      "id": "avatar",
+      "kind": "avatar",
+      "class": "bx-avatar",
+      "variants": [
+        {
+          "id": "circle",
+          "name": "Circle",
+          "purpose": "A round photo or the initials on a neutral fill; the default.",
+          "pattern": "Avatar (Material 3)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "rounded",
+          "name": "Rounded",
+          "purpose": "A rounded square, for businesses and payees that are companies.",
+          "pattern": "Rounded square avatar (business accounts)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "ring",
+          "name": "Ring",
+          "purpose": "A circle with a brand ring around it, for the signed-in customer.",
+          "pattern": "Ringed avatar",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "tonal",
+          "name": "Tonal",
+          "purpose": "Initials on a soft colour picked from the name, so payees tell apart at a glance.",
+          "pattern": "Generated colour avatar (contact apps)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Fades in",
+        "hover": "None: an avatar is not a control",
+        "press": "None",
+        "change": "A new photo cross-fades over the initials",
+        "reduced": "Changes at once"
+      },
+      "states": {
+        "empty": "No photo: the initials of the name; no name: an empty circle with no label",
+        "loading": "None: the initials show until the photo loads",
+        "loadingProperty": false
+      }
+    },
+    {
+      "id": "notification-panel",
+      "kind": "bills",
+      "class": "bx-bills",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Rows with a line between and the action on the right; the default.",
+          "pattern": "Two-line list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a row with the meta beside the title, for dashboards with little room.",
+          "pattern": "Condensed structured list (IBM Carbon)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows: the meta on its own line and the value set large, for a page of its own.",
+          "pattern": "Inset grouped list (Apple Human Interface Guidelines)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each row its own card with space between, for a feed the customer scrolls.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The panel as glass over a backdrop or photo, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"Nothing here yet.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "balance-card",
+      "kind": "balance",
+      "class": "bx-balance",
+      "variants": [
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "The label, the amount and its line in a card; the default.",
+          "pattern": "Account balance card (OBDX dashboard)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "Label and amount on one line, for a header or a list of accounts.",
+          "pattern": "Inline key figure",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "hero",
+          "name": "Hero",
+          "purpose": "The amount large on the brand colour, for the top of the home screen.",
+          "pattern": "Hero balance (retail banking apps' home screens)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The card as glass over a backdrop, for a home screen with a photo or gradient.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "The card fades and rises 8 px (--bx-dur-base)",
+        "hover": "None on the card; the Show or Hide button takes the surface tint",
+        "press": "The Show or Hide button scales to 0.97",
+        "change": "Hiding or showing cross-fades the amount; a new amount rolls its digits (the number effects of wave V5)",
+        "reduced": "The amount changes at once with no fade or roll"
+      },
+      "states": {
+        "empty": "No amount: the amount line is left empty and the label stays",
+        "loading": "A skeleton line in place of the amount; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "payee-list",
+      "kind": "payees",
+      "class": "bx-payees",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Search, then rows with the payee's initials, name and bank; the default.",
+          "pattern": "Contact list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "Names and banks only, without the initials, for a long list in a small space.",
+          "pattern": "Condensed list",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "grid",
+          "name": "Grid",
+          "purpose": "Initials in a circle above the name, in a grid, for the payees used most.",
+          "pattern": "Favourite contacts grid (payment apps' recent payees)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each payee its own card, for a page of payees.",
+          "pattern": "Card list",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"No payees match.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "payment-form",
+      "kind": "form",
+      "class": "bx-form",
+      "variants": [
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "The heading, the screen's fields, the summary and the buttons in a card; the default.",
+          "pattern": "Form card (Oracle Redwood)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "flat",
+          "name": "Flat",
+          "purpose": "No card: the form straight on the page, for a full-screen step on a phone.",
+          "pattern": "Full-page form (GOV.UK question pages)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "sectioned",
+          "name": "Sectioned",
+          "purpose": "A line between the fields, the summary and the buttons, which stick to the bottom on phones.",
+          "pattern": "Sectioned form with a sticky action bar",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The form as glass over a backdrop.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "The card fades and rises 8 px",
+        "hover": "None on the card; the buttons take their own",
+        "press": "The buttons scale to 0.97",
+        "change": "The summary rows fade in when the fields give them",
+        "reduced": "No rise or fade"
+      },
+      "states": {
+        "empty": "No summary: the fields and buttons only",
+        "loading": "Busy: the submit button spins and is disabled (aria-busy), set by the busy property",
+        "loadingProperty": false
+      }
+    },
+    {
+      "id": "transaction-list",
+      "kind": "txlist",
+      "class": "bx-txlist",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Initials, what it was, when, and the amount; money in green with a plus; the default.",
+          "pattern": "Transaction feed (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "Without the initials and with tighter rows, for a widget on a dashboard.",
+          "pattern": "Condensed transaction list",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows with the meta on its own line and the amount large, for the statement page.",
+          "pattern": "Statement view (retail banking apps)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each transaction its own card, for a feed.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The list as glass over a backdrop, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"No transactions in this period.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "receipt",
+      "kind": "receipt",
+      "class": "bx-receipt",
+      "variants": [
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "The tick, the amount, the reference and the details in a card; the default.",
+          "pattern": "Confirmation screen (GOV.UK confirmation page)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "ticket",
+          "name": "Ticket",
+          "purpose": "A paper receipt with a perforated edge and a dashed line before the details.",
+          "pattern": "Paper receipt",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "minimal",
+          "name": "Minimal",
+          "purpose": "No card: the amount and details straight on the page, for a full screen.",
+          "pattern": "Plain confirmation",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The receipt as glass over a backdrop, for a success screen with a gradient.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "The tick pops (bx-pop) and the card rises 8 px; the details follow 60 ms later",
+        "hover": "None on the card; the actions take their button hover",
+        "press": "The actions scale to 0.97",
+        "change": "None: a receipt does not change once shown",
+        "reduced": "Everything shows at once with no pop or rise"
+      },
+      "states": {
+        "empty": "No details: the tick, the heading and the reference only",
+        "loading": "None: the screen shows the receipt when the bank has confirmed",
+        "loadingProperty": false
+      }
+    },
+    {
+      "id": "upcoming-bills",
+      "kind": "bills",
+      "class": "bx-bills",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Rows with a line between and the action on the right; the default.",
+          "pattern": "Two-line list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a row with the meta beside the title, for dashboards with little room.",
+          "pattern": "Condensed structured list (IBM Carbon)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows: the meta on its own line and the value set large, for a page of its own.",
+          "pattern": "Inset grouped list (Apple Human Interface Guidelines)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each row its own card with space between, for a feed the customer scrolls.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The panel as glass over a backdrop or photo, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"No bills due.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "new-td",
+      "kind": "form",
+      "class": "bx-form",
+      "variants": [
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "The heading, the screen's fields, the summary and the buttons in a card; the default.",
+          "pattern": "Form card (Oracle Redwood)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "flat",
+          "name": "Flat",
+          "purpose": "No card: the form straight on the page, for a full-screen step on a phone.",
+          "pattern": "Full-page form (GOV.UK question pages)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "sectioned",
+          "name": "Sectioned",
+          "purpose": "A line between the fields, the summary and the buttons, which stick to the bottom on phones.",
+          "pattern": "Sectioned form with a sticky action bar",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The form as glass over a backdrop.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "The card fades and rises 8 px",
+        "hover": "None on the card; the buttons take their own",
+        "press": "The buttons scale to 0.97",
+        "change": "The summary rows fade in when the fields give them",
+        "reduced": "No rise or fade"
+      },
+      "states": {
+        "empty": "No summary: the fields and buttons only",
+        "loading": "Busy: the submit button spins and is disabled (aria-busy), set by the busy property",
+        "loadingProperty": false
+      }
+    },
+    {
+      "id": "loan-repayment",
+      "kind": "form",
+      "class": "bx-form",
+      "variants": [
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "The heading, the screen's fields, the summary and the buttons in a card; the default.",
+          "pattern": "Form card (Oracle Redwood)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "flat",
+          "name": "Flat",
+          "purpose": "No card: the form straight on the page, for a full-screen step on a phone.",
+          "pattern": "Full-page form (GOV.UK question pages)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "sectioned",
+          "name": "Sectioned",
+          "purpose": "A line between the fields, the summary and the buttons, which stick to the bottom on phones.",
+          "pattern": "Sectioned form with a sticky action bar",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The form as glass over a backdrop.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "The card fades and rises 8 px",
+        "hover": "None on the card; the buttons take their own",
+        "press": "The buttons scale to 0.97",
+        "change": "The summary rows fade in when the fields give them",
+        "reduced": "No rise or fade"
+      },
+      "states": {
+        "empty": "No summary: the fields and buttons only",
+        "loading": "Busy: the submit button spins and is disabled (aria-busy), set by the busy property",
+        "loadingProperty": false
+      }
+    },
+    {
+      "id": "card-tile",
+      "kind": "cardtile",
+      "class": "bx-cardtile",
+      "variants": [
+        {
+          "id": "classic",
+          "name": "Classic",
+          "purpose": "The card face on the brand gradient; the default.",
+          "pattern": "Payment card face (ISO/IEC 7810 ID-1 proportions)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "minimal",
+          "name": "Minimal",
+          "purpose": "An outlined face on the surface, for lists of several cards.",
+          "pattern": "Outlined card face",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "A frosted face that lets the backdrop through, for a wallet screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "metal",
+          "name": "Metal",
+          "purpose": "A dark brushed face with light text, for premium cards.",
+          "pattern": "Metal card face (premium card products)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "The face scales from 0.96 and fades in (--bx-ease-spring)",
+        "hover": "A light sheen moves across the face",
+        "press": "None: the face is an image, not a control",
+        "change": "Blocking dims the face and shows the lock with a fade",
+        "reduced": "No scale or sheen; blocking changes at once"
+      },
+      "states": {
+        "empty": "No number: the face shows the label and network only",
+        "loading": "None: the screen shows the card once it has it",
+        "loadingProperty": false
+      }
+    },
+    {
+      "id": "spend-limit",
+      "kind": "calc",
+      "variantsFrom": "slider",
+      "note": "Built on the slider in every pack, so it takes the slider's variants from wave V1; nothing of its own here.",
+      "variants": []
+    },
+    {
+      "id": "raise-dispute",
+      "kind": "form",
+      "class": "bx-form",
+      "variants": [
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "The heading, the screen's fields, the summary and the buttons in a card; the default.",
+          "pattern": "Form card (Oracle Redwood)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "flat",
+          "name": "Flat",
+          "purpose": "No card: the form straight on the page, for a full-screen step on a phone.",
+          "pattern": "Full-page form (GOV.UK question pages)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "sectioned",
+          "name": "Sectioned",
+          "purpose": "A line between the fields, the summary and the buttons, which stick to the bottom on phones.",
+          "pattern": "Sectioned form with a sticky action bar",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The form as glass over a backdrop.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "The card fades and rises 8 px",
+        "hover": "None on the card; the buttons take their own",
+        "press": "The buttons scale to 0.97",
+        "change": "The summary rows fade in when the fields give them",
+        "reduced": "No rise or fade"
+      },
+      "states": {
+        "empty": "No summary: the fields and buttons only",
+        "loading": "Busy: the submit button spins and is disabled (aria-busy), set by the busy property",
+        "loadingProperty": false
+      }
+    },
+    {
+      "id": "add-on-card",
+      "kind": "form",
+      "class": "bx-form",
+      "variants": [
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "The heading, the screen's fields, the summary and the buttons in a card; the default.",
+          "pattern": "Form card (Oracle Redwood)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "flat",
+          "name": "Flat",
+          "purpose": "No card: the form straight on the page, for a full-screen step on a phone.",
+          "pattern": "Full-page form (GOV.UK question pages)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "sectioned",
+          "name": "Sectioned",
+          "purpose": "A line between the fields, the summary and the buttons, which stick to the bottom on phones.",
+          "pattern": "Sectioned form with a sticky action bar",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The form as glass over a backdrop.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "The card fades and rises 8 px",
+        "hover": "None on the card; the buttons take their own",
+        "press": "The buttons scale to 0.97",
+        "change": "The summary rows fade in when the fields give them",
+        "reduced": "No rise or fade"
+      },
+      "states": {
+        "empty": "No summary: the fields and buttons only",
+        "loading": "Busy: the submit button spins and is disabled (aria-busy), set by the busy property",
+        "loadingProperty": false
+      }
+    },
+    {
+      "id": "card-statements",
+      "kind": "bills",
+      "class": "bx-bills",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Rows with a line between and the action on the right; the default.",
+          "pattern": "Two-line list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a row with the meta beside the title, for dashboards with little room.",
+          "pattern": "Condensed structured list (IBM Carbon)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows: the meta on its own line and the value set large, for a page of its own.",
+          "pattern": "Inset grouped list (Apple Human Interface Guidelines)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each row its own card with space between, for a feed the customer scrolls.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The panel as glass over a backdrop or photo, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"No statements yet.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "biometric",
+      "kind": "biometric",
+      "class": "bx-biometric",
+      "variants": [
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "The icon, the question and the two buttons in a card; the default.",
+          "pattern": "Biometric prompt (Android BiometricPrompt, Face ID sheet)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "inline",
+          "name": "Inline",
+          "purpose": "A row with a small icon and the buttons, inside a sign-in or payment step.",
+          "pattern": "Inline verification row",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "sheet",
+          "name": "Sheet",
+          "purpose": "A bottom sheet with a large icon, for a step that needs the customer's attention.",
+          "pattern": "Bottom sheet prompt (Material 3 bottom sheets)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "The card or sheet rises from below (--bx-ease-spring)",
+        "hover": "None on the card; the buttons take their own",
+        "press": "The buttons scale to 0.97",
+        "change": "Waiting pulses the icon; failing shakes it once and shows the message",
+        "reduced": "No pulse or shake: the message and the busy button say it"
+      },
+      "states": {
+        "empty": "None: there is always a question",
+        "loading": "Waiting: the icon pulses and the action is busy (aria-busy), set by state \"waiting\"",
+        "loadingProperty": false
+      }
+    },
+    {
+      "id": "approval-queue",
+      "kind": "bills",
+      "class": "bx-bills",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Rows with a line between and the action on the right; the default.",
+          "pattern": "Two-line list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a row with the meta beside the title, for dashboards with little room.",
+          "pattern": "Condensed structured list (IBM Carbon)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows: the meta on its own line and the value set large, for a page of its own.",
+          "pattern": "Inset grouped list (Apple Human Interface Guidelines)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each row its own card with space between, for a feed the customer scrolls.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The panel as glass over a backdrop or photo, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"Nothing is waiting for you.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "pending-release",
+      "kind": "bills",
+      "class": "bx-bills",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Rows with a line between and the action on the right; the default.",
+          "pattern": "Two-line list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a row with the meta beside the title, for dashboards with little room.",
+          "pattern": "Condensed structured list (IBM Carbon)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows: the meta on its own line and the value set large, for a page of its own.",
+          "pattern": "Inset grouped list (Apple Human Interface Guidelines)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each row its own card with space between, for a feed the customer scrolls.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The panel as glass over a backdrop or photo, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"Nothing is waiting for release.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "devices",
+      "kind": "bills",
+      "class": "bx-bills",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Rows with a line between and the action on the right; the default.",
+          "pattern": "Two-line list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a row with the meta beside the title, for dashboards with little room.",
+          "pattern": "Condensed structured list (IBM Carbon)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows: the meta on its own line and the value set large, for a page of its own.",
+          "pattern": "Inset grouped list (Apple Human Interface Guidelines)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each row its own card with space between, for a feed the customer scrolls.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The panel as glass over a backdrop or photo, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"No devices registered.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "consents",
+      "kind": "bills",
+      "class": "bx-bills",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Rows with a line between and the action on the right; the default.",
+          "pattern": "Two-line list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a row with the meta beside the title, for dashboards with little room.",
+          "pattern": "Condensed structured list (IBM Carbon)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows: the meta on its own line and the value set large, for a page of its own.",
+          "pattern": "Inset grouped list (Apple Human Interface Guidelines)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each row its own card with space between, for a feed the customer scrolls.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The panel as glass over a backdrop or photo, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"You have not allowed any apps.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "raise-request",
+      "kind": "form",
+      "class": "bx-form",
+      "variants": [
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "The heading, the screen's fields, the summary and the buttons in a card; the default.",
+          "pattern": "Form card (Oracle Redwood)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "flat",
+          "name": "Flat",
+          "purpose": "No card: the form straight on the page, for a full-screen step on a phone.",
+          "pattern": "Full-page form (GOV.UK question pages)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "sectioned",
+          "name": "Sectioned",
+          "purpose": "A line between the fields, the summary and the buttons, which stick to the bottom on phones.",
+          "pattern": "Sectioned form with a sticky action bar",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The form as glass over a backdrop.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "The card fades and rises 8 px",
+        "hover": "None on the card; the buttons take their own",
+        "press": "The buttons scale to 0.97",
+        "change": "The summary rows fade in when the fields give them",
+        "reduced": "No rise or fade"
+      },
+      "states": {
+        "empty": "No summary: the fields and buttons only",
+        "loading": "Busy: the submit button spins and is disabled (aria-busy), set by the busy property",
+        "loadingProperty": false
+      }
+    },
+    {
+      "id": "mailbox",
+      "kind": "bills",
+      "class": "bx-bills",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Rows with a line between and the action on the right; the default.",
+          "pattern": "Two-line list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a row with the meta beside the title, for dashboards with little room.",
+          "pattern": "Condensed structured list (IBM Carbon)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows: the meta on its own line and the value set large, for a page of its own.",
+          "pattern": "Inset grouped list (Apple Human Interface Guidelines)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each row its own card with space between, for a feed the customer scrolls.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The panel as glass over a backdrop or photo, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"No messages.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "e-receipts",
+      "kind": "bills",
+      "class": "bx-bills",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Rows with a line between and the action on the right; the default.",
+          "pattern": "Two-line list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a row with the meta beside the title, for dashboards with little room.",
+          "pattern": "Condensed structured list (IBM Carbon)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows: the meta on its own line and the value set large, for a page of its own.",
+          "pattern": "Inset grouped list (Apple Human Interface Guidelines)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each row its own card with space between, for a feed the customer scrolls.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The panel as glass over a backdrop or photo, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"No receipts yet.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "certificates",
+      "kind": "bills",
+      "class": "bx-bills",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Rows with a line between and the action on the right; the default.",
+          "pattern": "Two-line list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a row with the meta beside the title, for dashboards with little room.",
+          "pattern": "Condensed structured list (IBM Carbon)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows: the meta on its own line and the value set large, for a page of its own.",
+          "pattern": "Inset grouped list (Apple Human Interface Guidelines)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each row its own card with space between, for a feed the customer scrolls.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The panel as glass over a backdrop or photo, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"No certificates yet.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "loan-calculator",
+      "kind": "calc",
+      "class": "bx-calc",
+      "variants": [
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "The inputs, then the result under them, in a card; the default.",
+          "pattern": "Calculator card (bank product pages)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "Inputs in one row and the result beside them, for a widget.",
+          "pattern": "Inline calculator",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "split",
+          "name": "Split",
+          "purpose": "Inputs on the left and the result in a coloured panel on the right; stacked on phones.",
+          "pattern": "Split result panel (loan calculators)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The calculator as glass over a backdrop.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "The card fades and rises 8 px",
+        "hover": "None on the card; the inputs take their own",
+        "press": "The action scales to 0.97",
+        "change": "A new result rolls its digits (wave V5's number effects) and is announced politely",
+        "reduced": "The result changes at once; it is still announced"
+      },
+      "states": {
+        "empty": "No amount: the result shows zero in the currency",
+        "loading": "None: the result is worked out as the customer types",
+        "loadingProperty": false
+      }
+    },
+    {
+      "id": "td-calculator",
+      "kind": "calc",
+      "class": "bx-calc",
+      "variants": [
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "The inputs, then the result under them, in a card; the default.",
+          "pattern": "Calculator card (bank product pages)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "Inputs in one row and the result beside them, for a widget.",
+          "pattern": "Inline calculator",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "split",
+          "name": "Split",
+          "purpose": "Inputs on the left and the result in a coloured panel on the right; stacked on phones.",
+          "pattern": "Split result panel (loan calculators)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The calculator as glass over a backdrop.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "The card fades and rises 8 px",
+        "hover": "None on the card; the inputs take their own",
+        "press": "The action scales to 0.97",
+        "change": "A new result rolls its digits (wave V5's number effects) and is announced politely",
+        "reduced": "The result changes at once; it is still announced"
+      },
+      "states": {
+        "empty": "No amount: the result shows zero in the currency",
+        "loading": "None: the result is worked out as the customer types",
+        "loadingProperty": false
+      }
+    },
+    {
+      "id": "currency-converter",
+      "kind": "calc",
+      "class": "bx-calc",
+      "variants": [
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "The inputs, then the result under them, in a card; the default.",
+          "pattern": "Calculator card (bank product pages)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "Inputs in one row and the result beside them, for a widget.",
+          "pattern": "Inline calculator",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "split",
+          "name": "Split",
+          "purpose": "Inputs on the left and the result in a coloured panel on the right; stacked on phones.",
+          "pattern": "Split result panel (loan calculators)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The calculator as glass over a backdrop.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "The card fades and rises 8 px",
+        "hover": "None on the card; the inputs take their own",
+        "press": "The action scales to 0.97",
+        "change": "A new result rolls its digits (wave V5's number effects) and is announced politely",
+        "reduced": "The result changes at once; it is still announced"
+      },
+      "states": {
+        "empty": "No amount: the result shows zero in the currency",
+        "loading": "None: the result is worked out as the customer types",
+        "loadingProperty": false
+      }
+    },
+    {
+      "id": "locator",
+      "kind": "locator",
+      "class": "bx-locator",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Search, branch and ATM chips, then rows with Directions; the default.",
+          "pattern": "Store locator list",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a place with the distance on the right, for a widget.",
+          "pattern": "Condensed list",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each place its own card with its hours, for a page of its own.",
+          "pattern": "Place cards (map apps' search results)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"Nothing matches. Try another name or area.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "live-chat",
+      "kind": "chat",
+      "class": "bx-chat",
+      "variants": [
+        {
+          "id": "bubbles",
+          "name": "Bubbles",
+          "purpose": "The customer's messages on the right in the brand colour, the bank's on the left; the default.",
+          "pattern": "Messaging bubbles",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "Smaller bubbles and less space, for a chat in a side panel.",
+          "pattern": "Dense messaging",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "flat",
+          "name": "Flat",
+          "purpose": "No bubbles: each message under who wrote it, like a transcript.",
+          "pattern": "Transcript (support chat histories)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The chat as glass over a backdrop.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "A new message rises 6 px and fades in; the bank's typing line pulses",
+        "hover": "None on messages; Send takes its button hover",
+        "press": "Send scales to 0.97",
+        "change": "New messages are announced politely (role log)",
+        "reduced": "Messages appear at once; the typing line does not pulse"
+      },
+      "states": {
+        "empty": "No messages: the log is empty and the compose field invites the first one",
+        "loading": "Three skeleton lines in the log while the history loads; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "nominations",
+      "kind": "bills",
+      "class": "bx-bills",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Rows with a line between and the action on the right; the default.",
+          "pattern": "Two-line list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a row with the meta beside the title, for dashboards with little room.",
+          "pattern": "Condensed structured list (IBM Carbon)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows: the meta on its own line and the value set large, for a page of its own.",
+          "pattern": "Inset grouped list (Apple Human Interface Guidelines)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each row its own card with space between, for a feed the customer scrolls.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The panel as glass over a backdrop or photo, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"No nominees yet.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "quick-insights",
+      "kind": "bills",
+      "class": "bx-bills",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Rows with a line between and the action on the right; the default.",
+          "pattern": "Two-line list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a row with the meta beside the title, for dashboards with little room.",
+          "pattern": "Condensed structured list (IBM Carbon)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows: the meta on its own line and the value set large, for a page of its own.",
+          "pattern": "Inset grouped list (Apple Human Interface Guidelines)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each row its own card with space between, for a feed the customer scrolls.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The panel as glass over a backdrop or photo, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"Nothing needs you today.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "recent-transactions",
+      "kind": "txlist",
+      "class": "bx-txlist",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Initials, what it was, when, and the amount; money in green with a plus; the default.",
+          "pattern": "Transaction feed (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "Without the initials and with tighter rows, for a widget on a dashboard.",
+          "pattern": "Condensed transaction list",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows with the meta on its own line and the amount large, for the statement page.",
+          "pattern": "Statement view (retail banking apps)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each transaction its own card, for a feed.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The list as glass over a backdrop, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"No transactions in this period.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "bills-widget",
+      "kind": "bills",
+      "class": "bx-bills",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Rows with a line between and the action on the right; the default.",
+          "pattern": "Two-line list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a row with the meta beside the title, for dashboards with little room.",
+          "pattern": "Condensed structured list (IBM Carbon)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows: the meta on its own line and the value set large, for a page of its own.",
+          "pattern": "Inset grouped list (Apple Human Interface Guidelines)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each row its own card with space between, for a feed the customer scrolls.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The panel as glass over a backdrop or photo, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"No bills due.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "calculators",
+      "kind": "calc",
+      "class": "bx-calc",
+      "variants": [
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "The inputs, then the result under them, in a card; the default.",
+          "pattern": "Calculator card (bank product pages)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "Inputs in one row and the result beside them, for a widget.",
+          "pattern": "Inline calculator",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "split",
+          "name": "Split",
+          "purpose": "Inputs on the left and the result in a coloured panel on the right; stacked on phones.",
+          "pattern": "Split result panel (loan calculators)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The calculator as glass over a backdrop.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "The card fades and rises 8 px",
+        "hover": "None on the card; the inputs take their own",
+        "press": "The action scales to 0.97",
+        "change": "A new result rolls its digits (wave V5's number effects) and is announced politely",
+        "reduced": "The result changes at once; it is still announced"
+      },
+      "states": {
+        "empty": "No amount: the result shows zero in the currency",
+        "loading": "None: the result is worked out as the customer types",
+        "loadingProperty": false
+      }
+    },
+    {
+      "id": "trade-instruments",
+      "kind": "bills",
+      "class": "bx-bills",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Rows with a line between and the action on the right; the default.",
+          "pattern": "Two-line list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a row with the meta beside the title, for dashboards with little room.",
+          "pattern": "Condensed structured list (IBM Carbon)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows: the meta on its own line and the value set large, for a page of its own.",
+          "pattern": "Inset grouped list (Apple Human Interface Guidelines)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each row its own card with space between, for a feed the customer scrolls.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The panel as glass over a backdrop or photo, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"Nothing expires soon.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "reports",
+      "kind": "bills",
+      "class": "bx-bills",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Rows with a line between and the action on the right; the default.",
+          "pattern": "Two-line list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a row with the meta beside the title, for dashboards with little room.",
+          "pattern": "Condensed structured list (IBM Carbon)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows: the meta on its own line and the value set large, for a page of its own.",
+          "pattern": "Inset grouped list (Apple Human Interface Guidelines)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each row its own card with space between, for a feed the customer scrolls.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The panel as glass over a backdrop or photo, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"No reports yet.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "last-5-payments",
+      "kind": "bills",
+      "class": "bx-bills",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Rows with a line between and the action on the right; the default.",
+          "pattern": "Two-line list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a row with the meta beside the title, for dashboards with little room.",
+          "pattern": "Condensed structured list (IBM Carbon)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows: the meta on its own line and the value set large, for a page of its own.",
+          "pattern": "Inset grouped list (Apple Human Interface Guidelines)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each row its own card with space between, for a feed the customer scrolls.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The panel as glass over a backdrop or photo, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "not in pack"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"No payments yet.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "notifications-widget",
+      "kind": "bills",
+      "class": "bx-bills",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Rows with a line between and the action on the right; the default.",
+          "pattern": "Two-line list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a row with the meta beside the title, for dashboards with little room.",
+          "pattern": "Condensed structured list (IBM Carbon)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows: the meta on its own line and the value set large, for a page of its own.",
+          "pattern": "Inset grouped list (Apple Human Interface Guidelines)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each row its own card with space between, for a feed the customer scrolls.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The panel as glass over a backdrop or photo, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"No notifications.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "pending-approvals",
+      "kind": "bills",
+      "class": "bx-bills",
+      "variants": [
+        {
+          "id": "list",
+          "name": "List",
+          "purpose": "Rows with a line between and the action on the right; the default.",
+          "pattern": "Two-line list (Material 3 lists)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "One line a row with the meta beside the title, for dashboards with little room.",
+          "pattern": "Condensed structured list (IBM Carbon)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "detailed",
+          "name": "Detailed",
+          "purpose": "Taller rows: the meta on its own line and the value set large, for a page of its own.",
+          "pattern": "Inset grouped list (Apple Human Interface Guidelines)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "Each row its own card with space between, for a feed the customer scrolls.",
+          "pattern": "Card feed",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The panel as glass over a backdrop or photo, for a home screen.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Rows settle in from 8 px below, 30 ms apart (--bx-dur-base, --bx-ease-standard)",
+        "hover": "The row takes the surface tint; the action underlines",
+        "press": "The row or its action scales to 0.98 and back",
+        "change": "A new row fades in at its place; a removed row fades out and the rest close up",
+        "reduced": "No movement: rows appear at once and only colours change"
+      },
+      "states": {
+        "empty": "\"Nothing is waiting for you.\" (the emptyText line, said by screen readers)",
+        "loading": "Three skeleton rows under the heading; role status \"Loading\" with aria-busy, set by the loading property",
+        "loadingProperty": true
+      }
+    },
+    {
+      "id": "split-flap-board",
+      "kind": "board",
+      "class": "bx-board",
+      "variants": [
+        {
+          "id": "classic",
+          "name": "Classic",
+          "purpose": "Dark tiles with light characters, like a departures board; the default.",
+          "pattern": "Split-flap display",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "light",
+          "name": "Light",
+          "purpose": "Light tiles on the surface, for a light page.",
+          "pattern": "Light split-flap",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "compact",
+          "name": "Compact",
+          "purpose": "Smaller tiles in one tight column, for a widget.",
+          "pattern": "Condensed split-flap",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Each tile flips from blank to its character, left to right",
+        "hover": "None",
+        "press": "None",
+        "change": "Changed tiles flip to their new character",
+        "reduced": "Characters change at once with no flip"
+      },
+      "states": {
+        "empty": "No rows: the heading only",
+        "loading": "None: the screen gives the rates",
+        "loadingProperty": false
+      }
+    },
+    {
+      "id": "reveal-digits",
+      "kind": "sensitive",
+      "class": "bx-sensitive",
+      "variants": [
+        {
+          "id": "dots",
+          "name": "Dots",
+          "purpose": "The number masked to its last four digits, with Show; the default.",
+          "pattern": "Masked field (card and account numbers)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "blur",
+          "name": "Blur",
+          "purpose": "The masked digits are blurred until shown, so a glance over the shoulder sees nothing; the real number is never in the page while hidden.",
+          "pattern": "Blurred reveal",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "The number in its own card with a large mono face and the label above.",
+          "pattern": "Number card",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "Fades in",
+        "hover": "Show takes the surface tint",
+        "press": "Show scales to 0.97",
+        "change": "Revealing flips each digit in turn",
+        "reduced": "The number changes at once"
+      },
+      "states": {
+        "empty": "No number: the field shows nothing to reveal and Show stays",
+        "loading": "None: the screen gives the number",
+        "loadingProperty": false
+      }
+    },
+    {
+      "id": "receipt-tear",
+      "kind": "receipt",
+      "class": "bx-receipt",
+      "variants": [
+        {
+          "id": "card",
+          "name": "Card",
+          "purpose": "The tick, the amount, the reference and the details in a card; the default.",
+          "pattern": "Confirmation screen (GOV.UK confirmation page)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "ticket",
+          "name": "Ticket",
+          "purpose": "A paper receipt with a perforated edge and a dashed line before the details.",
+          "pattern": "Paper receipt",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "minimal",
+          "name": "Minimal",
+          "purpose": "No card: the amount and details straight on the page, for a full screen.",
+          "pattern": "Plain confirmation",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The receipt as glass over a backdrop, for a success screen with a gradient.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "The tick pops (bx-pop) and the card rises 8 px; the details follow 60 ms later",
+        "hover": "None on the card; the actions take their button hover",
+        "press": "The actions scale to 0.97",
+        "change": "None: a receipt does not change once shown",
+        "reduced": "Everything shows at once with no pop or rise"
+      },
+      "states": {
+        "empty": "No details: the tick, the heading and the reference only",
+        "loading": "None: the screen shows the receipt when the bank has confirmed",
+        "loadingProperty": false
+      }
+    },
+    {
+      "id": "prompt-bar",
+      "kind": "chat",
+      "class": "bx-chat",
+      "variants": [
+        {
+          "id": "pill",
+          "name": "Pill",
+          "purpose": "A rounded field with a spark and Ask, suggestions above; the default.",
+          "pattern": "AI prompt bar",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "default": true,
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "boxed",
+          "name": "Boxed",
+          "purpose": "A square-cornered box with the suggestions inside it, for a page.",
+          "pattern": "Composer box (assistant composers)",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        },
+        {
+          "id": "glass",
+          "name": "Glass",
+          "purpose": "The bar as glass floating over the page.",
+          "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency",
+          "source": "Written for the pack",
+          "licence": "The pack's licence",
+          "packs": {
+            "jet-premium": "built",
+            "react": "built",
+            "angular": "built",
+            "react-native": "built"
+          }
+        }
+      ],
+      "motion": {
+        "enter": "The bar rises 8 px; the suggestions follow 30 ms apart",
+        "hover": "Suggestions take the surface tint",
+        "press": "Suggestions and Ask scale to 0.97",
+        "change": "Busy pulses the spark",
+        "reduced": "No rise or pulse; busy is said by the button"
+      },
+      "states": {
+        "empty": "No suggestions: the field alone",
+        "loading": "Busy: Ask is disabled and busy (aria-busy), set by the busy property",
+        "loadingProperty": false
+      }
+    }
+  ]
+}

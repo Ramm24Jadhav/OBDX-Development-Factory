@@ -13,6 +13,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1'], function (Composite, bx, g1)
   var k = g1.kit;
   var txt = k.txt, iff = k.iff, each = k.each, list = k.list, base = k.base, register = k.register, str = k.str, bool = k.bool, arr = k.arr;
   var kinds = {};
+  /* Banking widget variants (variants/v4.json): bx-<kind>--<variant> after the root's own classes, and the loading skeleton */
+  var withVariant = function (vm, own, kind) { return ko.pureComputed(function () { return own + (vm.props.variant ? ' bx-' + kind + '--' + vm.props.variant : ''); }); };
+  var LOADING = '<div class="bx-skeleton is-text" role="status" aria-busy="true"><span class="bx-visually-hidden">Loading</span><span class="bx-skel-line" aria-hidden="true"></span>'
+    + '<span class="bx-skel-line" aria-hidden="true"></span><span class="bx-skel-line is-short" aria-hidden="true"></span></div>';
 
   /** Digits after the point for a currency (ISO 4217). */
   var decimalsOf = function (currency) {
@@ -90,11 +94,14 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1'], function (Composite, bx, g1)
     self.toggleText = ko.pureComputed(function () { return self.props.amountHidden ? 'Show balance' : 'Hide balance'; });
     self.pressed = ko.pureComputed(function () { return self.props.amountHidden ? 'false' : 'true'; });
     self.toggle = function () { self.props.amountHidden = !self.props.amountHidden; };
+    self.css = withVariant(self, 'bx-balance', 'balance');
   }
-  kinds.balance = { model: BalanceKind, props: { label: str(), amount: { type: 'any' }, currency: str(), meta: str(), hideable: bool(true), amountHidden: { type: 'boolean', value: false, writeback: true } },
-    view: '<section class="bx-balance" :aria-labelledby="[[id]]"><div class="bx-balance-head"><h3 class="bx-balance-label" :id="[[id]]">' + txt('$properties.label') + '</h3>'
-      + iff('$properties.hideable', '<button type="button" class="bx-reveal" :aria-pressed="[[pressed]]" on-click="[[toggle]]">' + txt('toggleText') + '</button>') + '</div>'
-      + '<p class="bx-balance-amount">' + txt('shown') + '</p>' + iff('$properties.meta && !$properties.amountHidden', '<p class="bx-balance-meta">' + txt('$properties.meta') + '</p>') + '</section>' };
+  kinds.balance = { model: BalanceKind, props: { label: str(), amount: { type: 'any' }, currency: str(), meta: str(), hideable: bool(true), amountHidden: { type: 'boolean', value: false, writeback: true },
+    variant: str(), loading: bool() },
+    view: '<section :class="[[css]]" :aria-labelledby="[[id]]"><div class="bx-balance-head"><h3 class="bx-balance-label" :id="[[id]]">' + txt('$properties.label') + '</h3>'
+      + iff('$properties.hideable && !$properties.loading', '<button type="button" class="bx-reveal" :aria-pressed="[[pressed]]" on-click="[[toggle]]">' + txt('toggleText') + '</button>') + '</div>'
+      + iff('$properties.loading', LOADING) + iff('!$properties.loading', '<p class="bx-balance-amount">' + txt('shown') + '</p>'
+      + iff('$properties.meta && !$properties.amountHidden', '<p class="bx-balance-meta">' + txt('$properties.meta') + '</p>')) + '</section>' };
 
   /* ---------- card: a thing to act on (an account, a payee, a product), with a badge and an action ---------- */
   function CardKind(context) {
@@ -179,14 +186,16 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1'], function (Composite, bx, g1)
     });
     self.none = ko.pureComputed(function () { return self.rows().length === 0; });
     self.onQuery = function (event) { self.query(event.target.value); return true; };
+    self.css = withVariant(self, 'bx-panel', 'payees');
   }
-  kinds.payees = { model: PayeesKind, events: k.ACTION, props: { heading: str('Payees'), items: arr(), searchable: bool(true), emptyText: str('No payees match.') },
-    view: '<section class="bx-panel" :aria-labelledby="[[id]]"><h3 class="bx-panel-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>'
-      + iff('$properties.searchable', '<div class="bx-control bx-payee-search"><span class="bx-search-icon" aria-hidden="true"></span><input type="search" class="bx-input bx-search"'
+  kinds.payees = { model: PayeesKind, events: k.ACTION, props: { heading: str('Payees'), items: arr(), searchable: bool(true), emptyText: str('No payees match.'), variant: str(), loading: bool() },
+    view: '<section :class="[[css]]" :aria-labelledby="[[id]]"><h3 class="bx-panel-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>'
+      + iff('$properties.searchable && !$properties.loading', '<div class="bx-control bx-payee-search"><span class="bx-search-icon" aria-hidden="true"></span><input type="search" class="bx-input bx-search"'
         + ' :aria-label="[[\'Search \' + $properties.heading]]" placeholder="Name" :value="[[query]]" on-input="[[onQuery]]"/></div>')
-      + iff('none()', '<p class="bx-panel-empty" role="status">' + txt('$properties.emptyText') + '</p>')
-      + '<ul class="bx-rows">' + each('rows', 'p', '<li class="bx-row"><button type="button" class="bx-payee" on-click="[[p.data.pick]]"><span class="bx-avatar is-sm" aria-hidden="true">' + txt('p.data.initials') + '</span>'
-        + '<span class="bx-row-main"><strong>' + txt('p.data.name') + '</strong>' + iff('p.data.meta', '<span class="bx-row-meta">' + txt('p.data.meta') + '</span>') + '</span></button></li>') + '</ul></section>' };
+      + iff('$properties.loading', LOADING) + iff('none() && !$properties.loading', '<p class="bx-panel-empty" role="status">' + txt('$properties.emptyText') + '</p>')
+      + iff('!$properties.loading', '<ul class="bx-rows">' + each('rows', 'p', '<li class="bx-row"><button type="button" class="bx-payee" on-click="[[p.data.pick]]">'
+        + iff('$properties.variant !== \'compact\'', '<span class="bx-avatar is-sm" aria-hidden="true">' + txt('p.data.initials') + '</span>')
+        + '<span class="bx-row-main"><strong>' + txt('p.data.name') + '</strong>' + iff('p.data.meta', '<span class="bx-row-meta">' + txt('p.data.meta') + '</span>') + '</span></button></li>') + '</ul>') + '</section>' };
 
   /* ---------- form: the screen's fields in a titled step, a summary, and Submit and Cancel ---------- */
   function FormKind(context) {
@@ -196,9 +205,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1'], function (Composite, bx, g1)
     self.busyAttr = ko.pureComputed(function () { return self.props.busy ? 'true' : null; });
     self.submit = function () { if (!self.props.busy) { bx.fire(self.element, 'ojAction', { action: 'submit' }); } };
     self.cancel = function () { bx.fire(self.element, 'ojAction', { action: 'cancel' }); };
+    self.css = withVariant(self, 'bx-card bx-form', 'form');
   }
-  kinds.form = { model: FormKind, events: k.ACTION, props: { heading: str(), items: arr(), submitLabel: str('Continue'), cancelLabel: str(), busy: bool() },
-    view: '<section class="bx-card bx-form" :aria-labelledby="[[id]]"><h3 class="bx-card-title" :id="[[id]]">' + txt('$properties.heading') + '</h3><div class="bx-form-body"><oj-bind-slot></oj-bind-slot></div>'
+  kinds.form = { model: FormKind, events: k.ACTION, props: { heading: str(), items: arr(), submitLabel: str('Continue'), cancelLabel: str(), busy: bool(), variant: str() },
+    view: '<section :class="[[css]]" :aria-labelledby="[[id]]"><h3 class="bx-card-title" :id="[[id]]">' + txt('$properties.heading') + '</h3><div class="bx-form-body"><oj-bind-slot></oj-bind-slot></div>'
       + iff('rows().length', '<dl class="bx-kv-list">' + each('rows', 'r', '<div class="bx-kv-row"><dt>' + txt('r.data.label') + '</dt><dd>' + txt('r.data.value') + '</dd></div>') + '</dl>')
       + '<div class="bx-kv-actions">' + iff('$properties.cancelLabel', '<button type="button" class="bx-btn bx-btn--borderless" on-click="[[cancel]]">' + txt('$properties.cancelLabel') + '</button>')
       + '<button type="button" class="bx-btn bx-btn--callToAction" :disabled="[[$properties.busy]]" :aria-busy="[[busyAttr]]" on-click="[[submit]]">' + txt('$properties.submitLabel') + '</button></div></section>' };
@@ -218,15 +228,17 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1'], function (Composite, bx, g1)
       });
     });
     self.empty = ko.pureComputed(function () { return self.rows().length === 0; });
+    self.css = withVariant(self, 'bx-panel', 'txlist');
   }
-  var txBody = '<span class="bx-avatar is-sm" aria-hidden="true">' + txt('t.data.initials') + '</span><span class="bx-row-main"><strong>' + txt('t.data.name') + '</strong>'
+  var txBody = iff('$properties.variant !== \'compact\'', '<span class="bx-avatar is-sm" aria-hidden="true">' + txt('t.data.initials') + '</span>') + '<span class="bx-row-main"><strong>' + txt('t.data.name') + '</strong>'
     + iff('t.data.meta', '<span class="bx-row-meta">' + txt('t.data.meta') + '</span>') + '</span><span :class="[[t.data.css]]"><span class="bx-visually-hidden">' + txt('t.data.direction') + '</span>'
     + txt('t.data.amount') + '</span>';
-  kinds.tx = { model: TxKind, events: k.ACTION, props: { heading: str('Transactions'), items: arr(), currency: str(), interactive: bool(true), emptyText: str('No transactions in this period.') },
-    view: '<section class="bx-panel" :aria-labelledby="[[id]]"><h3 class="bx-panel-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>'
-      + iff('empty()', '<p class="bx-panel-empty">' + txt('$properties.emptyText') + '</p>')
-      + '<ul class="bx-rows">' + each('rows', 't', '<li class="bx-row">' + iff('$properties.interactive', '<button type="button" class="bx-payee bx-tx" on-click="[[t.data.open]]">' + txBody + '</button>')
-        + iff('!$properties.interactive', '<div class="bx-payee bx-tx">' + txBody + '</div>') + '</li>') + '</ul></section>' };
+  kinds.tx = { model: TxKind, events: k.ACTION, props: { heading: str('Transactions'), items: arr(), currency: str(), interactive: bool(true), emptyText: str('No transactions in this period.'),
+    variant: str(), loading: bool() },
+    view: '<section :class="[[css]]" :aria-labelledby="[[id]]"><h3 class="bx-panel-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>'
+      + iff('$properties.loading', LOADING) + iff('empty() && !$properties.loading', '<p class="bx-panel-empty">' + txt('$properties.emptyText') + '</p>')
+      + iff('!$properties.loading', '<ul class="bx-rows">' + each('rows', 't', '<li class="bx-row">' + iff('$properties.interactive', '<button type="button" class="bx-payee bx-tx" on-click="[[t.data.open]]">' + txBody + '</button>')
+        + iff('!$properties.interactive', '<div class="bx-payee bx-tx">' + txBody + '</div>') + '</li>') + '</ul>') + '</section>' };
 
   /* ---------- receipt: done, the amount, the details and what to do with it ---------- */
   function ReceiptKind(context) {
@@ -234,9 +246,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1'], function (Composite, bx, g1)
     base(self, context, 'bx-receipt');
     self.amountText = ko.pureComputed(function () { return money(self.props.amount, self.props.currency); });
     self.rows = ko.pureComputed(function () { return list(self.props.items).map(function (o) { return { label: o.label, value: o.value !== undefined ? String(o.value) : '' }; }); });
+    self.css = withVariant(self, 'bx-card bx-receipt', 'receipt');
   }
-  kinds.receipt = { model: ReceiptKind, props: { heading: str('Done'), amount: { type: 'any' }, currency: str(), items: arr(), reference: str() },
-    view: '<section class="bx-card bx-receipt" :aria-labelledby="[[id]]"><span class="bx-receipt-mark" aria-hidden="true">✓</span><h3 class="bx-receipt-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>'
+  kinds.receipt = { model: ReceiptKind, props: { heading: str('Done'), amount: { type: 'any' }, currency: str(), items: arr(), reference: str(), variant: str() },
+    view: '<section :class="[[css]]" :aria-labelledby="[[id]]"><span class="bx-receipt-mark" aria-hidden="true">✓</span><h3 class="bx-receipt-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>'
       + iff('amountText()', '<p class="bx-receipt-amount">' + txt('amountText') + '</p>') + iff('$properties.reference', '<p class="bx-receipt-ref">Reference <span class="bx-mono">' + txt('$properties.reference') + '</span></p>')
       + iff('rows().length', '<dl class="bx-kv-list">' + each('rows', 'r', '<div class="bx-kv-row"><dt>' + txt('r.data.label') + '</dt><dd>' + txt('r.data.value') + '</dd></div>') + '</dl>')
       + '<div class="bx-kv-actions"><oj-bind-slot></oj-bind-slot></div></section>' };

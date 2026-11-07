@@ -1046,6 +1046,29 @@ test('the skin has the motion tokens, the effects and a reduced-motion rule for 
   eq(toFrames, [], 'keyframes that end away from the element style');
 });
 
+/* ---------- banking widget variants (wave V4, variants/v4.json) ---------- */
+const V4 = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'variants', 'v4.json'), 'utf8')).components.filter((c) => c.variants.length);
+V4.forEach((c) => {
+  test('v4 bx-' + c.id + ': every variant sets bx-' + c.kind + '--<variant> on its root, and none without a variant', () => {
+    eq(create('bx-' + c.id, {}).vm.css().indexOf('--') < 0 || c.kind === 'avatar' ? 'plain' : create('bx-' + c.id, {}).vm.css(), 'plain', 'no variant');
+    eq(c.variants.filter((v) => create('bx-' + c.id, { variant: v.id }).vm.css().split(' ').indexOf('bx-' + c.kind + '--' + v.id) < 0).map((v) => v.id), [], 'variants without their class');
+    eq(registry['bx-' + c.id].view.indexOf(':class="[[css]]"') >= 0, true, 'root class bound');
+  });
+});
+V4.filter((c) => c.states.loadingProperty).forEach((c) => {
+  test('v4 bx-' + c.id + ': loading shows a skeleton with role status and aria-busy, and hides the empty line', () => {
+    const view = registry['bx-' + c.id].view;
+    eq([view.indexOf('<oj-bind-if test="[[$properties.loading]]"><div class="bx-skeleton is-text" role="status" aria-busy="true">') >= 0, registry['bx-' + c.id].metadata.properties.loading.value], [true, false]);
+    eq(view.indexOf('<oj-bind-if test="[[none()]]">') + view.indexOf('<oj-bind-if test="[[empty()]]">'), -2, 'an empty line that shows while loading');
+  });
+});
+test('v4: compact payees and transactions leave out the initials; the tonal avatar takes a hue from the name', () => {
+  ['bx-payee-list', 'bx-transaction-list', 'bx-recent-transactions'].forEach((n) => eq(registry[n].view.indexOf("<oj-bind-if test=\"[[$properties.variant !== 'compact']]\"><span class=\"bx-avatar is-sm\"") >= 0, true, n));
+  const a = create('bx-avatar', { name: 'A. Rao', variant: 'tonal' });
+  eq([/^--bx-avatar-hue: [0-9]+$/.test(a.vm.hue()), create('bx-avatar', { name: 'A. Rao' }).vm.hue(), a.vm.hue() === create('bx-avatar', { name: 'A. Rao', variant: 'tonal' }).vm.hue()], [true, null, true]);
+  eq(create('bx-avatar', { name: 'A. Rao', size: 'lg', variant: 'ring' }).vm.css(), 'bx-avatar is-lg bx-avatar--ring');
+});
+
 console.log('Premium JET pack: ' + passed + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : '') + '.');
 failures.forEach((f) => console.log('  FAILED ' + f));
 if (process.argv.indexOf('--json') > 0) { fs.writeFileSync(path.join(__dirname, 'results.json'), JSON.stringify({ passed: passed, failed: failures }, null, 2)); }

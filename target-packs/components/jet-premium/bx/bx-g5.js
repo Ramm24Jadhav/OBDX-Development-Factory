@@ -14,6 +14,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2', './bx-g3'], functi
   var txt = k.txt, iff = k.iff, each = k.each, list = k.list, base = k.base, register = k.register, str = k.str, bool = k.bool, num = k.num, arr = k.arr;
   var money = g2.kit.money;
   var kinds = {};
+  /* Banking widget variants (variants/v4.json): bx-<kind>--<variant> after the root's own classes, and the loading skeleton */
+  var withVariant = function (vm, own, kind) { return ko.pureComputed(function () { return own + (vm.props.variant ? ' bx-' + kind + '--' + vm.props.variant : ''); }); };
+  var LOADING = '<div class="bx-skeleton is-text" role="status" aria-busy="true"><span class="bx-visually-hidden">Loading</span><span class="bx-skel-line" aria-hidden="true"></span>'
+    + '<span class="bx-skel-line" aria-hidden="true"></span><span class="bx-skel-line is-short" aria-hidden="true"></span></div>';
 
   /** The monthly instalment of a loan: principal, yearly rate in %, months. */
   var instalment = function (principal, rate, months) {
@@ -103,6 +107,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2', './bx-g3'], functi
     self.onRate = function (event) { self.rateIn(event.target.value); return true; };
     self.onMonths = function (event) { self.months(event.target.value); return true; };
     self.act = function () { bx.fire(self.element, 'ojAction', { amount: n(self.amount()), rate: n(self.rateIn()), months: n(self.months()), result: self.result().value }); };
+    self.css = withVariant(self, 'bx-card bx-calc', 'calc');
   }
   var calcField = function (key, label, value, handler, extra) {
     return '<div class="bx-field"><label class="bx-label" :for="[[id + \'-' + key + '\']]">' + label + '</label><div class="bx-control"><input type="number" class="bx-input bx-num" inputmode="decimal"'
@@ -110,8 +115,8 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2', './bx-g3'], functi
   };
   kinds.calc = { model: CalcKind, events: k.ACTION,
     props: { heading: str('Loan calculator'), mode: str('loan'), amount: num(10000), rate: num(9.5), months: num(36), currency: str(), toCurrency: str(), compounding: num(4), actionLabel: str(),
-      note: str('An estimate. The bank confirms the figures when you apply.') },
-    view: '<section class="bx-card bx-calc" :aria-labelledby="[[id]]"><h3 class="bx-card-title" :id="[[id]]">' + txt('$properties.heading') + '</h3><div class="bx-calc-fields">'
+      note: str('An estimate. The bank confirms the figures when you apply.'), variant: str() },
+    view: '<section :class="[[css]]" :aria-labelledby="[[id]]"><h3 class="bx-card-title" :id="[[id]]">' + txt('$properties.heading') + '</h3><div class="bx-calc-fields">'
       + '<div class="bx-field"><label class="bx-label" :for="[[id + \'-a\']]">' + txt('amountLabel') + '</label><div class="bx-control"><input type="number" class="bx-input bx-num" inputmode="decimal" min="0"'
       + ' :id="[[id + \'-a\']]" :value="[[amount]]" on-input="[[onAmount]]"/></div></div>'
       + iff('!isFx()', calcField('r', 'Rate (% a year)', 'rateIn', 'onRate', ' min="0" step="0.05"') + calcField('m', 'Months', 'months', 'onMonths', ' min="1" step="1"')) + '</div>'
@@ -142,15 +147,17 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2', './bx-g3'], functi
     });
     self.none = ko.pureComputed(function () { return self.rows().length === 0; });
     self.onQuery = function (event) { self.query(event.target.value); return true; };
+    self.css = withVariant(self, 'bx-panel bx-locator', 'locator');
   }
-  kinds.locator = { model: LocatorKind, events: k.ACTION, props: { heading: str('Find a branch or ATM'), items: arr(), emptyText: str('Nothing matches. Try another name or area.') },
-    view: '<section class="bx-panel bx-locator" :aria-labelledby="[[id]]"><h3 class="bx-panel-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>'
+  kinds.locator = { model: LocatorKind, events: k.ACTION, props: { heading: str('Find a branch or ATM'), items: arr(), emptyText: str('Nothing matches. Try another name or area.'), variant: str(), loading: bool() },
+    view: '<section :class="[[css]]" :aria-labelledby="[[id]]"><h3 class="bx-panel-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>'
       + '<div class="bx-control bx-payee-search"><span class="bx-search-icon" aria-hidden="true"></span><input type="search" class="bx-input bx-search" aria-label="Search by name or area" placeholder="Name or area"'
       + ' :value="[[query]]" on-input="[[onQuery]]"/></div><div class="bx-chip-row" role="group" aria-label="Show">' + each('kinds', 'c', '<button type="button" :class="[[c.data.css]]" :aria-pressed="[[c.data.pressed]]"'
-      + ' on-click="[[c.data.pick]]">' + txt('c.data.label') + '</button>') + '</div>' + iff('none()', '<p class="bx-panel-empty" role="status">' + txt('$properties.emptyText') + '</p>')
-      + '<ul class="bx-rows">' + each('rows', 'r', '<li class="bx-row"><span class="bx-row-main"><strong>' + txt('r.data.name') + '</strong><span class="bx-row-meta">' + txt('r.data.meta') + '</span>'
+      + ' on-click="[[c.data.pick]]">' + txt('c.data.label') + '</button>') + '</div>' + iff('$properties.loading', LOADING)
+      + iff('none() && !$properties.loading', '<p class="bx-panel-empty" role="status">' + txt('$properties.emptyText') + '</p>')
+      + iff('!$properties.loading', '<ul class="bx-rows">' + each('rows', 'r', '<li class="bx-row"><span class="bx-row-main"><strong>' + txt('r.data.name') + '</strong><span class="bx-row-meta">' + txt('r.data.meta') + '</span>'
         + iff('r.data.hours', '<span class="bx-row-meta">' + txt('r.data.hours') + '</span>') + '</span><button type="button" class="bx-btn bx-btn--borderless bx-btn--sm" :aria-label="[[r.data.actionName]]"'
-        + ' on-click="[[r.data.go]]">Directions</button></li>') + '</ul></section>' };
+        + ' on-click="[[r.data.go]]">Directions</button></li>') + '</ul>') + '</section>' };
 
   /* ---------- chat: a conversation with the bank; new messages are announced ---------- */
   function ChatKind(context) {
@@ -167,9 +174,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2', './bx-g3'], functi
     self.onDraft = function (event) { self.draft(event.target.value); return true; };
     self.send = function () { if (self.off()) { return; } var t = self.draft().trim(); self.draft(''); bx.fire(self.element, 'ojAction', { text: t }); };
     self.onKey = function (event) { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); self.send(); return false; } return true; };
+    self.css = withVariant(self, 'bx-panel bx-chat', 'chat');
   }
-  kinds.chat = { model: ChatKind, events: k.ACTION, props: { heading: str('Chat with us'), messages: arr(), typing: bool(), disabled: bool(), placeholder: str('Write a message') },
-    view: '<section class="bx-panel bx-chat" :aria-labelledby="[[id]]"><h3 class="bx-panel-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>'
+  kinds.chat = { model: ChatKind, events: k.ACTION, props: { heading: str('Chat with us'), messages: arr(), typing: bool(), disabled: bool(), placeholder: str('Write a message'), variant: str(), loading: bool() },
+    view: '<section :class="[[css]]" :aria-labelledby="[[id]]"><h3 class="bx-panel-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>' + iff('$properties.loading', LOADING)
       + '<div class="bx-chat-log" role="log" aria-live="polite" :aria-labelledby="[[id]]">' + each('lines', 'm', '<div :class="[[m.data.css]]"><span class="bx-msg-who">' + txt('m.data.who')
         + iff('m.data.time', ' · ' + txt('m.data.time')) + '</span><span class="bx-msg-text">' + txt('m.data.text') + '</span></div>') + '</div>'
       + iff('$properties.typing', '<p class="bx-chat-typing" role="status">The bank is writing…</p>')

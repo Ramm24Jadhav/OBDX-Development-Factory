@@ -22,6 +22,8 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
   var txt = k.txt, iff = k.iff, each = k.each, list = k.list, base = k.base, register = k.register, str = k.str, bool = k.bool, num = k.num, arr = k.arr;
   var money = g2.kit.money;
   var kinds = {};
+  /* Banking widget variants (variants/v4.json): bx-<kind>--<variant> after the root's own classes, and the loading skeleton */
+  var withVariant = function (vm, own, kind) { return ko.pureComputed(function () { return own + (vm.props.variant ? ' bx-' + kind + '--' + vm.props.variant : ''); }); };
   var hidden = function (expr) { return '<span class="bx-visually-hidden">' + txt(expr) + '</span>'; };
   /** A stagger step class (bx-d-0 to bx-d-19), so delays need no inline style. */
   var d = function (i) { return 'bx-d-' + Math.min(i, 19); };
@@ -89,9 +91,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     self.rows = ko.pureComputed(function () {
       return list(self.props.items).map(function (o) { var v = String(o.value !== undefined ? o.value : ''); return { label: o.label, said: o.label + ' ' + v, tiles: chars(v) }; });
     });
+    self.css = withVariant(self, 'bx-panel bx-flap', 'board');
   }
-  kinds.flap = { model: FlapKind, props: { heading: str(), items: arr() },
-    view: '<section class="bx-panel bx-flap" :aria-label="[[$properties.heading || null]]">' + iff('$properties.heading', '<h3 class="bx-panel-title">' + txt('$properties.heading') + '</h3>')
+  kinds.flap = { model: FlapKind, props: { heading: str(), items: arr(), variant: str() },
+    view: '<section :class="[[css]]" :aria-label="[[$properties.heading || null]]">' + iff('$properties.heading', '<h3 class="bx-panel-title">' + txt('$properties.heading') + '</h3>')
       + '<ul class="bx-flap-rows">' + each('rows', 'r', '<li class="bx-flap-row">' + hidden('r.data.said') + '<span class="bx-flap-label" aria-hidden="true">' + txt('r.data.label') + '</span>'
         + '<span class="bx-flap-tiles" aria-hidden="true">' + each('r.data.tiles', 't', '<span :class="[[t.data.css + \' bx-flap-tile\']]">' + txt('t.data.ch') + '</span>') + '</span></li>') + '</ul></section>' };
 
@@ -105,9 +108,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     self.toggleName = ko.pureComputed(function () { return (self.shown() ? 'Hide ' : 'Show ') + (self.props.label || 'the number'); });
     self.pressed = ko.pureComputed(function () { return self.shown() ? 'true' : 'false'; });
     self.toggle = function () { self.shown(!self.shown()); };
+    self.css = withVariant(self, 'bx-field bx-reveal-digits', 'sensitive');
   }
-  kinds.reveal = { model: RevealKind, props: { label: str('Account number'), value: str() },
-    view: '<div class="bx-field bx-reveal-digits"><span class="bx-label" :id="[[id]]">' + txt('$properties.label') + '</span><div class="bx-control is-readonly" role="group" :aria-labelledby="[[id]]">'
+  kinds.reveal = { model: RevealKind, props: { label: str('Account number'), value: str(), variant: str() },
+    view: '<div :class="[[css]]"><span class="bx-label" :id="[[id]]">' + txt('$properties.label') + '</span><div class="bx-control is-readonly" role="group" :aria-labelledby="[[id]]">'
       + '<span class="bx-input bx-mono bx-sensitive-value">' + hidden('text') + '<span aria-hidden="true">' + each('tiles', 't', '<span :class="[[t.data.css]]">' + txt('t.data.ch') + '</span>') + '</span></span>'
       + '<button type="button" class="bx-reveal" :aria-pressed="[[pressed]]" :aria-label="[[toggleName]]" on-click="[[toggle]]">' + txt('toggleText') + '</button></div></div>' };
 
@@ -635,9 +639,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     self.onDraft = function (event) { self.draft(event.target.value); return true; };
     self.send = function () { if (self.off()) { return; } var t = self.draft().trim(); self.draft(''); bx.fire(self.element, 'ojAction', { text: t }); };
     self.onKey = function (event) { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); self.send(); return false; } return true; };
+    self.css = withVariant(self, 'bx-prompt-bar', 'chat');
   }
-  kinds.prompt = { model: PromptKind, events: k.ACTION, props: { label: str('Ask the assistant'), placeholder: str('Ask about your accounts'), suggestions: arr(), busy: bool() },
-    view: '<div class="bx-prompt-bar"><div class="bx-chip-row" role="group" :aria-label="[[\'Suggestions for \' + $properties.label]]">' + each('chips', 'c', '<button type="button" class="bx-filter-chip" on-click="[[c.data.use]]">'
+  kinds.prompt = { model: PromptKind, events: k.ACTION, props: { label: str('Ask the assistant'), placeholder: str('Ask about your accounts'), suggestions: arr(), busy: bool(), variant: str() },
+    view: '<div :class="[[css]]"><div class="bx-chip-row" role="group" :aria-label="[[\'Suggestions for \' + $properties.label]]">' + each('chips', 'c', '<button type="button" class="bx-filter-chip" on-click="[[c.data.use]]">'
       + txt('c.data.label') + '</button>') + '</div><div class="bx-prompt-row"><div class="bx-control"><span class="bx-prompt-spark" aria-hidden="true">✦</span><input class="bx-input bx-prompt-input" :aria-label="[[$properties.label]]"'
       + ' :placeholder="[[$properties.placeholder]]" :value="[[draft]]" on-input="[[onDraft]]" on-keydown="[[onKey]]"/></div><button type="button" class="bx-btn bx-btn--callToAction" :disabled="[[off]]"'
       + ' :aria-busy="[[$properties.busy ? \'true\' : null]]" on-click="[[send]]">Ask</button></div></div>' };

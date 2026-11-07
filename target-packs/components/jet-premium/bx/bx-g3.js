@@ -13,6 +13,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2'], function (Composi
   var txt = k.txt, iff = k.iff, each = k.each, list = k.list, base = k.base, register = k.register, str = k.str, bool = k.bool, num = k.num, arr = k.arr;
   var kinds = {};
   /** The last four digits behind dots, as banks show a card or account number. */
+  /* Banking widget variants (variants/v4.json): bx-<kind>--<variant> after the root's own classes */
+  var withVariant = function (vm, own, kind) {
+    return ko.pureComputed(function () { return (typeof own === 'function' ? own() : own) + (vm.props.variant ? ' bx-' + kind + '--' + vm.props.variant : ''); });
+  };
   var masked = function (number) { var d = String(number || '').replace(/\D/g, ''); return d ? '•••• ' + d.slice(-4) : ''; };
 
   /* ---------- schedule: a table of dates and amounts ---------- */
@@ -38,10 +42,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2'], function (Composi
     var self = this;
     base(self, context, 'bx-cardface');
     self.number = ko.pureComputed(function () { return masked(self.props.number); });
-    self.css = ko.pureComputed(function () { return 'bx-card-face' + (self.props.frozen ? ' is-frozen' : ''); });
+    self.css = withVariant(self, function () { return 'bx-card-face' + (self.props.frozen ? ' is-frozen' : ''); }, 'cardtile');
     self.name = ko.pureComputed(function () { return [self.props.label, self.props.network, 'ending ' + String(self.props.number || '').replace(/\D/g, '').slice(-4), self.props.frozen ? 'blocked' : ''].filter(Boolean).join(', '); });
   }
-  kinds.cardface = { model: CardFaceKind, props: { label: str(), number: str(), holder: str(), expiry: str(), network: str(), frozen: bool() },
+  kinds.cardface = { model: CardFaceKind, props: { label: str(), number: str(), holder: str(), expiry: str(), network: str(), frozen: bool(), variant: str() },
     view: '<div :class="[[css]]" role="img" :aria-label="[[name]]"><span class="bx-card-face-label" aria-hidden="true">' + txt('$properties.label') + '</span>'
       + '<span class="bx-card-face-number bx-mono" aria-hidden="true">' + txt('number') + '</span><span class="bx-card-face-foot" aria-hidden="true"><span>' + txt('$properties.holder') + '</span><span>'
       + txt('$properties.expiry') + '</span><strong>' + txt('$properties.network') + '</strong></span>' + iff('$properties.frozen', '<span class="bx-card-face-lock" aria-hidden="true">Blocked</span>') + '</div>' };
@@ -129,12 +133,13 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2'], function (Composi
     self.failed = ko.pureComputed(function () { return self.props.state === 'failed'; });
     self.waiting = ko.pureComputed(function () { return self.props.state === 'waiting'; });
     self.go = function () { if (!self.waiting()) { bx.fire(self.element, 'ojAction', { action: 'verify' }); } };
+    self.css = withVariant(self, 'bx-card bx-challenge', 'biometric');
     self.other = function () { bx.fire(self.element, 'ojAction', { action: 'other' }); };
   }
   kinds.challenge = { model: ChallengeKind, events: k.ACTION,
     props: { heading: str('Confirm it is you'), text: str(), method: str('fingerprint'), actionLabel: str('Use fingerprint'), otherLabel: str('Use a code instead'), state: str('ready'),
-      failedText: str('That did not work. Try again, or use a code.') },
-    view: '<section class="bx-card bx-challenge" :aria-labelledby="[[id]]"><span :class="[[\'bx-challenge-icon\' + (waiting() ? \' is-waiting\' : \'\')]]" aria-hidden="true">' + txt('icon') + '</span>'
+      failedText: str('That did not work. Try again, or use a code.'), variant: str() },
+    view: '<section :class="[[css]]" :aria-labelledby="[[id]]"><span :class="[[\'bx-challenge-icon\' + (waiting() ? \' is-waiting\' : \'\')]]" aria-hidden="true">' + txt('icon') + '</span>'
       + '<h3 class="bx-card-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>' + iff('$properties.text', '<p class="bx-thing-text">' + txt('$properties.text') + '</p>')
       + iff('failed()', '<p class="bx-error" role="alert"><span class="bx-error-icon" aria-hidden="true">!</span>' + txt('$properties.failedText') + '</p>')
       + '<div class="bx-kv-actions"><button type="button" class="bx-btn bx-btn--borderless" on-click="[[other]]">' + txt('$properties.otherLabel') + '</button>'

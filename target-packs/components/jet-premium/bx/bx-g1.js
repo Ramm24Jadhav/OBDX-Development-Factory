@@ -62,6 +62,14 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
   };
 
   var kinds = {};
+  /* Banking widget variants (variants/v4.json): bx-<kind>--<variant> after the root's own classes, and the loading skeleton */
+  var withVariant = function (vm, own, kind) {
+    return ko.pureComputed(function () { return (typeof own === 'function' ? own() : own) + (vm.props.variant ? ' bx-' + kind + '--' + vm.props.variant : ''); });
+  };
+  var LOADING = '<div class="bx-skeleton is-text" role="status" aria-busy="true"><span class="bx-visually-hidden">Loading</span><span class="bx-skel-line" aria-hidden="true"></span>'
+    + '<span class="bx-skel-line" aria-hidden="true"></span><span class="bx-skel-line is-short" aria-hidden="true"></span></div>';
+  /** A hue from a name, the same in every pack, for the tonal avatar. */
+  var hueOf = function (name) { var h = 0; String(name || '').split('').forEach(function (c) { h = (h * 31 + c.charCodeAt(0)) % 360; }); return h; };
 
   /* ---------- buttons: a quieter or a destructive action ---------- */
   function ButtonKind(context) {
@@ -323,11 +331,12 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
     var self = this;
     base(self, context, 'bx-avatar');
     self.initials = ko.pureComputed(function () { return initials(self.props.name); });
-    self.css = ko.pureComputed(function () { return 'bx-avatar is-' + (self.props.size || 'md'); });
+    self.css = withVariant(self, function () { return 'bx-avatar is-' + (self.props.size || 'md'); }, 'avatar');
+    self.hue = ko.pureComputed(function () { return self.props.variant === 'tonal' ? '--bx-avatar-hue: ' + hueOf(self.props.name) : null; });
   }
-  kinds.avatar = { model: AvatarKind, props: { name: str(), src: str(), size: str('md') },
+  kinds.avatar = { model: AvatarKind, props: { name: str(), src: str(), size: str('md'), variant: str() },
     view: iff('$properties.src', '<img :class="[[css]]" :src="[[$properties.src]]" :alt="[[$properties.name]]"/>')
-      + iff('!$properties.src', '<span :class="[[css]]" role="img" :aria-label="[[$properties.name]]"><span aria-hidden="true">' + txt('initials') + '</span></span>') };
+      + iff('!$properties.src', '<span :class="[[css]]" :style="[[hue]]" role="img" :aria-label="[[$properties.name]]"><span aria-hidden="true">' + txt('initials') + '</span></span>') };
 
   /* ---------- pagination (oj-paging-control): previous, the pages around this one, next ---------- */
   function PagesKind(context) {
@@ -466,11 +475,12 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
       });
     });
     self.empty = ko.pureComputed(function () { return self.rows().length === 0; });
+    self.css = withVariant(self, 'bx-panel', 'bills');
   }
-  kinds.rows = { model: RowsKind, events: ACTION, props: { heading: str(), items: arr(), actionLabel: str(), emptyText: str('Nothing here yet.') },
-    view: '<section class="bx-panel" :aria-label="[[$properties.heading || null]]">' + iff('$properties.heading', '<h3 class="bx-panel-title">' + txt('$properties.heading') + '</h3>')
-      + iff('empty()', '<p class="bx-panel-empty">' + txt('$properties.emptyText') + '</p>')
-      + iff('!empty()', '<ul class="bx-rows">' + each('rows', 'r', '<li :class="[[r.data.css]]"><span class="bx-row-main"><strong>' + txt('r.data.title') + '</strong>'
+  kinds.rows = { model: RowsKind, events: ACTION, props: { heading: str(), items: arr(), actionLabel: str(), emptyText: str('Nothing here yet.'), variant: str(), loading: bool() },
+    view: '<section :class="[[css]]" :aria-label="[[$properties.heading || null]]">' + iff('$properties.heading', '<h3 class="bx-panel-title">' + txt('$properties.heading') + '</h3>')
+      + iff('$properties.loading', LOADING) + iff('empty() && !$properties.loading', '<p class="bx-panel-empty">' + txt('$properties.emptyText') + '</p>')
+      + iff('!empty() && !$properties.loading', '<ul class="bx-rows">' + each('rows', 'r', '<li :class="[[r.data.css]]"><span class="bx-row-main"><strong>' + txt('r.data.title') + '</strong>'
         + iff('r.data.meta', '<span class="bx-row-meta">' + txt('r.data.meta') + '</span>') + '</span>' + iff('r.data.value', '<span class="bx-row-value">' + txt('r.data.value') + '</span>')
         + iff('$properties.actionLabel', '<button type="button" class="bx-btn bx-btn--borderless bx-btn--sm" :aria-label="[[r.data.actionName]]" on-click="[[r.data.act]]">' + txt('$properties.actionLabel') + '</button>')
         + '</li>') + '</ul>') + '</section>' };
