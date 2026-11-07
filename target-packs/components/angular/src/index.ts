@@ -55,6 +55,8 @@ export { AnimatedList, BellToggle, BentoGrid, BlurInText, BudgetGauge, CallChip,
   SilkBackdrop, SlideToConfirm, SoftAurora, SplitFlapBoard, SpotlightCard, SquishSwitch, StaggeredMenu, StatusMark, SuccessCheck, SwipeRow, SwipeToast, TextReveal, TiltCard,
   Topography, TypedText, VoicePill, WarmTooltip, stagger } from './g7';
 export type { BentoTile, CardNavItem, DeckItem, FlapRow, FolderDoc, ListEntry, SwipeAction } from './g7';
+export { AuroraHero, BorderBeam, GlassDock, MaskedAvatars, RevealLoader, ShareSheet, VENGEANCE_COMPONENTS, revealStep, shareBody } from './vengeance';
+export type { DockEntry, Person, RevealExit, RevealOrder, ShareChannel } from './vengeance';
 
 import { AmountInput, TextField } from './text-field';
 import { Button, IconButton } from './button';
@@ -73,8 +75,9 @@ import { G4_COMPONENTS } from './g4';
 import { G5_COMPONENTS } from './g5';
 import { G6_COMPONENTS } from './g6';
 import { G7_COMPONENTS } from './g7';
+import { VENGEANCE_COMPONENTS } from './vengeance';
 import { Autocomplete, CurrencySelector, DateRangePicker, FileUpload, MultiSelect, NumberInput, PasswordField, SearchField, TextArea, Toggle } from './forms';
 
 /** Every component, for a screen's imports: [...OBDX_COMPONENTS]. */
 export const OBDX_COMPONENTS = [Button, IconButton, TextField, AmountInput, Dropdown, CheckboxGroup, RadioGroup, DatePicker, Dialog, Toast, Card, Tabs,
-  DataTable, TextArea, PasswordField, NumberInput, CurrencySelector, MultiSelect, Toggle, DateRangePicker, SearchField, Autocomplete, FileUpload, ...G1_COMPONENTS, ...G2_COMPONENTS, ...G3_COMPONENTS, ...G4_COMPONENTS, ...G5_COMPONENTS, ...G6_COMPONENTS, ...G7_COMPONENTS] as const;
+  DataTable, TextArea, PasswordField, NumberInput, CurrencySelector, MultiSelect, Toggle, DateRangePicker, SearchField, Autocomplete, FileUpload, ...G1_COMPONENTS, ...G2_COMPONENTS, ...G3_COMPONENTS, ...G4_COMPONENTS, ...G5_COMPONENTS, ...G6_COMPONENTS, ...G7_COMPONENTS, ...VENGEANCE_COMPONENTS] as const;

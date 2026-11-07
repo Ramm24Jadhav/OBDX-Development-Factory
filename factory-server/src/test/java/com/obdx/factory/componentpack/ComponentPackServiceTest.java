@@ -30,7 +30,7 @@ class ComponentPackServiceTest {
 
     @Test
     void theRegistryLoadsEveryComponentWithItsNameAndFoundationInEveryPack() {
-        assertThat(REGISTRY.size()).isEqualTo(245);
+        assertThat(REGISTRY.size()).isEqualTo(251);
         assertThat(REGISTRY.categories()).hasSize(25);
         assertThat(REGISTRY.packs()).extracting(Pack::id).containsExactlyElementsOf(ComponentRegistry.PACKS);
         REGISTRY.categories().forEach((c) -> c.components().forEach((m) -> {
@@ -89,12 +89,12 @@ class ComponentPackServiceTest {
         assertThat(find(c, "segmented").packs().get("angular").gates().get("parity")).isEqualTo("passed");
         // Angular's newest components passed their browser gates too; overview replaces no JET element, so it is Available
         assertThat(find(c, "overview").packs().get("angular").readiness()).isEqualTo("available");
-        assertThat(c.packs()).allSatisfy((p) -> assertThat(p.counts().available() + p.counts().inTest() + p.counts().planned() + p.counts().notInPack()).isEqualTo(245));
+        assertThat(c.packs()).allSatisfy((p) -> assertThat(p.counts().available() + p.counts().inTest() + p.counts().planned() + p.counts().notInPack()).isEqualTo(251));
         assertThat(c.packs().get(1).counts().available()).isEqualTo(245);
-        assertThat(c.packs().get(1).counts().inTest()).isZero();
+        assertThat(c.packs().get(1).counts().inTest()).isEqualTo(6);
         assertThat(c.packs().get(2).counts().available()).isEqualTo(227);
         assertThat(c.packs().get(3).counts().available()).isEqualTo(245);
-        assertThat(c.packs().get(3).counts().inTest()).isZero();
+        assertThat(c.packs().get(3).counts().inTest()).isEqualTo(6);
 
         // Available only when every gate passes (parity does not apply to a component with nothing to replace)
         ComponentRegistry.Entry card = REGISTRY.component("card");

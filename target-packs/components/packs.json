@@ -81,6 +81,12 @@
           "name": "@oracle/oraclejet-core-pack",
           "version": "the bank’s version, Core Pack build only",
           "licence": "UPL-1.0"
+        },
+        {
+          "name": "Vengeance UI",
+          "version": "main (2026-11)",
+          "licence": "MIT",
+          "notice": "Copyright (c) 2025-2026 Ashutoshx7. Not installed: the share sheet, glass dock, aurora hero, reveal loader, border beam and masked avatars are ported into the pack, the MIT notice at the top of each file."
         }
       ],
       "built": [
@@ -1308,6 +1314,48 @@
           "component": "lattice-loader",
           "source": "target-packs/components/jet-premium/bx",
           "export": "bx-lattice-loader"
+        },
+        {
+          "component": "share-sheet",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-share-sheet",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "glass-dock",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-glass-dock",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "reveal-loader",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-reveal-loader",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "border-beam",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-border-beam",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "masked-avatars",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-masked-avatars",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "aurora-hero",
+          "source": "target-packs/components/jet-premium/bx",
+          "export": "bx-aurora-hero",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
         }
       ],
       "checks": {
@@ -6888,6 +6936,42 @@
             "status": "passed",
             "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones (JET 6.2 and JET 21); GitHub Actions run 42321314636 (commit a8ffd4e), all checks passed"
           }
+        },
+        "share-sheet": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks (vengeance tests)"
+          }
+        },
+        "glass-dock": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks (vengeance tests)"
+          }
+        },
+        "reveal-loader": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks (vengeance tests)"
+          }
+        },
+        "border-beam": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks (vengeance tests)"
+          }
+        },
+        "masked-avatars": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks (vengeance tests)"
+          }
+        },
+        "aurora-hero": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/jet-premium/test/run.js: the view model tests and the markup checks (vengeance tests)"
+          }
         }
       },
       "folder": "target-packs/components/jet-premium"
@@ -6923,6 +7007,30 @@
           "version": "0.5",
           "licence": "MIT",
           "notice": "Copyright (c) 2026 Kelvin Zhang. Loaded only under the Liquid glass look, for the bending lens."
+        },
+        {
+          "name": "Vengeance UI",
+          "version": "main (2026-11)",
+          "licence": "MIT",
+          "notice": "Copyright (c) 2025-2026 Ashutoshx7. Not installed: the share sheet, glass dock, aurora hero, reveal loader, border beam and masked avatars are ported into the pack, the MIT notice at the top of each file."
+        },
+        {
+          "name": "@mui/material",
+          "version": "9.5",
+          "licence": "MIT",
+          "notice": "Copyright (c) 2014 Call-Em-All. The MUI core only (never MUI X Pro or Premium), for the Material variant set (src/Material.tsx); see variants/v6.json."
+        },
+        {
+          "name": "@emotion/react",
+          "version": "11.14",
+          "licence": "MIT",
+          "notice": "Copyright (c) Emotion team and other contributors. MUI's styling engine."
+        },
+        {
+          "name": "@emotion/styled",
+          "version": "11.14",
+          "licence": "MIT",
+          "notice": "Copyright (c) Emotion team and other contributors. MUI's styling engine."
         }
       ],
       "built": [
@@ -8150,6 +8258,48 @@
           "component": "lattice-loader",
           "source": "target-packs/components/react/src",
           "export": "LatticeLoader"
+        },
+        {
+          "component": "share-sheet",
+          "source": "target-packs/components/react/src",
+          "export": "ShareSheet",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "glass-dock",
+          "source": "target-packs/components/react/src",
+          "export": "GlassDock",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "reveal-loader",
+          "source": "target-packs/components/react/src",
+          "export": "RevealLoader",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "border-beam",
+          "source": "target-packs/components/react/src",
+          "export": "BorderBeam",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "masked-avatars",
+          "source": "target-packs/components/react/src",
+          "export": "MaskedAvatars",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "aurora-hero",
+          "source": "target-packs/components/react/src",
+          "export": "AuroraHero",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
         }
       ],
       "checks": {
@@ -13730,6 +13880,42 @@
             "status": "passed",
             "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones; GitHub Actions run 42321314636 (commit a8ffd4e), all checks passed"
           }
+        },
+        "share-sheet": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test/vengeance.test.tsx: vitest, Testing Library and axe"
+          }
+        },
+        "glass-dock": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test/vengeance.test.tsx: vitest, Testing Library and axe"
+          }
+        },
+        "reveal-loader": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test/vengeance.test.tsx: vitest, Testing Library and axe"
+          }
+        },
+        "border-beam": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test/vengeance.test.tsx: vitest, Testing Library and axe"
+          }
+        },
+        "masked-avatars": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test/vengeance.test.tsx: vitest, Testing Library and axe"
+          }
+        },
+        "aurora-hero": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react/test/vengeance.test.tsx: vitest, Testing Library and axe"
+          }
         }
       },
       "folder": "target-packs/components/react"
@@ -13755,6 +13941,12 @@
           "version": "58",
           "licence": "MIT",
           "notice": "Copyright (c) 2015-present 650 Industries, Inc. (aka Expo). Optional: the frost of the Liquid glass look; without it the look keeps its fill and rim."
+        },
+        {
+          "name": "Vengeance UI",
+          "version": "main (2026-11)",
+          "licence": "MIT",
+          "notice": "Copyright (c) 2025-2026 Ashutoshx7. Not installed: the share sheet, glass dock, aurora hero, reveal loader, border beam and masked avatars are ported into the pack, the MIT notice at the top of each file."
         }
       ],
       "built": [
@@ -14892,6 +15084,48 @@
           "component": "lattice-loader",
           "source": "target-packs/components/react-native/src",
           "export": "LatticeLoader"
+        },
+        {
+          "component": "share-sheet",
+          "source": "target-packs/components/react-native/src",
+          "export": "ShareSheet",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "glass-dock",
+          "source": "target-packs/components/react-native/src",
+          "export": "GlassDock",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "reveal-loader",
+          "source": "target-packs/components/react-native/src",
+          "export": "RevealLoader",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "border-beam",
+          "source": "target-packs/components/react-native/src",
+          "export": "BorderBeam",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "masked-avatars",
+          "source": "target-packs/components/react-native/src",
+          "export": "MaskedAvatars",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "aurora-hero",
+          "source": "target-packs/components/react-native/src",
+          "export": "AuroraHero",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
         }
       ],
       "checks": {
@@ -20076,6 +20310,42 @@
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
           }
+        },
+        "share-sheet": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test/vengeance.test.tsx: jest and Testing Library, roles, names and touch sizes"
+          }
+        },
+        "glass-dock": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test/vengeance.test.tsx: jest and Testing Library, roles, names and touch sizes"
+          }
+        },
+        "reveal-loader": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test/vengeance.test.tsx: jest and Testing Library, roles, names and touch sizes"
+          }
+        },
+        "border-beam": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test/vengeance.test.tsx: jest and Testing Library, roles, names and touch sizes"
+          }
+        },
+        "masked-avatars": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test/vengeance.test.tsx: jest and Testing Library, roles, names and touch sizes"
+          }
+        },
+        "aurora-hero": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/test/vengeance.test.tsx: jest and Testing Library, roles, names and touch sizes"
+          }
         }
       },
       "folder": "target-packs/components/react-native"
@@ -20100,6 +20370,12 @@
           "name": "@angular/cdk",
           "version": "22.2",
           "licence": "MIT"
+        },
+        {
+          "name": "Vengeance UI",
+          "version": "main (2026-11)",
+          "licence": "MIT",
+          "notice": "Copyright (c) 2025-2026 Ashutoshx7. Not installed: the share sheet, glass dock, aurora hero, reveal loader, border beam and masked avatars are ported into the pack, the MIT notice at the top of each file."
         }
       ],
       "built": [
@@ -21327,6 +21603,48 @@
           "component": "delinquency-notice",
           "source": "target-packs/components/angular/src",
           "export": "bx-delinquency-notice"
+        },
+        {
+          "component": "share-sheet",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-share-sheet",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "glass-dock",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-glass-dock",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "reveal-loader",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-reveal-loader",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "border-beam",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-border-beam",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "masked-avatars",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-masked-avatars",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
+        },
+        {
+          "component": "aurora-hero",
+          "source": "target-packs/components/angular/src",
+          "export": "bx-aurora-hero",
+          "licence": "MIT",
+          "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI), MIT, Copyright (c) 2025-2026 Ashutoshx7: ported, the notice in the file"
         }
       ],
       "checks": {
@@ -26906,6 +27224,42 @@
           "visual": {
             "status": "passed",
             "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones; GitHub Actions run 42321314636 (commit a8ffd4e), all checks passed"
+          }
+        },
+        "share-sheet": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test/vengeance.test.ts: vitest, Testing Library and axe"
+          }
+        },
+        "glass-dock": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test/vengeance.test.ts: vitest, Testing Library and axe"
+          }
+        },
+        "reveal-loader": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test/vengeance.test.ts: vitest, Testing Library and axe"
+          }
+        },
+        "border-beam": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test/vengeance.test.ts: vitest, Testing Library and axe"
+          }
+        },
+        "masked-avatars": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test/vengeance.test.ts: vitest, Testing Library and axe"
+          }
+        },
+        "aurora-hero": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test/vengeance.test.ts: vitest, Testing Library and axe"
           }
         }
       },

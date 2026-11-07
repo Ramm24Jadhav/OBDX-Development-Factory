@@ -65,3 +65,5 @@ export { AnimatedList, BellToggle, BentoGrid, BlurInText, BudgetGauge, CallChip,
   TypedText, VoicePill, WarmTooltip, stagger } from './G7';
 export type { BackdropProps, BentoTile, CardNavItem, CountUpProps, DeckItem, FlipCardProps, FolderDoc, FxCardProps, GaugeProps, HoldProps, ListEntry, PressToggleProps,
   ProfileCardProps, PromptBarProps, RotatingTextProps, ScrubProps, SlideConfirmProps, SwipeAction, SwipeRowProps, WheelProps, WrapProps } from './G7';
+export { AuroraHero, BorderBeam, GlassDock, MaskedAvatars, RevealLoader, ShareSheet, revealStep, shareBody } from './Vengeance';
+export type { AuroraHeroProps, BorderBeamProps, DockEntry, GlassDockProps, MaskedAvatarsProps, Person, RevealExit, RevealLoaderProps, RevealOrder, ShareChannel, ShareSheetProps } from './Vengeance';

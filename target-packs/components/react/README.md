@@ -47,6 +47,11 @@ import { styleClasses } from 'obdx-react';
 <div className={styleClasses(componentStyle)} style={{ '--bx-brand': '#0b5fa5' } as React.CSSProperties}>...</div>
 ```
 
+The Material variant set is a separate entry so screens that do not use it never load MUI: `import { MaterialButton,
+MaterialTheme } from 'obdx-react/src/Material'`. Each Material component takes the same props as the pack's own and is
+drawn by `@mui/material` (MIT core only), themed from the `--bx-*` tokens where it is placed; the list is
+`../variants/v6.json`, the gallery `?variant=material`.
+
 ## Checks
 
 `npm ci` then `npm run check` (Node 22): the typecheck, and vitest with Testing Library for behaviour, keyboard and

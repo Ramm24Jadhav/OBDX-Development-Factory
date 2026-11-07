@@ -101,7 +101,8 @@ const G7 = ['bx-rolling-digits', 'bx-count-up', 'bx-split-flap-board', 'bx-revea
   'bx-particle-backdrop', 'bx-slide-to-confirm', 'bx-hold-to-confirm', 'bx-otp-slots', 'bx-receipt-tear', 'bx-success-check', 'bx-swipe-row', 'bx-swipe-toast', 'bx-bell-toggle',
   'bx-squish-switch', 'bx-jelly-radio', 'bx-glide-select', 'bx-rubber-segment', 'bx-scrub-field', 'bx-budget-gauge', 'bx-status-mark', 'bx-favourite-heart', 'bx-peek-rating',
   'bx-warm-tooltip', 'bx-prompt-bar', 'bx-voice-pill', 'bx-call-chip', 'bx-lattice-loader'];
-const GROUPS = [G1, G2, G3, G4, G5, G6, G7];
+const VUI = ['bx-share-sheet', 'bx-glass-dock', 'bx-aurora-hero', 'bx-reveal-loader', 'bx-border-beam', 'bx-masked-avatars'];
+const GROUPS = [G1, G2, G3, G4, G5, G6, G7, VUI];
 const ELEMENTS = FOUNDATION.concat(FORMS, ...GROUPS);
 test('every foundation, forms and group element registers', () => eq(ELEMENTS.filter((e) => !registry[e]), [], 'missing'));
 test('bx.js lists every element', () => eq(load(path.join(BX, 'bx.js')).elements, ELEMENTS, 'elements'));
@@ -1021,6 +1022,56 @@ test('play() animates once, and not under reduced motion or without the Web Anim
   eq(motion.play(el, 'pop'), null, 'reduced motion');
   eq(played, [200], 'played');
   delete window.matchMedia;
+});
+test('vengeance VUI has 6 components; the share sheet copies the text and link, drops a link that is not http', () => {
+  eq(VUI.length, 6, 'count');
+  const copied = [];
+  const nav = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { clipboard: { writeText: (t) => { copied.push(t); return { then: (ok) => ok() }; } } } });
+  try {
+    const s = create('bx-share-sheet', { text: 'IBAN GB29', url: 'https://bank.example/pay' });
+    s.vm.show();
+    eq([s.vm.open(), s.vm.dests().map((x) => x.name)], [true, ['Copy', 'Email', 'Messages']], 'open, no device share');
+    s.vm.dests()[0].act();
+    eq([copied, s.vm.note(), s.events[0].detail.channel], [['IBAN GB29\nhttps://bank.example/pay'], 'Copied. Paste it anywhere.', 'copy'], 'copied');
+    eq(create('bx-share-sheet', { text: 'Ref 1', url: 'javascript:alert(1)' }).vm.body(), 'Ref 1', 'unsafe link dropped');
+  } finally { if (nav) { Object.defineProperty(globalThis, 'navigator', nav); } else { delete globalThis.navigator; } }
+  const v = registry['bx-share-sheet'].view;
+  if (!/<bx-sheet open="\{\{open\}\}"/.test(v) || !/role="status"/.test(v)) { throw new Error('share sheet markup'); }
+});
+test('vengeance bx-glass-dock: one label for the shortcut in focus, sliding in from the side it came from; leaving clears it', () => {
+  const dk = create('bx-glass-dock', { items: [{ id: 'pay', label: 'Pay' }, { id: 'cards', label: 'Cards' }], value: 'cards' });
+  eq(dk.vm.items().map((o) => o.current), [null, 'page'], 'current');
+  dk.vm.items()[0].point();
+  dk.vm.items()[1].point();
+  eq([dk.vm.label(), dk.vm.labelCss()], [[{ text: 'Cards', from: 'is-from-right' }], 'bx-dock-label is-at-1'], 'label');
+  const nav = { contains: (n) => n === 'inside' };
+  dk.vm.focusOut({ currentTarget: nav, relatedTarget: 'inside' });
+  eq(dk.vm.label().length, 1, 'moved within the dock');
+  dk.vm.focusOut({ currentTarget: nav, relatedTarget: null });
+  eq(dk.vm.label(), [], 'left the dock');
+  dk.vm.items()[1].act();
+  eq(dk.events[0].detail.value, 'cards', 'action');
+  if (!/:aria-label="\[\[o\.data\.label\]\]"/.test(registry['bx-glass-dock'].view)) { throw new Error('dock buttons have no name'); }
+});
+test('vengeance bx-reveal-loader: covers the content while loading, lifts after the bars and says it is done', () => {
+  timers.length = 0;
+  const r = create('bx-reveal-loader', { text: 'Bank', order: 'edges' });
+  eq([r.vm.gone(), r.vm.inert(), r.vm.busy(), r.vm.bars()[0], r.vm.bars()[4]], [false, true, 'true', 'bx-reveal-bar bx-d-0', 'bx-reveal-bar bx-d-8'], 'covering');
+  r.props.loading = false;
+  r.vm.propertyChanged({ property: 'loading', value: false });
+  runTimers(1500);
+  eq([r.vm.gone(), r.vm.inert(), types(r)], [true, null, ['ojComplete']], 'lifted');
+  eq(create('bx-reveal-loader', { loading: false }).vm.gone(), true, 'never covers when not loading');
+  if (!/role="status"/.test(registry['bx-reveal-loader'].view) || !/bx-visually-hidden/.test(registry['bx-reveal-loader'].view)) { throw new Error('loader announces nothing'); }
+});
+test('vengeance bx-border-beam keeps its lap between 2 and 20 s; bx-masked-avatars name everyone and count the rest; bx-aurora-hero has its heading', () => {
+  eq([create('bx-border-beam', { duration: 60 }).vm.css(), create('bx-border-beam', { duration: 1, still: true }).vm.css()],
+    ['bx-card bx-border-beam is-lap-20', 'bx-card bx-border-beam is-lap-2 is-still'], 'laps');
+  const m = create('bx-masked-avatars', { max: 2, people: [{ name: 'Priya Nair' }, { name: 'Arjun Rao' }, { name: 'Meera Iyer' }] });
+  eq([m.vm.shown().map((p) => p.initials + ' ' + p.css), m.vm.restLabel(), m.vm.restText()], [['PN bx-masked-avatar is-cut', 'AR bx-masked-avatar is-cut'], 'and 1 more', '+1'], 'avatars');
+  if (!/role="img" :aria-label="\[\[p\.data\.name\]\]"/.test(registry['bx-masked-avatars'].view)) { throw new Error('avatars have no name'); }
+  if (!/<h2 class="bx-aurora-title">/.test(registry['bx-aurora-hero'].view)) { throw new Error('hero heading'); }
 });
 test('bx-number-input: a step rolls the number in', () => {
   const played = [];

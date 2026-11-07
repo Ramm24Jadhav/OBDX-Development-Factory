@@ -2470,6 +2470,66 @@
       "error": null,
       "loading": "spin",
       "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "share-sheet": {
+      "enter": "fade",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": "spring",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "glass-dock": {
+      "enter": null,
+      "hover": "effect",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "aurora-hero": {
+      "enter": "fade",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "reveal-loader": {
+      "enter": null,
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": "effect",
+      "error": null,
+      "loading": "effect",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "border-beam": {
+      "enter": null,
+      "hover": "effect",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "masked-avatars": {
+      "enter": "style",
+      "hover": "effect",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
     }
   }
 }

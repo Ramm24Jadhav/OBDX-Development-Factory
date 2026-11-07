@@ -15880,6 +15880,343 @@
               "angular": "<bx-glass-panel><p>The screen's own content</p></bx-glass-panel>"
             }
           }
+        },
+        {
+          "id": "share-sheet",
+          "name": "Share sheet",
+          "purpose": "A bottom sheet of ways to share a reference, account details or a receipt: copy, email, messages and the device share.",
+          "kind": "dialog",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-share-sheet",
+            "react": "ShareSheet",
+            "angular": "bx-share-sheet",
+            "react-native": "ShareSheet"
+          },
+          "sample": {
+            "text": "Payment REF 20931, 250.00 USD to A. Rao"
+          },
+          "builtOn": {
+            "jet-premium": "ojs/ojcomposite (Knockout view, no JET component), bx-vengeance.js",
+            "react": "React, no library (Vengeance.tsx)",
+            "angular": "standalone component, signal inputs (vengeance.ts)",
+            "react-native": "React Native Animated, Share and Linking (Vengeance.tsx), the end state under reduced motion"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'Share'",
+                "doc": "The trigger button"
+              },
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "'Share'",
+                "doc": "The sheet title"
+              },
+              {
+                "name": "text",
+                "type": "string",
+                "default": "—",
+                "doc": "What is shared"
+              },
+              {
+                "name": "url",
+                "type": "string",
+                "default": "''",
+                "doc": "A link shared with the text (http or https only)"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onShare",
+                "payload": "'copy' | 'email' | 'sms' | 'system'",
+                "when": "A way to share is used (JET: ojShare; Angular: (share)); React Native has no copy, its system share has one"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-share-sheet text=\"Payment REF 20931, 250.00 USD to A. Rao\"></bx-share-sheet>",
+              "react": "<ShareSheet text=\"Payment REF 20931, 250.00 USD to A. Rao\" />",
+              "angular": "<bx-share-sheet text=\"Payment REF 20931, 250.00 USD to A. Rao\" />"
+            }
+          }
+        },
+        {
+          "id": "glass-dock",
+          "name": "Glass dock",
+          "purpose": "A frosted dock of shortcuts; the one under the pointer lifts and one label glides above it.",
+          "kind": "nav",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-glass-dock",
+            "react": "GlassDock",
+            "angular": "bx-glass-dock",
+            "react-native": "GlassDock"
+          },
+          "sample": {
+            "items": "[{\"id\":\"pay\",\"label\":\"Pay\",\"icon\":\"↗\"},{\"id\":\"cards\",\"label\":\"Cards\",\"icon\":\"▭\"},{\"id\":\"help\",\"label\":\"Help\",\"icon\":\"?\"}]",
+            "value": "pay"
+          },
+          "builtOn": {
+            "jet-premium": "ojs/ojcomposite (Knockout view, no JET component), bx-vengeance.js",
+            "react": "React, no library (Vengeance.tsx)",
+            "angular": "standalone component, signal inputs (vengeance.ts)",
+            "react-native": "React Native Animated, Share and Linking (Vengeance.tsx), the end state under reduced motion"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'Shortcuts'",
+                "doc": "Names the navigation"
+              },
+              {
+                "name": "items",
+                "type": "Array<{id, label, icon?}>",
+                "default": "[]",
+                "doc": "The shortcuts"
+              },
+              {
+                "name": "value",
+                "type": "string",
+                "default": "''",
+                "doc": "The current one"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onAction",
+                "payload": "id",
+                "when": "A shortcut is pressed (JET: ojAction; Angular: (action))"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-glass-dock items='[{\"id\":\"pay\",\"label\":\"Pay\",\"icon\":\"↗\"},{\"id\":\"cards\",\"label\":\"Cards\",\"icon\":\"▭\"}]' value=\"pay\"></bx-glass-dock>",
+              "react": "<GlassDock items={[{id: 'pay', label: 'Pay', icon: '↗'}, {id: 'cards', label: 'Cards', icon: '▭'}]} value=\"pay\" />",
+              "angular": "<bx-glass-dock [items]=\"[{id: 'pay', label: 'Pay', icon: '↗'}, {id: 'cards', label: 'Cards', icon: '▭'}]\" value=\"pay\" />"
+            }
+          }
+        },
+        {
+          "id": "reveal-loader",
+          "name": "Reveal loader",
+          "purpose": "A curtain of bars and a word over a screen while it loads; the bars lift one after another when it is ready.",
+          "kind": "spinner",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-reveal-loader",
+            "react": "RevealLoader",
+            "angular": "bx-reveal-loader",
+            "react-native": "RevealLoader"
+          },
+          "sample": {
+            "text": "Loading",
+            "loading": "false"
+          },
+          "builtOn": {
+            "jet-premium": "ojs/ojcomposite (Knockout view, no JET component), bx-vengeance.js",
+            "react": "React, no library (Vengeance.tsx)",
+            "angular": "standalone component, signal inputs (vengeance.ts)",
+            "react-native": "React Native Animated, Share and Linking (Vengeance.tsx), the end state under reduced motion"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "children",
+                "type": "slot",
+                "default": "—",
+                "doc": "The content revealed"
+              },
+              {
+                "name": "text",
+                "type": "string",
+                "default": "'Loading'",
+                "doc": "The word on the curtain"
+              },
+              {
+                "name": "loading",
+                "type": "boolean",
+                "default": "true",
+                "doc": "Covers the content while true"
+              },
+              {
+                "name": "order",
+                "type": "'start' | 'end' | 'center' | 'edges'",
+                "default": "'start'",
+                "doc": "Which bars lift first"
+              },
+              {
+                "name": "exit",
+                "type": "'down' | 'up' | 'fade' | 'shrink'",
+                "default": "'down'",
+                "doc": "How the bars leave"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [
+              {
+                "name": "onComplete",
+                "payload": "—",
+                "when": "The curtain has lifted (JET: ojComplete; Angular: (complete))"
+              }
+            ],
+            "example": {
+              "jet-premium": "<bx-reveal-loader text=\"Loading\" loading=\"[[loading]]\"><p>The screen's own content</p></bx-reveal-loader>",
+              "react": "<RevealLoader text=\"Loading\" loading={loading}><p>The screen's own content</p></RevealLoader>",
+              "angular": "<bx-reveal-loader text=\"Loading\" [loading]=\"loading()\"><p>The screen's own content</p></bx-reveal-loader>"
+            }
+          }
+        },
+        {
+          "id": "border-beam",
+          "name": "Border beam",
+          "purpose": "A card with a light that runs round its border, to draw the eye to an offer or a pending task.",
+          "kind": "wrapper",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-border-beam",
+            "react": "BorderBeam",
+            "angular": "bx-border-beam",
+            "react-native": "BorderBeam"
+          },
+          "sample": {},
+          "builtOn": {
+            "jet-premium": "ojs/ojcomposite (Knockout view, no JET component), bx-vengeance.js",
+            "react": "React, no library (Vengeance.tsx)",
+            "angular": "standalone component, signal inputs (vengeance.ts)",
+            "react-native": "React Native Animated, Share and Linking (Vengeance.tsx), the end state under reduced motion"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "children",
+                "type": "slot",
+                "default": "—",
+                "doc": "The card content"
+              },
+              {
+                "name": "duration",
+                "type": "number",
+                "default": "8",
+                "doc": "Seconds per lap (2 to 20)"
+              },
+              {
+                "name": "still",
+                "type": "boolean",
+                "default": "false",
+                "doc": "No movement"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [],
+            "example": {
+              "jet-premium": "<bx-border-beam><p>Pre-approved loan up to 10,000.00</p></bx-border-beam>",
+              "react": "<BorderBeam><p>Pre-approved loan up to 10,000.00</p></BorderBeam>",
+              "angular": "<bx-border-beam><p>Pre-approved loan up to 10,000.00</p></bx-border-beam>"
+            }
+          }
+        },
+        {
+          "id": "masked-avatars",
+          "name": "Masked avatars",
+          "purpose": "People as overlapping avatars (joint holders, approvers), each cut out where the next sits; the rest are counted.",
+          "kind": "avatar",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-masked-avatars",
+            "react": "MaskedAvatars",
+            "angular": "bx-masked-avatars",
+            "react-native": "MaskedAvatars"
+          },
+          "sample": {
+            "label": "Joint holders",
+            "people": "[{\"name\":\"Priya Nair\"},{\"name\":\"Arjun Rao\"},{\"name\":\"Meera Iyer\"}]"
+          },
+          "builtOn": {
+            "jet-premium": "ojs/ojcomposite (Knockout view, no JET component), bx-vengeance.js",
+            "react": "React, no library (Vengeance.tsx)",
+            "angular": "standalone component, signal inputs (vengeance.ts)",
+            "react-native": "React Native Animated, Share and Linking (Vengeance.tsx), the end state under reduced motion"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "label",
+                "type": "string",
+                "default": "'People'",
+                "doc": "Names the group"
+              },
+              {
+                "name": "people",
+                "type": "Array<{name, src?}>",
+                "default": "[]",
+                "doc": "Who; initials without a photo"
+              },
+              {
+                "name": "max",
+                "type": "number",
+                "default": "5",
+                "doc": "Shown before the rest are counted"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [],
+            "example": {
+              "jet-premium": "<bx-masked-avatars label=\"Joint holders\" people='[{\"name\":\"Priya Nair\"},{\"name\":\"Arjun Rao\"}]'></bx-masked-avatars>",
+              "react": "<MaskedAvatars label=\"Joint holders\" people={[{name: 'Priya Nair'}, {name: 'Arjun Rao'}]} />",
+              "angular": "<bx-masked-avatars label=\"Joint holders\" [people]=\"[{name: 'Priya Nair'}, {name: 'Arjun Rao'}]\" />"
+            }
+          }
         }
       ]
     },
@@ -16348,6 +16685,73 @@
               "jet-premium": "<bx-particle-backdrop><p>The screen's own content</p></bx-particle-backdrop>",
               "react": "<ParticleBackdrop><p>The screen's own content</p></ParticleBackdrop>",
               "angular": "<bx-particle-backdrop><p>The screen's own content</p></bx-particle-backdrop>"
+            }
+          }
+        },
+        {
+          "id": "aurora-hero",
+          "name": "Aurora hero",
+          "purpose": "A welcome or offer hero: drifting bands of light behind fluted glass, the heading on top.",
+          "kind": "backdrop",
+          "foundation": false,
+          "workspace": {
+            "kind": "none",
+            "element": null
+          },
+          "names": {
+            "jet-premium": "bx-aurora-hero",
+            "react": "AuroraHero",
+            "angular": "bx-aurora-hero",
+            "react-native": "AuroraHero"
+          },
+          "sample": {
+            "heading": "Good morning, Priya",
+            "text": "Your salary has arrived."
+          },
+          "builtOn": {
+            "jet-premium": "ojs/ojcomposite (Knockout view, no JET component), bx-vengeance.js",
+            "react": "React, no library (Vengeance.tsx)",
+            "angular": "standalone component, signal inputs (vengeance.ts)",
+            "react-native": "React Native Animated, Share and Linking (Vengeance.tsx), the end state under reduced motion"
+          },
+          "api": {
+            "properties": [
+              {
+                "name": "heading",
+                "type": "string",
+                "default": "—",
+                "doc": "The hero heading"
+              },
+              {
+                "name": "text",
+                "type": "string",
+                "default": "''",
+                "doc": "A line under it"
+              },
+              {
+                "name": "children",
+                "type": "slot",
+                "default": "—",
+                "doc": "Actions under the text"
+              },
+              {
+                "name": "still",
+                "type": "boolean",
+                "default": "false",
+                "doc": "No movement"
+              },
+              {
+                "name": "testID",
+                "type": "string",
+                "default": "''",
+                "doc": "The Screen Model component id, rendered as data-testid (React, Angular)"
+              }
+            ],
+            "events": [],
+            "example": {
+              "jet-premium": "<bx-aurora-hero heading=\"Good morning, Priya\" text=\"Your salary has arrived.\"></bx-aurora-hero>",
+              "react": "<AuroraHero heading=\"Good morning, Priya\" text=\"Your salary has arrived.\" />",
+              "angular": "<bx-aurora-hero heading=\"Good morning, Priya\" text=\"Your salary has arrived.\" />"
             }
           }
         }

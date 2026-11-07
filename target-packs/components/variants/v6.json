@@ -1,0 +1,57 @@
+{
+  "$comment": "Wave V6 of docs/COMPONENT-VARIANTS-PLAN.md. material: the React pack's Material variant, drawn by real MUI components (@mui/material, MIT core only, never MUI X Pro or Premium) with the pack component's own props, themed from the bank tokens by MaterialTheme (react/src/Material.tsx). Each entry is the catalogue component id, the React export that draws it and the MUI parts under it; another wave's React material variant points here, while JET, Angular and React Native draw their Material look themselves (V1 to V5). Gallery: react/gallery ?variant=material&only=<id>. showcase: the components ported from Vengeance UI (MIT) into all four packs.",
+  "wave": "V6",
+  "material": {
+    "pack": "react",
+    "source": "target-packs/components/react/src/Material.tsx",
+    "theme": "MaterialTheme",
+    "gallery": "?variant=material&only=<id>",
+    "dependencies": [
+      { "name": "@mui/material", "version": "9.5", "licence": "MIT" },
+      { "name": "@emotion/react", "version": "11.14", "licence": "MIT" },
+      { "name": "@emotion/styled", "version": "11.14", "licence": "MIT" }
+    ],
+    "components": {
+      "button": { "export": "MaterialButton", "mui": ["Button"], "notes": "callToAction and solid contained, outlined, borderless as text, danger contained in the error colour" },
+      "secondary-button": { "export": "MaterialButton", "mui": ["Button"], "props": { "chroming": "outlined" } },
+      "danger-button": { "export": "MaterialButton", "mui": ["Button"], "props": { "chroming": "danger" } },
+      "text-field": { "export": "MaterialTextField", "mui": ["TextField"] },
+      "text-area": { "export": "MaterialTextField", "mui": ["TextField"], "props": { "multiline": true } },
+      "password": { "export": "MaterialTextField", "mui": ["TextField"], "props": { "type": "password" } },
+      "search": { "export": "MaterialTextField", "mui": ["TextField"], "props": { "type": "search" } },
+      "select": { "export": "MaterialSelect", "mui": ["Select", "MenuItem", "FormControl", "InputLabel"] },
+      "checkbox-group": { "export": "MaterialCheckboxGroup", "mui": ["Checkbox", "FormGroup", "FormControlLabel"] },
+      "choice-group": { "export": "MaterialRadioGroup", "mui": ["RadioGroup", "Radio", "FormControlLabel"] },
+      "switch": { "export": "MaterialSwitch", "mui": ["Switch", "FormControlLabel"] },
+      "savings-slider": { "export": "MaterialSlider", "mui": ["Slider"] },
+      "filter-chips": { "export": "MaterialChips", "mui": ["Chip"] },
+      "tabs": { "export": "MaterialTabs", "mui": ["Tabs", "Tab"] },
+      "card": { "export": "MaterialCard", "mui": ["Card", "CardHeader", "CardContent", "CardActions", "CardActionArea"] },
+      "action-menu": { "export": "MaterialMenu", "mui": ["Menu", "MenuItem", "Button"] },
+      "dialog": { "export": "MaterialDialog", "mui": ["Dialog", "DialogTitle", "DialogContent", "DialogActions"] },
+      "toast": { "export": "MaterialSnackbar", "mui": ["Snackbar", "Alert"] },
+      "data-grid": { "export": "MaterialTable", "mui": ["Table", "TableSortLabel", "Checkbox", "Radio"] },
+      "stepper": { "export": "MaterialStepper", "mui": ["Stepper", "Step", "StepLabel"] },
+      "budget-progress": { "export": "MaterialProgress", "mui": ["LinearProgress"] }
+    }
+  },
+  "showcase": {
+    "origin": "Vengeance UI (github.com/Ashutoshx7/VengenceUI)",
+    "licence": "MIT",
+    "notice": "Copyright (c) 2025-2026 Ashutoshx7; the full MIT notice is at the top of each derived file",
+    "files": {
+      "jet-premium": "target-packs/components/jet-premium/bx/bx-vengeance.js",
+      "react": "target-packs/components/react/src/Vengeance.tsx",
+      "angular": "target-packs/components/angular/src/vengeance.ts",
+      "react-native": "target-packs/components/react-native/src/Vengeance.tsx"
+    },
+    "components": {
+      "share-sheet": { "from": "share-sheet.tsx", "changes": "On the pack's Sheet; bank channels (copy, email, messages, device share) in place of social apps; no QR (needs an encoder)" },
+      "glass-dock": { "from": "glass-dock.tsx", "changes": "One gliding label kept; GSAP MorphSVG icon morphs left out (a paid plugin)" },
+      "aurora-hero": { "from": "aurora-hero.tsx", "changes": "Bands from the bank tokens; the flutes are a CSS layer, not the SVG displacement filter" },
+      "reveal-loader": { "from": "reveal-loader.tsx", "changes": "CSS animations and the pack's stagger steps in place of GSAP; covers the content until loading is false" },
+      "border-beam": { "from": "border-beam.tsx", "changes": "A conic light masked to the border in place of offset-path; laps 2 to 20 s" },
+      "masked-avatars": { "from": "masked-avatars.tsx", "changes": "Initials when there is no photo; the rest counted past max" }
+    }
+  }
+}

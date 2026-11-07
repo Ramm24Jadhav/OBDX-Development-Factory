@@ -83,3 +83,5 @@ export type { BackdropProps } from './Backdrops';
 export { BellToggle, BudgetGauge, CallChip, FavouriteHeart, GlideSelect, HoldToConfirm, JellyRadio, LatticeLoader, OtpSlots, PeekRating, PromptBar, ReceiptTear,
   RubberSegment, ScrubField, SlideToConfirm, SquishSwitch, StatusMark, SuccessCheck, SwipeRow, SwipeToast, VoicePill, WarmTooltip } from './Micro';
 export type { ConfirmProps, PickProps, PromptBarProps, ScrubFieldProps, Status, SwipeAction, SwipeRowProps, ToggleProps } from './Micro';
+export { AuroraHero, BorderBeam, GlassDock, MaskedAvatars, RevealLoader, ShareSheet, revealStep, shareBody } from './Vengeance';
+export type { AuroraHeroProps, BorderBeamProps, DockEntry, GlassDockProps, MaskedAvatarsProps, Person, RevealExit, RevealLoaderProps, RevealOrder, ShareChannel, ShareSheetProps } from './Vengeance';

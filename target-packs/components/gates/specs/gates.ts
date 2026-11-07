@@ -33,6 +33,8 @@ export const G6 = ["overview","quick-insights","recent-transactions","bills-widg
 
 /** Group 7 of the catalogue, in the galleries of the web packs. */
 export const G7 = ["rolling-digits","count-up","split-flap-board","reveal-digits","blur-in-text","text-reveal","rotating-text","shimmer-text","gradient-text","typed-text","focus-word","scroll-float-text","fade-in-content","scroll-reveal","scroll-expand","edge-blur","glare-hover","magnetic-button","highlight-border","click-burst","marquee","animated-list","spotlight-card","tilt-card","flip-card","card-stack","glow-border-card","bento-grid","carousel","elastic-slider","option-wheel","pill-nav","dock-nav","card-nav","staggered-menu","document-folder","scroll-stack","profile-card","glass-panel","gradient-backdrop","soft-aurora","silk-backdrop","dot-grid","line-waves","light-beams","topography","particle-backdrop","slide-to-confirm","hold-to-confirm","otp-slots","receipt-tear","success-check","swipe-row","swipe-toast","bell-toggle","squish-switch","jelly-radio","glide-select","rubber-segment","scrub-field","budget-gauge","status-mark","favourite-heart","peek-rating","warm-tooltip","prompt-bar","voice-pill","call-chip","lattice-loader"] as const;
+/** Wave V6: the showcase components ported from Vengeance UI (MIT). */
+export const V6 = ["share-sheet","glass-dock","reveal-loader","border-beam","masked-avatars","aurora-hero"] as const;
 
 export const VIEWPORTS = { phone: { width: 375, height: 812 }, tablet: { width: 768, height: 1024 }, laptop: { width: 1280, height: 800 } } as const;
 export const THEMES = ['light', 'dark'] as const;
