@@ -15,3 +15,25 @@
   .bx-motion-scroll-slide .bx-accordion { animation: bx-in-slide linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
   .bx-motion-scroll-blur .bx-accordion { animation: bx-in-blur linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
 }
+/* Wave V2 variants (variants.json). separated is MUI Accordion in React. */
+.bx-accordion.bx-v-separated { gap: 8px; border: 0; border-radius: 0; background: transparent; box-shadow: none; overflow: visible; }
+.bx-accordion.bx-v-separated .bx-acc-item { border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-1); overflow: hidden;
+  transition: margin var(--bx-dur-base) var(--bx-ease-standard), box-shadow var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-accordion.bx-v-separated .bx-acc-item + .bx-acc-item { border-top: var(--bx-bw) solid var(--bx-border); }
+.bx-accordion.bx-v-separated .bx-acc-item.is-open { margin: 6px 0; box-shadow: var(--bx-shadow-2); }
+.bx-accordion.bx-v-separated .MuiAccordion-root { color: var(--bx-text); }
+.bx-accordion.bx-v-separated .MuiAccordion-root::before { display: none; }
+.bx-accordion.bx-v-separated .bx-acc-button.MuiAccordionSummary-root { min-height: 52px; padding: 0 18px; }
+.bx-accordion.bx-v-separated .MuiAccordionSummary-expandIconWrapper.Mui-expanded { transform: none; }
+.bx-accordion.bx-v-flush { border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.bx-accordion.bx-v-flush .bx-acc-item { border-bottom: var(--bx-bw) solid var(--bx-rule); }
+.bx-accordion.bx-v-flush .bx-acc-button { padding-inline: 0; }
+.bx-accordion.bx-v-flush .bx-acc-button:hover { background: transparent; color: var(--bx-brand-text); }
+.bx-accordion.bx-v-flush .bx-acc-panel { padding-inline: 0; }
+.bx-accordion.bx-v-contained { border-color: var(--bx-border-strong); box-shadow: none; }
+.bx-accordion.bx-v-contained .bx-acc-head { background: var(--bx-track); }
+.bx-accordion.bx-v-contained .bx-acc-item.is-open .bx-acc-head { background: color-mix(in srgb, var(--bx-brand) 8%, var(--bx-card)); }
+.bx-accordion.bx-v-icon-start .bx-acc-button { flex-direction: row-reverse; justify-content: flex-end; }
+.bx-accordion.bx-v-icon-start .bx-acc-icon { transform: rotate(-45deg); }
+.bx-accordion.bx-v-icon-start .bx-acc-item.is-open .bx-acc-icon { transform: rotate(45deg); }
+.bx-accordion.bx-v-icon-start .bx-acc-panel { padding-left: 44px; }

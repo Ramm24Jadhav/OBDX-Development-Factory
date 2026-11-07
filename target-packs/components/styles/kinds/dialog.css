@@ -13,3 +13,24 @@
 .bx-sheet.is-bottom { left: 0; right: 0; bottom: 0; max-height: 85vh; border-radius: var(--bx-radius-xl) var(--bx-radius-xl) 0 0; animation: bx-sheet-up var(--bx-dur-slow) var(--bx-ease-spring); }
 @keyframes bx-sheet-end { from { transform: translateX(100%); } }
 @keyframes bx-sheet-up { from { transform: translateY(100%); } }
+/* Wave V2 variants (variants.json): on the dialog and the sheet. basic is a MUI Dialog in React. */
+.bx-dialog.bx-v-basic { width: min(560px, calc(100vw - 32px)); border-radius: calc(var(--bx-radius-xl) + 10px); }
+.bx-dialog.bx-v-basic .bx-dialog-header { padding: 24px 24px 12px; }
+.bx-dialog.bx-v-basic .bx-dialog-title { font-size: 22px; font-weight: var(--bx-weight); }
+.bx-dialog.bx-v-basic .bx-dialog-body { padding: 0 24px 16px; }
+.bx-dialog.bx-v-basic .bx-dialog-footer { padding: 8px 24px 24px; }
+/* in MUI's dialog the container centres the paper */
+.bx-dialog.MuiPaper-root { position: relative; left: auto; top: auto; transform: none; margin: 32px; color: var(--bx-text); background: var(--bx-raised); box-shadow: var(--bx-shadow-3); }
+:is(.bx-dialog, .bx-sheet).bx-v-alert { width: min(360px, calc(100vw - 32px)); text-align: center; }
+:is(.bx-dialog, .bx-sheet).bx-v-alert .bx-dialog-header { justify-content: center; }
+:is(.bx-dialog, .bx-sheet).bx-v-alert .bx-dialog-footer { flex-direction: column-reverse; align-items: stretch; }
+.bx-sheet.bx-v-alert { inset: 50% auto auto 50%; height: auto; border-radius: var(--bx-radius-xl); transform: translate(-50%, -50%); animation: bx-rise var(--bx-dur-slow) var(--bx-ease-spring); }
+:is(.bx-dialog, .bx-sheet).bx-v-sheet { inset: auto 0 0 0; width: min(640px, 100vw); max-height: 85vh; margin: 0 auto; transform: none; border-radius: var(--bx-radius-xl) var(--bx-radius-xl) 0 0;
+  animation: bx-sheet-up var(--bx-dur-slow) var(--bx-ease-spring); }
+:is(.bx-dialog, .bx-sheet).bx-v-sheet::before { content: ""; align-self: center; flex: none; width: 36px; height: 4px; margin-top: 8px; border-radius: var(--bx-radius-pill); background: var(--bx-border-strong); }
+:is(.bx-dialog, .bx-sheet).bx-v-side { inset: 0 0 0 auto; width: min(420px, 100vw); max-height: none; height: 100%; transform: none; border-radius: var(--bx-radius-xl) 0 0 var(--bx-radius-xl);
+  animation: bx-sheet-end var(--bx-dur-slow) var(--bx-ease-spring); }
+.bx-dialog.bx-v-fullscreen { width: min(720px, calc(100vw - 32px)); }
+@media (max-width: 600px) {
+  :is(.bx-dialog, .bx-sheet).bx-v-fullscreen { inset: 0; width: 100%; height: 100%; max-height: none; transform: none; border-radius: 0; animation: bx-sheet-up var(--bx-dur-slow) var(--bx-ease-standard); }
+}

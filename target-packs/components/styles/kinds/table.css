@@ -23,3 +23,25 @@
 .bx-tr.is-due .bx-td { font-weight: 650; }
 .bx-tr.is-overdue .bx-td { color: var(--bx-danger-text); font-weight: 650; }
 .bx-tr.is-paid .bx-td { color: var(--bx-muted); }
+/* Wave V2 variants (variants.json): on the table's wrapper. material is MUI Table in React. */
+.bx-grid-wrap.bx-v-material { border-color: transparent; border-radius: var(--bx-radius-sm); box-shadow: var(--bx-shadow-2); }
+.bx-grid-wrap.bx-v-material .bx-th { background: var(--bx-card); color: var(--bx-text); font-size: 13px; text-transform: none; letter-spacing: 0; }
+.bx-grid-wrap.bx-v-material .bx-td { padding: 14px 16px; }
+.bx-grid-wrap .MuiTableCell-root { color: var(--bx-text); border-bottom-color: var(--bx-rule); font: inherit; font-size: 14px; }
+.bx-grid-wrap .MuiTableCell-head { font-size: 13px; font-weight: var(--bx-weight-title); }
+.bx-grid-wrap.bx-v-striped .bx-tr:nth-child(even) .bx-td { background: var(--bx-surface-2); }
+.bx-grid-wrap.bx-v-striped .bx-td { border-bottom: 0; }
+.bx-grid-wrap.bx-v-striped .bx-th { background: var(--bx-track); }
+.bx-grid-wrap.bx-v-dense .bx-th, .bx-grid-wrap.bx-v-dense .bx-td { padding: 6px 10px; }
+.bx-grid-wrap.bx-v-dense .bx-grid { font-size: 13px; }
+.bx-grid-wrap.bx-v-sticky { max-height: 360px; overflow: auto; }
+.bx-grid-wrap.bx-v-sticky .bx-th { z-index: 1; background: var(--bx-raised); box-shadow: 0 var(--bx-bw) 0 var(--bx-rule); }
+/* cards: on a phone each row is a card with its labels */
+@media (max-width: 600px) {
+  .bx-grid-wrap.bx-v-cards { border: 0; background: transparent; box-shadow: none; }
+  .bx-grid-wrap.bx-v-cards :is(.bx-grid, tbody, tr, td) { display: block; }
+  .bx-grid-wrap.bx-v-cards thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .bx-grid-wrap.bx-v-cards .bx-tr { margin-bottom: 10px; overflow: hidden; border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-1); }
+  .bx-grid-wrap.bx-v-cards .bx-td { display: flex; justify-content: space-between; gap: 12px; text-align: right; }
+  .bx-grid-wrap.bx-v-cards .bx-td[data-label]::before { content: attr(data-label); color: var(--bx-muted); font-size: 12px; font-weight: 600; text-align: left; }
+}

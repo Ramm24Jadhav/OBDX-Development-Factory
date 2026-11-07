@@ -7,3 +7,29 @@
 .bx-kv-row.is-total dt, .bx-kv-row.is-total dd { color: var(--bx-text); font-size: 15.5px; font-weight: 750; }
 .bx-kv-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 12px; }
 .bx-kv-actions:empty { display: none; }
+/* Wave V2 variants (variants.json) */
+/* list: each detail a row with its label above the value (a MUI List in React) */
+.bx-kv.bx-v-list .bx-kv-list { padding: 0; }
+.bx-kv.bx-v-list .bx-kv-row { flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 0; }
+.bx-kv.bx-v-list .bx-kv-row dt { font-size: 12.5px; }
+.bx-kv.bx-v-list .bx-kv-row dd { text-align: left; font-size: 15px; }
+/* columns: label and value side by side, in two columns on a wide screen */
+.bx-kv.bx-v-columns .bx-kv-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); column-gap: 32px; }
+.bx-kv.bx-v-columns .bx-kv-row { justify-content: flex-start; }
+.bx-kv.bx-v-columns .bx-kv-row dt { flex: 0 0 42%; }
+.bx-kv.bx-v-columns .bx-kv-row dd { text-align: left; }
+/* cards: each detail in its own small card */
+.bx-kv.bx-v-cards .bx-kv-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+.bx-kv.bx-v-cards .bx-kv-row { flex-direction: column; gap: 4px; padding: 10px 12px; border: 0; border-radius: var(--bx-radius-control); background: var(--bx-track); }
+.bx-kv.bx-v-cards .bx-kv-row dd { text-align: left; }
+.bx-kv.bx-v-cards .bx-kv-row.is-total { grid-column: 1 / -1; border: 0; background: color-mix(in srgb, var(--bx-brand) 10%, var(--bx-card)); }
+/* compact: tight rows for long details */
+.bx-kv.bx-v-compact .bx-kv-row { padding: 6px 0; font-size: 13px; }
+.bx-kv.bx-v-compact .bx-kv-row.is-total dt, .bx-kv.bx-v-compact .bx-kv-row.is-total dd { font-size: 14px; }
+/* receipt: dotted leaders and a bold total, on a dashed edge */
+.bx-kv.bx-v-receipt { border-style: dashed; border-color: var(--bx-border-strong); box-shadow: none; }
+.bx-kv.bx-v-receipt .bx-kv-row { border-top: 0; padding: 6px 0; }
+.bx-kv.bx-v-receipt .bx-kv-row dt { display: flex; flex: 1 1 auto; gap: 8px; }
+.bx-kv.bx-v-receipt .bx-kv-row dt::after { content: ""; flex: 1 1 auto; margin-bottom: 4px; border-bottom: var(--bx-bw) dotted var(--bx-border-strong); }
+.bx-kv.bx-v-receipt .bx-kv-row.is-total { margin-top: 6px; padding-top: 10px; border-top: var(--bx-bw) dashed var(--bx-border-strong); }
+.bx-kv.bx-v-receipt .bx-kv-row.is-total dt::after { display: none; }

@@ -20,3 +20,39 @@
 .bx-card-nav-button span { color: var(--bx-muted); font-size: 13px; }
 .bx-card-nav-button:hover, .bx-card-nav-button:focus-visible { transform: translateY(-3px); box-shadow: var(--bx-shadow-2); outline: none; }
 .bx-card-nav-button:focus-visible { box-shadow: var(--bx-focus), var(--bx-shadow-2); }
+/* Wave V2 variants (variants.json): on the side nav, the dock (its quick actions) and the card nav. drawer is a MUI List in React. */
+.bx-nav.bx-v-drawer { padding: 12px; border-radius: var(--bx-radius-xl); background: var(--bx-raised); }
+.bx-nav.bx-v-drawer .bx-nav-item { min-height: 56px; padding: 0 24px; border-radius: var(--bx-radius-pill); }
+.bx-nav.bx-v-drawer .bx-nav-item.is-on, .bx-nav.bx-v-drawer .bx-nav-item.Mui-selected { background: color-mix(in srgb, var(--bx-brand) 14%, var(--bx-card)); color: var(--bx-brand-text); }
+.bx-nav.bx-v-drawer .MuiList-root { padding: 0; }
+.bx-nav .bx-nav-item.MuiListItemButton-root { font: inherit; font-size: 14.5px; }
+.bx-nav.bx-v-rail { width: 88px; }
+.bx-nav.bx-v-rail ul { align-items: center; gap: 12px; }
+.bx-nav.bx-v-rail .bx-nav-item { position: relative; flex-direction: column; justify-content: center; gap: 4px; width: 72px; min-height: 56px; padding: 4px; border-radius: var(--bx-radius-lg); font-size: 12px; text-align: center; }
+.bx-nav.bx-v-rail .bx-nav-badge { position: absolute; top: 2px; right: 6px; }
+:is(.bx-nav, .bx-card-nav).bx-v-bottom ul, .bx-fx-dock.bx-v-bottom .bx-quick ul { display: flex; flex-direction: row; justify-content: space-around; gap: 4px; padding: 6px; border-top: var(--bx-bw) solid var(--bx-rule); background: var(--bx-raised); }
+.bx-nav.bx-v-bottom .bx-nav-item, .bx-card-nav.bx-v-bottom .bx-card-nav-button { flex: 1 1 0; flex-direction: column; justify-content: center; min-height: 56px; padding: 4px; border-radius: var(--bx-radius-pill); font-size: 12px; text-align: center; }
+.bx-card-nav.bx-v-bottom .bx-card-nav-button { border: 0; background: transparent; box-shadow: none; align-items: center; }
+.bx-card-nav.bx-v-bottom .bx-card-nav-button span { display: none; }
+.bx-nav.bx-v-pill ul, .bx-card-nav.bx-v-pill ul { display: flex; flex-direction: row; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: var(--bx-radius-pill); background: var(--bx-track); }
+.bx-nav.bx-v-pill .bx-nav-item, .bx-card-nav.bx-v-pill .bx-card-nav-button { width: auto; min-height: 40px; border: 0; border-radius: var(--bx-radius-pill); box-shadow: none; background: transparent; }
+.bx-card-nav.bx-v-pill .bx-card-nav-button { flex-direction: row; align-items: center; padding: 0 16px; }
+.bx-card-nav.bx-v-pill .bx-card-nav-button span { display: none; }
+.bx-nav.bx-v-pill .bx-nav-item.is-on { background: var(--bx-fill); box-shadow: var(--bx-shadow-1); }
+:is(.bx-nav, .bx-card-nav).bx-v-dock ul, .bx-fx-dock.bx-v-dock .bx-quick ul { display: flex; flex-direction: row; justify-content: center; gap: 6px; width: fit-content; max-width: 100%; margin: 0 auto; padding: 8px;
+  border: var(--bx-bw) solid color-mix(in srgb, var(--bx-border) 60%, transparent); border-radius: var(--bx-radius-xl); background: color-mix(in srgb, var(--bx-card) 70%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4); box-shadow: var(--bx-shadow-3); }
+.bx-nav.bx-v-dock .bx-nav-item, .bx-card-nav.bx-v-dock .bx-card-nav-button { width: auto; min-height: 48px; border: 0; background: transparent; box-shadow: none; }
+.bx-nav.bx-v-dock .bx-nav-item.is-on { background: color-mix(in srgb, var(--bx-brand) 14%, transparent); }
+.bx-card-nav.bx-v-dock .bx-card-nav-button span { display: none; }
+.bx-fx-dock.bx-v-drawer .bx-quick ul { flex-direction: column; align-items: stretch; border-radius: var(--bx-radius-xl); background: var(--bx-raised); backdrop-filter: none; }
+.bx-fx-dock.bx-v-drawer .bx-quick-item { flex-direction: row; width: 100%; min-height: 56px; justify-content: flex-start; gap: 12px; padding: 0 16px; font-size: 14px; }
+.bx-fx-dock.bx-v-rail .bx-quick ul { flex-direction: column; width: 88px; }
+.bx-fx-dock.bx-v-pill .bx-quick ul { border-radius: var(--bx-radius-pill); background: var(--bx-track); backdrop-filter: none; box-shadow: none; }
+.bx-fx-dock.bx-v-pill .bx-quick-item { width: auto; min-height: 44px; flex-direction: row; gap: 6px; padding: 0 14px; border-radius: var(--bx-radius-pill); }
+.bx-fx-dock.bx-v-pill .bx-quick-icon { width: 24px; height: 24px; }
+.bx-card-nav.bx-v-drawer ul { grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 12px; border-radius: var(--bx-radius-xl); background: var(--bx-raised); }
+.bx-card-nav.bx-v-drawer .bx-card-nav-button { min-height: 56px; border: 0; border-radius: var(--bx-radius-pill); background: transparent; box-shadow: none; padding: 8px 24px; }
+.bx-card-nav.bx-v-rail ul { grid-template-columns: 88px; justify-content: start; }
+.bx-card-nav.bx-v-rail .bx-card-nav-button { min-height: 72px; align-items: center; text-align: center; font-size: 12px; }
+.bx-card-nav.bx-v-rail .bx-card-nav-button span { display: none; }

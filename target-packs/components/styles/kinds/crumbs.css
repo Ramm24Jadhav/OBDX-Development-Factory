@@ -5,3 +5,19 @@
 .bx-crumb:hover { text-decoration: underline; }
 .bx-crumb.is-here { color: var(--bx-text); font-weight: 600; cursor: default; }
 .bx-crumb-sep { color: var(--bx-muted); }
+/* Wave V2 variants (variants.json). chevron is MUI Breadcrumbs in React. */
+.bx-crumbs.bx-v-chevron .bx-crumb-sep { font-size: 0; }
+.bx-crumbs.bx-v-chevron .bx-crumb-sep::before { content: "›"; font-size: 16px; }
+.bx-crumbs.bx-v-chevron .MuiBreadcrumbs-separator { margin: 0 2px; color: var(--bx-muted); font-size: 16px; }
+.bx-crumbs.MuiBreadcrumbs-root { color: var(--bx-text-body); font: inherit; }
+.bx-crumbs.bx-v-slash { font-size: 13px; }
+.bx-crumbs.bx-v-slash .bx-crumb { color: var(--bx-muted); }
+.bx-crumbs.bx-v-slash .bx-crumb.is-here { color: var(--bx-text); }
+.bx-crumbs.bx-v-slash .bx-crumb-sep { margin: 0 2px; color: var(--bx-border-strong); }
+.bx-crumbs.bx-v-pill ol { gap: 4px; }
+.bx-crumbs.bx-v-pill .bx-crumb { min-height: 28px; padding: 0 10px; border-radius: var(--bx-radius-pill); background: var(--bx-track); }
+.bx-crumbs.bx-v-pill .bx-crumb:hover { text-decoration: none; background: color-mix(in srgb, var(--bx-brand) 10%, var(--bx-track)); }
+.bx-crumbs.bx-v-pill .bx-crumb.is-here { display: inline-flex; align-items: center; background: color-mix(in srgb, var(--bx-brand) 14%, var(--bx-card)); color: var(--bx-brand-text); }
+.bx-crumbs.bx-v-pill .bx-crumb-sep { display: none; }
+.bx-crumb-more { min-width: 28px; padding: 0 6px; border-radius: var(--bx-radius-control); background: var(--bx-track); color: var(--bx-text-body); letter-spacing: 0.08em; }
+.bx-crumbs.bx-v-collapsed .bx-crumb-more:hover { text-decoration: none; background: color-mix(in srgb, var(--bx-brand) 10%, var(--bx-track)); }

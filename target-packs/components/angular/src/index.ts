@@ -78,3 +78,5 @@ import { Autocomplete, CurrencySelector, DateRangePicker, FileUpload, MultiSelec
 /** Every component, for a screen's imports: [...OBDX_COMPONENTS]. */
 export const OBDX_COMPONENTS = [Button, IconButton, TextField, AmountInput, Dropdown, CheckboxGroup, RadioGroup, DatePicker, Dialog, Toast, Card, Tabs,
   DataTable, TextArea, PasswordField, NumberInput, CurrencySelector, MultiSelect, Toggle, DateRangePicker, SearchField, Autocomplete, FileUpload, ...G1_COMPONENTS, ...G2_COMPONENTS, ...G3_COMPONENTS, ...G4_COMPONENTS, ...G5_COMPONENTS, ...G6_COMPONENTS, ...G7_COMPONENTS] as const;
+export type { AccordionVariant, CardVariant, CardsVariant, CrumbsVariant, DialogVariant, DividerVariant, GridVariant, KvVariant, ListVariant, MenuVariant, NavVariant,
+  PagesVariant, QuickVariant, TableVariant, TabsVariant, TilesVariant } from './variants-v2';

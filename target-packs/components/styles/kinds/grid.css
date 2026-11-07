@@ -11,3 +11,17 @@
 @media (max-width: 480px) {
   .bx-layout-grid[class*="is-cols-"] { grid-template-columns: minmax(0, 1fr); }
 }
+/* Wave V2 variants (variants.json) */
+.bx-layout-grid.bx-v-compact { gap: 8px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.bx-layout-grid.bx-v-airy { gap: 32px; padding-block: 8px; }
+/* bordered: hairlines between the cells (the grid's gap shows its rule colour) */
+.bx-layout-grid.bx-v-bordered { gap: var(--bx-bw); overflow: hidden; border: var(--bx-bw) solid var(--bx-rule); border-radius: var(--bx-radius-lg); background: var(--bx-rule); }
+.bx-layout-grid.bx-v-bordered > * { padding: var(--bx-pad); background: var(--bx-card); }
+.bx-layout-grid.bx-v-masonry { display: block; columns: 240px; column-gap: 16px; }
+.bx-layout-grid.bx-v-masonry.is-cols-2 { columns: 2; }
+.bx-layout-grid.bx-v-masonry.is-cols-3 { columns: 3; }
+.bx-layout-grid.bx-v-masonry.is-cols-4 { columns: 4; }
+.bx-layout-grid.bx-v-masonry > * { break-inside: avoid; margin-bottom: 16px; }
+@media (max-width: 480px) {
+  .bx-layout-grid.bx-v-masonry[class*="is-cols-"] { columns: 1; }
+}

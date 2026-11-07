@@ -8,3 +8,20 @@
 .bx-motion-hover-glow .bx-quick-item:hover { box-shadow: 0 0 0 4px color-mix(in srgb, var(--bx-brand) 18%, transparent), 0 8px 24px color-mix(in srgb, var(--bx-brand) 22%, transparent); }
 .bx-motion-click-press .bx-quick-item:active { transform: scale(0.97); }
 .bx-motion-click-bounce .bx-quick-item:active { animation: bx-bounce 300ms var(--bx-ease-spring); }
+/* Wave V2 variants (variants.json). chips are MUI assist chips in React. */
+.bx-quick.bx-v-chips ul { display: flex; flex-wrap: wrap; gap: 8px; }
+.bx-quick.bx-v-chips .bx-quick-item { flex-direction: row; width: auto; min-height: 36px; gap: 8px; padding: 0 14px 0 8px; border: var(--bx-bw) solid var(--bx-border-strong); border-radius: var(--bx-radius-control);
+  background: var(--bx-fill); box-shadow: none; font-size: 14px; }
+.bx-quick.bx-v-chips .bx-quick-icon { width: 20px; height: 20px; margin: 0; background: none; font-size: 15px; }
+.bx-quick.bx-v-chips .bx-quick-item.MuiChip-root { height: auto; color: var(--bx-text); font: inherit; font-size: 14px; font-weight: 600; }
+.bx-quick.bx-v-chips .MuiChip-label { padding: 0; }
+.bx-quick.bx-v-circles .bx-quick-item { border: 0; background: transparent; box-shadow: none; }
+.bx-quick.bx-v-circles .bx-quick-icon { width: 56px; height: 56px; border-radius: var(--bx-radius-pill); font-size: 22px; }
+.bx-quick.bx-v-list { overflow: hidden; border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-card); }
+.bx-quick.bx-v-list ul { grid-template-columns: minmax(0, 1fr); gap: 0; }
+.bx-quick.bx-v-list li + li .bx-quick-item { border-top: var(--bx-bw) solid var(--bx-rule); }
+.bx-quick.bx-v-list .bx-quick-item { flex-direction: row; justify-content: flex-start; gap: 14px; min-height: 56px; padding: 8px var(--bx-pad); border: 0; border-radius: 0; box-shadow: none; font-size: 14.5px; }
+.bx-quick.bx-v-list .bx-quick-item::after { content: "›"; margin-left: auto; color: var(--bx-muted); font-size: 18px; }
+.bx-quick.bx-v-list .bx-quick-icon { width: 32px; height: 32px; border-radius: var(--bx-radius-control); }
+.bx-quick.bx-v-glass .bx-quick-item { background: color-mix(in srgb, var(--bx-card) 60%, transparent); border-color: color-mix(in srgb, var(--bx-border) 55%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4); }

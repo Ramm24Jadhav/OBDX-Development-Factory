@@ -22,6 +22,13 @@ const rows = [
   { id: 't3', date: '09 Nov 2026', text: 'Card payment', amount: -3499 },
 ];
 
+/** A dialog or sheet variant: drawn, open, in a host of its own only when the page asks for it (?variant=<id>), so it never covers the gallery. */
+function Overlay({ id, children }: { id: string; children: (host: HTMLElement) => ReactNode }) {
+  const [box, setBox] = useState<HTMLElement | null>(null);
+  if (params.get('variant') !== id) { return null; }
+  return <div className="gate-dialog" ref={setBox}>{box ? children(box) : null}</div>;
+}
+
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   if (only && only !== id) { return null; }
   return (
@@ -107,6 +114,26 @@ function Gallery() {
             </Dialog>
           ) : null}
         </div>
+        <div data-variant="basic"><Overlay id="basic">{(box) => (
+          <Dialog variant="basic" open onOpenChange={() => undefined} container={box} title="Delete A. Sharma?" description="You can add them again later."
+                  footer={<><Button label="Cancel" chroming="outlined" /><Button label="Delete" chroming="danger" /></>}><p>Payments scheduled to A. Sharma will stop.</p></Dialog>
+        )}</Overlay></div>
+        <div data-variant="alert"><Overlay id="alert">{(box) => (
+          <Dialog variant="alert" open onOpenChange={() => undefined} container={box} title="Delete A. Sharma?" description="You can add them again later."
+                  footer={<><Button label="Cancel" chroming="outlined" /><Button label="Delete" chroming="danger" /></>}><p>Payments scheduled to A. Sharma will stop.</p></Dialog>
+        )}</Overlay></div>
+        <div data-variant="sheet"><Overlay id="sheet">{(box) => (
+          <Dialog variant="sheet" open onOpenChange={() => undefined} container={box} title="Delete A. Sharma?" description="You can add them again later."
+                  footer={<><Button label="Cancel" chroming="outlined" /><Button label="Delete" chroming="danger" /></>}><p>Payments scheduled to A. Sharma will stop.</p></Dialog>
+        )}</Overlay></div>
+        <div data-variant="side"><Overlay id="side">{(box) => (
+          <Dialog variant="side" open onOpenChange={() => undefined} container={box} title="Delete A. Sharma?" description="You can add them again later."
+                  footer={<><Button label="Cancel" chroming="outlined" /><Button label="Delete" chroming="danger" /></>}><p>Payments scheduled to A. Sharma will stop.</p></Dialog>
+        )}</Overlay></div>
+        <div data-variant="fullscreen"><Overlay id="fullscreen">{(box) => (
+          <Dialog variant="fullscreen" open onOpenChange={() => undefined} container={box} title="Delete A. Sharma?" description="You can add them again later."
+                  footer={<><Button label="Cancel" chroming="outlined" /><Button label="Delete" chroming="danger" /></>}><p>Payments scheduled to A. Sharma will stop.</p></Dialog>
+        )}</Overlay></div>
       </Section>
       <Section id="toast" title="Toast">
         <Toast display="general" onClose={() => undefined} messages={[
@@ -121,16 +148,54 @@ function Gallery() {
           <Card heading="Current •••• 0187" subheading="Open the account" onAction={() => undefined} selected={false}>₹12,410.50</Card>
           <div data-variant="outlined"><Card variant="outlined" heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</Card></div>
         </div>
+          <div data-variant="elevated"><Card variant="elevated" heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</Card></div>
+          <div data-variant="filled"><Card variant="filled" heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</Card></div>
+          <div data-variant="glass"><Card variant="glass" heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</Card></div>
+          <div data-variant="gradient"><Card variant="gradient" heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</Card></div>
+          <div data-variant="lift"><Card variant="lift" heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</Card></div>
       </Section>
       <Section id="tabs" title="Tabs">
         <Tabs label="Accounts" selection={tab} onSelectionChange={setTab} tabs={[
           { id: 'c', label: 'Current', content: <p>2 current accounts</p> }, { id: 's', label: 'Savings', content: <p>1 savings account</p> },
           { id: 'd', label: 'Deposits', content: <p>3 deposits</p> }, { id: 'l', label: 'Loans', disabled: true }]} />
+        <div data-variant="underline"><Tabs variant="underline" label="Accounts" selection={tab} onSelectionChange={setTab} tabs={[
+          { id: 'c', label: 'Current', content: <p>2 current accounts</p> }, { id: 's', label: 'Savings', content: <p>1 savings account</p> },
+          { id: 'd', label: 'Deposits', content: <p>3 deposits</p> }, { id: 'l', label: 'Loans', disabled: true }]} /></div>
+        <div data-variant="scrollable"><Tabs variant="scrollable" label="Accounts" selection={tab} onSelectionChange={setTab} tabs={[
+          { id: 'c', label: 'Current', content: <p>2 current accounts</p> }, { id: 's', label: 'Savings', content: <p>1 savings account</p> },
+          { id: 'd', label: 'Deposits', content: <p>3 deposits</p> }, { id: 'l', label: 'Loans', disabled: true }]} /></div>
+        <div data-variant="pill"><Tabs variant="pill" label="Accounts" selection={tab} onSelectionChange={setTab} tabs={[
+          { id: 'c', label: 'Current', content: <p>2 current accounts</p> }, { id: 's', label: 'Savings', content: <p>1 savings account</p> },
+          { id: 'd', label: 'Deposits', content: <p>3 deposits</p> }, { id: 'l', label: 'Loans', disabled: true }]} /></div>
+        <div data-variant="enclosed"><Tabs variant="enclosed" label="Accounts" selection={tab} onSelectionChange={setTab} tabs={[
+          { id: 'c', label: 'Current', content: <p>2 current accounts</p> }, { id: 's', label: 'Savings', content: <p>1 savings account</p> },
+          { id: 'd', label: 'Deposits', content: <p>3 deposits</p> }, { id: 'l', label: 'Loans', disabled: true }]} /></div>
+        <div data-variant="segmented"><Tabs variant="segmented" label="Accounts" selection={tab} onSelectionChange={setTab} tabs={[
+          { id: 'c', label: 'Current', content: <p>2 current accounts</p> }, { id: 's', label: 'Savings', content: <p>1 savings account</p> },
+          { id: 'd', label: 'Deposits', content: <p>3 deposits</p> }, { id: 'l', label: 'Loans', disabled: true }]} /></div>
+        <div data-variant="vertical"><Tabs variant="vertical" label="Accounts" selection={tab} onSelectionChange={setTab} tabs={[
+          { id: 'c', label: 'Current', content: <p>2 current accounts</p> }, { id: 's', label: 'Savings', content: <p>1 savings account</p> },
+          { id: 'd', label: 'Deposits', content: <p>3 deposits</p> }, { id: 'l', label: 'Loans', disabled: true }]} /></div>
       </Section>
       <Section id="data-grid" title="Data table">
         <DataTable caption="Recent transactions" rows={rows} keyField="id" selectionMode="multiple" selected={selected} onSelectedChange={setSelected} columns={[
           { field: 'date', headerText: 'Date', sortable: true }, { field: 'text', headerText: 'Description' },
           { field: 'amount', headerText: 'Amount', sortable: true, align: 'end', render: (r) => r.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }]} />
+        <div data-variant="material"><DataTable variant="material" caption="Recent transactions" rows={rows} keyField="id" selectionMode="multiple" selected={selected} onSelectedChange={setSelected} columns={[
+          { field: 'date', headerText: 'Date', sortable: true }, { field: 'text', headerText: 'Description' },
+          { field: 'amount', headerText: 'Amount', sortable: true, align: 'end', render: (r) => r.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }]} /></div>
+        <div data-variant="striped"><DataTable variant="striped" caption="Recent transactions" rows={rows} keyField="id" selectionMode="multiple" selected={selected} onSelectedChange={setSelected} columns={[
+          { field: 'date', headerText: 'Date', sortable: true }, { field: 'text', headerText: 'Description' },
+          { field: 'amount', headerText: 'Amount', sortable: true, align: 'end', render: (r) => r.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }]} /></div>
+        <div data-variant="dense"><DataTable variant="dense" caption="Recent transactions" rows={rows} keyField="id" selectionMode="multiple" selected={selected} onSelectedChange={setSelected} columns={[
+          { field: 'date', headerText: 'Date', sortable: true }, { field: 'text', headerText: 'Description' },
+          { field: 'amount', headerText: 'Amount', sortable: true, align: 'end', render: (r) => r.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }]} /></div>
+        <div data-variant="cards"><DataTable variant="cards" caption="Recent transactions" rows={rows} keyField="id" selectionMode="multiple" selected={selected} onSelectedChange={setSelected} columns={[
+          { field: 'date', headerText: 'Date', sortable: true }, { field: 'text', headerText: 'Description' },
+          { field: 'amount', headerText: 'Amount', sortable: true, align: 'end', render: (r) => r.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }]} /></div>
+        <div data-variant="sticky"><DataTable variant="sticky" caption="Recent transactions" rows={rows} keyField="id" selectionMode="multiple" selected={selected} onSelectedChange={setSelected} columns={[
+          { field: 'date', headerText: 'Date', sortable: true }, { field: 'text', headerText: 'Description' },
+          { field: 'amount', headerText: 'Amount', sortable: true, align: 'end', render: (r) => r.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }]} /></div>
       </Section>
       <Section id="text-area" title="Text area">
         <TextArea testID="ta1" label="Remarks" value={remarks} onChange={setRemarks} maxLength={140} helpText="Shown on the payee's statement" />
@@ -186,29 +251,60 @@ function Gallery() {
       </Section>
       <Section id="action-menu" title="Action menu">
         <ActionMenu testID="am1" items={['Download statement', 'Set a nickname', { value: 'close', label: 'Close the account', danger: true }]} />
+        <div data-variant="list"><ActionMenu variant="list" items={['Download statement', 'Set a nickname', { value: 'close', label: 'Close the account', danger: true }]} /></div>
+        <div data-variant="dense"><ActionMenu variant="dense" items={['Download statement', 'Set a nickname', { value: 'close', label: 'Close the account', danger: true }]} /></div>
+        <div data-variant="glass"><ActionMenu variant="glass" items={['Download statement', 'Set a nickname', { value: 'close', label: 'Close the account', danger: true }]} /></div>
+        <div data-variant="sheet"><ActionMenu variant="sheet" items={['Download statement', 'Set a nickname', { value: 'close', label: 'Close the account', danger: true }]} /></div>
       </Section>
       <Section id="accordion" title="Accordion">
         <Accordion testID="ac1" items={faq} />
+        <div data-variant="separated"><Accordion variant="separated" items={faq} /></div>
+        <div data-variant="flush"><Accordion variant="flush" items={faq} /></div>
+        <div data-variant="contained"><Accordion variant="contained" items={faq} /></div>
+        <div data-variant="icon-start"><Accordion variant="icon-start" items={faq} /></div>
       </Section>
       <Section id="stepper" title="Stepper">
         <Stepper testID="st1" steps={['Details', 'Review', 'Done']} selectedStep="Review" />
       </Section>
       <Section id="breadcrumb" title="Breadcrumb">
         <Breadcrumb testID="bc1" items={['Accounts', 'Savings ·· 4821', 'Statement']} />
+        <div data-variant="chevron"><Breadcrumb variant="chevron" items={['Accounts', 'Savings ·· 4821', 'Statement']} /></div>
+        <div data-variant="slash"><Breadcrumb variant="slash" items={['Accounts', 'Savings ·· 4821', 'Statement']} /></div>
+        <div data-variant="pill"><Breadcrumb variant="pill" items={['Accounts', 'Savings ·· 4821', 'Statement']} /></div>
+        <div data-variant="collapsed"><Breadcrumb variant="collapsed" items={['Accounts', 'Savings ·· 4821', 'Statement']} /></div>
       </Section>
       <Section id="side-nav" title="Side navigation">
         <SideNav testID="sn1" items={['Accounts', 'Payments', { id: 'Cards', label: 'Cards', badge: 2 }]} selection={navSel} onSelectionChange={setNavSel} />
+        <div data-variant="drawer"><SideNav variant="drawer" items={['Accounts', 'Payments', { id: 'Cards', label: 'Cards', badge: 2 }]} selection={navSel} onSelectionChange={setNavSel} /></div>
+        <div data-variant="rail"><SideNav variant="rail" items={['Accounts', 'Payments', { id: 'Cards', label: 'Cards', badge: 2 }]} selection={navSel} onSelectionChange={setNavSel} /></div>
+        <div data-variant="bottom"><SideNav variant="bottom" items={['Accounts', 'Payments', { id: 'Cards', label: 'Cards', badge: 2 }]} selection={navSel} onSelectionChange={setNavSel} /></div>
+        <div data-variant="pill"><SideNav variant="pill" items={['Accounts', 'Payments', { id: 'Cards', label: 'Cards', badge: 2 }]} selection={navSel} onSelectionChange={setNavSel} /></div>
+        <div data-variant="dock"><SideNav variant="dock" items={['Accounts', 'Payments', { id: 'Cards', label: 'Cards', badge: 2 }]} selection={navSel} onSelectionChange={setNavSel} /></div>
       </Section>
       <Section id="sheet" title="Sheet">
         <SecondaryButton label="Filter" onAction={() => setSheet(true)} />
         <Sheet testID="sh1" open={sheet} onOpenChange={setSheet} heading="Filter transactions"><p>Choose what to show.</p></Sheet>
+        <div data-variant="basic"><Overlay id="basic">{(box) => <Sheet variant="basic" open onOpenChange={() => undefined} container={box} heading="Filter transactions"><p>Choose what to show.</p></Sheet>}</Overlay></div>
+        <div data-variant="alert"><Overlay id="alert">{(box) => <Sheet variant="alert" open onOpenChange={() => undefined} container={box} heading="Filter transactions"><p>Choose what to show.</p></Sheet>}</Overlay></div>
+        <div data-variant="sheet"><Overlay id="sheet">{(box) => <Sheet variant="sheet" open onOpenChange={() => undefined} container={box} heading="Filter transactions"><p>Choose what to show.</p></Sheet>}</Overlay></div>
+        <div data-variant="side"><Overlay id="side">{(box) => <Sheet variant="side" open onOpenChange={() => undefined} container={box} heading="Filter transactions"><p>Choose what to show.</p></Sheet>}</Overlay></div>
+        <div data-variant="fullscreen"><Overlay id="fullscreen">{(box) => <Sheet variant="fullscreen" open onOpenChange={() => undefined} container={box} heading="Filter transactions"><p>Choose what to show.</p></Sheet>}</Overlay></div>
       </Section>
       <Section id="grid" title="Grid">
         <Grid testID="gr1" columns={3}><Card heading="Savings" /><Card heading="Current" /><Card heading="Deposits" /></Grid>
+        <div data-variant="compact"><Grid variant="compact" columns={3}><Card heading="Savings" /><Card heading="Current" /><Card heading="Deposits" /></Grid></div>
+        <div data-variant="airy"><Grid variant="airy" columns={3}><Card heading="Savings" /><Card heading="Current" /><Card heading="Deposits" /></Grid></div>
+        <div data-variant="bordered"><Grid variant="bordered" columns={3}><Card heading="Savings" /><Card heading="Current" /><Card heading="Deposits" /></Grid></div>
+        <div data-variant="masonry"><Grid variant="masonry" columns={3}><Card heading="Savings" /><Card heading="Current" /><Card heading="Deposits" /></Grid></div>
       </Section>
       <Section id="divider" title="Divider">
         <Divider testID="dv1" />
         <Divider testID="dv2" label="Or" />
+        <div data-variant="full"><Divider variant="full" /></div>
+        <div data-variant="inset"><Divider variant="inset" /></div>
+        <div data-variant="middle"><Divider variant="middle" /></div>
+        <div data-variant="dashed"><Divider variant="dashed" /></div>
+        <div data-variant="gradient"><Divider variant="gradient" /></div>
       </Section>
       <Section id="avatar" title="Avatar">
         <Avatar testID="av1" name="Asha Rao" />
@@ -217,6 +313,10 @@ function Gallery() {
       </Section>
       <Section id="pagination" title="Pagination">
         <Pagination testID="pg1" page={page} pageCount={4} onPageChange={setPage} />
+        <div data-variant="rounded"><Pagination variant="rounded" page={page} pageCount={4} onPageChange={setPage} /></div>
+        <div data-variant="outlined"><Pagination variant="outlined" page={page} pageCount={4} onPageChange={setPage} /></div>
+        <div data-variant="compact"><Pagination variant="compact" page={page} pageCount={4} onPageChange={setPage} /></div>
+        <div data-variant="pill"><Pagination variant="pill" page={page} pageCount={4} onPageChange={setPage} /></div>
       </Section>
       <Section id="status-badge" title="Status badge">
         <StatusBadge testID="sb1" label="Completed" tone="success" />
@@ -260,6 +360,12 @@ function Gallery() {
       </Section>
       <Section id="account-summary" title="Account summary">
         <AccountSummary testID="as1" items={[{ label: 'Savings', value: '12,400.00', meta: 'Available 12,150.00' }, { label: 'Current', value: '3,210.50', meta: 'Overdraft 1,000.00' }, { label: 'Deposits', value: '25,000.00', meta: 'Matures 14 Mar' }]} onAction={() => undefined} />
+        <div data-variant="elevated"><AccountSummary variant="elevated" items={[{ label: 'Savings', value: '12,400.00', meta: 'Available 12,150.00' }, { label: 'Current', value: '3,210.50', meta: 'Overdraft 1,000.00' }, { label: 'Deposits', value: '25,000.00', meta: 'Matures 14 Mar' }]} onAction={() => undefined} /></div>
+        <div data-variant="filled"><AccountSummary variant="filled" items={[{ label: 'Savings', value: '12,400.00', meta: 'Available 12,150.00' }, { label: 'Current', value: '3,210.50', meta: 'Overdraft 1,000.00' }, { label: 'Deposits', value: '25,000.00', meta: 'Matures 14 Mar' }]} onAction={() => undefined} /></div>
+        <div data-variant="outlined"><AccountSummary variant="outlined" items={[{ label: 'Savings', value: '12,400.00', meta: 'Available 12,150.00' }, { label: 'Current', value: '3,210.50', meta: 'Overdraft 1,000.00' }, { label: 'Deposits', value: '25,000.00', meta: 'Matures 14 Mar' }]} onAction={() => undefined} /></div>
+        <div data-variant="bento"><AccountSummary variant="bento" items={[{ label: 'Savings', value: '12,400.00', meta: 'Available 12,150.00' }, { label: 'Current', value: '3,210.50', meta: 'Overdraft 1,000.00' }, { label: 'Deposits', value: '25,000.00', meta: 'Matures 14 Mar' }]} onAction={() => undefined} /></div>
+        <div data-variant="compact"><AccountSummary variant="compact" items={[{ label: 'Savings', value: '12,400.00', meta: 'Available 12,150.00' }, { label: 'Current', value: '3,210.50', meta: 'Overdraft 1,000.00' }, { label: 'Deposits', value: '25,000.00', meta: 'Matures 14 Mar' }]} onAction={() => undefined} /></div>
+        <div data-variant="glass"><AccountSummary variant="glass" items={[{ label: 'Savings', value: '12,400.00', meta: 'Available 12,150.00' }, { label: 'Current', value: '3,210.50', meta: 'Overdraft 1,000.00' }, { label: 'Deposits', value: '25,000.00', meta: 'Matures 14 Mar' }]} onAction={() => undefined} /></div>
       </Section>
       <Section id="balance-card" title="Balance card">
         <AccountBalance testID="bc1" label="Savings ·· 4821" amount={12400} currency="USD" meta="Available 12,150.00" />
@@ -267,9 +373,20 @@ function Gallery() {
       </Section>
       <Section id="account-card" title="Account card">
         <AccountCard testID="ac1" heading="Savings ·· 4821" text="Balance 12,400.00 · Available 12,150.00" badge="Primary" actionLabel="View details →" />
+        <div data-variant="elevated"><AccountCard variant="elevated" heading="Savings ·· 4821" text="Balance 12,400.00 · Available 12,150.00" badge="Primary" actionLabel="View details →" /></div>
+        <div data-variant="filled"><AccountCard variant="filled" heading="Savings ·· 4821" text="Balance 12,400.00 · Available 12,150.00" badge="Primary" actionLabel="View details →" /></div>
+        <div data-variant="outlined"><AccountCard variant="outlined" heading="Savings ·· 4821" text="Balance 12,400.00 · Available 12,150.00" badge="Primary" actionLabel="View details →" /></div>
+        <div data-variant="glass"><AccountCard variant="glass" heading="Savings ·· 4821" text="Balance 12,400.00 · Available 12,150.00" badge="Primary" actionLabel="View details →" /></div>
+        <div data-variant="gradient"><AccountCard variant="gradient" heading="Savings ·· 4821" text="Balance 12,400.00 · Available 12,150.00" badge="Primary" actionLabel="View details →" /></div>
+        <div data-variant="lift"><AccountCard variant="lift" heading="Savings ·· 4821" text="Balance 12,400.00 · Available 12,150.00" badge="Primary" actionLabel="View details →" /></div>
       </Section>
       <Section id="account-details" title="Account details">
         <AccountDetails items={[{ label: 'Account', value: 'Savings ·· 4821' }, { label: 'Branch', value: 'London Bridge' }, { label: 'IBAN', value: 'GB29 •••• 9268 19' }, { label: 'Holder', value: 'A. Rao' }]} actionLabel="Download statement" />
+        <div data-variant="list"><AccountDetails variant="list" items={[{ label: 'Account', value: 'Savings ·· 4821' }, { label: 'Branch', value: 'London Bridge' }, { label: 'IBAN', value: 'GB29 •••• 9268 19' }, { label: 'Holder', value: 'A. Rao' }]} actionLabel="Download statement" /></div>
+        <div data-variant="columns"><AccountDetails variant="columns" items={[{ label: 'Account', value: 'Savings ·· 4821' }, { label: 'Branch', value: 'London Bridge' }, { label: 'IBAN', value: 'GB29 •••• 9268 19' }, { label: 'Holder', value: 'A. Rao' }]} actionLabel="Download statement" /></div>
+        <div data-variant="cards"><AccountDetails variant="cards" items={[{ label: 'Account', value: 'Savings ·· 4821' }, { label: 'Branch', value: 'London Bridge' }, { label: 'IBAN', value: 'GB29 •••• 9268 19' }, { label: 'Holder', value: 'A. Rao' }]} actionLabel="Download statement" /></div>
+        <div data-variant="compact"><AccountDetails variant="compact" items={[{ label: 'Account', value: 'Savings ·· 4821' }, { label: 'Branch', value: 'London Bridge' }, { label: 'IBAN', value: 'GB29 •••• 9268 19' }, { label: 'Holder', value: 'A. Rao' }]} actionLabel="Download statement" /></div>
+        <div data-variant="receipt"><AccountDetails variant="receipt" items={[{ label: 'Account', value: 'Savings ·· 4821' }, { label: 'Branch', value: 'London Bridge' }, { label: 'IBAN', value: 'GB29 •••• 9268 19' }, { label: 'Holder', value: 'A. Rao' }]} actionLabel="Download statement" /></div>
       </Section>
       <Section id="iban" title="IBAN">
         <AccountNumber testID="ib1" value={iban} onChange={setIban} required />
@@ -277,18 +394,33 @@ function Gallery() {
       </Section>
       <Section id="quick-actions" title="Quick actions">
         <QuickActions testID="qa1" items={[{ id: 'send', label: 'Send', icon: '↗' }, { id: 'bills', label: 'Pay bills', icon: '≡' }, { id: 'topup', label: 'Top up', icon: '+' }, { id: 'scan', label: 'Scan to pay', icon: '⌗' }]} />
+        <div data-variant="chips"><QuickActions variant="chips" items={[{ id: 'send', label: 'Send', icon: '↗' }, { id: 'bills', label: 'Pay bills', icon: '≡' }, { id: 'topup', label: 'Top up', icon: '+' }, { id: 'scan', label: 'Scan to pay', icon: '⌗' }]} /></div>
+        <div data-variant="circles"><QuickActions variant="circles" items={[{ id: 'send', label: 'Send', icon: '↗' }, { id: 'bills', label: 'Pay bills', icon: '≡' }, { id: 'topup', label: 'Top up', icon: '+' }, { id: 'scan', label: 'Scan to pay', icon: '⌗' }]} /></div>
+        <div data-variant="list"><QuickActions variant="list" items={[{ id: 'send', label: 'Send', icon: '↗' }, { id: 'bills', label: 'Pay bills', icon: '≡' }, { id: 'topup', label: 'Top up', icon: '+' }, { id: 'scan', label: 'Scan to pay', icon: '⌗' }]} /></div>
+        <div data-variant="glass"><QuickActions variant="glass" items={[{ id: 'send', label: 'Send', icon: '↗' }, { id: 'bills', label: 'Pay bills', icon: '≡' }, { id: 'topup', label: 'Top up', icon: '+' }, { id: 'scan', label: 'Scan to pay', icon: '⌗' }]} /></div>
       </Section>
       <Section id="payee-list" title="Payee list">
         <BeneficiarySelector testID="pl1" items={payees} />
       </Section>
       <Section id="beneficiary-card" title="Beneficiary card">
         <BeneficiaryCard testID="bf1" heading="A. Rao" text="GB29 •••• 9268 19 · added 12 Mar" badge="HSBC" actionLabel="Pay now →" />
+        <div data-variant="elevated"><BeneficiaryCard variant="elevated" heading="A. Rao" text="GB29 •••• 9268 19 · added 12 Mar" badge="HSBC" actionLabel="Pay now →" /></div>
+        <div data-variant="filled"><BeneficiaryCard variant="filled" heading="A. Rao" text="GB29 •••• 9268 19 · added 12 Mar" badge="HSBC" actionLabel="Pay now →" /></div>
+        <div data-variant="outlined"><BeneficiaryCard variant="outlined" heading="A. Rao" text="GB29 •••• 9268 19 · added 12 Mar" badge="HSBC" actionLabel="Pay now →" /></div>
+        <div data-variant="glass"><BeneficiaryCard variant="glass" heading="A. Rao" text="GB29 •••• 9268 19 · added 12 Mar" badge="HSBC" actionLabel="Pay now →" /></div>
+        <div data-variant="gradient"><BeneficiaryCard variant="gradient" heading="A. Rao" text="GB29 •••• 9268 19 · added 12 Mar" badge="HSBC" actionLabel="Pay now →" /></div>
+        <div data-variant="lift"><BeneficiaryCard variant="lift" heading="A. Rao" text="GB29 •••• 9268 19 · added 12 Mar" badge="HSBC" actionLabel="Pay now →" /></div>
       </Section>
       <Section id="payment-form" title="Payment form">
         <PaymentForm testID="pf1" cancelLabel="Cancel"><AccountSelector testID="pf1-from" options={accounts} value={account} onChange={setAccount} /><AmountInput testID="pf1-amt" label="Amount" currency="USD" value={null} /></PaymentForm>
       </Section>
       <Section id="transfer-summary" title="Transfer summary">
         <TransferSummary items={[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }, { label: 'Amount', value: '1,250.00 USD' }, { label: 'Fee', value: '0.00' }, { label: 'Arrives', value: 'Today' }]} />
+        <div data-variant="list"><TransferSummary variant="list" items={[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }, { label: 'Amount', value: '1,250.00 USD' }, { label: 'Fee', value: '0.00' }, { label: 'Arrives', value: 'Today' }]} /></div>
+        <div data-variant="columns"><TransferSummary variant="columns" items={[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }, { label: 'Amount', value: '1,250.00 USD' }, { label: 'Fee', value: '0.00' }, { label: 'Arrives', value: 'Today' }]} /></div>
+        <div data-variant="cards"><TransferSummary variant="cards" items={[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }, { label: 'Amount', value: '1,250.00 USD' }, { label: 'Fee', value: '0.00' }, { label: 'Arrives', value: 'Today' }]} /></div>
+        <div data-variant="compact"><TransferSummary variant="compact" items={[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }, { label: 'Amount', value: '1,250.00 USD' }, { label: 'Fee', value: '0.00' }, { label: 'Arrives', value: 'Today' }]} /></div>
+        <div data-variant="receipt"><TransferSummary variant="receipt" items={[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }, { label: 'Amount', value: '1,250.00 USD' }, { label: 'Fee', value: '0.00' }, { label: 'Arrives', value: 'Today' }]} /></div>
       </Section>
       <Section id="payment-status" title="Payment status">
         <PaymentStatus testID="ps1" steps={['Initiated', 'Approved', 'Sent', 'Completed']} selectedStep="Sent" />
@@ -302,6 +434,11 @@ function Gallery() {
       </Section>
       <Section id="transaction-details" title="Transaction details">
         <TransactionDetails items={[{ label: 'Description', value: 'Coffee House' }, { label: 'Date', value: 'Today 08:14' }, { label: 'Amount', value: '-4.50 USD' }, { label: 'Card', value: '·· 4821' }, { label: 'Reference', value: 'TX-88211' }]} actionLabel="Dispute it" />
+        <div data-variant="list"><TransactionDetails variant="list" items={[{ label: 'Description', value: 'Coffee House' }, { label: 'Date', value: 'Today 08:14' }, { label: 'Amount', value: '-4.50 USD' }, { label: 'Card', value: '·· 4821' }, { label: 'Reference', value: 'TX-88211' }]} actionLabel="Dispute it" /></div>
+        <div data-variant="columns"><TransactionDetails variant="columns" items={[{ label: 'Description', value: 'Coffee House' }, { label: 'Date', value: 'Today 08:14' }, { label: 'Amount', value: '-4.50 USD' }, { label: 'Card', value: '·· 4821' }, { label: 'Reference', value: 'TX-88211' }]} actionLabel="Dispute it" /></div>
+        <div data-variant="cards"><TransactionDetails variant="cards" items={[{ label: 'Description', value: 'Coffee House' }, { label: 'Date', value: 'Today 08:14' }, { label: 'Amount', value: '-4.50 USD' }, { label: 'Card', value: '·· 4821' }, { label: 'Reference', value: 'TX-88211' }]} actionLabel="Dispute it" /></div>
+        <div data-variant="compact"><TransactionDetails variant="compact" items={[{ label: 'Description', value: 'Coffee House' }, { label: 'Date', value: 'Today 08:14' }, { label: 'Amount', value: '-4.50 USD' }, { label: 'Card', value: '·· 4821' }, { label: 'Reference', value: 'TX-88211' }]} actionLabel="Dispute it" /></div>
+        <div data-variant="receipt"><TransactionDetails variant="receipt" items={[{ label: 'Description', value: 'Coffee House' }, { label: 'Date', value: 'Today 08:14' }, { label: 'Amount', value: '-4.50 USD' }, { label: 'Card', value: '·· 4821' }, { label: 'Reference', value: 'TX-88211' }]} actionLabel="Dispute it" /></div>
       </Section>
       <Section id="repeat" title="Repeat">
         <PaymentSchedule testID="rp1" value={repeat} onChange={setRepeat} />
@@ -314,6 +451,12 @@ function Gallery() {
       </Section>
       <Section id="td-summary" title="Deposits summary">
         <DepositsSummary testID="ts1" items={[{ label: 'Deposits', value: '4', meta: 'Total 62,500.00' }, { label: 'Interest earned', value: '1,840.20', meta: 'This year' }, { label: 'Next maturity', value: '14 Mar', meta: '·· 9011 · 25,000.00' }]} />
+        <div data-variant="elevated"><DepositsSummary variant="elevated" items={[{ label: 'Deposits', value: '4', meta: 'Total 62,500.00' }, { label: 'Interest earned', value: '1,840.20', meta: 'This year' }, { label: 'Next maturity', value: '14 Mar', meta: '·· 9011 · 25,000.00' }]} /></div>
+        <div data-variant="filled"><DepositsSummary variant="filled" items={[{ label: 'Deposits', value: '4', meta: 'Total 62,500.00' }, { label: 'Interest earned', value: '1,840.20', meta: 'This year' }, { label: 'Next maturity', value: '14 Mar', meta: '·· 9011 · 25,000.00' }]} /></div>
+        <div data-variant="outlined"><DepositsSummary variant="outlined" items={[{ label: 'Deposits', value: '4', meta: 'Total 62,500.00' }, { label: 'Interest earned', value: '1,840.20', meta: 'This year' }, { label: 'Next maturity', value: '14 Mar', meta: '·· 9011 · 25,000.00' }]} /></div>
+        <div data-variant="bento"><DepositsSummary variant="bento" items={[{ label: 'Deposits', value: '4', meta: 'Total 62,500.00' }, { label: 'Interest earned', value: '1,840.20', meta: 'This year' }, { label: 'Next maturity', value: '14 Mar', meta: '·· 9011 · 25,000.00' }]} /></div>
+        <div data-variant="compact"><DepositsSummary variant="compact" items={[{ label: 'Deposits', value: '4', meta: 'Total 62,500.00' }, { label: 'Interest earned', value: '1,840.20', meta: 'This year' }, { label: 'Next maturity', value: '14 Mar', meta: '·· 9011 · 25,000.00' }]} /></div>
+        <div data-variant="glass"><DepositsSummary variant="glass" items={[{ label: 'Deposits', value: '4', meta: 'Total 62,500.00' }, { label: 'Interest earned', value: '1,840.20', meta: 'This year' }, { label: 'Next maturity', value: '14 Mar', meta: '·· 9011 · 25,000.00' }]} /></div>
       </Section>
       <Section id="new-td" title="New deposit">
         <NewDepositForm testID="nt1" items={[{ label: 'From account', value: 'Savings ·· 4821' }, { label: 'Amount (USD)', value: '10,000.00' }, { label: 'Tenure', value: '12 months' }]} />
@@ -323,21 +466,47 @@ function Gallery() {
       </Section>
       <Section id="td-topup" title="Deposit top-up">
         <DepositTopUp items={[{ label: 'Deposit', value: '·· 9011' }, { label: 'Current amount', value: '25,000.00' }, { label: 'Top-up', value: '5,000.00' }, { label: 'New maturity value', value: '31,950.00', total: true }]} />
+        <div data-variant="list"><DepositTopUp variant="list" items={[{ label: 'Deposit', value: '·· 9011' }, { label: 'Current amount', value: '25,000.00' }, { label: 'Top-up', value: '5,000.00' }, { label: 'New maturity value', value: '31,950.00', total: true }]} /></div>
+        <div data-variant="columns"><DepositTopUp variant="columns" items={[{ label: 'Deposit', value: '·· 9011' }, { label: 'Current amount', value: '25,000.00' }, { label: 'Top-up', value: '5,000.00' }, { label: 'New maturity value', value: '31,950.00', total: true }]} /></div>
+        <div data-variant="cards"><DepositTopUp variant="cards" items={[{ label: 'Deposit', value: '·· 9011' }, { label: 'Current amount', value: '25,000.00' }, { label: 'Top-up', value: '5,000.00' }, { label: 'New maturity value', value: '31,950.00', total: true }]} /></div>
+        <div data-variant="compact"><DepositTopUp variant="compact" items={[{ label: 'Deposit', value: '·· 9011' }, { label: 'Current amount', value: '25,000.00' }, { label: 'Top-up', value: '5,000.00' }, { label: 'New maturity value', value: '31,950.00', total: true }]} /></div>
+        <div data-variant="receipt"><DepositTopUp variant="receipt" items={[{ label: 'Deposit', value: '·· 9011' }, { label: 'Current amount', value: '25,000.00' }, { label: 'Top-up', value: '5,000.00' }, { label: 'New maturity value', value: '31,950.00', total: true }]} /></div>
       </Section>
       <Section id="td-redemption" title="Deposit redemption">
         <DepositRedemption items={[{ label: 'Deposit', value: '·· 9011' }, { label: 'Principal', value: '25,000.00' }, { label: 'Interest to date', value: '612.40' }, { label: 'Early penalty', value: '-62.50' }, { label: 'You receive', value: '25,549.90', total: true }]} />
+        <div data-variant="list"><DepositRedemption variant="list" items={[{ label: 'Deposit', value: '·· 9011' }, { label: 'Principal', value: '25,000.00' }, { label: 'Interest to date', value: '612.40' }, { label: 'Early penalty', value: '-62.50' }, { label: 'You receive', value: '25,549.90', total: true }]} /></div>
+        <div data-variant="columns"><DepositRedemption variant="columns" items={[{ label: 'Deposit', value: '·· 9011' }, { label: 'Principal', value: '25,000.00' }, { label: 'Interest to date', value: '612.40' }, { label: 'Early penalty', value: '-62.50' }, { label: 'You receive', value: '25,549.90', total: true }]} /></div>
+        <div data-variant="cards"><DepositRedemption variant="cards" items={[{ label: 'Deposit', value: '·· 9011' }, { label: 'Principal', value: '25,000.00' }, { label: 'Interest to date', value: '612.40' }, { label: 'Early penalty', value: '-62.50' }, { label: 'You receive', value: '25,549.90', total: true }]} /></div>
+        <div data-variant="compact"><DepositRedemption variant="compact" items={[{ label: 'Deposit', value: '·· 9011' }, { label: 'Principal', value: '25,000.00' }, { label: 'Interest to date', value: '612.40' }, { label: 'Early penalty', value: '-62.50' }, { label: 'You receive', value: '25,549.90', total: true }]} /></div>
+        <div data-variant="receipt"><DepositRedemption variant="receipt" items={[{ label: 'Deposit', value: '·· 9011' }, { label: 'Principal', value: '25,000.00' }, { label: 'Interest to date', value: '612.40' }, { label: 'Early penalty', value: '-62.50' }, { label: 'You receive', value: '25,549.90', total: true }]} /></div>
       </Section>
       <Section id="loan-summary" title="Loans summary">
         <LoansSummary items={[{label: 'Home loan', value: '142,300.00', meta: 'Next 1,240.00 on 5 Feb'}, {label: 'Car loan', value: '18,420.00', meta: 'Next 412.00 on 5 Feb'}, {label: 'Overdue', value: '412.00', meta: 'Car loan · 12 days'}]} />
+        <div data-variant="elevated"><LoansSummary variant="elevated" items={[{label: 'Home loan', value: '142,300.00', meta: 'Next 1,240.00 on 5 Feb'}, {label: 'Car loan', value: '18,420.00', meta: 'Next 412.00 on 5 Feb'}, {label: 'Overdue', value: '412.00', meta: 'Car loan · 12 days'}]} /></div>
+        <div data-variant="filled"><LoansSummary variant="filled" items={[{label: 'Home loan', value: '142,300.00', meta: 'Next 1,240.00 on 5 Feb'}, {label: 'Car loan', value: '18,420.00', meta: 'Next 412.00 on 5 Feb'}, {label: 'Overdue', value: '412.00', meta: 'Car loan · 12 days'}]} /></div>
+        <div data-variant="outlined"><LoansSummary variant="outlined" items={[{label: 'Home loan', value: '142,300.00', meta: 'Next 1,240.00 on 5 Feb'}, {label: 'Car loan', value: '18,420.00', meta: 'Next 412.00 on 5 Feb'}, {label: 'Overdue', value: '412.00', meta: 'Car loan · 12 days'}]} /></div>
+        <div data-variant="bento"><LoansSummary variant="bento" items={[{label: 'Home loan', value: '142,300.00', meta: 'Next 1,240.00 on 5 Feb'}, {label: 'Car loan', value: '18,420.00', meta: 'Next 412.00 on 5 Feb'}, {label: 'Overdue', value: '412.00', meta: 'Car loan · 12 days'}]} /></div>
+        <div data-variant="compact"><LoansSummary variant="compact" items={[{label: 'Home loan', value: '142,300.00', meta: 'Next 1,240.00 on 5 Feb'}, {label: 'Car loan', value: '18,420.00', meta: 'Next 412.00 on 5 Feb'}, {label: 'Overdue', value: '412.00', meta: 'Car loan · 12 days'}]} /></div>
+        <div data-variant="glass"><LoansSummary variant="glass" items={[{label: 'Home loan', value: '142,300.00', meta: 'Next 1,240.00 on 5 Feb'}, {label: 'Car loan', value: '18,420.00', meta: 'Next 412.00 on 5 Feb'}, {label: 'Overdue', value: '412.00', meta: 'Car loan · 12 days'}]} /></div>
       </Section>
       <Section id="loan-repayment" title="Loan repayment">
         <LoanRepayment items={[{label: 'Loan', value: 'Car loan ·· 3310'}, {label: 'Amount (USD)', value: '412.00'}, {label: 'Pay from', value: 'Savings ·· 4821'}]} />
       </Section>
       <Section id="loan-schedule" title="Repayment schedule">
         <RepaymentSchedule testID="ls1" rows={[{date: '05 Feb', amount: '412.00', status: 'due'}, {date: '05 Mar', amount: '412.00'}, {date: '05 Apr', amount: '412.00'}]} />
+        <div data-variant="material"><RepaymentSchedule variant="material" rows={[{date: '05 Feb', amount: '412.00', status: 'due'}, {date: '05 Mar', amount: '412.00'}, {date: '05 Apr', amount: '412.00'}]} /></div>
+        <div data-variant="striped"><RepaymentSchedule variant="striped" rows={[{date: '05 Feb', amount: '412.00', status: 'due'}, {date: '05 Mar', amount: '412.00'}, {date: '05 Apr', amount: '412.00'}]} /></div>
+        <div data-variant="dense"><RepaymentSchedule variant="dense" rows={[{date: '05 Feb', amount: '412.00', status: 'due'}, {date: '05 Mar', amount: '412.00'}, {date: '05 Apr', amount: '412.00'}]} /></div>
+        <div data-variant="cards"><RepaymentSchedule variant="cards" rows={[{date: '05 Feb', amount: '412.00', status: 'due'}, {date: '05 Mar', amount: '412.00'}, {date: '05 Apr', amount: '412.00'}]} /></div>
+        <div data-variant="sticky"><RepaymentSchedule variant="sticky" rows={[{date: '05 Feb', amount: '412.00', status: 'due'}, {date: '05 Mar', amount: '412.00'}, {date: '05 Apr', amount: '412.00'}]} /></div>
       </Section>
       <Section id="promise-to-pay" title="Promise to pay">
         <PromiseToPay items={[{label: 'Overdue', value: '412.00'}, {label: 'Promise date', value: '20 Jan'}, {label: 'Pay from', value: 'Savings ·· 4821'}]} />
+        <div data-variant="list"><PromiseToPay variant="list" items={[{label: 'Overdue', value: '412.00'}, {label: 'Promise date', value: '20 Jan'}, {label: 'Pay from', value: 'Savings ·· 4821'}]} /></div>
+        <div data-variant="columns"><PromiseToPay variant="columns" items={[{label: 'Overdue', value: '412.00'}, {label: 'Promise date', value: '20 Jan'}, {label: 'Pay from', value: 'Savings ·· 4821'}]} /></div>
+        <div data-variant="cards"><PromiseToPay variant="cards" items={[{label: 'Overdue', value: '412.00'}, {label: 'Promise date', value: '20 Jan'}, {label: 'Pay from', value: 'Savings ·· 4821'}]} /></div>
+        <div data-variant="compact"><PromiseToPay variant="compact" items={[{label: 'Overdue', value: '412.00'}, {label: 'Promise date', value: '20 Jan'}, {label: 'Pay from', value: 'Savings ·· 4821'}]} /></div>
+        <div data-variant="receipt"><PromiseToPay variant="receipt" items={[{label: 'Overdue', value: '412.00'}, {label: 'Promise date', value: '20 Jan'}, {label: 'Pay from', value: 'Savings ·· 4821'}]} /></div>
       </Section>
       <Section id="disbursement" title="Disbursement timeline">
         <DisbursementTimeline items={[{label: 'Sanctioned 30,000.00', meta: '02 Jan'}, {label: 'First disbursement 20,000.00', meta: '05 Jan'}, {label: 'Second disbursement 10,000.00', meta: 'Due 05 Mar', state: 'pending'}]} />
@@ -348,6 +517,12 @@ function Gallery() {
       </Section>
       <Section id="card-list" title="Card list">
         <CardList items={[{label: 'Platinum ·· 4821', value: '640.00 due', meta: 'Limit 10,000.00 · due 18 Jan'}, {label: 'Classic ·· 7710', value: '0.00 due', meta: 'Limit 3,000.00'}]} />
+        <div data-variant="elevated"><CardList variant="elevated" items={[{label: 'Platinum ·· 4821', value: '640.00 due', meta: 'Limit 10,000.00 · due 18 Jan'}, {label: 'Classic ·· 7710', value: '0.00 due', meta: 'Limit 3,000.00'}]} /></div>
+        <div data-variant="filled"><CardList variant="filled" items={[{label: 'Platinum ·· 4821', value: '640.00 due', meta: 'Limit 10,000.00 · due 18 Jan'}, {label: 'Classic ·· 7710', value: '0.00 due', meta: 'Limit 3,000.00'}]} /></div>
+        <div data-variant="outlined"><CardList variant="outlined" items={[{label: 'Platinum ·· 4821', value: '640.00 due', meta: 'Limit 10,000.00 · due 18 Jan'}, {label: 'Classic ·· 7710', value: '0.00 due', meta: 'Limit 3,000.00'}]} /></div>
+        <div data-variant="bento"><CardList variant="bento" items={[{label: 'Platinum ·· 4821', value: '640.00 due', meta: 'Limit 10,000.00 · due 18 Jan'}, {label: 'Classic ·· 7710', value: '0.00 due', meta: 'Limit 3,000.00'}]} /></div>
+        <div data-variant="compact"><CardList variant="compact" items={[{label: 'Platinum ·· 4821', value: '640.00 due', meta: 'Limit 10,000.00 · due 18 Jan'}, {label: 'Classic ·· 7710', value: '0.00 due', meta: 'Limit 3,000.00'}]} /></div>
+        <div data-variant="glass"><CardList variant="glass" items={[{label: 'Platinum ·· 4821', value: '640.00 due', meta: 'Limit 10,000.00 · due 18 Jan'}, {label: 'Classic ·· 7710', value: '0.00 due', meta: 'Limit 3,000.00'}]} /></div>
       </Section>
       <Section id="activate-card" title="Activate card">
         <ActivateCard testID="ak1" value={code} onChange={setCode} />
@@ -393,6 +568,11 @@ function Gallery() {
       </Section>
       <Section id="secure-confirmation" title="Secure confirmation">
         <SecureConfirmation items={[{label: 'Pay', value: 'A. Rao'}, {label: 'Amount', value: '1,250.00 USD'}, {label: 'Code sent to', value: '•••• 0123'}]} />
+        <div data-variant="list"><SecureConfirmation variant="list" items={[{label: 'Pay', value: 'A. Rao'}, {label: 'Amount', value: '1,250.00 USD'}, {label: 'Code sent to', value: '•••• 0123'}]} /></div>
+        <div data-variant="columns"><SecureConfirmation variant="columns" items={[{label: 'Pay', value: 'A. Rao'}, {label: 'Amount', value: '1,250.00 USD'}, {label: 'Code sent to', value: '•••• 0123'}]} /></div>
+        <div data-variant="cards"><SecureConfirmation variant="cards" items={[{label: 'Pay', value: 'A. Rao'}, {label: 'Amount', value: '1,250.00 USD'}, {label: 'Code sent to', value: '•••• 0123'}]} /></div>
+        <div data-variant="compact"><SecureConfirmation variant="compact" items={[{label: 'Pay', value: 'A. Rao'}, {label: 'Amount', value: '1,250.00 USD'}, {label: 'Code sent to', value: '•••• 0123'}]} /></div>
+        <div data-variant="receipt"><SecureConfirmation variant="receipt" items={[{label: 'Pay', value: 'A. Rao'}, {label: 'Amount', value: '1,250.00 USD'}, {label: 'Code sent to', value: '•••• 0123'}]} /></div>
       </Section>
       <Section id="sensitive" title="Sensitive field">
         <SensitiveField testID="sf1" value="4111 1111 1111 4821" />
@@ -420,6 +600,11 @@ function Gallery() {
       </Section>
       <Section id="approval-detail" title="Approval detail">
         <ApprovalDetail items={[{label: 'Reference', value: 'PAY-4410'}, {label: 'Initiated by', value: 'A. Rao, maker'}, {label: 'Amount', value: '182,400.00 USD'}, {label: 'Value date', value: '28 Jan'}, {label: 'Your level', value: '2 of 3'}]} />
+        <div data-variant="list"><ApprovalDetail variant="list" items={[{label: 'Reference', value: 'PAY-4410'}, {label: 'Initiated by', value: 'A. Rao, maker'}, {label: 'Amount', value: '182,400.00 USD'}, {label: 'Value date', value: '28 Jan'}, {label: 'Your level', value: '2 of 3'}]} /></div>
+        <div data-variant="columns"><ApprovalDetail variant="columns" items={[{label: 'Reference', value: 'PAY-4410'}, {label: 'Initiated by', value: 'A. Rao, maker'}, {label: 'Amount', value: '182,400.00 USD'}, {label: 'Value date', value: '28 Jan'}, {label: 'Your level', value: '2 of 3'}]} /></div>
+        <div data-variant="cards"><ApprovalDetail variant="cards" items={[{label: 'Reference', value: 'PAY-4410'}, {label: 'Initiated by', value: 'A. Rao, maker'}, {label: 'Amount', value: '182,400.00 USD'}, {label: 'Value date', value: '28 Jan'}, {label: 'Your level', value: '2 of 3'}]} /></div>
+        <div data-variant="compact"><ApprovalDetail variant="compact" items={[{label: 'Reference', value: 'PAY-4410'}, {label: 'Initiated by', value: 'A. Rao, maker'}, {label: 'Amount', value: '182,400.00 USD'}, {label: 'Value date', value: '28 Jan'}, {label: 'Your level', value: '2 of 3'}]} /></div>
+        <div data-variant="receipt"><ApprovalDetail variant="receipt" items={[{label: 'Reference', value: 'PAY-4410'}, {label: 'Initiated by', value: 'A. Rao, maker'}, {label: 'Amount', value: '182,400.00 USD'}, {label: 'Value date', value: '28 Jan'}, {label: 'Your level', value: '2 of 3'}]} /></div>
       </Section>
       <Section id="approval-journey" title="Approval journey">
         <ApprovalJourney items={[{label: 'Initiated', meta: 'A. Rao · 09:12'}, {label: 'Approved, level 1', meta: 'P. Nair · 10:40'}, {label: 'Waiting, level 2', meta: 'Finance head', state: 'current'}, {label: 'Release', meta: 'Treasury', state: 'pending'}]} />
@@ -438,9 +623,18 @@ function Gallery() {
       </Section>
       <Section id="account-structure" title="Account structure">
         <AccountStructure items={[{id: 'h', title: 'Header account ·· 1000', body: 'Sweeps to zero balance daily at 18:00.'}, {id: 'p', title: 'Child: Payroll ·· 1010', body: 'Target balance 5,000.00.'}, {id: 'v', title: 'Child: Vendors ·· 1020', body: 'Sweeps above 2,000.00.'}]} />
+        <div data-variant="separated"><AccountStructure variant="separated" items={[{id: 'h', title: 'Header account ·· 1000', body: 'Sweeps to zero balance daily at 18:00.'}, {id: 'p', title: 'Child: Payroll ·· 1010', body: 'Target balance 5,000.00.'}, {id: 'v', title: 'Child: Vendors ·· 1020', body: 'Sweeps above 2,000.00.'}]} /></div>
+        <div data-variant="flush"><AccountStructure variant="flush" items={[{id: 'h', title: 'Header account ·· 1000', body: 'Sweeps to zero balance daily at 18:00.'}, {id: 'p', title: 'Child: Payroll ·· 1010', body: 'Target balance 5,000.00.'}, {id: 'v', title: 'Child: Vendors ·· 1020', body: 'Sweeps above 2,000.00.'}]} /></div>
+        <div data-variant="contained"><AccountStructure variant="contained" items={[{id: 'h', title: 'Header account ·· 1000', body: 'Sweeps to zero balance daily at 18:00.'}, {id: 'p', title: 'Child: Payroll ·· 1010', body: 'Target balance 5,000.00.'}, {id: 'v', title: 'Child: Vendors ·· 1020', body: 'Sweeps above 2,000.00.'}]} /></div>
+        <div data-variant="icon-start"><AccountStructure variant="icon-start" items={[{id: 'h', title: 'Header account ·· 1000', body: 'Sweeps to zero balance daily at 18:00.'}, {id: 'p', title: 'Child: Payroll ·· 1010', body: 'Target balance 5,000.00.'}, {id: 'v', title: 'Child: Vendors ·· 1020', body: 'Sweeps above 2,000.00.'}]} /></div>
       </Section>
       <Section id="structure-simulation" title="Structure simulation">
         <StructureSimulation items={[{label: 'Structure', value: 'Daily zero balance'}, {label: 'Accounts', value: '3'}, {label: 'Moved today', value: '182,400.00'}, {label: 'Interest benefit', value: '1,210.00 a month'}]} />
+        <div data-variant="list"><StructureSimulation variant="list" items={[{label: 'Structure', value: 'Daily zero balance'}, {label: 'Accounts', value: '3'}, {label: 'Moved today', value: '182,400.00'}, {label: 'Interest benefit', value: '1,210.00 a month'}]} /></div>
+        <div data-variant="columns"><StructureSimulation variant="columns" items={[{label: 'Structure', value: 'Daily zero balance'}, {label: 'Accounts', value: '3'}, {label: 'Moved today', value: '182,400.00'}, {label: 'Interest benefit', value: '1,210.00 a month'}]} /></div>
+        <div data-variant="cards"><StructureSimulation variant="cards" items={[{label: 'Structure', value: 'Daily zero balance'}, {label: 'Accounts', value: '3'}, {label: 'Moved today', value: '182,400.00'}, {label: 'Interest benefit', value: '1,210.00 a month'}]} /></div>
+        <div data-variant="compact"><StructureSimulation variant="compact" items={[{label: 'Structure', value: 'Daily zero balance'}, {label: 'Accounts', value: '3'}, {label: 'Moved today', value: '182,400.00'}, {label: 'Interest benefit', value: '1,210.00 a month'}]} /></div>
+        <div data-variant="receipt"><StructureSimulation variant="receipt" items={[{label: 'Structure', value: 'Daily zero balance'}, {label: 'Accounts', value: '3'}, {label: 'Moved today', value: '182,400.00'}, {label: 'Interest benefit', value: '1,210.00 a month'}]} /></div>
       </Section>
       <Section id="intercompany-limits" title="Intercompany limits">
         <LendLimits items={[{label: 'Payroll Ltd', value: 120, max: 500}, {label: 'Vendors Ltd', value: 340, max: 400}]} unit="k" />
@@ -450,6 +644,11 @@ function Gallery() {
       </Section>
       <Section id="profile" title="Profile">
         <Profile items={[{label: 'Name', value: 'A. Rao'}, {label: 'Email', value: 'a.rao@mail.example'}, {label: 'Mobile', value: '•••• 0123'}, {label: 'Address', value: '12 Bridge St, London'}]} />
+        <div data-variant="list"><Profile variant="list" items={[{label: 'Name', value: 'A. Rao'}, {label: 'Email', value: 'a.rao@mail.example'}, {label: 'Mobile', value: '•••• 0123'}, {label: 'Address', value: '12 Bridge St, London'}]} /></div>
+        <div data-variant="columns"><Profile variant="columns" items={[{label: 'Name', value: 'A. Rao'}, {label: 'Email', value: 'a.rao@mail.example'}, {label: 'Mobile', value: '•••• 0123'}, {label: 'Address', value: '12 Bridge St, London'}]} /></div>
+        <div data-variant="cards"><Profile variant="cards" items={[{label: 'Name', value: 'A. Rao'}, {label: 'Email', value: 'a.rao@mail.example'}, {label: 'Mobile', value: '•••• 0123'}, {label: 'Address', value: '12 Bridge St, London'}]} /></div>
+        <div data-variant="compact"><Profile variant="compact" items={[{label: 'Name', value: 'A. Rao'}, {label: 'Email', value: 'a.rao@mail.example'}, {label: 'Mobile', value: '•••• 0123'}, {label: 'Address', value: '12 Bridge St, London'}]} /></div>
+        <div data-variant="receipt"><Profile variant="receipt" items={[{label: 'Name', value: 'A. Rao'}, {label: 'Email', value: 'a.rao@mail.example'}, {label: 'Mobile', value: '•••• 0123'}, {label: 'Address', value: '12 Bridge St, London'}]} /></div>
       </Section>
       <Section id="sign-in-options" title="Sign-in options">
         <SignInOptions options={['Passkey', 'Facial ID', 'Soft token']} value={signIn} onChange={setSignIn} />
@@ -513,6 +712,12 @@ function Gallery() {
       </Section>
       <Section id="product-showcase" title="Product showcase">
         <ProductCard heading="Platinum credit card" text="2% cashback · no annual fee in year one" badge="New" actionLabel="Apply now →" />
+        <div data-variant="elevated"><ProductCard variant="elevated" heading="Platinum credit card" text="2% cashback · no annual fee in year one" badge="New" actionLabel="Apply now →" /></div>
+        <div data-variant="filled"><ProductCard variant="filled" heading="Platinum credit card" text="2% cashback · no annual fee in year one" badge="New" actionLabel="Apply now →" /></div>
+        <div data-variant="outlined"><ProductCard variant="outlined" heading="Platinum credit card" text="2% cashback · no annual fee in year one" badge="New" actionLabel="Apply now →" /></div>
+        <div data-variant="glass"><ProductCard variant="glass" heading="Platinum credit card" text="2% cashback · no annual fee in year one" badge="New" actionLabel="Apply now →" /></div>
+        <div data-variant="gradient"><ProductCard variant="gradient" heading="Platinum credit card" text="2% cashback · no annual fee in year one" badge="New" actionLabel="Apply now →" /></div>
+        <div data-variant="lift"><ProductCard variant="lift" heading="Platinum credit card" text="2% cashback · no annual fee in year one" badge="New" actionLabel="Apply now →" /></div>
       </Section>
       <Section id="application-tracker" title="Application tracker">
         <ApplicationTracker items={[{label: 'Submitted', meta: '12 Jan'}, {label: 'Documents checked', meta: '13 Jan'}, {label: 'Credit decision', meta: 'Expected 16 Jan', state: 'current'}, {label: 'Card sent', meta: '—', state: 'pending'}]} />
@@ -549,9 +754,19 @@ function Gallery() {
       </Section>
       <Section id="faq" title="FAQ">
         <Faq items={faq} />
+        <div data-variant="separated"><Faq variant="separated" items={faq} /></div>
+        <div data-variant="flush"><Faq variant="flush" items={faq} /></div>
+        <div data-variant="contained"><Faq variant="contained" items={faq} /></div>
+        <div data-variant="icon-start"><Faq variant="icon-start" items={faq} /></div>
       </Section>
       <Section id="overview" title="Overview">
         <OverviewWidget items={[{label: 'Current and savings', value: '15,610.50', meta: '3 accounts'}, {label: 'Term deposits', value: '25,000.00', meta: '2 deposits'}, {label: 'Loans', value: '18,420.00', meta: '1 loan outstanding'}, {label: 'Credit cards', value: '640.00 due', meta: '2 cards'}, {label: 'Mutual funds', value: '4,120.00', meta: '1 fund'}]} />
+        <div data-variant="elevated"><OverviewWidget variant="elevated" items={[{label: 'Current and savings', value: '15,610.50', meta: '3 accounts'}, {label: 'Term deposits', value: '25,000.00', meta: '2 deposits'}, {label: 'Loans', value: '18,420.00', meta: '1 loan outstanding'}, {label: 'Credit cards', value: '640.00 due', meta: '2 cards'}, {label: 'Mutual funds', value: '4,120.00', meta: '1 fund'}]} /></div>
+        <div data-variant="filled"><OverviewWidget variant="filled" items={[{label: 'Current and savings', value: '15,610.50', meta: '3 accounts'}, {label: 'Term deposits', value: '25,000.00', meta: '2 deposits'}, {label: 'Loans', value: '18,420.00', meta: '1 loan outstanding'}, {label: 'Credit cards', value: '640.00 due', meta: '2 cards'}, {label: 'Mutual funds', value: '4,120.00', meta: '1 fund'}]} /></div>
+        <div data-variant="outlined"><OverviewWidget variant="outlined" items={[{label: 'Current and savings', value: '15,610.50', meta: '3 accounts'}, {label: 'Term deposits', value: '25,000.00', meta: '2 deposits'}, {label: 'Loans', value: '18,420.00', meta: '1 loan outstanding'}, {label: 'Credit cards', value: '640.00 due', meta: '2 cards'}, {label: 'Mutual funds', value: '4,120.00', meta: '1 fund'}]} /></div>
+        <div data-variant="bento"><OverviewWidget variant="bento" items={[{label: 'Current and savings', value: '15,610.50', meta: '3 accounts'}, {label: 'Term deposits', value: '25,000.00', meta: '2 deposits'}, {label: 'Loans', value: '18,420.00', meta: '1 loan outstanding'}, {label: 'Credit cards', value: '640.00 due', meta: '2 cards'}, {label: 'Mutual funds', value: '4,120.00', meta: '1 fund'}]} /></div>
+        <div data-variant="compact"><OverviewWidget variant="compact" items={[{label: 'Current and savings', value: '15,610.50', meta: '3 accounts'}, {label: 'Term deposits', value: '25,000.00', meta: '2 deposits'}, {label: 'Loans', value: '18,420.00', meta: '1 loan outstanding'}, {label: 'Credit cards', value: '640.00 due', meta: '2 cards'}, {label: 'Mutual funds', value: '4,120.00', meta: '1 fund'}]} /></div>
+        <div data-variant="glass"><OverviewWidget variant="glass" items={[{label: 'Current and savings', value: '15,610.50', meta: '3 accounts'}, {label: 'Term deposits', value: '25,000.00', meta: '2 deposits'}, {label: 'Loans', value: '18,420.00', meta: '1 loan outstanding'}, {label: 'Credit cards', value: '640.00 due', meta: '2 cards'}, {label: 'Mutual funds', value: '4,120.00', meta: '1 fund'}]} /></div>
       </Section>
       <Section id="quick-insights" title="Quick insights">
         <QuickInsightsWidget items={[{title: 'Term deposit matures', meta: 'In 5 days · ·· 9011', value: '25,000.00'}, {title: 'Card payment due', meta: '18 Jan · ·· 4821', value: '640.00'}, {title: 'Low balance', meta: 'Current ·· 7730', value: '210.00'}]} />
@@ -579,24 +794,60 @@ function Gallery() {
       </Section>
       <Section id="rewards" title="Rewards">
         <RewardsWidget items={[{label: 'Points', value: '12,400', meta: 'Redeem for merchandise, vouchers or air miles'}, {label: 'Vouchers', value: '3', meta: 'Expire 31 Mar'}, {label: 'Cashback', value: '45.00', meta: 'Paid on the 1st'}]} />
+        <div data-variant="elevated"><RewardsWidget variant="elevated" items={[{label: 'Points', value: '12,400', meta: 'Redeem for merchandise, vouchers or air miles'}, {label: 'Vouchers', value: '3', meta: 'Expire 31 Mar'}, {label: 'Cashback', value: '45.00', meta: 'Paid on the 1st'}]} /></div>
+        <div data-variant="filled"><RewardsWidget variant="filled" items={[{label: 'Points', value: '12,400', meta: 'Redeem for merchandise, vouchers or air miles'}, {label: 'Vouchers', value: '3', meta: 'Expire 31 Mar'}, {label: 'Cashback', value: '45.00', meta: 'Paid on the 1st'}]} /></div>
+        <div data-variant="outlined"><RewardsWidget variant="outlined" items={[{label: 'Points', value: '12,400', meta: 'Redeem for merchandise, vouchers or air miles'}, {label: 'Vouchers', value: '3', meta: 'Expire 31 Mar'}, {label: 'Cashback', value: '45.00', meta: 'Paid on the 1st'}]} /></div>
+        <div data-variant="bento"><RewardsWidget variant="bento" items={[{label: 'Points', value: '12,400', meta: 'Redeem for merchandise, vouchers or air miles'}, {label: 'Vouchers', value: '3', meta: 'Expire 31 Mar'}, {label: 'Cashback', value: '45.00', meta: 'Paid on the 1st'}]} /></div>
+        <div data-variant="compact"><RewardsWidget variant="compact" items={[{label: 'Points', value: '12,400', meta: 'Redeem for merchandise, vouchers or air miles'}, {label: 'Vouchers', value: '3', meta: 'Expire 31 Mar'}, {label: 'Cashback', value: '45.00', meta: 'Paid on the 1st'}]} /></div>
+        <div data-variant="glass"><RewardsWidget variant="glass" items={[{label: 'Points', value: '12,400', meta: 'Redeem for merchandise, vouchers or air miles'}, {label: 'Vouchers', value: '3', meta: 'Expire 31 Mar'}, {label: 'Cashback', value: '45.00', meta: 'Paid on the 1st'}]} /></div>
       </Section>
       <Section id="financial-advisor" title="Financial advisor">
         <FinancialAdvisorWidget heading="Priya Nair" text="priya.nair@bank.example · +44 20 7946 0123" badge="Relationship manager" />
+        <div data-variant="elevated"><FinancialAdvisorWidget variant="elevated" heading="Priya Nair" text="priya.nair@bank.example · +44 20 7946 0123" badge="Relationship manager" /></div>
+        <div data-variant="filled"><FinancialAdvisorWidget variant="filled" heading="Priya Nair" text="priya.nair@bank.example · +44 20 7946 0123" badge="Relationship manager" /></div>
+        <div data-variant="outlined"><FinancialAdvisorWidget variant="outlined" heading="Priya Nair" text="priya.nair@bank.example · +44 20 7946 0123" badge="Relationship manager" /></div>
+        <div data-variant="glass"><FinancialAdvisorWidget variant="glass" heading="Priya Nair" text="priya.nair@bank.example · +44 20 7946 0123" badge="Relationship manager" /></div>
+        <div data-variant="gradient"><FinancialAdvisorWidget variant="gradient" heading="Priya Nair" text="priya.nair@bank.example · +44 20 7946 0123" badge="Relationship manager" /></div>
+        <div data-variant="lift"><FinancialAdvisorWidget variant="lift" heading="Priya Nair" text="priya.nair@bank.example · +44 20 7946 0123" badge="Relationship manager" /></div>
       </Section>
       <Section id="special-offers" title="Special offers">
         <SpecialOffersWidget heading="Pre-approved personal loan" text="Up to 25,000.00 at 9.5% a year." badge="Offer" />
+        <div data-variant="elevated"><SpecialOffersWidget variant="elevated" heading="Pre-approved personal loan" text="Up to 25,000.00 at 9.5% a year." badge="Offer" /></div>
+        <div data-variant="filled"><SpecialOffersWidget variant="filled" heading="Pre-approved personal loan" text="Up to 25,000.00 at 9.5% a year." badge="Offer" /></div>
+        <div data-variant="outlined"><SpecialOffersWidget variant="outlined" heading="Pre-approved personal loan" text="Up to 25,000.00 at 9.5% a year." badge="Offer" /></div>
+        <div data-variant="glass"><SpecialOffersWidget variant="glass" heading="Pre-approved personal loan" text="Up to 25,000.00 at 9.5% a year." badge="Offer" /></div>
+        <div data-variant="gradient"><SpecialOffersWidget variant="gradient" heading="Pre-approved personal loan" text="Up to 25,000.00 at 9.5% a year." badge="Offer" /></div>
+        <div data-variant="lift"><SpecialOffersWidget variant="lift" heading="Pre-approved personal loan" text="Up to 25,000.00 at 9.5% a year." badge="Offer" /></div>
       </Section>
       <Section id="credit-cards-overview" title="Credit cards">
         <CreditCardsWidget items={[{label: 'Total due', value: '640.00', meta: 'Due 18 Jan'}, {label: 'Minimum due', value: '32.00', meta: 'Pay to avoid charges'}, {label: 'Available limit', value: '9,360.00', meta: 'Of 10,000.00'}]} />
+        <div data-variant="elevated"><CreditCardsWidget variant="elevated" items={[{label: 'Total due', value: '640.00', meta: 'Due 18 Jan'}, {label: 'Minimum due', value: '32.00', meta: 'Pay to avoid charges'}, {label: 'Available limit', value: '9,360.00', meta: 'Of 10,000.00'}]} /></div>
+        <div data-variant="filled"><CreditCardsWidget variant="filled" items={[{label: 'Total due', value: '640.00', meta: 'Due 18 Jan'}, {label: 'Minimum due', value: '32.00', meta: 'Pay to avoid charges'}, {label: 'Available limit', value: '9,360.00', meta: 'Of 10,000.00'}]} /></div>
+        <div data-variant="outlined"><CreditCardsWidget variant="outlined" items={[{label: 'Total due', value: '640.00', meta: 'Due 18 Jan'}, {label: 'Minimum due', value: '32.00', meta: 'Pay to avoid charges'}, {label: 'Available limit', value: '9,360.00', meta: 'Of 10,000.00'}]} /></div>
+        <div data-variant="bento"><CreditCardsWidget variant="bento" items={[{label: 'Total due', value: '640.00', meta: 'Due 18 Jan'}, {label: 'Minimum due', value: '32.00', meta: 'Pay to avoid charges'}, {label: 'Available limit', value: '9,360.00', meta: 'Of 10,000.00'}]} /></div>
+        <div data-variant="compact"><CreditCardsWidget variant="compact" items={[{label: 'Total due', value: '640.00', meta: 'Due 18 Jan'}, {label: 'Minimum due', value: '32.00', meta: 'Pay to avoid charges'}, {label: 'Available limit', value: '9,360.00', meta: 'Of 10,000.00'}]} /></div>
+        <div data-variant="glass"><CreditCardsWidget variant="glass" items={[{label: 'Total due', value: '640.00', meta: 'Due 18 Jan'}, {label: 'Minimum due', value: '32.00', meta: 'Pay to avoid charges'}, {label: 'Available limit', value: '9,360.00', meta: 'Of 10,000.00'}]} /></div>
       </Section>
       <Section id="loans-overview" title="Loans">
         <LoansWidget items={[{label: 'Loans', value: '2', meta: 'Home and car'}, {label: 'Outstanding', value: '18,420.00', meta: 'Next instalment 5 Feb'}, {label: 'Sanctioned', value: '30,000.00', meta: 'Both loans'}]} />
+        <div data-variant="elevated"><LoansWidget variant="elevated" items={[{label: 'Loans', value: '2', meta: 'Home and car'}, {label: 'Outstanding', value: '18,420.00', meta: 'Next instalment 5 Feb'}, {label: 'Sanctioned', value: '30,000.00', meta: 'Both loans'}]} /></div>
+        <div data-variant="filled"><LoansWidget variant="filled" items={[{label: 'Loans', value: '2', meta: 'Home and car'}, {label: 'Outstanding', value: '18,420.00', meta: 'Next instalment 5 Feb'}, {label: 'Sanctioned', value: '30,000.00', meta: 'Both loans'}]} /></div>
+        <div data-variant="outlined"><LoansWidget variant="outlined" items={[{label: 'Loans', value: '2', meta: 'Home and car'}, {label: 'Outstanding', value: '18,420.00', meta: 'Next instalment 5 Feb'}, {label: 'Sanctioned', value: '30,000.00', meta: 'Both loans'}]} /></div>
+        <div data-variant="bento"><LoansWidget variant="bento" items={[{label: 'Loans', value: '2', meta: 'Home and car'}, {label: 'Outstanding', value: '18,420.00', meta: 'Next instalment 5 Feb'}, {label: 'Sanctioned', value: '30,000.00', meta: 'Both loans'}]} /></div>
+        <div data-variant="compact"><LoansWidget variant="compact" items={[{label: 'Loans', value: '2', meta: 'Home and car'}, {label: 'Outstanding', value: '18,420.00', meta: 'Next instalment 5 Feb'}, {label: 'Sanctioned', value: '30,000.00', meta: 'Both loans'}]} /></div>
+        <div data-variant="glass"><LoansWidget variant="glass" items={[{label: 'Loans', value: '2', meta: 'Home and car'}, {label: 'Outstanding', value: '18,420.00', meta: 'Next instalment 5 Feb'}, {label: 'Sanctioned', value: '30,000.00', meta: 'Both loans'}]} /></div>
       </Section>
       <Section id="delinquency-notice" title="Delinquency notice">
         <DelinquencyNotice message="Your car loan ·· 3310 is 12 days overdue: 412.00." />
       </Section>
       <Section id="financial-overview" title="Financial overview">
         <FinancialOverviewWidget items={[{label: 'Assets', value: '4.2M', meta: 'CASA, deposits'}, {label: 'Liabilities', value: '1.1M', meta: 'Loans'}, {label: 'Net worth', value: '3.1M', meta: 'Assets less liabilities'}]} />
+        <div data-variant="elevated"><FinancialOverviewWidget variant="elevated" items={[{label: 'Assets', value: '4.2M', meta: 'CASA, deposits'}, {label: 'Liabilities', value: '1.1M', meta: 'Loans'}, {label: 'Net worth', value: '3.1M', meta: 'Assets less liabilities'}]} /></div>
+        <div data-variant="filled"><FinancialOverviewWidget variant="filled" items={[{label: 'Assets', value: '4.2M', meta: 'CASA, deposits'}, {label: 'Liabilities', value: '1.1M', meta: 'Loans'}, {label: 'Net worth', value: '3.1M', meta: 'Assets less liabilities'}]} /></div>
+        <div data-variant="outlined"><FinancialOverviewWidget variant="outlined" items={[{label: 'Assets', value: '4.2M', meta: 'CASA, deposits'}, {label: 'Liabilities', value: '1.1M', meta: 'Loans'}, {label: 'Net worth', value: '3.1M', meta: 'Assets less liabilities'}]} /></div>
+        <div data-variant="bento"><FinancialOverviewWidget variant="bento" items={[{label: 'Assets', value: '4.2M', meta: 'CASA, deposits'}, {label: 'Liabilities', value: '1.1M', meta: 'Loans'}, {label: 'Net worth', value: '3.1M', meta: 'Assets less liabilities'}]} /></div>
+        <div data-variant="compact"><FinancialOverviewWidget variant="compact" items={[{label: 'Assets', value: '4.2M', meta: 'CASA, deposits'}, {label: 'Liabilities', value: '1.1M', meta: 'Loans'}, {label: 'Net worth', value: '3.1M', meta: 'Assets less liabilities'}]} /></div>
+        <div data-variant="glass"><FinancialOverviewWidget variant="glass" items={[{label: 'Assets', value: '4.2M', meta: 'CASA, deposits'}, {label: 'Liabilities', value: '1.1M', meta: 'Loans'}, {label: 'Net worth', value: '3.1M', meta: 'Assets less liabilities'}]} /></div>
       </Section>
       <Section id="position-by-currency" title="Position by currency">
         <CurrencyPositionWidget items={[{label: 'USD', value: 88}, {label: 'EUR', value: 60}, {label: 'GBP', value: 42}, {label: 'INR', value: 30}, {label: 'AED', value: 18}]} note="In millions, assets" />
@@ -606,6 +857,12 @@ function Gallery() {
       </Section>
       <Section id="bills-receivable-payable" title="Bills receivable and payable">
         <TradeBillsWidget items={[{label: 'Receivable', value: '1.8M', meta: 'Export bills'}, {label: 'Payable', value: '0.9M', meta: 'Import bills'}]} />
+        <div data-variant="elevated"><TradeBillsWidget variant="elevated" items={[{label: 'Receivable', value: '1.8M', meta: 'Export bills'}, {label: 'Payable', value: '0.9M', meta: 'Import bills'}]} /></div>
+        <div data-variant="filled"><TradeBillsWidget variant="filled" items={[{label: 'Receivable', value: '1.8M', meta: 'Export bills'}, {label: 'Payable', value: '0.9M', meta: 'Import bills'}]} /></div>
+        <div data-variant="outlined"><TradeBillsWidget variant="outlined" items={[{label: 'Receivable', value: '1.8M', meta: 'Export bills'}, {label: 'Payable', value: '0.9M', meta: 'Import bills'}]} /></div>
+        <div data-variant="bento"><TradeBillsWidget variant="bento" items={[{label: 'Receivable', value: '1.8M', meta: 'Export bills'}, {label: 'Payable', value: '0.9M', meta: 'Import bills'}]} /></div>
+        <div data-variant="compact"><TradeBillsWidget variant="compact" items={[{label: 'Receivable', value: '1.8M', meta: 'Export bills'}, {label: 'Payable', value: '0.9M', meta: 'Import bills'}]} /></div>
+        <div data-variant="glass"><TradeBillsWidget variant="glass" items={[{label: 'Receivable', value: '1.8M', meta: 'Export bills'}, {label: 'Payable', value: '0.9M', meta: 'Import bills'}]} /></div>
       </Section>
       <Section id="trade-instruments" title="Trade instruments">
         <TradeInstrumentsWidget items={[{title: 'LC ILC2201', meta: 'Expires in 9 days', value: '250,000.00'}, {title: 'Guarantee OG118', meta: 'Expires in 14 days', value: '80,000.00'}]} />
@@ -615,12 +872,24 @@ function Gallery() {
       </Section>
       <Section id="accounts-corp" title="Accounts (corporate)">
         <AccountsWidget items={[{id: 'casa', label: 'Current and savings', summary: '12 accounts · 3.4M'}, {id: 'td', label: 'Term deposits', summary: '4 deposits · 1.2M'}, {id: 'loans', label: 'Loans and finances', summary: '2 loans · 1.1M outstanding'}]} />
+        <div data-variant="underline"><AccountsWidget variant="underline" items={[{id: 'casa', label: 'Current and savings', summary: '12 accounts · 3.4M'}, {id: 'td', label: 'Term deposits', summary: '4 deposits · 1.2M'}, {id: 'loans', label: 'Loans and finances', summary: '2 loans · 1.1M outstanding'}]} /></div>
+        <div data-variant="scrollable"><AccountsWidget variant="scrollable" items={[{id: 'casa', label: 'Current and savings', summary: '12 accounts · 3.4M'}, {id: 'td', label: 'Term deposits', summary: '4 deposits · 1.2M'}, {id: 'loans', label: 'Loans and finances', summary: '2 loans · 1.1M outstanding'}]} /></div>
+        <div data-variant="pill"><AccountsWidget variant="pill" items={[{id: 'casa', label: 'Current and savings', summary: '12 accounts · 3.4M'}, {id: 'td', label: 'Term deposits', summary: '4 deposits · 1.2M'}, {id: 'loans', label: 'Loans and finances', summary: '2 loans · 1.1M outstanding'}]} /></div>
+        <div data-variant="enclosed"><AccountsWidget variant="enclosed" items={[{id: 'casa', label: 'Current and savings', summary: '12 accounts · 3.4M'}, {id: 'td', label: 'Term deposits', summary: '4 deposits · 1.2M'}, {id: 'loans', label: 'Loans and finances', summary: '2 loans · 1.1M outstanding'}]} /></div>
+        <div data-variant="segmented"><AccountsWidget variant="segmented" items={[{id: 'casa', label: 'Current and savings', summary: '12 accounts · 3.4M'}, {id: 'td', label: 'Term deposits', summary: '4 deposits · 1.2M'}, {id: 'loans', label: 'Loans and finances', summary: '2 loans · 1.1M outstanding'}]} /></div>
+        <div data-variant="vertical"><AccountsWidget variant="vertical" items={[{id: 'casa', label: 'Current and savings', summary: '12 accounts · 3.4M'}, {id: 'td', label: 'Term deposits', summary: '4 deposits · 1.2M'}, {id: 'loans', label: 'Loans and finances', summary: '2 loans · 1.1M outstanding'}]} /></div>
       </Section>
       <Section id="corporate-limits" title="Corporate limits">
         <CorporateLimitsWidget items={[{label: 'Daily, own transfers', value: 420, max: 1000}, {label: 'Monthly, payments', value: 6200, max: 20000}]} unit="k" />
       </Section>
       <Section id="transactions-widget" title="Transactions (corporate)">
         <TransactionsWidget items={[{id: 'pending', label: 'Pending', summary: '6 waiting: 4 financial, 2 non-financial'}, {id: 'initiated', label: 'Initiated', summary: '3 initiated today'}, {id: 'log', label: 'Log', summary: '42 this week'}, {id: 'approved', label: 'Approved', summary: '18 approved today'}]} />
+        <div data-variant="underline"><TransactionsWidget variant="underline" items={[{id: 'pending', label: 'Pending', summary: '6 waiting: 4 financial, 2 non-financial'}, {id: 'initiated', label: 'Initiated', summary: '3 initiated today'}, {id: 'log', label: 'Log', summary: '42 this week'}, {id: 'approved', label: 'Approved', summary: '18 approved today'}]} /></div>
+        <div data-variant="scrollable"><TransactionsWidget variant="scrollable" items={[{id: 'pending', label: 'Pending', summary: '6 waiting: 4 financial, 2 non-financial'}, {id: 'initiated', label: 'Initiated', summary: '3 initiated today'}, {id: 'log', label: 'Log', summary: '42 this week'}, {id: 'approved', label: 'Approved', summary: '18 approved today'}]} /></div>
+        <div data-variant="pill"><TransactionsWidget variant="pill" items={[{id: 'pending', label: 'Pending', summary: '6 waiting: 4 financial, 2 non-financial'}, {id: 'initiated', label: 'Initiated', summary: '3 initiated today'}, {id: 'log', label: 'Log', summary: '42 this week'}, {id: 'approved', label: 'Approved', summary: '18 approved today'}]} /></div>
+        <div data-variant="enclosed"><TransactionsWidget variant="enclosed" items={[{id: 'pending', label: 'Pending', summary: '6 waiting: 4 financial, 2 non-financial'}, {id: 'initiated', label: 'Initiated', summary: '3 initiated today'}, {id: 'log', label: 'Log', summary: '42 this week'}, {id: 'approved', label: 'Approved', summary: '18 approved today'}]} /></div>
+        <div data-variant="segmented"><TransactionsWidget variant="segmented" items={[{id: 'pending', label: 'Pending', summary: '6 waiting: 4 financial, 2 non-financial'}, {id: 'initiated', label: 'Initiated', summary: '3 initiated today'}, {id: 'log', label: 'Log', summary: '42 this week'}, {id: 'approved', label: 'Approved', summary: '18 approved today'}]} /></div>
+        <div data-variant="vertical"><TransactionsWidget variant="vertical" items={[{id: 'pending', label: 'Pending', summary: '6 waiting: 4 financial, 2 non-financial'}, {id: 'initiated', label: 'Initiated', summary: '3 initiated today'}, {id: 'log', label: 'Log', summary: '42 this week'}, {id: 'approved', label: 'Approved', summary: '18 approved today'}]} /></div>
       </Section>
       <Section id="last-5-payments" title="Last 5 payments">
         <LastPaymentsWidget items={[{title: 'Payroll Jan', meta: 'Processed', value: '182,400.00', tone: 'success'}, {title: 'Vendor ABC Ltd', meta: 'In progress', value: '12,000.00'}, {title: 'Tax', meta: 'Rejected', value: '9,800.00', tone: 'danger'}]} />
@@ -630,9 +899,19 @@ function Gallery() {
       </Section>
       <Section id="quick-links-corp" title="Quick links (corporate)">
         <QuickLinksWidget items={[{id: 'own', label: 'Own account', icon: '⇄'}, {id: 'transfer', label: 'Transfer', icon: '↗'}, {id: 'adhoc', label: 'Ad-hoc', icon: '+'}, {id: 'file', label: 'File upload', icon: '⇪'}]} />
+        <div data-variant="chips"><QuickLinksWidget variant="chips" items={[{id: 'own', label: 'Own account', icon: '⇄'}, {id: 'transfer', label: 'Transfer', icon: '↗'}, {id: 'adhoc', label: 'Ad-hoc', icon: '+'}, {id: 'file', label: 'File upload', icon: '⇪'}]} /></div>
+        <div data-variant="circles"><QuickLinksWidget variant="circles" items={[{id: 'own', label: 'Own account', icon: '⇄'}, {id: 'transfer', label: 'Transfer', icon: '↗'}, {id: 'adhoc', label: 'Ad-hoc', icon: '+'}, {id: 'file', label: 'File upload', icon: '⇪'}]} /></div>
+        <div data-variant="list"><QuickLinksWidget variant="list" items={[{id: 'own', label: 'Own account', icon: '⇄'}, {id: 'transfer', label: 'Transfer', icon: '↗'}, {id: 'adhoc', label: 'Ad-hoc', icon: '+'}, {id: 'file', label: 'File upload', icon: '⇪'}]} /></div>
+        <div data-variant="glass"><QuickLinksWidget variant="glass" items={[{id: 'own', label: 'Own account', icon: '⇄'}, {id: 'transfer', label: 'Transfer', icon: '↗'}, {id: 'adhoc', label: 'Ad-hoc', icon: '+'}, {id: 'file', label: 'File upload', icon: '⇪'}]} /></div>
       </Section>
       <Section id="work-snapshot" title="Work snapshot">
         <WorkSnapshotWidget items={[{label: 'Processed', value: '12', meta: 'Approved today'}, {label: 'In progress', value: '4', meta: 'Initiated today'}, {label: 'Rejected', value: '1', meta: 'Needs a fix'}]} />
+        <div data-variant="elevated"><WorkSnapshotWidget variant="elevated" items={[{label: 'Processed', value: '12', meta: 'Approved today'}, {label: 'In progress', value: '4', meta: 'Initiated today'}, {label: 'Rejected', value: '1', meta: 'Needs a fix'}]} /></div>
+        <div data-variant="filled"><WorkSnapshotWidget variant="filled" items={[{label: 'Processed', value: '12', meta: 'Approved today'}, {label: 'In progress', value: '4', meta: 'Initiated today'}, {label: 'Rejected', value: '1', meta: 'Needs a fix'}]} /></div>
+        <div data-variant="outlined"><WorkSnapshotWidget variant="outlined" items={[{label: 'Processed', value: '12', meta: 'Approved today'}, {label: 'In progress', value: '4', meta: 'Initiated today'}, {label: 'Rejected', value: '1', meta: 'Needs a fix'}]} /></div>
+        <div data-variant="bento"><WorkSnapshotWidget variant="bento" items={[{label: 'Processed', value: '12', meta: 'Approved today'}, {label: 'In progress', value: '4', meta: 'Initiated today'}, {label: 'Rejected', value: '1', meta: 'Needs a fix'}]} /></div>
+        <div data-variant="compact"><WorkSnapshotWidget variant="compact" items={[{label: 'Processed', value: '12', meta: 'Approved today'}, {label: 'In progress', value: '4', meta: 'Initiated today'}, {label: 'Rejected', value: '1', meta: 'Needs a fix'}]} /></div>
+        <div data-variant="glass"><WorkSnapshotWidget variant="glass" items={[{label: 'Processed', value: '12', meta: 'Approved today'}, {label: 'In progress', value: '4', meta: 'Initiated today'}, {label: 'Rejected', value: '1', meta: 'Needs a fix'}]} /></div>
       </Section>
       <Section id="notifications-widget" title="Notifications (corporate)">
         <NotificationsWidget items={[{title: 'USD cut-off moves to 3 pm', meta: 'Today', value: 'Bank'}, {title: 'New tax form available', meta: '2 days ago', value: 'Bank'}]} />
@@ -711,24 +990,62 @@ function Gallery() {
       </Section>
       <Section id="animated-list" title="Animated list">
         <AnimatedList label="Recent" items={['Coffee House', {title: 'Salary', meta: '31 Dec'}]} />
+        <div data-variant="divided"><AnimatedList variant="divided" label="Recent" items={['Coffee House', {title: 'Salary', meta: '31 Dec'}]} /></div>
+        <div data-variant="inset"><AnimatedList variant="inset" label="Recent" items={['Coffee House', {title: 'Salary', meta: '31 Dec'}]} /></div>
+        <div data-variant="cards"><AnimatedList variant="cards" label="Recent" items={['Coffee House', {title: 'Salary', meta: '31 Dec'}]} /></div>
+        <div data-variant="plain"><AnimatedList variant="plain" label="Recent" items={['Coffee House', {title: 'Salary', meta: '31 Dec'}]} /></div>
       </Section>
       <Section id="spotlight-card" title="Spotlight card">
         <SpotlightCard heading="Platinum card" text="2% cashback on travel" />
+        <div data-variant="elevated"><SpotlightCard variant="elevated" heading="Platinum card" text="2% cashback on travel" /></div>
+        <div data-variant="filled"><SpotlightCard variant="filled" heading="Platinum card" text="2% cashback on travel" /></div>
+        <div data-variant="outlined"><SpotlightCard variant="outlined" heading="Platinum card" text="2% cashback on travel" /></div>
+        <div data-variant="glass"><SpotlightCard variant="glass" heading="Platinum card" text="2% cashback on travel" /></div>
+        <div data-variant="gradient"><SpotlightCard variant="gradient" heading="Platinum card" text="2% cashback on travel" /></div>
+        <div data-variant="lift"><SpotlightCard variant="lift" heading="Platinum card" text="2% cashback on travel" /></div>
       </Section>
       <Section id="tilt-card" title="Tilt card">
         <TiltCard heading="Savings" text="12,400.00" />
+        <div data-variant="elevated"><TiltCard variant="elevated" heading="Savings" text="12,400.00" /></div>
+        <div data-variant="filled"><TiltCard variant="filled" heading="Savings" text="12,400.00" /></div>
+        <div data-variant="outlined"><TiltCard variant="outlined" heading="Savings" text="12,400.00" /></div>
+        <div data-variant="glass"><TiltCard variant="glass" heading="Savings" text="12,400.00" /></div>
+        <div data-variant="gradient"><TiltCard variant="gradient" heading="Savings" text="12,400.00" /></div>
+        <div data-variant="lift"><TiltCard variant="lift" heading="Savings" text="12,400.00" /></div>
       </Section>
       <Section id="flip-card" title="Flip card">
         <FlipCard heading="Platinum" front="2% cashback" back="No annual fee in year one; 1.5% on foreign spend." />
+        <div data-variant="elevated"><FlipCard variant="elevated" heading="Platinum" front="2% cashback" back="No annual fee in year one; 1.5% on foreign spend." /></div>
+        <div data-variant="filled"><FlipCard variant="filled" heading="Platinum" front="2% cashback" back="No annual fee in year one; 1.5% on foreign spend." /></div>
+        <div data-variant="outlined"><FlipCard variant="outlined" heading="Platinum" front="2% cashback" back="No annual fee in year one; 1.5% on foreign spend." /></div>
+        <div data-variant="glass"><FlipCard variant="glass" heading="Platinum" front="2% cashback" back="No annual fee in year one; 1.5% on foreign spend." /></div>
+        <div data-variant="gradient"><FlipCard variant="gradient" heading="Platinum" front="2% cashback" back="No annual fee in year one; 1.5% on foreign spend." /></div>
+        <div data-variant="lift"><FlipCard variant="lift" heading="Platinum" front="2% cashback" back="No annual fee in year one; 1.5% on foreign spend." /></div>
       </Section>
       <Section id="card-stack" title="Card stack">
         <CardStack items={[{title: 'Set a budget', text: 'See where your money goes'}, {title: 'Turn on alerts', text: 'Know when a payment leaves'}]} />
+        <div data-variant="elevated"><CardStack variant="elevated" items={[{title: 'Set a budget', text: 'See where your money goes'}, {title: 'Turn on alerts', text: 'Know when a payment leaves'}]} /></div>
+        <div data-variant="outlined"><CardStack variant="outlined" items={[{title: 'Set a budget', text: 'See where your money goes'}, {title: 'Turn on alerts', text: 'Know when a payment leaves'}]} /></div>
+        <div data-variant="glass"><CardStack variant="glass" items={[{title: 'Set a budget', text: 'See where your money goes'}, {title: 'Turn on alerts', text: 'Know when a payment leaves'}]} /></div>
+        <div data-variant="fanned"><CardStack variant="fanned" items={[{title: 'Set a budget', text: 'See where your money goes'}, {title: 'Turn on alerts', text: 'Know when a payment leaves'}]} /></div>
       </Section>
       <Section id="glow-border-card" title="Glow border card">
         <GlowBorderCard heading="Premium account" />
+        <div data-variant="elevated"><GlowBorderCard variant="elevated" heading="Premium account" /></div>
+        <div data-variant="filled"><GlowBorderCard variant="filled" heading="Premium account" /></div>
+        <div data-variant="outlined"><GlowBorderCard variant="outlined" heading="Premium account" /></div>
+        <div data-variant="glass"><GlowBorderCard variant="glass" heading="Premium account" /></div>
+        <div data-variant="gradient"><GlowBorderCard variant="gradient" heading="Premium account" /></div>
+        <div data-variant="lift"><GlowBorderCard variant="lift" heading="Premium account" /></div>
       </Section>
       <Section id="bento-grid" title="Bento grid">
         <BentoGrid label="Dashboard" items={[{id: 'spend', title: 'Spending', figure: '1,240.00', size: 'wide'}, {id: 'save', title: 'Saved', figure: '320.00'}, {id: 'score', title: 'Credit score', figure: '742'}]} />
+        <div data-variant="elevated"><BentoGrid variant="elevated" label="Dashboard" items={[{id: 'spend', title: 'Spending', figure: '1,240.00', size: 'wide'}, {id: 'save', title: 'Saved', figure: '320.00'}, {id: 'score', title: 'Credit score', figure: '742'}]} /></div>
+        <div data-variant="filled"><BentoGrid variant="filled" label="Dashboard" items={[{id: 'spend', title: 'Spending', figure: '1,240.00', size: 'wide'}, {id: 'save', title: 'Saved', figure: '320.00'}, {id: 'score', title: 'Credit score', figure: '742'}]} /></div>
+        <div data-variant="outlined"><BentoGrid variant="outlined" label="Dashboard" items={[{id: 'spend', title: 'Spending', figure: '1,240.00', size: 'wide'}, {id: 'save', title: 'Saved', figure: '320.00'}, {id: 'score', title: 'Credit score', figure: '742'}]} /></div>
+        <div data-variant="bento"><BentoGrid variant="bento" label="Dashboard" items={[{id: 'spend', title: 'Spending', figure: '1,240.00', size: 'wide'}, {id: 'save', title: 'Saved', figure: '320.00'}, {id: 'score', title: 'Credit score', figure: '742'}]} /></div>
+        <div data-variant="compact"><BentoGrid variant="compact" label="Dashboard" items={[{id: 'spend', title: 'Spending', figure: '1,240.00', size: 'wide'}, {id: 'save', title: 'Saved', figure: '320.00'}, {id: 'score', title: 'Credit score', figure: '742'}]} /></div>
+        <div data-variant="glass"><BentoGrid variant="glass" label="Dashboard" items={[{id: 'spend', title: 'Spending', figure: '1,240.00', size: 'wide'}, {id: 'save', title: 'Saved', figure: '320.00'}, {id: 'score', title: 'Credit score', figure: '742'}]} /></div>
       </Section>
       <Section id="carousel" title="Carousel">
         <Carousel slides={[{title: 'Travel insurance', text: 'Cover for the whole family'}, {title: 'Home loans', text: 'From 6.9% a year'}]} />
@@ -741,24 +1058,57 @@ function Gallery() {
       </Section>
       <Section id="pill-nav" title="Pill navigation">
         <PillNav items={['Accounts', 'Payments', 'Cards']} selection="Accounts" />
+        <div data-variant="drawer"><PillNav variant="drawer" items={['Accounts', 'Payments', 'Cards']} selection="Accounts" /></div>
+        <div data-variant="rail"><PillNav variant="rail" items={['Accounts', 'Payments', 'Cards']} selection="Accounts" /></div>
+        <div data-variant="bottom"><PillNav variant="bottom" items={['Accounts', 'Payments', 'Cards']} selection="Accounts" /></div>
+        <div data-variant="pill"><PillNav variant="pill" items={['Accounts', 'Payments', 'Cards']} selection="Accounts" /></div>
+        <div data-variant="dock"><PillNav variant="dock" items={['Accounts', 'Payments', 'Cards']} selection="Accounts" /></div>
       </Section>
       <Section id="dock-nav" title="Dock navigation">
         <DockNav items={[{id: 'pay', label: 'Pay', icon: '↗'}, {id: 'cards', label: 'Cards', icon: '▭'}, {id: 'help', label: 'Help', icon: '?'}]} />
+        <div data-variant="drawer"><DockNav variant="drawer" items={[{id: 'pay', label: 'Pay', icon: '↗'}, {id: 'cards', label: 'Cards', icon: '▭'}, {id: 'help', label: 'Help', icon: '?'}]} /></div>
+        <div data-variant="rail"><DockNav variant="rail" items={[{id: 'pay', label: 'Pay', icon: '↗'}, {id: 'cards', label: 'Cards', icon: '▭'}, {id: 'help', label: 'Help', icon: '?'}]} /></div>
+        <div data-variant="bottom"><DockNav variant="bottom" items={[{id: 'pay', label: 'Pay', icon: '↗'}, {id: 'cards', label: 'Cards', icon: '▭'}, {id: 'help', label: 'Help', icon: '?'}]} /></div>
+        <div data-variant="pill"><DockNav variant="pill" items={[{id: 'pay', label: 'Pay', icon: '↗'}, {id: 'cards', label: 'Cards', icon: '▭'}, {id: 'help', label: 'Help', icon: '?'}]} /></div>
+        <div data-variant="dock"><DockNav variant="dock" items={[{id: 'pay', label: 'Pay', icon: '↗'}, {id: 'cards', label: 'Cards', icon: '▭'}, {id: 'help', label: 'Help', icon: '?'}]} /></div>
       </Section>
       <Section id="card-nav" title="Card navigation">
         <CardNav items={[{id: 'loans', title: 'Loans', text: 'Home, car, personal'}, {id: 'cards', title: 'Cards', text: 'Credit and debit'}]} />
+        <div data-variant="drawer"><CardNav variant="drawer" items={[{id: 'loans', title: 'Loans', text: 'Home, car, personal'}, {id: 'cards', title: 'Cards', text: 'Credit and debit'}]} /></div>
+        <div data-variant="rail"><CardNav variant="rail" items={[{id: 'loans', title: 'Loans', text: 'Home, car, personal'}, {id: 'cards', title: 'Cards', text: 'Credit and debit'}]} /></div>
+        <div data-variant="bottom"><CardNav variant="bottom" items={[{id: 'loans', title: 'Loans', text: 'Home, car, personal'}, {id: 'cards', title: 'Cards', text: 'Credit and debit'}]} /></div>
+        <div data-variant="pill"><CardNav variant="pill" items={[{id: 'loans', title: 'Loans', text: 'Home, car, personal'}, {id: 'cards', title: 'Cards', text: 'Credit and debit'}]} /></div>
+        <div data-variant="dock"><CardNav variant="dock" items={[{id: 'loans', title: 'Loans', text: 'Home, car, personal'}, {id: 'cards', title: 'Cards', text: 'Credit and debit'}]} /></div>
       </Section>
       <Section id="staggered-menu" title="Staggered menu">
         <StaggeredMenu items={['Statements', 'Settings', 'Sign out']} />
+        <div data-variant="list"><StaggeredMenu variant="list" items={['Statements', 'Settings', 'Sign out']} /></div>
+        <div data-variant="dense"><StaggeredMenu variant="dense" items={['Statements', 'Settings', 'Sign out']} /></div>
+        <div data-variant="glass"><StaggeredMenu variant="glass" items={['Statements', 'Settings', 'Sign out']} /></div>
+        <div data-variant="sheet"><StaggeredMenu variant="sheet" items={['Statements', 'Settings', 'Sign out']} /></div>
       </Section>
       <Section id="document-folder" title="Document folder">
         <DocumentFolder items={[{id: 'd1', title: 'Statement December', meta: 'PDF · 120 KB'}, {id: 'd2', title: 'Tax certificate 2025', meta: 'PDF'}]} />
+        <div data-variant="divided"><DocumentFolder variant="divided" items={[{id: 'd1', title: 'Statement December', meta: 'PDF · 120 KB'}, {id: 'd2', title: 'Tax certificate 2025', meta: 'PDF'}]} /></div>
+        <div data-variant="inset"><DocumentFolder variant="inset" items={[{id: 'd1', title: 'Statement December', meta: 'PDF · 120 KB'}, {id: 'd2', title: 'Tax certificate 2025', meta: 'PDF'}]} /></div>
+        <div data-variant="cards"><DocumentFolder variant="cards" items={[{id: 'd1', title: 'Statement December', meta: 'PDF · 120 KB'}, {id: 'd2', title: 'Tax certificate 2025', meta: 'PDF'}]} /></div>
+        <div data-variant="plain"><DocumentFolder variant="plain" items={[{id: 'd1', title: 'Statement December', meta: 'PDF · 120 KB'}, {id: 'd2', title: 'Tax certificate 2025', meta: 'PDF'}]} /></div>
       </Section>
       <Section id="scroll-stack" title="Scroll stack">
         <ScrollStack items={[{title: 'Choose an account', text: 'Savings or current'}, {title: 'Verify', text: 'Your ID and a selfie'}]} />
+        <div data-variant="elevated"><ScrollStack variant="elevated" items={[{title: 'Choose an account', text: 'Savings or current'}, {title: 'Verify', text: 'Your ID and a selfie'}]} /></div>
+        <div data-variant="outlined"><ScrollStack variant="outlined" items={[{title: 'Choose an account', text: 'Savings or current'}, {title: 'Verify', text: 'Your ID and a selfie'}]} /></div>
+        <div data-variant="glass"><ScrollStack variant="glass" items={[{title: 'Choose an account', text: 'Savings or current'}, {title: 'Verify', text: 'Your ID and a selfie'}]} /></div>
+        <div data-variant="fanned"><ScrollStack variant="fanned" items={[{title: 'Choose an account', text: 'Savings or current'}, {title: 'Verify', text: 'Your ID and a selfie'}]} /></div>
       </Section>
       <Section id="profile-card" title="Profile card">
         <ProfileCard name="Priya Nair" jobTitle="Relationship manager" items={[{label: 'Phone', value: '+44 20 7946 0123'}]} actionLabel="Send a message" />
+        <div data-variant="elevated"><ProfileCard variant="elevated" name="Priya Nair" jobTitle="Relationship manager" items={[{label: 'Phone', value: '+44 20 7946 0123'}]} actionLabel="Send a message" /></div>
+        <div data-variant="filled"><ProfileCard variant="filled" name="Priya Nair" jobTitle="Relationship manager" items={[{label: 'Phone', value: '+44 20 7946 0123'}]} actionLabel="Send a message" /></div>
+        <div data-variant="outlined"><ProfileCard variant="outlined" name="Priya Nair" jobTitle="Relationship manager" items={[{label: 'Phone', value: '+44 20 7946 0123'}]} actionLabel="Send a message" /></div>
+        <div data-variant="glass"><ProfileCard variant="glass" name="Priya Nair" jobTitle="Relationship manager" items={[{label: 'Phone', value: '+44 20 7946 0123'}]} actionLabel="Send a message" /></div>
+        <div data-variant="gradient"><ProfileCard variant="gradient" name="Priya Nair" jobTitle="Relationship manager" items={[{label: 'Phone', value: '+44 20 7946 0123'}]} actionLabel="Send a message" /></div>
+        <div data-variant="lift"><ProfileCard variant="lift" name="Priya Nair" jobTitle="Relationship manager" items={[{label: 'Phone', value: '+44 20 7946 0123'}]} actionLabel="Send a message" /></div>
       </Section>
       <Section id="glass-panel" title="Glass panel">
         <GlassPanel><p>The screen's own content</p></GlassPanel>

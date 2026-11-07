@@ -1,5 +1,6 @@
 import { A11yModule } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, input, model, untracked } from '@angular/core';
+import { DialogVariant } from './variants-v2';
 
 import { nextId } from './field';
 
@@ -42,7 +43,7 @@ export class Dialog {
   readonly cancelBehavior = input<'icon' | 'escape' | 'none'>('icon');
   readonly testID = input('');
   /** The style variant (variants/v2.json); the component's own look when left out. */
-  readonly variant = input('');
+  readonly variant = input<'' | DialogVariant>('');
   protected readonly vcls = computed(() => (this.variant() && this.variant() !== 'default' ? ` bx-v-${this.variant()}` : ''));
   readonly id = nextId('bx-dialog');
   private opener: HTMLElement | null = null;

@@ -7,3 +7,15 @@
 .bx-page:disabled { opacity: 0.4; cursor: default; }
 .bx-page-gap { min-width: 24px; text-align: center; color: var(--bx-muted); }
 .bx-motion-click-press .bx-page:active { transform: scale(0.97); }
+/* Wave V2 variants (variants.json). rounded and outlined are MUI Pagination in React. */
+.bx-pages.bx-v-rounded .bx-page.is-on, .bx-pages.bx-v-rounded .MuiPaginationItem-root.Mui-selected { border-color: transparent; background: var(--bx-brand); color: var(--bx-on-brand); }
+.bx-pages.bx-v-outlined .bx-page { border-color: var(--bx-border); }
+.bx-pages.bx-v-outlined .bx-page.is-on { border-color: var(--bx-brand); }
+.bx-pages .MuiPaginationItem-root { min-width: 36px; height: 36px; border-radius: var(--bx-radius-control); color: var(--bx-text-body); font: inherit; font-size: 14px; }
+.bx-pages .MuiPaginationItem-outlined { border: var(--bx-bw) solid var(--bx-border); }
+.bx-pages.bx-v-outlined .MuiPaginationItem-root.Mui-selected { border-color: var(--bx-brand); background: color-mix(in srgb, var(--bx-brand) 10%, var(--bx-card)); color: var(--bx-brand-text); font-weight: 700; }
+.bx-pages.bx-v-compact { justify-content: space-between; gap: 8px; }
+.bx-page-status { padding: 0 12px; color: var(--bx-text-body); font-size: 14px; font-variant-numeric: tabular-nums; }
+.bx-pages.bx-v-pill { display: inline-flex; padding: 4px; border-radius: var(--bx-radius-pill); background: var(--bx-track); }
+.bx-pages.bx-v-pill .bx-page { border-radius: var(--bx-radius-pill); }
+.bx-pages.bx-v-pill .bx-page.is-on { border-color: transparent; background: var(--bx-fill); box-shadow: var(--bx-shadow-1); }

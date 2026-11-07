@@ -32,3 +32,24 @@
 @media (max-width: 720px) {
   .bx-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+/* Wave V2 variants (variants.json): on the tiles of a summary and of a bento grid. elevated and filled are MUI Cards in React. */
+:is(.bx-tiles-wrap, .bx-bento).bx-v-elevated :is(.bx-tile, .bx-bento-tile) { background: var(--bx-raised); border-color: transparent; box-shadow: var(--bx-shadow-2); }
+:is(.bx-tiles-wrap, .bx-bento).bx-v-filled :is(.bx-tile, .bx-bento-tile) { background: var(--bx-track); border-color: transparent; box-shadow: none; }
+:is(.bx-tiles-wrap, .bx-bento).bx-v-outlined :is(.bx-tile, .bx-bento-tile) { border-color: var(--bx-border-strong); box-shadow: none; }
+:is(.bx-tiles-wrap, .bx-bento).bx-v-glass :is(.bx-tile, .bx-bento-tile) { background: color-mix(in srgb, var(--bx-card) 62%, transparent); border-color: color-mix(in srgb, var(--bx-border) 55%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4); }
+/* bento: the first figure takes a double tile and the rest pack around it */
+.bx-tiles-wrap.bx-v-bento .bx-tiles { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); grid-auto-flow: dense; }
+.bx-tiles-wrap.bx-v-bento .bx-tiles > li:first-child { grid-column: span 2; grid-row: span 2; }
+.bx-tiles-wrap.bx-v-bento .bx-tiles > li:first-child .bx-tile { justify-content: flex-end; background: color-mix(in srgb, var(--bx-brand) 8%, var(--bx-card)); }
+.bx-tiles-wrap.bx-v-bento .bx-tiles > li:first-child .bx-tile-value { font-size: 30px; }
+.bx-tiles-wrap.bx-v-bento .bx-tile, .bx-bento.bx-v-bento .bx-bento-tile { border-radius: var(--bx-radius-xl); }
+.bx-tiles-wrap.bx-v-compact .bx-tiles, .bx-bento.bx-v-compact { gap: 8px; }
+.bx-tiles-wrap.bx-v-compact .bx-tiles { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.bx-tiles-wrap.bx-v-compact .bx-tile, .bx-bento.bx-v-compact :is(.bx-bento-button, .bx-bento-body) { padding: calc(var(--bx-pad) - 4px); gap: 2px; }
+.bx-tiles-wrap.bx-v-compact .bx-tile-value, .bx-bento.bx-v-compact .bx-tile-value { font-size: 18px; }
+.bx-bento.bx-v-compact { grid-auto-rows: minmax(84px, auto); }
+.bx-tile.MuiPaper-root, .bx-bento-tile .MuiPaper-root { color: var(--bx-text); border-radius: var(--bx-radius-lg); }
+@media (max-width: 480px) {
+  .bx-tiles-wrap.bx-v-bento .bx-tiles > li:first-child { grid-row: auto; }
+}

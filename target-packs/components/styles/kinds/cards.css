@@ -12,3 +12,14 @@
 .bx-scroll-stack-card.is-n-2 { top: 40px; }
 .bx-scroll-stack-card.is-n-3 { top: 52px; }
 .bx-scroll-stack-card.is-n-4 { top: 64px; }
+/* Wave V2 variants (variants.json): the cards of a stack */
+.bx-card-stack.bx-v-elevated .bx-card, .bx-scroll-stack.bx-v-elevated .bx-card { background: var(--bx-raised); border-color: transparent; box-shadow: var(--bx-shadow-2); }
+.bx-card-stack.bx-v-outlined .bx-card, .bx-scroll-stack.bx-v-outlined .bx-card { border-color: var(--bx-border-strong); box-shadow: none; }
+.bx-card-stack.bx-v-glass .bx-card, .bx-scroll-stack.bx-v-glass .bx-card { background: color-mix(in srgb, var(--bx-card) 62%, transparent); border-color: color-mix(in srgb, var(--bx-border) 55%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4); }
+.bx-card-stack.bx-v-fanned .bx-deck { padding: 0 28px 18px 0; }
+.bx-card-stack.bx-v-fanned .bx-deck-card.is-depth-1 { transform: translate(14px, 4px) rotate(3deg) scale(0.97); }
+.bx-card-stack.bx-v-fanned .bx-deck-card.is-depth-2 { transform: translate(26px, 8px) rotate(6deg) scale(0.94); }
+.bx-scroll-stack.bx-v-fanned .bx-scroll-stack-card:nth-child(odd) { transform: rotate(-1.5deg); }
+.bx-scroll-stack.bx-v-fanned .bx-scroll-stack-card:nth-child(even) { transform: rotate(1.5deg); }
+.bx-card.MuiPaper-root.bx-deck-card, .bx-card.MuiPaper-root.bx-scroll-stack-card { overflow: visible; }

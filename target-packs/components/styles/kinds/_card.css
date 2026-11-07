@@ -38,3 +38,17 @@
 .bx-flip-face { grid-area: 1 / 1; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
 .bx-flip-back { transform: rotateY(180deg); }
 .bx-profile-head { display: flex; align-items: center; gap: 14px; }
+/* Wave V2 card variants (variants.json): on .bx-card, and on both faces of a flip card. elevated, filled and outlined are MUI Cards in React. */
+.bx-flip-card.bx-v-outlined .bx-flip-face { box-shadow: none; border-color: var(--bx-border-strong); }
+.bx-card.bx-v-elevated, .bx-flip-card.bx-v-elevated .bx-flip-face { background: var(--bx-raised); border-color: transparent; box-shadow: var(--bx-shadow-2); }
+.bx-card.bx-v-elevated.is-interactive:hover { box-shadow: var(--bx-shadow-3); }
+.bx-card.bx-v-filled, .bx-flip-card.bx-v-filled .bx-flip-face { background: var(--bx-track); border-color: transparent; box-shadow: none; }
+.bx-card.bx-v-glass, .bx-flip-card.bx-v-glass .bx-flip-face { background: color-mix(in srgb, var(--bx-card) 62%, transparent); border-color: color-mix(in srgb, var(--bx-border) 55%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4); box-shadow: var(--bx-shadow-2); }
+.bx-card.bx-v-gradient, .bx-flip-card.bx-v-gradient .bx-flip-face { border: calc(var(--bx-bw) + 1px) solid transparent;
+  background: linear-gradient(var(--bx-card), var(--bx-card)) padding-box, var(--bx-gradient) border-box; }
+.bx-card.bx-v-lift, .bx-flip-card.bx-v-lift .bx-flip-face { border-color: transparent; box-shadow: var(--bx-shadow-1); }
+.bx-card.bx-v-lift:hover, .bx-card.bx-v-lift:focus-within, .bx-flip-card.bx-v-lift:hover .bx-flip-face { transform: translateY(-3px); box-shadow: var(--bx-shadow-3); }
+.bx-tilt-card.bx-v-lift:hover { transform: perspective(800px) rotateX(var(--bx-rx, 0deg)) rotateY(var(--bx-ry, 0deg)) translateY(-3px); }
+/* MUI's Paper gives way to the bank tokens */
+.bx-card.MuiPaper-root { color: var(--bx-text); border-radius: var(--bx-radius-lg); overflow: visible; }

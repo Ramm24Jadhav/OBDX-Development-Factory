@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, model } from '@angular/core';
+import { TabsVariant } from './variants-v2';
 
 import { nextId } from './field';
 
@@ -31,7 +32,7 @@ export class Tabs {
   readonly selection = model('');
   readonly testID = input('');
   /** The style variant (variants/v2.json); the component's own look when left out. */
-  readonly variant = input('');
+  readonly variant = input<'' | TabsVariant>('');
   protected readonly vcls = computed(() => (this.variant() && this.variant() !== 'default' ? ` bx-v-${this.variant()}` : ''));
   readonly id = nextId('bx-tabs');
   private readonly host = inject(ElementRef<HTMLElement>);

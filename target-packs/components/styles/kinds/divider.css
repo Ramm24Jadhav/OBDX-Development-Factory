@@ -1,3 +1,13 @@
 .bx-divider { margin: 16px 0; border: 0; border-top: var(--bx-bw) solid var(--bx-rule); }
 .bx-divider.has-label { display: flex; align-items: center; gap: 12px; border: 0; color: var(--bx-muted); font-size: 12.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
 .bx-divider.has-label::before, .bx-divider.has-label::after { content: ""; flex: 1 1 auto; border-top: var(--bx-bw) solid var(--bx-rule); }
+/* Wave V2 variants (variants.json). full, inset and middle are MUI Dividers in React. */
+.bx-divider.MuiDivider-root:not(.has-label) { border-width: var(--bx-bw) 0 0; border-style: solid; border-color: var(--bx-rule); }
+.bx-divider.MuiDivider-root.has-label::before, .bx-divider.MuiDivider-root.has-label::after { border-top: var(--bx-bw) solid var(--bx-rule); }
+.bx-divider.bx-v-full { margin-inline: 0; }
+.bx-divider.bx-v-inset { margin-left: var(--bx-pad); margin-right: 0; }
+.bx-divider.bx-v-middle { margin-inline: var(--bx-pad); }
+.bx-divider.bx-v-dashed, .bx-divider.bx-v-dashed.has-label::before, .bx-divider.bx-v-dashed.has-label::after { border-top-style: dashed; border-top-color: var(--bx-border-strong); }
+.bx-divider.bx-v-gradient:not(.has-label) { height: var(--bx-bw); border: 0; background: linear-gradient(90deg, transparent, var(--bx-border-strong), transparent); }
+.bx-divider.bx-v-gradient.has-label::before { border: 0; height: var(--bx-bw); background: linear-gradient(90deg, transparent, var(--bx-border-strong)); }
+.bx-divider.bx-v-gradient.has-label::after { border: 0; height: var(--bx-bw); background: linear-gradient(90deg, var(--bx-border-strong), transparent); }

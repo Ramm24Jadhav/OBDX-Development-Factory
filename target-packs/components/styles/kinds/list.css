@@ -8,3 +8,13 @@
   transition: transform var(--bx-dur-slow) var(--bx-ease-spring); }
 .bx-folder.is-open .bx-folder-icon::after { transform: perspective(60px) rotateX(-35deg); }
 .bx-folder-docs { padding: 0 16px 8px; }
+/* Wave V2 variants (variants.json): on the animated list and the document folder. divided is a MUI List in React. */
+.bx-rows.bx-v-divided .bx-row, .bx-folder.bx-v-divided .bx-row { min-height: 56px; padding-inline: var(--bx-pad); }
+.bx-rows.bx-v-divided.MuiList-root, .bx-folder.bx-v-divided .MuiList-root { padding: 0; }
+.bx-rows.bx-v-inset { overflow: hidden; margin-inline: var(--bx-pad); border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-card); }
+.bx-rows.bx-v-inset .bx-row { padding-inline: var(--bx-pad); }
+.bx-folder.bx-v-inset .bx-folder-docs { margin: 0 12px 12px; padding: 0 var(--bx-pad); border-radius: var(--bx-radius-lg); background: var(--bx-track); }
+:is(.bx-rows.bx-v-cards, .bx-folder.bx-v-cards .bx-rows) { gap: 8px; }
+:is(.bx-rows.bx-v-cards, .bx-folder.bx-v-cards .bx-rows) .bx-row { padding: 10px var(--bx-pad); border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-1); }
+:is(.bx-rows.bx-v-plain, .bx-folder.bx-v-plain .bx-rows) .bx-row { min-height: 44px; border-top: 0; }
+.bx-folder.bx-v-plain { border: 0; background: transparent; box-shadow: none; }

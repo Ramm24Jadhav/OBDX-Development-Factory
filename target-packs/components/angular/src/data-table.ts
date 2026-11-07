@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, model, output, signal } from '@angular/core';
+import { TableVariant } from './variants-v2';
 
 export interface Column {
   field: string;
@@ -60,7 +61,7 @@ export class DataTable {
   readonly noData = input('No data to show.');
   readonly testID = input('');
   /** The style variant (variants/v2.json); the component's own look when left out. */
-  readonly variant = input('');
+  readonly variant = input<'' | TableVariant>('');
   protected readonly vcls = computed(() => (this.variant() && this.variant() !== 'default' ? ` bx-v-${this.variant()}` : ''));
   readonly sorted = output<{ field: string; direction: 'ascending' | 'descending' }>();
   private readonly sort = signal<{ field: string; asc: boolean } | null>(null);
