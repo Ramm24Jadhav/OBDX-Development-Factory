@@ -269,3 +269,43 @@ jobs:
             target-packs/components/gates/snapshots/linux/
             target-packs/components/gates/test-results/
           retention-days: 14
+
+  # The design gates: every component of every pack under each of the nine designs, light and dark (axe with contrast,
+  # nothing running past its section) and each built variant alone, one job per design. Screenshots per component are
+  # in the artifact to look at. Specs: gates/specs/designs.spec.ts and react-native/gates/specs/designs.spec.ts.
+  design-gates:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        design: [elevated, soft, glass, outline, vivid, pill, brutal, redwood, liquid]
+    env:
+      GATES_DESIGN: ${{ matrix.design }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Install the packs, the gates and JET 21
+        run: |
+          for d in react angular gates gates/jet21 react-native; do (cd target-packs/components/$d && npm ci --no-audit --no-fund); done
+          (cd target-packs/components/react-native/gates && npm install --no-audit --no-fund)
+      - name: Install Chromium
+        working-directory: target-packs/components/gates
+        run: npx playwright install --with-deps chromium
+      - name: The web packs under ${{ matrix.design }}
+        working-directory: target-packs/components/gates
+        run: npx playwright test specs/designs.spec.ts
+      - name: React Native under ${{ matrix.design }}
+        if: always()
+        working-directory: target-packs/components/react-native/gates
+        run: npx playwright test specs/designs.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: design-gates-${{ matrix.design }}
+          path: |
+            target-packs/components/gates/results/
+            target-packs/components/gates/test-results/
+            target-packs/components/react-native/gates/results/
+            target-packs/components/react-native/gates/test-results/
+          retention-days: 14

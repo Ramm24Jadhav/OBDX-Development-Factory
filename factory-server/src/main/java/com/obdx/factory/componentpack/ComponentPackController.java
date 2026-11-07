@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import tools.jackson.databind.JsonNode;
 
 import java.util.List;
 import java.util.UUID;
@@ -45,6 +46,12 @@ public class ComponentPackController {
     @GetMapping("/api/component-packs")
     public ComponentPackService.Catalogue catalogue() {
         return service.catalogue();
+    }
+
+    /** Every component's style variants (variants.json): the Component factory cycles them on each card. */
+    @GetMapping("/api/component-packs/variants")
+    public JsonNode variants() {
+        return service.variants();
     }
 
     /** The catalogue for a workspace: the premium JET pack is built for the JET version its Project Profile found. */

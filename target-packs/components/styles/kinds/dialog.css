@@ -1,0 +1,15 @@
+.bx-dialog-backdrop { position: fixed; inset: 0; z-index: 1000; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px); animation: bx-fade var(--bx-dur) var(--bx-ease); }
+.bx-dialog { position: fixed; z-index: 1001; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto;
+  display: flex; flex-direction: column; border-radius: var(--bx-radius-xl); background: var(--bx-raised); border: var(--bx-bw) solid var(--bx-border); box-shadow: var(--bx-shadow-3); -webkit-backdrop-filter: var(--bx-blur); backdrop-filter: var(--bx-blur); outline: none; animation: bx-rise 180ms var(--bx-ease); }
+.bx-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px 8px; }
+.bx-dialog-title { margin: 0; font-size: 18px; font-weight: var(--bx-weight-title); color: var(--bx-text); }
+.bx-dialog-body { padding: 4px 20px 16px; color: var(--bx-text-body); font-size: 14.5px; }
+.bx-dialog-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 12px 20px 18px; }
+.bx-dialog-footer:empty { display: none; }
+/* Open: dialogs and sheets spring, lists drop down, toasts slide in */
+.bx-dialog { animation: bx-rise var(--bx-dur-slow) var(--bx-ease-spring); }
+.bx-sheet { position: fixed; z-index: 1001; display: flex; flex-direction: column; background: var(--bx-raised); box-shadow: var(--bx-shadow-3); outline: none; overflow: auto; -webkit-backdrop-filter: var(--bx-blur); backdrop-filter: var(--bx-blur); }
+.bx-sheet.is-end { top: 0; right: 0; bottom: 0; width: min(420px, 100vw); border-radius: var(--bx-radius-xl) 0 0 var(--bx-radius-xl); animation: bx-sheet-end var(--bx-dur-slow) var(--bx-ease-spring); }
+.bx-sheet.is-bottom { left: 0; right: 0; bottom: 0; max-height: 85vh; border-radius: var(--bx-radius-xl) var(--bx-radius-xl) 0 0; animation: bx-sheet-up var(--bx-dur-slow) var(--bx-ease-spring); }
+@keyframes bx-sheet-end { from { transform: translateX(100%); } }
+@keyframes bx-sheet-up { from { transform: translateY(100%); } }
