@@ -58,7 +58,7 @@ describe('group 2', () => {
     let seen = '';
     await render(<Controlled initial="">{(v, set) => <AccountSelector testID="a" label="From account" accounts={accounts} value={v}
                                                                      onChange={(x) => { seen = x; set(x); }} />}</Controlled>);
-    await fireEvent.press(screen.getByRole('button', { name: 'From account, nothing chosen' }));
+    await fireEvent.press(screen.getByRole('button', { name: /, From account$/ }));
     expect(screen.queryByText(/0012004821/)).toBeNull();
     await fireEvent.press(screen.getByRole('radio', { name: 'Current ·· 7730 · 3,210.50 USD' }));
     expect(seen).toBe('cur');
@@ -106,9 +106,9 @@ describe('group 2', () => {
       <PaymentForm testID="p" value={v} onChange={set} accounts={accounts} payees={payees} currency="USD" onReview={review} />)}</Controlled>);
     await fireEvent.press(screen.getByRole('button', { name: 'Review payment' }));
     expect(screen.getAllByRole('alert').map((a) => a.props.children)).toEqual(['Choose the account to pay from.', 'Choose who to pay.', 'Enter the amount.']);
-    await fireEvent.press(screen.getByRole('button', { name: /^From account/ }));
+    await fireEvent.press(screen.getByRole('button', { name: /, From account$/ }));
     await fireEvent.press(screen.getByRole('radio', { name: /^Current/ }));
-    await fireEvent.press(screen.getByRole('button', { name: /^To,/ }));
+    await fireEvent.press(screen.getByRole('button', { name: /, To$/ }));
     await fireEvent.press(screen.getByRole('radio', { name: /^A. Rao/ }));
     const amount = screen.getByLabelText('Amount in USD');
     await fireEvent.changeText(amount, '5000');

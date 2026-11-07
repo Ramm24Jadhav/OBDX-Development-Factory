@@ -68,10 +68,10 @@ describe('Dropdown', () => {
   it('opens a sheet, marks the chosen option and writes it back', async () => {
     let seen = '';
     await render(<Controlled initial="">{(v, set) => <Dropdown testID="acc" label="From account" options={[{ value: 'S', label: 'Savings •••• 4521' }, { value: 'C', label: 'Current •••• 0187' }]} value={v} onChange={(x) => { seen = x; set(x); }} />}</Controlled>);
-    await fireEvent.press(screen.getByRole('button', { name: 'From account, nothing chosen' }));
+    await fireEvent.press(screen.getByRole('button', { name: /, From account$/ }));
     await fireEvent.press(screen.getByRole('radio', { name: 'Current •••• 0187' }));
     expect(seen).toBe('C');
-    expect(screen.getByRole('button', { name: 'From account, Current •••• 0187' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Current •••• 0187, From account' })).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: /From account/ }));
     expect(screen.getByRole('radio', { name: 'Current •••• 0187' })).toBeChecked();
     await fireEvent.press(screen.getByRole('button', { name: 'Clear the choice' }));

@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { Animated, Modal, Pressable, Text, View } from 'react-native';
 
 import { IconButton } from './Button';
-import { useOpen } from './motion';
+import { MODAL_FADE, useOpen } from './motion';
 import { useTheme } from './theme';
 
 export interface DialogProps {
@@ -24,11 +24,11 @@ export function Dialog({ open, onOpenChange, title, description, children, foote
   const close = () => { if (!locked) { onOpenChange(false); } };
   const spring = useOpen(open, 'dialog');
   return (
-    <Modal visible={open} transparent animationType="fade" onRequestClose={close} statusBarTranslucent testID={testID ? `${testID}-modal` : undefined}>
+    <Modal visible={open} transparent animationType={MODAL_FADE} accessibilityLabel={title} onRequestClose={close} statusBarTranslucent testID={testID ? `${testID}-modal` : undefined}>
       <View style={{ flex: 1, justifyContent: 'center', padding: 16 }}>
         <Pressable style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(15, 23, 42, 0.45)' }}
                    accessible={false} onPress={close} />
-        <Animated.View testID={testID} accessibilityViewIsModal aria-modal accessibilityLabel={title}
+        <Animated.View testID={testID} role="dialog" accessibilityViewIsModal aria-modal accessibilityLabel={title}
               style={[spring, { backgroundColor: t.color.surface, borderRadius: 18, padding: 20, gap: 12, maxHeight: '90%',
                 shadowColor: '#0f172a', shadowOpacity: 0.18, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 8 }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Animated, FlatList, Modal, Pressable, StyleSheet, Text } from 'react-native';
 
 import { FieldProps, FieldShell, Option, controlStyle, options as toOptions, styles, useField } from './field';
-import { Press, useOpen } from './motion';
+import { MODAL_FADE, Press, useOpen } from './motion';
 import { useTheme } from './theme';
 
 export interface DropdownProps extends FieldProps<string> {
@@ -22,14 +22,14 @@ export function Dropdown(props: DropdownProps) {
   const spring = useOpen(open);
   return (
     <FieldShell testID={testID} label={label} required={required} error={f.error} helpText={helpText}>
-      <Press testID={`${testID}-input`} accessibilityRole="button" accessibilityLabel={`${label}, ${chosen ? chosen.label : 'nothing chosen'}`}
+      <Press testID={`${testID}-input`} accessibilityRole="button" accessibilityLabel={`${chosen ? chosen.label : placeholder || 'Choose'}, ${label}`}
                  accessibilityHint={f.error || 'Opens the list of choices'} accessibilityState={{ disabled: !!(disabled || readOnly), expanded: open }}
                  disabled={disabled || readOnly} onPress={() => setOpen(true)}
                  style={[controlStyle(t, { error: f.error, disabled, readOnly }), { justifyContent: 'space-between' }]}>
         <Text style={[s.input, chosen ? null : { color: t.color.textMuted }]}>{chosen ? chosen.label : placeholder || 'Choose'}</Text>
         <Text style={s.side} importantForAccessibility="no">▾</Text>
       </Press>
-      <Modal visible={open} transparent animationType="fade" onRequestClose={close}>
+      <Modal visible={open} transparent animationType={MODAL_FADE} accessibilityLabel={label} onRequestClose={close}>
         <Pressable style={sheet.backdrop} accessibilityLabel="Close the list" onPress={close} />
         <Animated.View style={[sheet.panel, spring, { backgroundColor: t.color.surface, borderTopLeftRadius: t.radius.card, borderTopRightRadius: t.radius.card }]}
               accessibilityViewIsModal>

@@ -8,7 +8,7 @@ import { Animated, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View
 
 import { DatePicker } from './DatePicker';
 import { FieldProps, FieldShell, Option, controlStyle, isEmpty, options as toOptions, styles, useField } from './field';
-import { Enter, Pop, Press, Roll, Shake, useOpen, useSlide } from './motion';
+import { Enter, MODAL_FADE, Pop, Press, Roll, Shake, useOpen, useSlide } from './motion';
 import { Theme, useTheme } from './theme';
 
 /* ---------- TextArea (oj-text-area) ---------- */
@@ -146,7 +146,7 @@ export function NumberInput(props: NumberInputProps) {
 function Sheet({ open, title, onClose, children, t }: { open: boolean; title: string; onClose: () => void; children: ReactNode; t: Theme }) {
   const spring = useOpen(open);
   return (
-    <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={open} transparent animationType={MODAL_FADE} accessibilityLabel={title} onRequestClose={onClose}>
       <Pressable style={sheet.backdrop} accessibilityLabel="Close the list" onPress={onClose} />
       <Animated.View style={[sheet.panel, spring, { backgroundColor: t.color.surface, borderTopLeftRadius: t.radius.card, borderTopRightRadius: t.radius.card }]}
                      accessibilityViewIsModal>
@@ -163,7 +163,7 @@ function SheetField({ testID, label, shown, empty, error, disabled, readOnly, on
 }) {
   const s = styles(t);
   return (
-    <Press testID={`${testID}-input`} accessibilityRole="button" accessibilityLabel={`${label}, ${shown || 'nothing chosen'}`}
+    <Press testID={`${testID}-input`} accessibilityRole="button" accessibilityLabel={`${shown || empty}, ${label}`}
                accessibilityHint={error || 'Opens the list of choices'} accessibilityState={{ disabled: !!(disabled || readOnly) }}
                disabled={disabled || readOnly} onPress={onPress} style={[controlStyle(t, { error, disabled, readOnly }), { justifyContent: 'space-between' }]}>
       <Text style={[s.input, shown ? null : { color: t.color.textMuted }]} numberOfLines={1}>{shown || empty}</Text>

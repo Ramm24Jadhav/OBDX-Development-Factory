@@ -10,7 +10,7 @@ import { Button } from './Button';
 import { formatAmount } from './TextField';
 import type { Severity } from './Toast';
 import { FieldProps, styles, useField } from './field';
-import { Enter, Pop, Press, Roll, Shake, useGrow, useOpen, useSlide } from './motion';
+import { Enter, MODAL_FADE, Pop, Press, Roll, Shake, useGrow, useOpen, useSlide } from './motion';
 import { Theme, useTheme } from './theme';
 
 /** A form's props: the field props with the heading optional. */
@@ -45,14 +45,14 @@ export function Heading({ children, t }: { children: ReactNode; t: Theme }) {
 }
 
 /** A plain pressable row or button that is at least the touch size. */
-export function Touch({ testID, label, hint, onPress, disabled, selected, expanded, role = 'button', style, children }: {
-  testID?: string; label: string; hint?: string; onPress?: () => void; disabled?: boolean; selected?: boolean; expanded?: boolean; role?: 'button' | 'link' | 'tab' | 'radio';
+export function Touch({ testID, label, hint, onPress, disabled, selected, current, expanded, role = 'button', style, children }: {
+  testID?: string; label?: string; hint?: string; onPress?: () => void; disabled?: boolean; selected?: boolean; current?: boolean; expanded?: boolean; role?: 'button' | 'link' | 'tab' | 'radio';
   style?: object; children: ReactNode;
 }) {
   const t = useTheme();
   return (
-    <Press testID={testID} accessibilityRole={role} accessibilityLabel={label} accessibilityHint={hint} disabled={disabled} onPress={onPress}
-               accessibilityState={{ disabled: !!disabled, ...(expanded === undefined ? {} : { expanded }), ...(selected === undefined ? {} : role === 'radio' ? { checked: selected } : { selected }) }}
+    <Press testID={testID} accessibilityRole={role} accessibilityLabel={label} accessibilityHint={hint} disabled={disabled} onPress={onPress} aria-current={current ? 'page' : undefined}
+               accessibilityState={{ disabled: !!disabled, ...(expanded === undefined ? {} : { expanded }), ...(current ? { selected: true } : {}), ...(selected === undefined ? {} : role === 'radio' ? { checked: selected } : { selected }) }}
            style={[{ minHeight: t.minTouch, justifyContent: 'center', opacity: disabled ? 0.5 : 1 }, style]}>
       {children}
     </Press>
@@ -69,11 +69,11 @@ export function Sheet({ testID, open, title, onClose, children, side }: {
   const start = side === 'start';
   const spring = useOpen(open, start ? 'drop' : 'sheet');
   return (
-    <Modal visible={open} transparent animationType="fade" onRequestClose={onClose} testID={testID ? `${testID}-modal` : undefined}>
+    <Modal visible={open} transparent animationType={MODAL_FADE} accessibilityLabel={title} onRequestClose={onClose} testID={testID ? `${testID}-modal` : undefined}>
       <View style={{ flex: 1, flexDirection: start ? 'row' : 'column', justifyContent: start ? 'flex-start' : 'flex-end' }}>
         <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: t.color.overlay }]} accessibilityRole="button" accessibilityLabel={`Close ${title}`}
                    onPress={onClose} />
-        <Animated.View testID={testID} accessibilityViewIsModal aria-modal accessibilityLabel={title}
+        <Animated.View testID={testID} role="dialog" accessibilityViewIsModal aria-modal accessibilityLabel={title}
               style={[spring, { backgroundColor: t.color.surface, padding: 16, paddingBottom: 28, gap: 8, ...(start
                 ? { width: '82%', maxWidth: 360, height: '100%' }
                 : { maxHeight: '80%', borderTopLeftRadius: t.radius.card, borderTopRightRadius: t.radius.card }) }]}>
@@ -137,7 +137,7 @@ export function Banner({ testID, heading, message, severity = 'info', actionLabe
   return (
     <Enter testID={testID} style={{ flexDirection: 'row', gap: 12, padding: 14, borderRadius: t.radius.card, backgroundColor: c.bg, borderLeftWidth: 4,
       borderLeftColor: c.line, alignItems: 'flex-start' }}>
-      <View style={{ flex: 1, gap: 4 }} accessible accessibilityRole={urgent ? 'alert' : 'summary'} accessibilityLiveRegion={urgent ? 'assertive' : 'polite'}>
+      <View style={{ flex: 1, gap: 4 }} accessible role={urgent ? 'alert' : 'status'} accessibilityLiveRegion={urgent ? 'assertive' : 'polite'}>
         {heading ? <Text style={{ fontSize: 14, fontWeight: '700', color: c.fg }}>{heading}</Text> : null}
         <Text style={{ fontSize: 14, fontWeight: heading ? '400' : '600', color: heading ? t.color.textBody : c.fg }}>{message}</Text>
       </View>
@@ -236,10 +236,10 @@ export function Tiles({ testID, label, tiles, value, onChange }: TilesProps) {
             </>
           );
           const box = [panel(t), { gap: 4, flexGrow: 1, flexBasis: '45%', ...(on ? { borderColor: t.color.primary, borderWidth: 1.5 } : {}) }];
-          const name = [x.title, x.value, x.note].filter(Boolean).join(', ');
+          // Named by its own text (title, value, note), so the name always matches what is shown
           return onChange
-            ? <Touch key={x.id} testID={`${testID}-${x.id}`} label={name} selected={on} onPress={() => onChange(x.id)} style={box}>{body}</Touch>
-            : <Enter key={x.id} testID={`${testID}-${x.id}`} accessible accessibilityLabel={name} style={box}>{body}</Enter>;
+            ? <Touch key={x.id} testID={`${testID}-${x.id}`} selected={on} onPress={() => onChange(x.id)} style={box}>{body}</Touch>
+            : <Enter key={x.id} testID={`${testID}-${x.id}`} accessible style={box}>{body}</Enter>;
         })}
       </View>
     </View>
@@ -507,12 +507,14 @@ export function Bars({ testID, label, bars, currency, value, onChange, horizonta
         {bars.map((b) => {
           const on = b.label === picked;
           const size = Math.max(0.04, b.value / top);
+          const bar = <Grow share={size} vertical={!horizontal} style={{ ...(horizontal ? { height: 14 } : { width: '100%' }), borderRadius: 4,
+            backgroundColor: on ? t.color.primary : t.color.primarySoft, borderWidth: 1, borderColor: t.color.primary }} />;
           return (
-            <Touch key={b.label} testID={`${testID}-${b.label}`} label={`${b.label}, ${show(b.value)}`} selected={on} onPress={() => pick(b.label)}
+            <Touch key={b.label} testID={`${testID}-${b.label}`} label={horizontal ? undefined : `${b.label}, ${show(b.value)}`} selected={on} onPress={() => pick(b.label)}
                    style={horizontal ? { flexDirection: 'row', alignItems: 'center', gap: 8 } : { flex: 1, height: '100%', justifyContent: 'flex-end', gap: 4 }}>
               {horizontal ? <Text style={{ width: 80, fontSize: 12.5, color: t.color.textBody }}>{b.label}</Text> : null}
-              <Grow share={size} vertical={!horizontal} style={{ ...(horizontal ? { height: 14 } : { width: '100%' }), borderRadius: 4,
-                backgroundColor: on ? t.color.primary : t.color.primarySoft, borderWidth: 1, borderColor: t.color.primary }} />
+              {/* Horizontal: the bar's share is of the space left by the label and the value, so the value stays inside the card */}
+              {horizontal ? <View style={{ flex: 1 }}>{bar}</View> : bar}
               {horizontal ? <Text style={{ fontSize: 12.5, color: t.color.textMuted }}>{show(b.value)}</Text>
                 : <Text style={{ fontSize: 11.5, textAlign: 'center', color: t.color.textMuted }}>{b.label}</Text>}
             </Touch>
@@ -710,6 +712,7 @@ export function SliderControl(props: SliderControlProps) {
       </View>
       <View testID={`${testID}-input`} accessible accessibilityRole="adjustable" accessibilityLabel={label} accessibilityHint={error || helpText}
             accessibilityValue={{ min, max, now: current, text: show(current) }} accessibilityState={{ disabled: off }}
+            aria-valuemin={min} aria-valuemax={max} aria-valuenow={current} aria-valuetext={show(current)}
             accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
             onAccessibilityAction={(e) => { if (!off) { onChange?.(clamp(current + (e.nativeEvent.actionName === 'increment' ? step : -step))); } }}
             onLayout={(e) => { width.current = Math.max(1, e.nativeEvent.layout.width); }}

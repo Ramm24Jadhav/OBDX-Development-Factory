@@ -85,7 +85,7 @@ describe('group 6', () => {
 
   it('PendingActionWidget lays bars across and reads each count', async () => {
     await render(<PendingActionWidget testID="p" bars={[{ label: 'Payments', value: 70 }]} />);
-    await fireEvent.press(screen.getByRole('button', { name: 'Payments, 70' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Payments 70' }));
     expect(screen.getByTestId('p-picked')).toHaveTextContent('Payments: 70');
   });
 });

@@ -38,8 +38,8 @@ async function axe(page: Page, sel: string): Promise<string[]> {
 }
 
 async function colours(page: Page, sel: string): Promise<string> {
-  return page.evaluate((s) => Array.from(document.querySelector(s)!.querySelectorAll<HTMLElement>('.gate-body *'))
-    .map((el) => { const c = getComputedStyle(el); return `${c.backgroundColor} ${c.color} ${c.borderTopColor}`; }).join('|'), sel);
+  return page.evaluate((s) => { const root = document.querySelector(s)!; return Array.from((root.querySelector('.gate-body') ?? root).querySelectorAll<HTMLElement>('*'))
+    .map((el) => { const c = getComputedStyle(el); return `${c.backgroundColor} ${c.color} ${c.borderTopColor}`; }).join('|'); }, sel);
 }
 
 /** Every control a finger presses is at least 44 by 44 points (the platforms' guidance; the pack aims at 48). */
@@ -59,9 +59,23 @@ async function smallTargets(page: Page, sel: string): Promise<string[]> {
   }, sel);
 }
 
+/**
+ * What to check for a component drawn alone: its section, or, when it draws through a Modal (react-native-web puts
+ * that in a portal on the body, so the section stays empty), the open overlay.
+ */
+async function target(page: Page, id: string): Promise<string> {
+  const section = `[data-component="${id}"]`;
+  if (await page.locator(`${section} .gate-body > *`).count()) { return section; }
+  // react-native-web makes the Modal a dialog when its fade-in ends: check the overlay in that end state
+  // (the outermost dialog: the Modal itself, not the pack's own panel inside it, which is a dialog from the start)
+  const overlay = page.locator('body > div [aria-modal="true"][role="dialog"]:not([role="dialog"] *)').first();
+  await overlay.waitFor({ timeout: 10_000 });
+  await overlay.evaluate((el, id) => el.setAttribute('data-gate-overlay', id), id);
+  return `[data-gate-overlay="${id}"]`;
+}
+
 /** The light checks of one section; returns its colours for the dark check. */
-async function lightChecks(page: Page, id: string): Promise<string> {
-  const sel = `[data-component="${id}"]`;
+async function lightChecks(page: Page, id: string, sel = `[data-component="${id}"]`): Promise<string> {
   expect.soft(await axe(page, sel), `${id} · accessibility (light)`).toEqual([]);
   expect.soft(await smallTargets(page, sel), `${id} · touch targets`).toEqual([]);
   await expect.soft(page.locator(sel), `${id} · screenshot (light)`).toHaveScreenshot(`react-native-${id}-light.png`,
@@ -69,8 +83,7 @@ async function lightChecks(page: Page, id: string): Promise<string> {
   return colours(page, sel);
 }
 
-async function darkChecks(page: Page, id: string, light: string) {
-  const sel = `[data-component="${id}"]`;
+async function darkChecks(page: Page, id: string, light: string, sel = `[data-component="${id}"]`) {
   expect.soft(await axe(page, sel), `${id} · accessibility (dark)`).toEqual([]);
   expect.soft(await colours(page, sel), `${id} · the dark theme changes its colours`).not.toBe(light);
   await expect.soft(page.locator(sel), `${id} · screenshot (dark)`).toHaveScreenshot(`react-native-${id}-dark.png`,
@@ -103,9 +116,9 @@ test.describe('react-native', () => {
       await page.setViewportSize(PHONE);
       await open(page, 'light', id);
       await expect(page.locator('[data-component]')).toHaveCount(1);
-      const light = await lightChecks(page, id);
+      const light = await lightChecks(page, id, await target(page, id));
       await open(page, 'dark', id);
-      await darkChecks(page, id, light);
+      await darkChecks(page, id, light, await target(page, id));
     });
   }
 

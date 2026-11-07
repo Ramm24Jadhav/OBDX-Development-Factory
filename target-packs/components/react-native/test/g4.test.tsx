@@ -95,7 +95,7 @@ describe('group 4', () => {
   it('LanguagePicker writes back the language code and names each in its own language', async () => {
     let seen = '';
     await render(<Controlled initial="en">{(v, set) => <LanguagePicker testID="l" label="Language" value={v} onChange={(x) => { seen = x; set(x); }} />}</Controlled>);
-    await fireEvent.press(screen.getByRole('button', { name: 'Language, English' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'English, Language' }));
     await fireEvent.press(screen.getByRole('radio', { name: 'Français' }));
     expect(seen).toBe('fr');
   });

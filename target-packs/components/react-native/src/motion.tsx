@@ -15,6 +15,11 @@ import { lightTokens } from './tokens';
  * browser (react-native-web drops the experimental key), so the gradients show in the web gallery too.
  */
 export const BG = (Platform.OS === 'web' ? 'backgroundImage' : 'experimental_backgroundImage') as 'experimental_backgroundImage';
+/**
+ * The Modal's own fade. On the web it is off: react-native-web makes a Modal a dialog (focus trap, Escape) when its fade
+ * ends, and that event never reaches it from the portal, so a faded Modal never became one. The panels animate themselves.
+ */
+export const MODAL_FADE = (Platform.OS === 'web' ? 'none' : 'fade') as 'none' | 'fade';
 
 export const DURATION = { fast: lightTokens.motion.durationFast, base: lightTokens.motion.durationBase, slow: lightTokens.motion.durationSlow };
 export const EASING = { standard: Easing.bezier(0.2, 0, 0, 1), exit: Easing.bezier(0.4, 0, 1, 1) };
@@ -101,7 +106,7 @@ export function Enter({ effect, style, children, ...props }: { effect?: EnterEff
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export type PressProps = Omit<PressableProps, 'style'> & { style?: StyleProp<ViewStyle> };
+export type PressProps = Omit<PressableProps, 'style'> & { style?: StyleProp<ViewStyle>; /** The current page of a menu (the web reads it; native announces selected) */ 'aria-current'?: 'page' };
 
 /**
  * A Pressable with the component style's click effect: press (scales a little), bounce (springs back) or ripple (the
@@ -123,7 +128,7 @@ export function Press({ style, onPressIn, onPressOut, disabled, ...props }: Pres
   const pick = props.accessibilityRole === 'tab' || props.accessibilityRole === 'radio';
   return (
     <AnimatedPressable {...props} disabled={disabled} aria-checked={st?.checked} aria-selected={pick ? st?.selected : undefined}
-                       aria-pressed={pick ? undefined : st?.selected} aria-expanded={st?.expanded}
+                       aria-pressed={pick || props['aria-current'] ? undefined : st?.selected} aria-expanded={st?.expanded}
                        aria-disabled={st?.disabled}
                        android_ripple={click === 'ripple' && !r ? { color: t.color.primarySoft } : undefined}
                        onPressIn={(e) => { if (click === 'press' || click === 'bounce') { to(click === 'bounce' ? 0.95 : t.pressScale, false); } onPressIn?.(e); }}

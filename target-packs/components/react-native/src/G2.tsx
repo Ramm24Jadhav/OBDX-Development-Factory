@@ -319,7 +319,7 @@ export function BeneficiaryCard({ testID, payee, note, onPay }: BeneficiaryCardP
       </View>
       <Text style={{ fontSize: 14, color: t.color.textBody }}>{[maskIban(payee.number), note].filter(Boolean).join(' · ')}</Text>
       {onPay ? (
-        <Touch testID={`${testID}-pay`} label={`Pay ${payee.name}`} onPress={onPay} role="link">
+        <Touch testID={`${testID}-pay`} label={`Pay now, ${payee.name}`} onPress={onPay} role="link">
           <Text style={{ fontSize: 14, fontWeight: '700', color: t.color.primaryText }}>Pay now →</Text>
         </Touch>
       ) : null}
