@@ -24,15 +24,15 @@ const figure = (n: number, unit?: string) => n.toLocaleString() + (unit ? ` ${un
 /* ---------- BarChart ---------- */
 
 export interface Bar { label: string; value: number; display?: string; tone?: 'danger' | 'success' }
-export interface BarChartProps { testID?: string; heading: string; items: ReadonlyArray<Bar>; max?: number; unit?: string; orientation?: 'bars' | 'columns'; note?: string; /** The style: standard, rounded, lollipop or meter (one bar split into the figures). */ variant?: ChartVariant }
+export interface BarChartProps { testID?: string; heading: string; items: ReadonlyArray<Bar>; max?: number; unit?: string; orientation?: 'bars' | 'columns'; note?: string; /** The style: default, rounded, lollipop or meter (one bar split into the figures). */ variant?: ChartVariant }
 
 /** Bars of figures, each with its label and value as text. */
-export function BarChart({ testID, heading, items, max, unit, orientation = 'bars', note, variant = 'standard' }: BarChartProps) {
+export function BarChart({ testID, heading, items, max, unit, orientation = 'bars', note, variant = 'default' }: BarChartProps) {
   const id = useId();
   const top = max || Math.max(0, ...items.map((o) => o.value || 0));
   const dir = orientation === 'columns' ? 'h' : 'w';
   return (
-    <figure className={`bx-chart is-${orientation} ${vx('chart', variant)}`} aria-labelledby={id} data-testid={testID}>
+    <figure className={`bx-chart is-${orientation}${vx(variant)}`} aria-labelledby={id} data-testid={testID}>
       <figcaption className="bx-panel-title" id={id}>{heading}</figcaption>
       {variant === 'meter' ? <MeterBar items={items} /> : null}
       <ul className="bx-bars">
@@ -58,13 +58,13 @@ function MeterBar({ items }: { items: ReadonlyArray<Bar> }) {
 /* ---------- meters ---------- */
 
 export interface Meter { id?: string; label: string; value: number; max: number }
-export interface MetersProps { testID?: string; heading?: string; items: ReadonlyArray<Meter>; unit?: string; /** From this share (%) the bar turns amber. */ warnAt?: number; /** The style: standard, linear (Material, on MUI), ring (Material, on MUI) or segmented. */ variant?: ProgressVariant }
+export interface MetersProps { testID?: string; heading?: string; items: ReadonlyArray<Meter>; unit?: string; /** From this share (%) the bar turns amber. */ warnAt?: number; /** The style: default, linear (Material, on MUI), ring (Material, on MUI) or segmented. */ variant?: ProgressVariant }
 
 /** How much of each limit, budget or goal is used; over the limit says by how much. */
-export function Meters({ testID, heading, items, unit, warnAt = 90, variant = 'standard' }: MetersProps) {
+export function Meters({ testID, heading, items, unit, warnAt = 90, variant = 'default' }: MetersProps) {
   const id = useId();
   return (
-    <section className={`bx-panel bx-meters ${vx('progress', variant)}`} aria-label={heading || undefined} data-testid={testID}>
+    <section className={`bx-panel bx-meters${vx(variant)}`} aria-label={heading || undefined} data-testid={testID}>
       {heading ? <h3 className="bx-panel-title">{heading}</h3> : null}
       {items.map((o, i) => {
         const over = o.max > 0 && o.value > o.max;

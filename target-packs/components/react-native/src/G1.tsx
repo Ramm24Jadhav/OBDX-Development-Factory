@@ -343,12 +343,12 @@ export interface StatusBadgeProps {
   testID?: string;
   label: string;
   tone?: Tone;
-  /** The style: standard, filled, outlined or dot. */
+  /** The style: default, filled, outlined or dot. */
   variant?: BadgeVariant;
 }
 
 /** The state of a payment at a glance; the colour is never the only sign, the word is always there. */
-export function StatusBadge({ testID, label, tone = 'neutral', variant = 'standard' }: StatusBadgeProps) {
+export function StatusBadge({ testID, label, tone = 'neutral', variant = 'default' }: StatusBadgeProps) {
   const t = useTheme();
   const c = toneColors(t, tone);
   const look = badgeLook(t, variant, c);
@@ -378,14 +378,14 @@ export interface ActivityIndicatorProps {
   /** What is loading, read by screen readers: "Loading transactions". */
   label?: string;
   size?: 'sm' | 'md' | 'lg';
-  /** The style: the platform's ring (standard), material, dots, or orbs (a thinking orb for an AI assistant). */
+  /** The style: the platform's ring (default), material, dots, or orbs (a thinking orb for an AI assistant). */
   variant?: SpinnerVariant;
   /** What the orb shows when variant is orbs. */
   orbState?: OrbState;
 }
 
 /** Shows that something is loading. */
-export function ActivityIndicator({ testID, label = 'Loading', size = 'md', variant = 'standard', orbState = 'working' }: ActivityIndicatorProps) {
+export function ActivityIndicator({ testID, label = 'Loading', size = 'md', variant = 'default', orbState = 'working' }: ActivityIndicatorProps) {
   const t = useTheme();
   const px = size === 'lg' ? 40 : size === 'sm' ? 16 : 24;
   return (
@@ -413,14 +413,14 @@ export interface SkeletonProps {
   /** Lines of text to stand in for. */
   lines?: number;
   shape?: 'text' | 'card' | 'circle';
-  /** The style: standard (shimmer), pulse or soft (still, rounder, lighter). */
+  /** The style: default (shimmer), pulse or soft (still, rounder, lighter). */
   variant?: SkeletonVariant;
 }
 
 /** The shape of the content while it loads, with a soft pulse (still when the device asks for reduced motion). */
-export function Skeleton({ testID, label = 'Loading', lines = 3, shape = 'text', variant = 'standard' }: SkeletonProps) {
+export function Skeleton({ testID, label = 'Loading', lines = 3, shape = 'text', variant = 'default' }: SkeletonProps) {
   const t = useTheme();
-  const shimmer = useShimmer(variant === 'standard');
+  const shimmer = useShimmer(variant === 'default');
   const cycle = useCycle(1500, variant === 'pulse');
   const pulse = { opacity: cycle.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0.4, 1] }) };
   const look = skeletonLook(t, variant);
@@ -447,12 +447,12 @@ export interface EmptyStateProps {
   onAction?: () => void;
   /** A short symbol above the heading; it is not read. */
   icon?: string;
-  /** The style: standard, illustrated, compact or card. */
+  /** The style: default, illustrated, compact or card. */
   variant?: EmptyVariant;
 }
 
 /** What to do when there is nothing yet. */
-export function EmptyState({ testID, heading, text, actionLabel, onAction, icon = '○', variant = 'standard' }: EmptyStateProps) {
+export function EmptyState({ testID, heading, text, actionLabel, onAction, icon = '○', variant = 'default' }: EmptyStateProps) {
   const t = useTheme();
   const look = emptyLook(t, variant);
   const align = look.row ? 'left' : 'center';
@@ -479,12 +479,12 @@ export interface TooltipProps {
   label: string;
   text: string;
   children?: ReactNode;
-  /** The style: standard, plain, rich or beak. */
+  /** The style: default, plain, rich or beak. */
   variant?: TooltipVariant;
 }
 
 /** A short explanation on demand: phones have no hover, so the i button opens it and announces it. */
-export function Tooltip({ testID, label, text, children, variant = 'standard' }: TooltipProps) {
+export function Tooltip({ testID, label, text, children, variant = 'default' }: TooltipProps) {
   const look = tooltipLook(useTheme(), variant);
   const t = useTheme();
   const [open, setOpen] = useState(false);

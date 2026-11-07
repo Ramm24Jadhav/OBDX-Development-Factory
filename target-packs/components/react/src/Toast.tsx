@@ -20,7 +20,7 @@ export interface ToastProps {
   /** 'notification' floats at the top right; 'general' sits in the page. */
   display?: 'notification' | 'general';
   testID?: string;
-  /** The style: standard, snackbar (Material, on MUI), stacked or pill. */
+  /** The style: default, snackbar (Material, on MUI), stacked or pill. */
   variant?: ToastVariant;
 }
 
@@ -30,7 +30,7 @@ const ICON: Record<Severity, string> = { error: '!', warning: '!', confirmation:
  * Messages (oj-messages): errors are announced at once and stay until closed; others are announced politely and close
  * after five seconds. The screen owns the list; onClose says which one to remove.
  */
-export function Toast({ messages, onClose, display = 'notification', testID, variant = 'standard' }: ToastProps) {
+export function Toast({ messages, onClose, display = 'notification', testID, variant = 'default' }: ToastProps) {
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const close = useRef(onClose);
   close.current = onClose;
@@ -47,7 +47,7 @@ export function Toast({ messages, onClose, display = 'notification', testID, var
   }, [messages]);
   useEffect(() => () => { timers.current.forEach((t) => clearTimeout(t)); timers.current.clear(); }, []);
   return (
-    <div className={`bx-toasts is-${display} ${vx('toast', variant)}`} data-testid={testID}>
+    <div className={`bx-toasts is-${display}${vx(variant)}`} data-testid={testID}>
       {messages.map((m) => {
         const severity = m.severity ?? 'info';
         const close = (

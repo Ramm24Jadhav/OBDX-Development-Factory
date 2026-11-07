@@ -21,7 +21,7 @@ export interface ToastProps {
   messages: ReadonlyArray<Message>;
   onClose: (message: Message) => void;
   testID?: string;
-  /** The style: standard, snackbar, stacked or pill. */
+  /** The style: default, snackbar, stacked or pill. */
   variant?: ToastVariant;
 }
 
@@ -32,7 +32,7 @@ const tone = (t: Theme, s: Severity) => (s === 'error' ? t.color.danger : s === 
  * Messages (oj-messages): each new one is announced (errors first and assertively); errors stay until closed, others
  * close after five seconds. The screen owns the list; onClose says which one to remove.
  */
-export function Toast({ messages, onClose, testID, variant = 'standard' }: ToastProps) {
+export function Toast({ messages, onClose, testID, variant = 'default' }: ToastProps) {
   const t = useTheme();
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const said = useRef(new Set<string>());

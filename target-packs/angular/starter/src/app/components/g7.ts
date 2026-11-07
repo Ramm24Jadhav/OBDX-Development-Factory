@@ -684,14 +684,14 @@ export class ReceiptTear extends Part {
 /** A tick that draws itself, with what was done (said once). */
 @Component({
   selector: 'bx-success-check', changeDetection: OnPush,
-  template: `<div [class]="'bx-success-check ' + vx('status', variant())" role="status" [attr.data-testid]="testID() || null"><svg class="bx-check-svg" viewBox="0 0 52 52" aria-hidden="true" focusable="false"><circle class="bx-check-ring" cx="26" cy="26" r="24"></circle>
+  template: `<div [class]="'bx-success-check' + vx(variant())" role="status" [attr.data-testid]="testID() || null"><svg class="bx-check-svg" viewBox="0 0 52 52" aria-hidden="true" focusable="false"><circle class="bx-check-ring" cx="26" cy="26" r="24"></circle>
     <path class="bx-check-tick" d="M15 27 l7 7 l15 -16"></path></svg><strong class="bx-receipt-title">{{ label() }}</strong>@if (text()) {<span class="bx-thing-text">{{ text() }}</span>}</div>`,
 })
 export class SuccessCheck extends Part {
   readonly label = input('Done');
   readonly text = input('');
-  /** The style: standard (drawn), filled or soft. */
-  readonly variant = input<StatusVariant>('standard');
+  /** The style: default (drawn), filled or soft. */
+  readonly variant = input<StatusVariant>('default');
   protected readonly vx = vx;
 }
 
@@ -718,15 +718,15 @@ export class SwipeRow extends Part {
 /** A message the customer can swipe away, or close. (closed). */
 @Component({
   selector: 'bx-swipe-toast', changeDetection: OnPush,
-  template: `@if (!gone()) {<div [class]="'bx-toast bx-swipe-toast is-' + severity() + ' ' + vx('toast', variant())" role="status" [attr.data-testid]="testID() || null" (pointerdown)="x0 = $event.clientX" (pointerup)="up($event)">
+  template: `@if (!gone()) {<div [class]="'bx-toast bx-swipe-toast is-' + severity() + vx(variant())" role="status" [attr.data-testid]="testID() || null" (pointerdown)="x0 = $event.clientX" (pointerup)="up($event)">
     <span class="bx-toast-icon" aria-hidden="true">✓</span><span class="bx-toast-text">{{ message() }}</span>
     <button type="button" class="bx-btn bx-btn--borderless bx-btn--icon bx-btn--sm" aria-label="Close the message" (click)="close()"><span aria-hidden="true">×</span></button></div>}`,
 })
 export class SwipeToast extends Part {
   readonly message = input.required<string>();
   readonly severity = input<'error' | 'warning' | 'confirmation' | 'info'>('confirmation');
-  /** The style: standard, snackbar, stacked or pill. */
-  readonly variant = input<ToastVariant>('standard');
+  /** The style: default, snackbar, stacked or pill. */
+  readonly variant = input<ToastVariant>('default');
   protected readonly vx = vx;
   readonly closed = output<void>();
   protected readonly gone = signal(false);
@@ -809,23 +809,23 @@ export class BudgetGauge extends Part {
   private readonly share = computed(() => (this.max() > 0 ? Math.max(0, Math.min(1, this.value() / this.max())) : 0));
   protected readonly offset = computed(() => Math.round(126 * (1 - this.share()) * 10) / 10);
   protected readonly ring = computed(() => ringOffset(this.share(), 40));
-  /** The style: standard (half circle), ring or thin. */
-  readonly variant = input<GaugeVariant>('standard');
+  /** The style: default (half circle), ring or thin. */
+  readonly variant = input<GaugeVariant>('default');
   protected readonly now = computed(() => Math.min(this.value(), this.max()));
   protected readonly text = computed(() => { const u = this.unit() ? ` ${this.unit()}` : ''; return `${this.value().toLocaleString()}${u} of ${this.max().toLocaleString()}${u}` + (this.value() > this.max() ? ', over budget' : ''); });
-  protected readonly css = computed(() => 'bx-gauge ' + vx('progress', this.variant()) + (this.value() > this.max() ? ' is-over' : this.share() >= 0.9 ? ' is-near' : ''));
+  protected readonly css = computed(() => 'bx-gauge' + vx(this.variant()) + (this.value() > this.max() ? ' is-over' : this.share() >= 0.9 ? ' is-near' : ''));
 }
 
 /** A status as a mark and a word: success, error, pending or info. */
 @Component({
   selector: 'bx-status-mark', changeDetection: OnPush,
-  template: `<span [class]="'bx-status-mark is-' + status() + ' ' + vx('badges', variant())" [attr.data-testid]="testID() || null"><span class="bx-status-mark-icon" aria-hidden="true">{{ status() === 'error' ? '!' : status() === 'info' ? 'i' : '' }}</span><span>{{ label() }}</span></span>`,
+  template: `<span [class]="'bx-status-mark is-' + status() + vx(variant())" [attr.data-testid]="testID() || null"><span class="bx-status-mark-icon" aria-hidden="true">{{ status() === 'error' ? '!' : status() === 'info' ? 'i' : '' }}</span><span>{{ label() }}</span></span>`,
 })
 export class StatusMark extends Part {
   readonly label = input.required<string>();
   readonly status = input<'success' | 'error' | 'pending' | 'info'>('success');
-  /** The style: standard, filled, outlined or dot. */
-  readonly variant = input<BadgeVariant>('standard');
+  /** The style: default, filled, outlined or dot. */
+  readonly variant = input<BadgeVariant>('default');
   protected readonly vx = vx;
 }
 /** Stars that lift as the pointer passes over them. [(value)]. */
@@ -833,14 +833,14 @@ export class StatusMark extends Part {
 export class PeekRating extends Part {
   readonly label = input('How was it?');
   readonly value = model(0);
-  readonly variant = input<RatingVariant>('standard');
+  readonly variant = input<RatingVariant>('default');
 }
 /** A tooltip in warm colours. */
 @Component({ selector: 'bx-warm-tooltip', changeDetection: OnPush, imports: [Tooltip], template: `<div class="bx-fx-warm"><bx-tooltip [testID]="testID()" [label]="label()" [text]="text()" [variant]="variant()" /></div>` })
 export class WarmTooltip extends Part {
   readonly label = input.required<string>();
   readonly text = input.required<string>();
-  readonly variant = input<TooltipVariant>('standard');
+  readonly variant = input<TooltipVariant>('default');
 }
 
 /** The assistant's question box with suggestions; Enter or Ask sends. (ask). */
@@ -889,12 +889,12 @@ export class CallChip extends Part {
 /** Waiting: a grid of squares that pulse, said once. */
 @Component({
   selector: 'bx-lattice-loader', changeDetection: OnPush, imports: [Spinner],
-  // the lattice is the standard look; the other variants are the spinner's loaders
-  template: `@if (variant() !== 'standard') { <bx-spinner [testID]="testID()" [label]="label()" [variant]="variant()" [orbState]="orbState()" /> } @else {<span class="bx-lattice bx-spinner--standard" role="status" [attr.data-testid]="testID() || null"><span class="bx-lattice-grid" aria-hidden="true">@for (n of steps; track $index) {<span [class]="'bx-d-' + n"></span>}</span><span class="bx-visually-hidden">{{ label() }}</span></span>}`,
+  // the lattice is the default look; the other variants are the spinner's loaders
+  template: `@if (variant() !== 'default') { <bx-spinner [testID]="testID()" [label]="label()" [variant]="variant()" [orbState]="orbState()" /> } @else {<span class="bx-lattice" role="status" [attr.data-testid]="testID() || null"><span class="bx-lattice-grid" aria-hidden="true">@for (n of steps; track $index) {<span [class]="'bx-d-' + n"></span>}</span><span class="bx-visually-hidden">{{ label() }}</span></span>}`,
 })
 export class LatticeLoader extends Part {
   readonly label = input('Loading');
-  readonly variant = input<SpinnerVariant>('standard');
+  readonly variant = input<SpinnerVariant>('default');
   readonly orbState = input<OrbState>('working');
   protected readonly steps = [0, 2, 4, 2, 4, 6, 4, 6, 8];
 }

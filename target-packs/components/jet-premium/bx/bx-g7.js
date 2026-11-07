@@ -532,14 +532,14 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
   function CheckKind(context) {
     var self = this;
     base(self, context, 'bx-chk');
-    self.css = ko.pureComputed(function () { return 'bx-status-mark is-' + (self.props.status || 'success') + ' ' + k.variants.vx('badges', self.props.variant); });
-    self.checkCss = ko.pureComputed(function () { return 'bx-success-check ' + k.variants.vx('status', self.props.variant); });
+    self.css = ko.pureComputed(function () { return 'bx-status-mark is-' + (self.props.status || 'success') + k.variants.vx(self.props.variant); });
+    self.checkCss = ko.pureComputed(function () { return 'bx-success-check' + k.variants.vx(self.props.variant); });
     self.glyph = ko.pureComputed(function () { return { success: '', error: '!', pending: '', info: 'i' }[self.props.status || 'success']; });
   }
-  kinds.successcheck = { model: CheckKind, props: { label: str('Done'), text: str(), status: str('success'), variant: str('standard') },
+  kinds.successcheck = { model: CheckKind, props: { label: str('Done'), text: str(), status: str('success'), variant: str('default') },
     view: '<div :class="[[checkCss]]" role="status"><svg class="bx-check-svg" viewBox="0 0 52 52" aria-hidden="true" focusable="false"><circle class="bx-check-ring" cx="26" cy="26" r="24"></circle>'
       + '<path class="bx-check-tick" d="M15 27 l7 7 l15 -16"></path></svg><strong class="bx-receipt-title">' + txt('$properties.label') + '</strong>' + iff('$properties.text', '<span class="bx-thing-text">' + txt('$properties.text') + '</span>') + '</div>' };
-  kinds.statusmark = { model: CheckKind, props: { label: str(), status: str('success'), variant: str('standard') },
+  kinds.statusmark = { model: CheckKind, props: { label: str(), status: str('success'), variant: str('default') },
     view: '<span :class="[[css]]"><span class="bx-status-mark-icon" aria-hidden="true">' + txt('glyph') + '</span><span>' + txt('$properties.label') + '</span></span>' };
 
   function SwipeRowKind(context) {
@@ -570,9 +570,9 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     self.close = close;
     self.down = function (event) { x0 = event.clientX; return true; };
     self.up = function (event) { if (x0 !== null && Math.abs(event.clientX - x0) > 60) { close(); } x0 = null; return true; };
-    self.css = ko.pureComputed(function () { return 'bx-toast bx-swipe-toast is-' + (self.props.severity || 'info') + ' ' + k.variants.vx('toast', self.props.variant); });
+    self.css = ko.pureComputed(function () { return 'bx-toast bx-swipe-toast is-' + (self.props.severity || 'info') + k.variants.vx(self.props.variant); });
   }
-  kinds.swipetoast = { model: SwipeToastKind, events: { ojClose: { bubbles: true } }, props: { message: str(), severity: str('confirmation'), variant: str('standard') },
+  kinds.swipetoast = { model: SwipeToastKind, events: { ojClose: { bubbles: true } }, props: { message: str(), severity: str('confirmation'), variant: str('default') },
     view: iff('!gone()', '<div :class="[[css]]" role="status" on-pointerdown="[[down]]" on-pointerup="[[up]]"><span class="bx-toast-icon" aria-hidden="true">✓</span><span class="bx-toast-text">'
       + txt('$properties.message') + '</span><button type="button" class="bx-btn bx-btn--borderless bx-btn--icon bx-btn--sm" aria-label="Close the message" on-click="[[close]]"><span aria-hidden="true">×</span></button></div>') };
 
@@ -619,11 +619,11 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
       var u = self.props.unit ? ' ' + self.props.unit : '';
       return Number(self.props.value).toLocaleString() + u + ' of ' + Number(self.props.max).toLocaleString() + u + (self.over() ? ', over budget' : '');
     });
-    self.css = ko.pureComputed(function () { return 'bx-gauge ' + k.variants.vx('progress', self.props.variant) + (self.over() ? ' is-over' : share() >= 0.9 ? ' is-near' : ''); });
+    self.css = ko.pureComputed(function () { return 'bx-gauge' + k.variants.vx(self.props.variant) + (self.over() ? ' is-over' : share() >= 0.9 ? ' is-near' : ''); });
     self.ring = ko.pureComputed(function () { return String(k.variants.ringOffset(share(), 40)); });
     self.now = ko.pureComputed(function () { return String(Math.min(Number(self.props.value) || 0, Number(self.props.max) || 0)); });
   }
-  kinds.gauge = { model: GaugeKind, props: { label: str('Budget'), value: num(0), max: num(100), unit: str(), variant: str('standard') },
+  kinds.gauge = { model: GaugeKind, props: { label: str('Budget'), value: num(0), max: num(100), unit: str(), variant: str('default') },
     view: '<div :class="[[css]]" role="progressbar" aria-valuemin="0" :aria-valuemax="[[$properties.max]]" :aria-valuenow="[[now]]" :aria-valuetext="[[text]]" :aria-labelledby="[[id]]">'
       + iff('$properties.variant === \'ring\'', '<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><circle class="bx-gauge-track" cx="50" cy="50" r="40"></circle>'
         + '<circle class="bx-gauge-fill" cx="50" cy="50" r="40" stroke-dasharray="251.3" :stroke-dashoffset="[[ring]]"></circle></svg>')
@@ -667,10 +667,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
   kinds.call = { model: CallKind, props: { label: str('Call the bank'), number: str() },
     view: '<a class="bx-call-chip" :href="[[href]]" :aria-label="[[name]]"><span class="bx-call-icon" aria-hidden="true">✆</span><span>' + txt('$properties.label') + '</span></a>' };
 
-  // the lattice is the standard look; the other variants are the spinner's loaders
+  // the lattice is the default look; the other variants are the spinner's loaders
   function LatticeKind(context) { g1.kinds.spinner.model.call(this, context); }
-  kinds.lattice = { model: LatticeKind, props: { label: str('Loading'), size: str('md'), variant: str('standard'), orbState: str('working') },
-    view: iff('mark() !== \'standard\'', g1.kinds.spinner.view) + iff('mark() === \'standard\'', '<span class="bx-lattice bx-spinner--standard" role="status"><span class="bx-lattice-grid" aria-hidden="true"><span class="bx-d-0"></span><span class="bx-d-2"></span><span class="bx-d-4"></span><span class="bx-d-2"></span>'
+  kinds.lattice = { model: LatticeKind, props: { label: str('Loading'), size: str('md'), variant: str('default'), orbState: str('working') },
+    view: iff('mark() !== \'standard\'', g1.kinds.spinner.view) + iff('mark() === \'standard\'', '<span class="bx-lattice" role="status"><span class="bx-lattice-grid" aria-hidden="true"><span class="bx-d-0"></span><span class="bx-d-2"></span><span class="bx-d-4"></span><span class="bx-d-2"></span>'
       + '<span class="bx-d-4"></span><span class="bx-d-6"></span><span class="bx-d-4"></span><span class="bx-d-6"></span><span class="bx-d-8"></span></span>' + hidden('$properties.label') + '</span>') };
 
   /* ---------- group 7 ---------- */

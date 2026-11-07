@@ -103,7 +103,7 @@ export interface ProgressWidgetProps {
   label?: string;
   items: ReadonlyArray<Meter>;
   currency?: string;
-  /** The style: standard, linear, ring or segmented. */
+  /** The style: default, linear, ring or segmented. */
   variant?: ProgressVariant;
 }
 
@@ -131,7 +131,7 @@ export interface CreditScoreWidgetProps {
   band?: string;
   /** When the score was last updated. */
   updated?: string;
-  /** The style: standard, linear, ring or segmented. */
+  /** The style: default, linear, ring or segmented. */
   variant?: ProgressVariant;
 }
 

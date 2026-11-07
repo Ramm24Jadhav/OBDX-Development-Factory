@@ -166,11 +166,11 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2'], function (Composi
     self.spoken = ko.pureComputed(function () { var s = self.left(); return s === (self.props.seconds || 60) || s === 10 ? self.text() : ''; });
     self.stay = function () { stop(); self.props.open = false; bx.fire(self.element, 'ojAction', { action: 'stay' }); };
     self.signOut = function () { stop(); self.props.open = false; bx.fire(self.element, 'ojAction', { action: 'signOut' }); };
-    self.vclass = k.variants.vclass(self, 'timeout');
+    self.vclass = k.variants.vclass(self);
     self.ring = ko.pureComputed(function () { return k.variants.ringOffset(self.left() / (self.props.seconds || 60), 20); });
   }
-  kinds.timeout = { model: TimeoutKind, events: k.ACTION, props: { open: { type: 'boolean', value: false, writeback: true }, seconds: num(60), heading: str('Are you still there?'), variant: str('standard') },
-    view: iff('$properties.open', '<div class="bx-dialog-backdrop"></div><div :class="[[\'bx-dialog bx-timeout \' + vclass()]]" role="alertdialog" aria-modal="true" tabindex="-1" :aria-labelledby="[[id + \'-t\']]" :aria-describedby="[[id + \'-d\']]">'
+  kinds.timeout = { model: TimeoutKind, events: k.ACTION, props: { open: { type: 'boolean', value: false, writeback: true }, seconds: num(60), heading: str('Are you still there?'), variant: str('default') },
+    view: iff('$properties.open', '<div class="bx-dialog-backdrop"></div><div :class="[[\'bx-dialog bx-timeout\' + vclass()]]" role="alertdialog" aria-modal="true" tabindex="-1" :aria-labelledby="[[id + \'-t\']]" :aria-describedby="[[id + \'-d\']]">'
       + '<div class="bx-dialog-header"><h2 class="bx-dialog-title" :id="[[id + \'-t\']]">' + txt('$properties.heading') + '</h2></div><div class="bx-dialog-body">'
       + iff('$properties.variant === \'countdown\'', '<span class="bx-countdown" aria-hidden="true"><svg viewBox="0 0 44 44" focusable="false"><circle class="bx-countdown-track" cx="22" cy="22" r="20"></circle>'
         + '<circle class="bx-countdown-fill" cx="22" cy="22" r="20" stroke-dasharray="125.7" :stroke-dashoffset="[[ring]]"></circle></svg><span class="bx-countdown-num">' + txt('left') + '</span></span>')

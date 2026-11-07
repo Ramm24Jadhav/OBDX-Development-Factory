@@ -208,14 +208,14 @@ export function AuthChallenge({ testID, heading = 'Confirm it is you', text, met
 
 /* ---------- SessionExpiryWarning ---------- */
 
-export interface SessionExpiryProps { testID?: string; open: boolean; seconds?: number; heading?: string; onStay?: () => void; onSignOut?: () => void; onExpire?: () => void; container?: HTMLElement | null; /** The style: standard (dialog), countdown (a ring that empties) or sheet. */ variant?: TimeoutVariant }
+export interface SessionExpiryProps { testID?: string; open: boolean; seconds?: number; heading?: string; onStay?: () => void; onSignOut?: () => void; onExpire?: () => void; container?: HTMLElement | null; /** The style: default (dialog), countdown (a ring that empties) or sheet. */ variant?: TimeoutVariant }
 
 export function expiryText(s: number): string {
   return 'For your security you will be signed out in ' + (s >= 60 ? `${Math.ceil(s / 60)} ${s >= 120 ? 'minutes' : 'minute'}.` : `${s} ${s === 1 ? 'second' : 'seconds'}.`);
 }
 
 /** The session is about to end: a countdown, Stay signed in and Sign out. Said when it opens and in the last ten seconds. */
-export function SessionExpiryWarning({ testID, open, seconds = 60, heading = 'Are you still there?', onStay, onSignOut, onExpire, container, variant = 'standard' }: SessionExpiryProps) {
+export function SessionExpiryWarning({ testID, open, seconds = 60, heading = 'Are you still there?', onStay, onSignOut, onExpire, container, variant = 'default' }: SessionExpiryProps) {
   const [left, setLeft] = useState(seconds);
   const expire = useRef(onExpire);
   expire.current = onExpire;
@@ -228,7 +228,7 @@ export function SessionExpiryWarning({ testID, open, seconds = 60, heading = 'Ar
   }, [open, seconds]);
   const spoken = left === seconds || left === 10 ? expiryText(left) : '';
   return (
-    <Dialog open={open} onOpenChange={() => undefined} title={heading} cancelBehavior="none" testID={testID} container={container} className={`bx-timeout ${vx('timeout', variant)}`}
+    <Dialog open={open} onOpenChange={() => undefined} title={heading} cancelBehavior="none" testID={testID} container={container} className={`bx-timeout${vx(variant)}`}
             footer={<><button type="button" className="bx-btn bx-btn--borderless" onClick={onSignOut}>Sign out</button>
               <button type="button" className="bx-btn bx-btn--callToAction" onClick={onStay}>Stay signed in</button></>}>
       {variant === 'countdown' ? <CountdownRing left={left} total={seconds} /> : null}

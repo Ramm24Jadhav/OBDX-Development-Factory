@@ -1,30 +1,30 @@
 /*
  * Style variants of the feedback and status components (variants/v3.json): the root of each component gets
- * bx-<kind>--<variant>; 'standard' is the look the component had before variants. The Material variants are drawn by
+ * bx-<kind>--<variant>; 'default' is the look the component had before variants. The Material variants are drawn by
  * bx.css (React's use MUI). The thinking orb is thinking-orbs by Jakub Antalik (MIT, see the notice below).
  */
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, effect, inject, input } from '@angular/core';
 import { MODE_DRAWS, resolvePreset } from 'thinking-orbs/engine';
 
-export type AlertVariant = 'standard' | 'filled' | 'outlined' | 'banner';
-export type ToastVariant = 'standard' | 'snackbar' | 'stacked' | 'pill';
-export type TooltipVariant = 'standard' | 'plain' | 'rich' | 'beak';
-export type BadgeVariant = 'standard' | 'filled' | 'outlined' | 'dot';
-export type SpinnerVariant = 'standard' | 'material' | 'dots' | 'orbs';
-export type SkeletonVariant = 'standard' | 'pulse' | 'soft';
-export type EmptyVariant = 'standard' | 'illustrated' | 'compact' | 'card';
-export type ProgressVariant = 'standard' | 'linear' | 'ring' | 'segmented';
-export type GaugeVariant = 'standard' | 'ring' | 'thin';
-export type StepperVariant = 'standard' | 'material' | 'vertical' | 'segmented';
-export type TimelineVariant = 'standard' | 'compact' | 'cards' | 'horizontal';
-export type StatusVariant = 'standard' | 'filled' | 'soft';
-export type TimeoutVariant = 'standard' | 'countdown' | 'sheet';
-export type ChartVariant = 'standard' | 'rounded' | 'lollipop' | 'meter';
-export type RatingVariant = 'standard' | 'emoji' | 'numbers';
+export type AlertVariant = 'default' | 'filled' | 'outlined' | 'banner';
+export type ToastVariant = 'default' | 'snackbar' | 'stacked' | 'pill';
+export type TooltipVariant = 'default' | 'plain' | 'rich' | 'beak';
+export type BadgeVariant = 'default' | 'filled' | 'outlined' | 'dot';
+export type SpinnerVariant = 'default' | 'material' | 'dots' | 'orbs';
+export type SkeletonVariant = 'default' | 'pulse' | 'soft';
+export type EmptyVariant = 'default' | 'illustrated' | 'compact' | 'card';
+export type ProgressVariant = 'default' | 'linear' | 'ring' | 'segmented';
+export type GaugeVariant = 'default' | 'ring' | 'thin';
+export type StepperVariant = 'default' | 'material' | 'vertical' | 'segmented';
+export type TimelineVariant = 'default' | 'compact' | 'cards' | 'horizontal';
+export type StatusVariant = 'default' | 'filled' | 'soft';
+export type TimeoutVariant = 'default' | 'countdown' | 'sheet';
+export type ChartVariant = 'default' | 'rounded' | 'lollipop' | 'meter';
+export type RatingVariant = 'default' | 'emoji' | 'numbers';
 export type OrbState = 'working' | 'searching' | 'solving' | 'listening' | 'connecting' | 'weaving' | 'composing' | 'breathing' | 'shaping';
 
-/** The variant class of a kind: bx-alert--filled. */
-export const vx = (kind: string, variant = 'standard') => `bx-${kind}--${variant}`;
+/** A variant's class with its leading space, " bx-v-filled"; nothing for the default look. */
+export const vx = (variant?: string) => (variant && variant !== 'default' ? ` bx-v-${variant}` : '');
 /** The faces of the emoji rating, very poor to very good. */
 export const FACES = ['😞', '🙁', '😐', '🙂', '😄'];
 /** A ring's dash offset for a share (0 to 1) of a circle of radius r. */

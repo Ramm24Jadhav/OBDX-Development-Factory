@@ -35,7 +35,7 @@ export interface SavingsGoalProps {
   currency?: string;
   /** Add money to the goal. */
   onAdd?: () => void;
-  /** The style: standard, linear, ring or segmented. */
+  /** The style: default, linear, ring or segmented. */
   variant?: ProgressListProps['variant'];
 }
 

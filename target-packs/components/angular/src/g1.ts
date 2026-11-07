@@ -304,7 +304,7 @@ export type StepState = 'done' | 'current' | 'next' | 'failed';
 export interface StepItem extends Item { state?: StepState }
 
 export const STEPS = `
-  <ol [class]="'bx-steps ' + vcss()" [attr.aria-label]="name()" [attr.data-testid]="testID() || null">
+  <ol [class]="'bx-steps' + vcss()" [attr.aria-label]="name()" [attr.data-testid]="testID() || null">
     @for (s of rows(); track s.id) {
       <li [class]="'bx-step-item is-' + s.state" [attr.aria-current]="s.state === 'current' ? 'step' : null">
         <span class="bx-step-mark" aria-hidden="true">{{ s.mark }}</span>
@@ -325,9 +325,9 @@ export abstract class StepsBase extends Part {
   protected readonly defaultSteps: ReadonlyArray<string | StepItem> = [];
   /** The current step's id; the ones before it are done. */
   readonly selectedStep = input('');
-  /** The style: standard, material (labels under the marks), vertical or segmented. */
-  readonly variant = input<StepperVariant>('standard');
-  protected readonly vcss = computed(() => vx('stepper', this.variant()));
+  /** The style: default, material (labels under the marks), vertical or segmented. */
+  readonly variant = input<StepperVariant>('default');
+  protected readonly vcss = computed(() => vx(this.variant()));
   protected readonly rows = computed(() => {
     const list = toItems(this.steps() ?? this.defaultSteps);
     const at = list.findIndex((s) => s.id === this.selectedStep());
@@ -542,20 +542,20 @@ export type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 @Component({
   selector: 'bx-status-badge',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<span [class]="'bx-badge is-' + tone() + ' ' + vcss()" [attr.data-testid]="testID() || null"><span class="bx-badge-dot" aria-hidden="true"></span>{{ label() }}</span>`,
+  template: `<span [class]="'bx-badge is-' + tone() + vcss()" [attr.data-testid]="testID() || null"><span class="bx-badge-dot" aria-hidden="true"></span>{{ label() }}</span>`,
 })
 export class StatusBadge extends Part {
   readonly label = input.required<string>();
   readonly tone = input<Tone>('neutral');
-  /** The style: standard, filled, outlined or dot. */
-  readonly variant = input<BadgeVariant>('standard');
-  protected readonly vcss = computed(() => vx('badges', this.variant()));
+  /** The style: default, filled, outlined or dot. */
+  readonly variant = input<BadgeVariant>('default');
+  protected readonly vcss = computed(() => vx(this.variant()));
 }
 
 export interface TimelineItem { id?: string; label: string; meta?: string; state?: 'done' | 'current' | 'pending' | 'failed' }
 
 export const TIMELINE = `
-  <ol [class]="'bx-timeline ' + vcss()" [attr.aria-label]="name()" [attr.data-testid]="testID() || null">
+  <ol [class]="'bx-timeline' + vcss()" [attr.aria-label]="name()" [attr.data-testid]="testID() || null">
     @for (o of rows(); track $index) {
       <li [class]="'bx-tl-item is-' + o.state" [attr.aria-current]="o.state === 'current' ? 'step' : null">
         <span class="bx-tl-dot" aria-hidden="true"></span>
@@ -571,9 +571,9 @@ export abstract class TimelineBase extends Part {
   protected readonly defaultLabel: string = 'Timeline';
   protected readonly name = computed(() => this.label() ?? this.defaultLabel);
   readonly items = input<ReadonlyArray<TimelineItem>>([]);
-  /** The style: standard, compact, cards or horizontal. */
-  readonly variant = input<TimelineVariant>('standard');
-  protected readonly vcss = computed(() => vx('timeline', this.variant()));
+  /** The style: default, compact, cards or horizontal. */
+  readonly variant = input<TimelineVariant>('default');
+  protected readonly vcss = computed(() => vx(this.variant()));
   protected readonly rows = computed(() => this.items().map((o) => {
     const state = o.state ?? 'done';
     return { ...o, state, status: state === 'done' ? '' : state === 'current' ? 'In progress' : state === 'failed' ? 'Failed' : 'Not yet' };
@@ -589,7 +589,7 @@ export class Timeline extends TimelineBase {}
   selector: 'bx-spinner',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Orb],
-  template: `<span [class]="'bx-spinner-wrap ' + vcss()" role="status" [attr.data-testid]="testID() || null">
+  template: `<span [class]="'bx-spinner-wrap' + vcss()" role="status" [attr.data-testid]="testID() || null">
     @switch (variant()) {
       @case ('material') { <svg [class]="'bx-spinner-m3 is-' + size()" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle cx="24" cy="24" r="20"></circle></svg> }
       @case ('dots') { <span [class]="'bx-spinner-dots is-' + size()" aria-hidden="true"><span></span><span></span><span></span></span> }
@@ -600,11 +600,11 @@ export class Timeline extends TimelineBase {}
 export class Spinner extends Part {
   readonly label = input('Loading');
   readonly size = input<'sm' | 'md' | 'lg'>('md');
-  /** The style: a ring (standard), material, dots, or orbs (a thinking orb for an AI assistant). */
-  readonly variant = input<SpinnerVariant>('standard');
+  /** The style: a ring (default), material, dots, or orbs (a thinking orb for an AI assistant). */
+  readonly variant = input<SpinnerVariant>('default');
   /** What the orb shows when variant is orbs. */
   readonly orbState = input<OrbState>('working');
-  protected readonly vcss = computed(() => vx('spinner', this.variant()));
+  protected readonly vcss = computed(() => vx(this.variant()));
 }
 
 /** Where content is coming: grey lines that shimmer. */
@@ -612,7 +612,7 @@ export class Spinner extends Part {
   selector: 'bx-skeleton',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div [class]="'bx-skeleton is-' + shape() + ' ' + vcss()" role="status" aria-busy="true" [attr.data-testid]="testID() || null">
+    <div [class]="'bx-skeleton is-' + shape() + vcss()" role="status" aria-busy="true" [attr.data-testid]="testID() || null">
       <span class="bx-visually-hidden">{{ label() }}</span>
       @if (shape() !== 'text') { <span class="bx-skel-block" aria-hidden="true"></span> }
       @for (css of rows(); track $index) { <span [class]="css" aria-hidden="true"></span> }
@@ -622,9 +622,9 @@ export class Skeleton extends Part {
   readonly label = input('Loading');
   readonly lines = input(3);
   readonly shape = input<'text' | 'card' | 'circle'>('text');
-  /** The style: standard (shimmer), pulse or soft. */
-  readonly variant = input<SkeletonVariant>('standard');
-  protected readonly vcss = computed(() => vx('skeleton', this.variant()));
+  /** The style: default (shimmer), pulse or soft. */
+  readonly variant = input<SkeletonVariant>('default');
+  protected readonly vcss = computed(() => vx(this.variant()));
   protected readonly rows = computed(() => {
     const n = Math.max(1, this.lines());
     return Array.from({ length: n }, (_, i) => 'bx-skel-line' + (i === n - 1 && n > 1 ? ' is-short' : ''));
@@ -636,7 +636,7 @@ export class Skeleton extends Part {
   selector: 'bx-empty-state',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div [class]="'bx-empty ' + vcss()" [attr.data-testid]="testID() || null">
+    <div [class]="'bx-empty' + vcss()" [attr.data-testid]="testID() || null">
       <span class="bx-empty-icon" aria-hidden="true">{{ icon() }}</span>
       <h3 class="bx-empty-title">{{ heading() }}</h3>
       @if (text()) { <p class="bx-empty-text">{{ text() }}</p> }
@@ -648,9 +648,9 @@ export class EmptyState extends Part {
   readonly text = input('');
   readonly actionLabel = input('');
   readonly icon = input('○');
-  /** The style: standard, illustrated, compact or card. */
-  readonly variant = input<EmptyVariant>('standard');
-  protected readonly vcss = computed(() => vx('empty', this.variant()));
+  /** The style: default, illustrated, compact or card. */
+  readonly variant = input<EmptyVariant>('default');
+  protected readonly vcss = computed(() => vx(this.variant()));
   readonly action = output<void>();
 }
 
@@ -659,7 +659,7 @@ export class EmptyState extends Part {
   selector: 'bx-tooltip',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <span [class]="'bx-tooltip ' + vcss()" [attr.data-testid]="testID() || null" (mouseenter)="open.set(true)" (mouseleave)="open.set(false)">
+    <span [class]="'bx-tooltip' + vcss()" [attr.data-testid]="testID() || null" (mouseenter)="open.set(true)" (mouseleave)="open.set(false)">
       <span>{{ label() }}</span>
       <button type="button" class="bx-tip-button" [attr.aria-label]="'About ' + label()" [attr.aria-describedby]="id" (focus)="open.set(true)" (blur)="open.set(false)"
               (keydown.escape)="open.set(false)">i</button>
@@ -669,9 +669,9 @@ export class EmptyState extends Part {
 export class Tooltip extends Part {
   readonly label = input.required<string>();
   readonly text = input.required<string>();
-  /** The style: standard, plain, rich or beak. */
-  readonly variant = input<TooltipVariant>('standard');
-  protected readonly vcss = computed(() => vx('tooltip', this.variant()));
+  /** The style: default, plain, rich or beak. */
+  readonly variant = input<TooltipVariant>('default');
+  protected readonly vcss = computed(() => vx(this.variant()));
   protected readonly open = signal(false);
 }
 
@@ -682,7 +682,7 @@ const ICON: Record<Severity, string> = { error: '!', warning: '!', confirmation:
 
 export const ALERT = `
   @if (!gone()) {
-    <div [class]="'bx-alert is-' + sev() + ' ' + vcss()" [attr.role]="sev() === 'error' ? 'alert' : 'status'" [attr.data-testid]="testID() || null">
+    <div [class]="'bx-alert is-' + sev() + vcss()" [attr.role]="sev() === 'error' ? 'alert' : 'status'" [attr.data-testid]="testID() || null">
       <span class="bx-alert-icon" aria-hidden="true">{{ icon() }}</span>
       <div class="bx-alert-text">@if (head()) {<strong>{{ head() }}</strong>}<span>{{ message() }}</span></div>
       @if (act()) { <button type="button" class="bx-alert-action" (click)="action.emit()">{{ act() }}</button> }
@@ -703,9 +703,9 @@ export abstract class AlertBase extends Part {
   readonly actionLabel = input<string | undefined>(undefined);
   /** Shows Dismiss; the alert hides and (closed) tells the screen. */
   readonly dismissible = input(false);
-  /** The style: standard, filled, outlined or banner. */
-  readonly variant = input<AlertVariant>('standard');
-  protected readonly vcss = computed(() => vx('alert', this.variant()));
+  /** The style: default, filled, outlined or banner. */
+  readonly variant = input<AlertVariant>('default');
+  protected readonly vcss = computed(() => vx(this.variant()));
   readonly action = output<void>();
   readonly closed = output<void>();
   protected readonly defaultSeverity: Severity = 'info';

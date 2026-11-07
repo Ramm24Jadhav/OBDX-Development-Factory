@@ -527,7 +527,7 @@ test('g1 bx-pagination: first, last and the pages around the current one; next a
   eq([one.props.page, one.vm.atFirst(), one.vm.atLast()], [1, true, true], 'ends');
 });
 test('g1 data: badge tone, timeline states, spinner and skeleton say they are loading', () => {
-  eq(create('bx-status-badge', { label: 'Overdue', tone: 'danger' }).vm.css(), 'bx-badge is-danger bx-badges--standard', 'badge');
+  eq(create('bx-status-badge', { label: 'Overdue', tone: 'danger' }).vm.css(), 'bx-badge is-danger', 'badge');
   const t = create('bx-timeline', { items: [{ label: 'Initiated', meta: '09:12 · A. Rao' }, { label: 'Approved', state: 'current' }, { label: 'Completed', state: 'pending' }] });
   eq(t.vm.items().map((i) => [i.css, i.status, i.current]), [['bx-tl-item is-done', '', null], ['bx-tl-item is-current', 'In progress', 'step'], ['bx-tl-item is-pending', 'Not yet', null]], 'timeline');
   ['bx-spinner', 'bx-skeleton'].forEach((e) => { if (!/role="status"/.test(registry[e].view) || !/bx-visually-hidden/.test(registry[e].view)) { throw new Error(e + ' is not announced'); } });
@@ -546,11 +546,11 @@ test('g1 bx-empty-state and bx-tooltip: the action fires; the tip shows on focus
 });
 test('g1 messages: errors are announced at once, others politely; the action and Dismiss fire', () => {
   const e = create('bx-error-message', { message: 'The amount is more than your daily limit.', actionLabel: 'Change the amount', dismissible: true });
-  eq([e.vm.role(), e.vm.css(), e.vm.icon()], ['alert', 'bx-alert is-error bx-alert--standard', '!'], 'error');
+  eq([e.vm.role(), e.vm.css(), e.vm.icon()], ['alert', 'bx-alert is-error', '!'], 'error');
   e.vm.act();
   e.vm.dismiss();
   eq([types(e), e.vm.dismissed()], [['ojAction', 'ojClose'], true], 'events');
-  eq([create('bx-success-message', {}).vm.role(), create('bx-alert-banner', {}).vm.css()], ['status', 'bx-alert is-info bx-alert--standard'], 'others');
+  eq([create('bx-success-message', {}).vm.role(), create('bx-alert-banner', {}).vm.css()], ['status', 'bx-alert is-info'], 'others');
 });
 test('g1 bx-notification-panel: rows with their action named per row; empty text', () => {
   const n = create('bx-notification-panel', { items: [{ id: 'n1', title: 'Card payment due', meta: 'Due 18 Jan', value: '640.00', unread: true }] });
@@ -573,7 +573,7 @@ test('g1 views have their roles', () => {
   has('bx-side-nav', /:aria-current="\[\[n\.data\.current\]\]"/);
   has('bx-sheet', /role="dialog" aria-modal="true"/);
   has('bx-pagination', /aria-label="Next page"/);
-  has('bx-stepper', /<ol :class="\[\['bx-steps ' \+ vclass\(\)\]\]" :aria-label/);
+  has('bx-stepper', /<ol :class="\[\['bx-steps' \+ vclass\(\)\]\]" :aria-label/);
 });
 
 // Group 2: accounts, payments, deposits
@@ -813,7 +813,7 @@ test('g5 compose, chat, locator and rating', () => {
   const r = create('bx-feedback', {});
   r.vm.stars()[3].pick();
   eq([r.props.value, r.vm.word(), r.vm.stars()[3].label, r.vm.stars().filter((s) => /\bis-on\b/.test(s.css)).length], [4, 'Good', '4 stars, Good', 4], 'rating');
-  if (!/role="log" aria-live="polite"/.test(registry['bx-live-chat'].view) || !/<fieldset :class="\[\['bx-field bx-rating ' \+ vclass\(\)\]\]">/.test(registry['bx-feedback'].view)) { throw new Error('roles'); }
+  if (!/role="log" aria-live="polite"/.test(registry['bx-live-chat'].view) || !/<fieldset :class="\[\['bx-field bx-rating' \+ vclass\(\)\]\]">/.test(registry['bx-feedback'].view)) { throw new Error('roles'); }
 });
 test('g5 reused kinds have their own defaults', () => {
   eq([create('bx-statement-format', {}).props.value, create('bx-self-register', {}).vm.items().length, create('bx-terms-consent', {}).props.control, create('bx-mailbox', {}).props.actionLabel],
@@ -978,7 +978,7 @@ test('g7 micro: swipe row actions, swipe toast, toggles, gauge, scrub, prompt, v
   heart.vm.toggle();
   eq([heart.props.value, heart.vm.pressed(), heart.vm.name()], [true, 'true', 'Favourite A. Rao'], 'heart');
   const gauge = create('bx-budget-gauge', { value: 450, max: 400, unit: 'USD' });
-  eq([gauge.vm.offset(), gauge.vm.text(), gauge.vm.css()], ['0', '450 USD of 400 USD, over budget', 'bx-gauge bx-progress--standard is-over'], 'gauge');
+  eq([gauge.vm.offset(), gauge.vm.text(), gauge.vm.css()], ['0', '450 USD of 400 USD, over budget', 'bx-gauge is-over'], 'gauge');
   eq(create('bx-budget-gauge', { value: 100, max: 400 }).vm.offset(), '94.5', 'quarter');
   const sc = create('bx-scrub-field', { value: 100, max: 120, step: 10 });
   sc.vm.down({ clientX: 0 });
@@ -1048,22 +1048,26 @@ test('the skin has the motion tokens, the effects and a reduced-motion rule for 
 
 // Wave V3 variants (variants/v3.json): every feedback and status element takes variant and its root gets bx-<kind>--<variant>
 const V3 = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'variants', 'v3.json'), 'utf8')).components;
-const v3Rows = Object.keys(V3).filter((id) => V3[id].packs['jet-premium']).flatMap((id) => V3[id].packs['jet-premium'].variants.map((v) => ({ id, kind: V3[id].kind, name: V3[id].packs['jet-premium'].name, variant: v })));
+const v3Names = {};
+JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'catalogue.json'), 'utf8')).categories.forEach((g) => g.components.forEach((c) => { v3Names[c.id] = c.names; }));
+const v3Rows = Object.keys(V3).flatMap((id) => V3[id].variants.filter((v) => v.built.indexOf('jet-premium') >= 0).map((v) => ({ id, kind: V3[id].kind, name: v3Names[id]['jet-premium'], variant: v.id })));
+/** The default look adds no variant class; any other adds bx-v-<id>. */
+const hasVariantClass = (classes, v) => (v === 'default' ? !/bx-v-/.test(classes) : classes.split(' ').indexOf('bx-v-' + v) >= 0);
 /** The root class of a view model: whichever of its class computeds carries the variant. */
 const rootClasses = (vm) => ['vclass', 'css', 'checkCss', 'regionCss'].filter((k) => typeof vm[k] === 'function').map((k) => String(vm[k]())).join(' ');
-test('V3: all 47 feedback and status elements are listed and default to standard', () => {
+test('V3: all 47 feedback and status elements are listed and default to the default look', () => {
   eq(new Set(v3Rows.map((r) => r.id)).size, 47, 'components');
-  const bad = [...new Set(v3Rows.map((r) => r.name))].filter((n) => !registry[n] || registry[n].metadata.properties.variant.value !== 'standard');
+  const bad = [...new Set(v3Rows.map((r) => r.name))].filter((n) => !registry[n] || registry[n].metadata.properties.variant.value !== 'default');
   eq(bad, [], 'without variant');
 });
 test('V3: every variant puts its class on the element root (' + v3Rows.length + ' variants)', () => {
-  const bad = v3Rows.filter((r) => rootClasses(create(r.name, { variant: r.variant }).vm).split(' ').indexOf('bx-' + r.kind + '--' + r.variant) < 0).map((r) => r.name + ' ' + r.variant);
+  const bad = v3Rows.filter((r) => !hasVariantClass(rootClasses(create(r.name, { variant: r.variant }).vm), r.variant)).map((r) => r.name + ' ' + r.variant);
   eq(bad, [], 'without their class');
 });
 test('V3: spinner marks, orb lifecycle and the lattice falling back to the spinner', () => {
   const view = registry['bx-spinner'].view;
   ['bx-spinner-m3', 'bx-spinner-dots', 'bx-orb', 'role="status"'].forEach((s) => { if (view.indexOf(s) < 0) { throw new Error('spinner view lacks ' + s); } });
-  eq(['standard', 'material', 'dots', 'orbs', 'odd'].map((v) => create('bx-spinner', { variant: v }).vm.mark()), ['standard', 'material', 'dots', 'orbs', 'standard'], 'marks');
+  eq(['default', 'material', 'dots', 'orbs', 'odd'].map((v) => create('bx-spinner', { variant: v }).vm.mark()), ['default', 'material', 'dots', 'orbs', 'default'], 'marks');
   const s = create('bx-spinner', { variant: 'orbs' }).vm;
   if (typeof s.connected !== 'function' || typeof s.disconnected !== 'function') { throw new Error('the orb is not painted while connected'); }
   if (registry['bx-lattice-loader'].view.indexOf('bx-spinner-m3') < 0) { throw new Error('lattice has no spinner variants'); }

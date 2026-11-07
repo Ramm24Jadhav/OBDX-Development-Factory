@@ -267,7 +267,7 @@ const WORDS = ['', 'Very poor', 'Poor', 'Fine', 'Good', 'Very good'];
   selector: 'bx-feedback',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <fieldset [class]="'bx-field bx-rating ' + vcss()" [attr.data-testid]="testID() || null">
+    <fieldset [class]="'bx-field bx-rating' + vcss()" [attr.data-testid]="testID() || null">
       <legend class="bx-label">{{ label() }}</legend>
       <div class="bx-stars">
         @for (s of stars(); track s.i) {
@@ -283,9 +283,9 @@ const WORDS = ['', 'Very poor', 'Poor', 'Fine', 'Good', 'Very good'];
 export class FeedbackRating extends Part {
   readonly label = input('How was it?');
   readonly value = model(0);
-  /** The style: standard (stars), emoji (faces) or numbers. */
-  readonly variant = input<RatingVariant>('standard');
-  protected readonly vcss = computed(() => vx('rating', this.variant()));
+  /** The style: default (stars), emoji (faces) or numbers. */
+  readonly variant = input<RatingVariant>('default');
+  protected readonly vcss = computed(() => vx(this.variant()));
   protected readonly stars = computed(() => [1, 2, 3, 4, 5].map((i) => ({ i, label: `${i} ${i === 1 ? 'star' : 'stars'}, ${WORDS[i]}`,
     glyph: this.variant() === 'emoji' ? FACES[i - 1] : this.variant() === 'numbers' ? String(i) : '★' })));
   protected readonly word = computed(() => WORDS[this.value()] || '');

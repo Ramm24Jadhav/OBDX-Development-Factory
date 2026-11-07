@@ -230,11 +230,11 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-variants'], functio
           css: 'bx-step-item is-' + state, status: state === 'done' ? 'done' : state === 'current' ? 'current step' : state === 'failed' ? 'failed' : 'not started' };
       });
     });
-    self.vclass = variants.vclass(self, 'stepper');
+    self.vclass = variants.vclass(self);
   }
   kinds.steps = { model: StepsKind,
-    props: { label: str('Progress'), steps: arr(), selectedStep: { type: 'string', value: '' }, variant: str('standard') },
-    view: '<ol :class="[[\'bx-steps \' + vclass()]]" :aria-label="[[$properties.label]]">' + each('items', 's', '<li :class="[[s.data.css]]" :aria-current="[[s.data.current]]">'
+    props: { label: str('Progress'), steps: arr(), selectedStep: { type: 'string', value: '' }, variant: str('default') },
+    view: '<ol :class="[[\'bx-steps\' + vclass()]]" :aria-label="[[$properties.label]]">' + each('items', 's', '<li :class="[[s.data.css]]" :aria-current="[[s.data.current]]">'
       + '<span class="bx-step-mark" aria-hidden="true">' + txt('s.data.mark') + '</span><span class="bx-step-label">' + txt('s.data.label') + '</span>'
       + '<span class="bx-visually-hidden">' + txt('s.data.status') + '</span></li>') + '</ol>' };
 
@@ -364,9 +364,9 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-variants'], functio
   function BadgeKind(context) {
     var self = this;
     base(self, context, 'bx-badge');
-    self.css = ko.pureComputed(function () { return 'bx-badge is-' + (self.props.tone || 'neutral') + ' ' + variants.vx('badges', self.props.variant); });
+    self.css = ko.pureComputed(function () { return 'bx-badge is-' + (self.props.tone || 'neutral') + variants.vx(self.props.variant); });
   }
-  kinds.badge = { model: BadgeKind, props: { label: str(), tone: str('neutral'), variant: str('standard') },
+  kinds.badge = { model: BadgeKind, props: { label: str(), tone: str('neutral'), variant: str('default') },
     view: '<span :class="[[css]]"><span class="bx-badge-dot" aria-hidden="true"></span>' + txt('$properties.label') + '</span>' };
 
   /* ---------- timeline: events in order, with who and when ---------- */
@@ -380,10 +380,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-variants'], functio
           status: state === 'done' ? '' : state === 'current' ? 'In progress' : state === 'failed' ? 'Failed' : 'Not yet' };
       });
     });
-    self.vclass = variants.vclass(self, 'timeline');
+    self.vclass = variants.vclass(self);
   }
-  kinds.timeline = { model: TimelineKind, props: { label: str('Timeline'), items: arr(), variant: str('standard') },
-    view: '<ol :class="[[\'bx-timeline \' + vclass()]]" :aria-label="[[$properties.label]]">' + each('items', 't', '<li :class="[[t.data.css]]" :aria-current="[[t.data.current]]"><span class="bx-tl-dot" aria-hidden="true"></span>'
+  kinds.timeline = { model: TimelineKind, props: { label: str('Timeline'), items: arr(), variant: str('default') },
+    view: '<ol :class="[[\'bx-timeline\' + vclass()]]" :aria-label="[[$properties.label]]">' + each('items', 't', '<li :class="[[t.data.css]]" :aria-current="[[t.data.current]]"><span class="bx-tl-dot" aria-hidden="true"></span>'
       + '<span class="bx-tl-text"><strong>' + txt('t.data.label') + '</strong>' + iff('t.data.meta', '<span class="bx-tl-meta">' + txt('t.data.meta') + '</span>')
       + iff('t.data.status', '<span class="bx-tl-status">' + txt('t.data.status') + '</span>') + '</span></li>') + '</ol>' };
 
@@ -392,14 +392,14 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-variants'], functio
     var self = this;
     base(self, context, 'bx-spin');
     self.css = ko.pureComputed(function () { return 'bx-spinner is-' + (self.props.size || 'md'); });
-    self.vclass = variants.vclass(self, 'spinner');
+    self.vclass = variants.vclass(self);
     /** Which mark to draw: the ring, material, dots or the orb. */
-    self.mark = ko.pureComputed(function () { var v = self.props.variant; return v === 'material' || v === 'dots' || v === 'orbs' ? v : 'standard'; });
+    self.mark = ko.pureComputed(function () { var v = self.props.variant; return v === 'material' || v === 'dots' || v === 'orbs' ? v : 'default'; });
     self.sized = function (css) { return css + ' is-' + (self.props.size || 'md'); };
     variants.orbLifecycle(self);
   }
-  kinds.spinner = { model: SpinnerKind, props: { label: str('Loading'), size: str('md'), variant: str('standard'), orbState: str('working') },
-    view: '<span :class="[[\'bx-spinner-wrap \' + vclass()]]" role="status">'
+  kinds.spinner = { model: SpinnerKind, props: { label: str('Loading'), size: str('md'), variant: str('default'), orbState: str('working') },
+    view: '<span :class="[[\'bx-spinner-wrap\' + vclass()]]" role="status">'
       + iff('mark() === \'material\'', '<svg :class="[[sized(\'bx-spinner-m3\')]]" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle cx="24" cy="24" r="20"></circle></svg>')
       + iff('mark() === \'dots\'', '<span :class="[[sized(\'bx-spinner-dots\')]]" aria-hidden="true"><span></span><span></span><span></span></span>')
       + iff('mark() === \'orbs\'', '<canvas :class="[[sized(\'bx-orb\')]]" aria-hidden="true"></canvas>')
@@ -414,9 +414,9 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-variants'], functio
       for (var i = 0; i < n; i++) { out.push({ css: 'bx-skel-line' + (i === n - 1 && n > 1 ? ' is-short' : '') }); }
       return out;
     });
-    self.css = ko.pureComputed(function () { return 'bx-skeleton is-' + (self.props.shape || 'text') + ' ' + variants.vx('skeleton', self.props.variant); });
+    self.css = ko.pureComputed(function () { return 'bx-skeleton is-' + (self.props.shape || 'text') + variants.vx(self.props.variant); });
   }
-  kinds.skeleton = { model: SkeletonKind, props: { label: str('Loading'), lines: num(3), shape: str('text'), variant: str('standard') },
+  kinds.skeleton = { model: SkeletonKind, props: { label: str('Loading'), lines: num(3), shape: str('text'), variant: str('default') },
     view: '<div :class="[[css]]" role="status" aria-busy="true"><span class="bx-visually-hidden">' + txt('$properties.label') + '</span>'
       + iff('$properties.shape !== \'text\'', '<span class="bx-skel-block" aria-hidden="true"></span>') + each('lines', 'l', '<span :class="[[l.data.css]]" aria-hidden="true"></span>') + '</div>' };
 
@@ -425,10 +425,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-variants'], functio
     var self = this;
     base(self, context, 'bx-empty');
     self.act = function () { bx.fire(self.element, 'ojAction', {}); };
-    self.vclass = variants.vclass(self, 'empty');
+    self.vclass = variants.vclass(self);
   }
-  kinds.empty = { model: EmptyKind, events: ACTION, props: { heading: str(), text: str(), actionLabel: str(), icon: str('○'), variant: str('standard') },
-    view: '<div :class="[[\'bx-empty \' + vclass()]]"><span class="bx-empty-icon" aria-hidden="true">' + txt('$properties.icon') + '</span><h3 class="bx-empty-title">' + txt('$properties.heading') + '</h3>'
+  kinds.empty = { model: EmptyKind, events: ACTION, props: { heading: str(), text: str(), actionLabel: str(), icon: str('○'), variant: str('default') },
+    view: '<div :class="[[\'bx-empty\' + vclass()]]"><span class="bx-empty-icon" aria-hidden="true">' + txt('$properties.icon') + '</span><h3 class="bx-empty-title">' + txt('$properties.heading') + '</h3>'
       + iff('$properties.text', '<p class="bx-empty-text">' + txt('$properties.text') + '</p>')
       + iff('$properties.actionLabel', '<button type="button" class="bx-btn bx-btn--outlined" on-click="[[act]]">' + txt('$properties.actionLabel') + '</button>') + '</div>' };
 
@@ -441,10 +441,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-variants'], functio
     self.show = function () { self.open(true); return true; };
     self.hide = function () { self.open(false); return true; };
     self.onKey = function (event) { if (event.key === 'Escape') { self.open(false); } return true; };
-    self.vclass = variants.vclass(self, 'tooltip');
+    self.vclass = variants.vclass(self);
   }
-  kinds.tooltip = { model: TooltipKind, props: { label: str(), text: str(), variant: str('standard') },
-    view: '<span :class="[[\'bx-tooltip \' + vclass()]]" on-mouseenter="[[show]]" on-mouseleave="[[hide]]"><span>' + txt('$properties.label') + '</span>'
+  kinds.tooltip = { model: TooltipKind, props: { label: str(), text: str(), variant: str('default') },
+    view: '<span :class="[[\'bx-tooltip\' + vclass()]]" on-mouseenter="[[show]]" on-mouseleave="[[hide]]"><span>' + txt('$properties.label') + '</span>'
       + '<button type="button" class="bx-tip-button" :aria-label="[[name]]" :aria-describedby="[[id]]" on-focus="[[show]]" on-blur="[[hide]]" on-keydown="[[onKey]]">i</button>'
       + '<span class="bx-tip" role="tooltip" :id="[[id]]" :hidden="[[!open()]]">' + txt('$properties.text') + '</span></span>' };
 
@@ -453,14 +453,14 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-variants'], functio
     var self = this;
     base(self, context, 'bx-alert');
     self.dismissed = ko.observable(false);
-    self.css = ko.pureComputed(function () { return 'bx-alert is-' + (self.props.severity || 'info') + ' ' + variants.vx('alert', self.props.variant); });
+    self.css = ko.pureComputed(function () { return 'bx-alert is-' + (self.props.severity || 'info') + variants.vx(self.props.variant); });
     self.role = ko.pureComputed(function () { return self.props.severity === 'error' ? 'alert' : 'status'; });
     self.icon = ko.pureComputed(function () { return SEVERITY_ICON[self.props.severity] || 'i'; });
     self.act = function () { bx.fire(self.element, 'ojAction', {}); };
     self.dismiss = function () { self.dismissed(true); bx.fire(self.element, 'ojClose', {}); };
   }
   kinds.alert = { model: AlertKind, events: { ojAction: { bubbles: true }, ojClose: { bubbles: true } },
-    props: { heading: str(), message: str(), severity: str('info'), actionLabel: str(), dismissible: bool(), variant: str('standard') },
+    props: { heading: str(), message: str(), severity: str('info'), actionLabel: str(), dismissible: bool(), variant: str('default') },
     view: iff('!dismissed()', '<div :class="[[css]]" :role="[[role]]"><span class="bx-alert-icon" aria-hidden="true">' + txt('icon') + '</span><div class="bx-alert-text">'
       + iff('$properties.heading', '<strong>' + txt('$properties.heading') + '</strong>') + '<span>' + txt('$properties.message') + '</span></div>'
       + iff('$properties.actionLabel', '<button type="button" class="bx-alert-action" on-click="[[act]]">' + txt('$properties.actionLabel') + '</button>')

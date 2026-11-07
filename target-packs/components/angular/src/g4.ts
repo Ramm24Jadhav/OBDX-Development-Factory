@@ -23,7 +23,7 @@ const figure = (n: number, unit: string) => n.toLocaleString() + (unit ? ` ${uni
 export interface Bar { label: string; value: number; display?: string; tone?: 'danger' | 'success' }
 
 export const CHART = `
-  <figure [class]="'bx-chart is-' + dir() + ' ' + vcss()" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
+  <figure [class]="'bx-chart is-' + dir() + vcss()" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
     <figcaption class="bx-panel-title" [id]="id">{{ head() }}</figcaption>
     @if (variant() === 'meter') { <span class="bx-meter-bar" aria-hidden="true">@for (s of segs(); track $index) {<span [class]="s"></span>}</span> }
     <ul class="bx-bars">
@@ -43,9 +43,9 @@ export abstract class ChartBase extends Part {
   readonly unit = input('');
   readonly orientation = input<'bars' | 'columns' | undefined>(undefined);
   readonly note = input('');
-  /** The style: standard, rounded, lollipop or meter (one bar split into the figures). */
-  readonly variant = input<ChartVariant>('standard');
-  protected readonly vcss = computed(() => vx('chart', this.variant()));
+  /** The style: default, rounded, lollipop or meter (one bar split into the figures). */
+  readonly variant = input<ChartVariant>('default');
+  protected readonly vcss = computed(() => vx(this.variant()));
   /** The meter chart's one bar: each figure's share of the total. */
   protected readonly segs = computed(() => {
     const total = this.items().reduce((s, o) => s + Math.max(0, o.value || 0), 0);
@@ -75,7 +75,7 @@ export class SpendingChart extends ChartBase {
 export interface Meter { id?: string; label: string; value: number; max: number }
 
 export const METERS = `
-  <section [class]="'bx-panel bx-meters ' + vcss()" [attr.aria-label]="head() || null" [attr.data-testid]="testID() || null">
+  <section [class]="'bx-panel bx-meters' + vcss()" [attr.aria-label]="head() || null" [attr.data-testid]="testID() || null">
     @if (head()) { <h3 class="bx-panel-title">{{ head() }}</h3> }
     @for (m of rows(); track $index; let i = $index) {
       <div class="bx-meter">
@@ -101,9 +101,9 @@ export abstract class MetersBase extends Part {
   readonly unit = input('');
   /** From this share (%) the bar turns amber; leave out for the component's own (90). */
   readonly warnAt = input<number | undefined>(undefined);
-  /** The style: standard, linear, ring or segmented. */
-  readonly variant = input<ProgressVariant>('standard');
-  protected readonly vcss = computed(() => vx('progress', this.variant()));
+  /** The style: default, linear, ring or segmented. */
+  readonly variant = input<ProgressVariant>('default');
+  protected readonly vcss = computed(() => vx(this.variant()));
   protected readonly defaultWarnAt: number = 90;
   protected readonly defaultHeading: string = '';
   protected readonly head = computed(() => this.heading() ?? this.defaultHeading);

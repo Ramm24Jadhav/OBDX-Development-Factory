@@ -6,8 +6,10 @@ import { ComponentType } from 'react';
 import * as bx from '../src';
 import { accessibilityProblems } from './a11y';
 
-interface Entry { kind: string; packs: Record<string, { name: string; variants: string[] } | null> }
+interface Entry { kind: string; variants: { id: string; built: string[] }[] }
 const v3 = JSON.parse(readFileSync(resolve(__dirname, '../../variants/v3.json'), 'utf8')) as { components: Record<string, Entry> };
+const names: Record<string, Record<string, string>> = Object.fromEntries((JSON.parse(readFileSync(resolve(__dirname, '../../catalogue.json'), 'utf8')) as { categories: { components: { id: string; names: Record<string, string> }[] }[] })
+  .categories.flatMap((g) => g.components).map((c) => [c.id, c.names]));
 
 const noop = () => undefined;
 const tl = [{ label: 'Initiated', meta: 'A. Rao · 09:12' }, { label: 'Waiting, level 2', meta: 'Finance head', state: 'current' as const }];
@@ -40,9 +42,7 @@ const BY_NAME: Record<string, Record<string, unknown>> = {
   BudgetGauge: { label: 'Groceries', value: 320, max: 400 },
 };
 
-const rows = Object.entries(v3.components).flatMap(([id, c]) => (c.packs['react-native']
-  ? c.packs['react-native'].variants.filter((v) => v !== 'standard').map((variant) => ({ id, kind: c.kind, name: c.packs['react-native']!.name, variant })) : []));
-
+const rows = Object.entries(v3.components).flatMap(([id, c]) => c.variants.filter((v) => v.id !== 'default' && v.built.includes('react-native')).map((v) => ({ id, kind: c.kind, name: names[id]['react-native'], variant: v.id })));
 type Node = { type: string; props: Record<string, unknown>; children: (Node | string)[] | null };
 const A11Y = ['accessibilityRole', 'role', 'accessibilityLabel', 'aria-label', 'accessibilityValue', 'aria-valuenow', 'aria-valuemax', 'aria-valuetext', 'accessibilityState',
   'accessibilityLiveRegion', 'accessible'];
@@ -70,12 +70,12 @@ async function draw(name: string, kind: string, variant: string) {
 
 describe('V3 variants (feedback and status)', () => {
   it('lists every React Native component of the wave', () => {
-    expect(new Set(rows.map((r) => r.id)).size).toBe(Object.values(v3.components).filter((c) => c.packs['react-native']).length);
+    expect(new Set(rows.map((r) => r.id)).size).toBe(Object.values(v3.components).filter((c) => c.variants[0].built.includes('react-native')).length);
     rows.forEach((r) => expect(typeof (bx as Record<string, unknown>)[r.name]).toBe('function'));
   });
 
   it.each(rows.map((r) => [`${r.name} ${r.variant}`, r] as const))('%s: a new look, the same for screen readers', async (_, r) => {
-    const standard = await draw(r.name, r.kind, 'standard');
+    const standard = await draw(r.name, r.kind, 'default');
     const variant = await draw(r.name, r.kind, r.variant);
     expect(variant.look).not.toBe(standard.look);
     expect(variant.said).toEqual(standard.said);

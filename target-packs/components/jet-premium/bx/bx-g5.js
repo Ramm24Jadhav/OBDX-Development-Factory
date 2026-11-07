@@ -191,10 +191,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2', './bx-g3'], functi
       });
     });
     self.word = ko.pureComputed(function () { return WORDS[self.props.value || 0] || ''; });
-    self.vclass = k.variants.vclass(self, 'rating');
+    self.vclass = k.variants.vclass(self);
   }
-  kinds.rating = { model: RatingKind, props: { labelHint: str(), value: { type: 'number', value: 0, writeback: true }, variant: str('standard') },
-    view: '<fieldset :class="[[\'bx-field bx-rating \' + vclass()]]"><legend class="bx-label">' + txt('$properties.labelHint') + '</legend><div class="bx-stars">'
+  kinds.rating = { model: RatingKind, props: { labelHint: str(), value: { type: 'number', value: 0, writeback: true }, variant: str('default') },
+    view: '<fieldset :class="[[\'bx-field bx-rating\' + vclass()]]"><legend class="bx-label">' + txt('$properties.labelHint') + '</legend><div class="bx-stars">'
       + each('stars', 's', '<label :class="[[s.data.css]]"><input type="radio" class="bx-visually-hidden" :name="[[id]]" :id="[[s.data.key]]" :checked="[[s.data.on]]" on-change="[[s.data.pick]]"/>'
         + '<span aria-hidden="true">' + txt('s.data.glyph') + '</span><span class="bx-visually-hidden">' + txt('s.data.label') + '</span></label>') + iff('word()', '<span class="bx-rating-word" aria-hidden="true">' + txt('word') + '</span>')
       + '</div></fieldset>' };

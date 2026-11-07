@@ -10,8 +10,10 @@ import { violations } from './a11y';
 
 afterEach(cleanup);
 
-interface Entry { kind: string; variants: { id: string }[]; packs: Record<string, { name: string; variants: string[] } | null> }
+interface Entry { kind: string; variants: { id: string; built: string[] }[] }
 const v3 = JSON.parse(readFileSync(resolve(process.cwd(), '../variants/v3.json'), 'utf8')) as { components: Record<string, Entry> };
+const names: Record<string, Record<string, string>> = Object.fromEntries((JSON.parse(readFileSync(resolve(process.cwd(), '../catalogue.json'), 'utf8')) as { categories: { components: { id: string; names: Record<string, string> }[] }[] })
+  .categories.flatMap((g) => g.components).map((c) => [c.id, c.names]));
 
 const tl = [{ label: 'Initiated', meta: 'A. Rao · 09:12' }, { label: 'Waiting, level 2', meta: 'Finance head', state: 'current' as const }];
 const meters = { items: [{ label: 'Groceries', value: 320, max: 400 }, { label: 'Eating out', value: 210, max: 200 }] };
@@ -38,9 +40,7 @@ const BY_NAME: Record<string, Record<string, unknown>> = {
   BudgetGauge: { label: 'Groceries', value: 320, max: 400, unit: 'USD' },
 };
 
-const rows = Object.entries(v3.components).flatMap(([id, c]) => (c.packs.react
-  ? c.packs.react.variants.map((variant) => ({ id, kind: c.kind, name: c.packs.react!.name, variant })) : []));
-
+const rows = Object.entries(v3.components).flatMap(([id, c]) => c.variants.filter((v) => v.built.includes('react')).map((v) => ({ id, kind: c.kind, name: names[id]['react'], variant: v.id })));
 describe('V3 variants (feedback and status)', () => {
   it('lists every React component of the wave', () => {
     expect(new Set(rows.map((r) => r.id)).size).toBe(47);
@@ -50,7 +50,8 @@ describe('V3 variants (feedback and status)', () => {
   it.each(rows.map((r) => [`${r.name} ${r.variant}`, r] as const))('%s: has its class and passes axe', async (_, r) => {
     const C = (bx as unknown as Record<string, ComponentType<Record<string, unknown>>>)[r.name];
     render(<C testID="it" {...SAMPLE[r.kind]} {...BY_NAME[r.name]} variant={r.variant} />);
-    expect(document.querySelector(`.bx-${r.kind}--${r.variant}`), `${r.name} ${r.variant}`).not.toBeNull();
+    // the default look adds no class; any other variant adds bx-v-<id>
+    if (r.variant === 'default') { expect(document.querySelector('[class*="bx-v-"]')).toBeNull(); } else { expect(document.querySelector(`.bx-v-${r.variant}`), `${r.name} ${r.variant}`).not.toBeNull(); }
     if (r.kind === 'progress') { expect(screen.getAllByRole('progressbar').length).toBeGreaterThan(0); }
     if (r.kind === 'spinner') { expect(screen.getByRole('status').textContent).toContain('Loading accounts'); }
     if (r.kind === 'rating') { expect(screen.getAllByRole('radio')).toHaveLength(5); }
@@ -82,7 +83,7 @@ describe('V3 variants (feedback and status)', () => {
     render(<><bx.FeedbackRating variant="emoji" value={0} onChange={onChange} /><bx.FeedbackRating label="Score" variant="numbers" value={2} /></>);
     await userEvent.click(screen.getAllByRole('radio', { name: /4 stars/ })[0]);
     expect(onChange).toHaveBeenCalledWith(4);
-    expect(document.querySelector('.bx-rating--numbers .is-chosen')?.textContent).toContain('2');
+    expect(document.querySelector('.bx-v-numbers .is-chosen')?.textContent).toContain('2');
   });
 
   it('ring and segmented meters show the share; the countdown ring shows the seconds', () => {

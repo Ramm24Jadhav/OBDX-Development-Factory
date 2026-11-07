@@ -118,7 +118,7 @@ export function ReceiptTear({ testID, children }: { testID?: string; children: R
 /* ---------- SuccessCheck and StatusMark ---------- */
 
 /** A tick that draws itself in a circle, with the outcome announced. */
-export function SuccessCheck({ testID, label, size = 64, variant = 'standard' }: { testID?: string; label: string; size?: number; /** standard, filled (deeper, larger) or soft (on a tinted halo) */ variant?: StatusVariant }) {
+export function SuccessCheck({ testID, label, size = 64, variant = 'default' }: { testID?: string; label: string; size?: number; /** default, filled (deeper, larger) or soft (on a tinted halo) */ variant?: StatusVariant }) {
   const t = useTheme();
   const ring = useProgress(label, DURATION.slow);
   const tick = useProgress(label, DURATION.slow, DURATION.slow, false);
@@ -144,7 +144,7 @@ export function SuccessCheck({ testID, label, size = 64, variant = 'standard' }:
 export type Status = 'pending' | 'success' | 'failed';
 
 /** A mark that turns from waiting into a tick or a cross (a payment's state), and says the state in words. */
-export function StatusMark({ testID, status, label, variant = 'standard' }: { testID?: string; status: Status; label: string; /** standard, filled, outlined or dot */ variant?: BadgeVariant }) {
+export function StatusMark({ testID, status, label, variant = 'default' }: { testID?: string; status: Status; label: string; /** default, filled, outlined or dot */ variant?: BadgeVariant }) {
   const t = useTheme();
   const spin = useCycle(900, status === 'pending');
   const pop = usePop(status);
@@ -219,7 +219,7 @@ export function SwipeRow({ testID, label, children, actions, onAction }: SwipeRo
 }
 
 /** A message that can be swiped away (or closed with its button). */
-export function SwipeToast({ testID, message, tone = 'info', onDismiss, variant = 'standard' }: { testID?: string; message: string; tone?: Tone; onDismiss: () => void; /** standard, snackbar, stacked or pill */ variant?: ToastVariant }) {
+export function SwipeToast({ testID, message, tone = 'info', onDismiss, variant = 'default' }: { testID?: string; message: string; tone?: Tone; onDismiss: () => void; /** default, snackbar, stacked or pill */ variant?: ToastVariant }) {
   const t = useTheme();
   const c = toneColors(t, tone);
   const look = toastLook(t, variant, c.line);
@@ -449,8 +449,8 @@ export function ScrubField({ testID, label, value, onChange, min = 0, max, step 
 /* ---------- BudgetGauge ---------- */
 
 /** A half-circle gauge of a budget: the needle swings to what is used, and turns red past the limit. */
-export function BudgetGauge({ testID, label, value, max, currency, size = 180, variant = 'standard' }: { testID?: string; label: string; value: number; max: number; currency?: string; size?: number;
-  /** standard (half circle and needle), ring (dots round the share) or thin */ variant?: GaugeVariant }) {
+export function BudgetGauge({ testID, label, value, max, currency, size = 180, variant = 'default' }: { testID?: string; label: string; value: number; max: number; currency?: string; size?: number;
+  /** default (half circle and needle), ring (dots round the share) or thin */ variant?: GaugeVariant }) {
   const t = useTheme();
   const share = max > 0 ? value / max : 0;
   const swing = useSlide(Math.min(1, share));
@@ -479,7 +479,7 @@ export function BudgetGauge({ testID, label, value, max, currency, size = 180, v
 
 /* ---------- PeekRating ---------- */
 
-function Star({ n, on, onPress, testID, variant = 'standard', chosen }: { n: number; on: boolean; onPress: () => void; testID?: string; variant?: RatingVariant; chosen?: boolean }) {
+function Star({ n, on, onPress, testID, variant = 'default', chosen }: { n: number; on: boolean; onPress: () => void; testID?: string; variant?: RatingVariant; chosen?: boolean }) {
   const t = useTheme();
   const lift = useSlide(on ? 1 : 0);
   return (
@@ -492,7 +492,7 @@ function Star({ n, on, onPress, testID, variant = 'standard', chosen }: { n: num
 }
 
 /** Stars that peek up as they are chosen. */
-export function PeekRating({ testID, label, value, onChange, variant = 'standard' }: Pick<FieldProps<number | null>, 'label' | 'value' | 'onChange'> & { testID?: string; /** standard (stars), emoji or numbers */ variant?: RatingVariant }) {
+export function PeekRating({ testID, label, value, onChange, variant = 'default' }: Pick<FieldProps<number | null>, 'label' | 'value' | 'onChange'> & { testID?: string; /** default (stars), emoji or numbers */ variant?: RatingVariant }) {
   return (
     <View testID={testID} accessibilityRole="radiogroup" accessibilityLabel={label} style={{ flexDirection: 'row' }}>
       {[1, 2, 3, 4, 5].map((n) => <Star key={n} testID={testID ? `${testID}-${n}` : undefined} n={n} on={!!value && n <= value} chosen={value === n} variant={variant} onPress={() => onChange?.(n)} />)}
@@ -503,7 +503,7 @@ export function PeekRating({ testID, label, value, onChange, variant = 'standard
 /* ---------- WarmTooltip ---------- */
 
 /** A tooltip that grows out of its button in a warm bubble (phones have no hover; the button opens it). */
-export function WarmTooltip({ testID, label, text, variant = 'standard' }: { testID?: string; label: string; text: string; /** standard (warm bubble), plain, rich or beak */ variant?: TooltipVariant }) {
+export function WarmTooltip({ testID, label, text, variant = 'default' }: { testID?: string; label: string; text: string; /** default (warm bubble), plain, rich or beak */ variant?: TooltipVariant }) {
   const t = useTheme();
   const [open, setOpen] = useState(false);
   const grow = useOpen(open, 'dialog');
@@ -517,9 +517,9 @@ export function WarmTooltip({ testID, label, text, variant = 'standard' }: { tes
         </View>
       </Touch>
       {open ? (
-        <Animated.View style={[variant === 'standard' ? { maxWidth: 280, padding: 12, borderRadius: 14, backgroundColor: t.color.warningSoft, borderWidth: 1, borderColor: t.color.warning }
+        <Animated.View style={[variant === 'default' ? { maxWidth: 280, padding: 12, borderRadius: 14, backgroundColor: t.color.warningSoft, borderWidth: 1, borderColor: t.color.warning }
           : { maxWidth: 280, ...tooltipLook(t, variant).bubble }, grow]}>
-          <Text style={{ fontSize: 13.5, color: variant === 'standard' ? t.color.text : tooltipLook(t, variant).fg }}>{text}</Text>
+          <Text style={{ fontSize: 13.5, color: variant === 'default' ? t.color.text : tooltipLook(t, variant).fg }}>{text}</Text>
         </Animated.View>
       ) : null}
     </View>
@@ -597,10 +597,10 @@ export function CallChip({ testID, label, number, onCall }: { testID?: string; l
 /* ---------- LatticeLoader ---------- */
 
 /** A loader of nine squares that light in a diagonal wave; still, and still announced, under reduced motion. */
-export function LatticeLoader({ testID, label = 'Loading', variant = 'standard', orbState }: { testID?: string; label?: string; /** the lattice (standard), or the spinner's material, dots or orbs */ variant?: SpinnerVariant; orbState?: OrbState }) {
+export function LatticeLoader({ testID, label = 'Loading', variant = 'default', orbState }: { testID?: string; label?: string; /** the lattice (default), or the spinner's material, dots or orbs */ variant?: SpinnerVariant; orbState?: OrbState }) {
   const t = useTheme();
-  const v = useCycle(1200, variant === 'standard', 0.5);
-  if (variant !== 'standard') { return <ActivityIndicator testID={testID} label={label} variant={variant} orbState={orbState} />; }
+  const v = useCycle(1200, variant === 'default', 0.5);
+  if (variant !== 'default') { return <ActivityIndicator testID={testID} label={label} variant={variant} orbState={orbState} />; }
   return (
     <View testID={testID} accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityState={{ busy: true }}
           style={{ width: 42, flexDirection: 'row', flexWrap: 'wrap', gap: 3 }}>

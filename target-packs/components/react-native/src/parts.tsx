@@ -125,14 +125,14 @@ export interface BannerProps {
   /** Shows a Dismiss button that hides the message (and calls onClose). */
   dismissible?: boolean;
   onClose?: () => void;
-  /** The style: standard, filled, outlined or banner. */
+  /** The style: default, filled, outlined or banner. */
   variant?: AlertVariant;
 }
 
 const TONE: Record<Severity, Tone> = { error: 'danger', warning: 'warning', confirmation: 'success', info: 'info' };
 
 /** A message across the screen: errors and warnings are alerts and are announced, the rest are read in turn. */
-export function Banner({ testID, heading, message, severity = 'info', actionLabel, onAction, dismissible, onClose, variant = 'standard' }: BannerProps) {
+export function Banner({ testID, heading, message, severity = 'info', actionLabel, onAction, dismissible, onClose, variant = 'default' }: BannerProps) {
   const t = useTheme();
   const [gone, setGone] = useState(false);
   if (gone) { return null; }
@@ -334,12 +334,12 @@ export interface StepsProps {
   steps: ReadonlyArray<string | StepItem>;
   /** The current step's id; the ones before it are done. A step's own state wins. */
   selectedStep?: string;
-  /** The style: standard, material (filled marks, thin lines), vertical or segmented. */
+  /** The style: default, material (filled marks, thin lines), vertical or segmented. */
   variant?: StepperVariant;
 }
 
 /** Where the customer is in a flow: done steps ticked, the current one marked and announced as "Step 2 of 3". */
-export function Steps({ testID, label = 'Progress', steps, selectedStep, variant = 'standard' }: StepsProps) {
+export function Steps({ testID, label = 'Progress', steps, selectedStep, variant = 'default' }: StepsProps) {
   const t = useTheme();
   const list = toItems(steps);
   const at = list.findIndex((s) => s.id === selectedStep);
@@ -431,12 +431,12 @@ export interface TimelineListProps {
   testID: string;
   label?: string;
   items: ReadonlyArray<TimelineItem>;
-  /** The style: standard, compact, cards or horizontal. */
+  /** The style: default, compact, cards or horizontal. */
   variant?: TimelineVariant;
 }
 
 /** Events in order down a line, each one stop for a screen reader with its state. */
-export function TimelineList({ testID, label, items, variant = 'standard' }: TimelineListProps) {
+export function TimelineList({ testID, label, items, variant = 'default' }: TimelineListProps) {
   const t = useTheme();
   const said = { done: 'done', current: 'in progress', pending: 'not yet', failed: 'failed' } as const;
   const across = variant === 'horizontal';
@@ -494,12 +494,12 @@ export interface ProgressListProps {
   currency?: string;
   /** What the numbers are: "used" for budgets and limits (over max turns red), "saved" for goals. */
   measure?: 'used' | 'saved' | 'score';
-  /** The style: standard, linear (thin with a stop mark), ring or segmented. */
+  /** The style: default, linear (thin with a stop mark), ring or segmented. */
   variant?: ProgressVariant;
 }
 
 /** Bars of how much is used or saved, each a progress bar with its numbers for screen readers. */
-export function ProgressList({ testID, label, items, currency, measure = 'used', variant = 'standard' }: ProgressListProps) {
+export function ProgressList({ testID, label, items, currency, measure = 'used', variant = 'default' }: ProgressListProps) {
   const t = useTheme();
   const show = (n: number) => (currency ? formatAmount(n, currency) : String(n));
   const fill = (share: number, over: boolean) => (over ? t.color.danger : share > 0.85 && measure === 'used' ? t.color.warning : t.color.primary);
@@ -559,12 +559,12 @@ export interface BarsProps {
   onChange?: (label: string) => void;
   /** Lays the bars across (modules by count) instead of up (months by amount). */
   horizontal?: boolean;
-  /** The style: standard, rounded, lollipop or meter (one bar split into the figures). */
+  /** The style: default, rounded, lollipop or meter (one bar split into the figures). */
   variant?: ChartVariant;
 }
 
 /** A bar chart from plain views (no drawing library): each bar is a button that reads its label and amount. */
-export function Bars({ testID, label, bars, currency, value, onChange, horizontal, variant = 'standard' }: BarsProps) {
+export function Bars({ testID, label, bars, currency, value, onChange, horizontal, variant = 'default' }: BarsProps) {
   const t = useTheme();
   const [own, setOwn] = useState<string>();
   const picked = value ?? own;

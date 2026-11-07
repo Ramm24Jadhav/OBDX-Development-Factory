@@ -218,7 +218,7 @@ export function expiryText(s: number): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Dialog],
   template: `
-    <bx-dialog [open]="open()" [dialogTitle]="heading()" cancelBehavior="none" [testID]="testID()" [dialogClass]="'bx-timeout ' + vcss()">
+    <bx-dialog [open]="open()" [dialogTitle]="heading()" cancelBehavior="none" [testID]="testID()" [dialogClass]="'bx-timeout' + vcss()">
       @if (variant() === 'countdown') {
         <span class="bx-countdown" aria-hidden="true"><svg viewBox="0 0 44 44" focusable="false"><circle class="bx-countdown-track" cx="22" cy="22" r="20"></circle>
           <circle class="bx-countdown-fill" cx="22" cy="22" r="20" stroke-dasharray="125.7" [attr.stroke-dashoffset]="ring()"></circle></svg><span class="bx-countdown-num">{{ left() }}</span></span>
@@ -233,9 +233,9 @@ export class SessionExpiryWarning extends Part {
   readonly open = model(false);
   readonly seconds = input(60);
   readonly heading = input('Are you still there?');
-  /** The style: standard (dialog), countdown (a ring that empties) or sheet. */
-  readonly variant = input<TimeoutVariant>('standard');
-  protected readonly vcss = computed(() => vx('timeout', this.variant()));
+  /** The style: default (dialog), countdown (a ring that empties) or sheet. */
+  readonly variant = input<TimeoutVariant>('default');
+  protected readonly vcss = computed(() => vx(this.variant()));
   protected readonly ring = computed(() => ringOffset(this.left() / (this.seconds() || 1), 20));
   readonly stay = output<void>();
   readonly signOut = output<void>();

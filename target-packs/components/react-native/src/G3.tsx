@@ -509,12 +509,12 @@ export interface SessionExpiryWarningProps {
   onStay: () => void;
   /** Called when the customer signs out, or when the time runs out. */
   onSignOut: () => void;
-  /** The style: standard (dialog), countdown (a ring that empties) or sheet (from the bottom). */
+  /** The style: default (dialog), countdown (a ring that empties) or sheet (from the bottom). */
   variant?: TimeoutVariant;
 }
 
 /** Warns before the session ends, counting down; it stays until the customer chooses, and signs out at zero. */
-export function SessionExpiryWarning({ testID, open, seconds = 60, heading = 'Are you still there?', onStay, onSignOut, variant = 'standard' }: SessionExpiryWarningProps) {
+export function SessionExpiryWarning({ testID, open, seconds = 60, heading = 'Are you still there?', onStay, onSignOut, variant = 'default' }: SessionExpiryWarningProps) {
   const t = useTheme();
   const [left, setLeft] = useState(seconds);
   const out = useRef(onSignOut);

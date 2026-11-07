@@ -14,7 +14,7 @@ import { reducedMotion } from './motion';
 import MuiChip from '@mui/material/Chip';
 import SnackbarContent from '@mui/material/SnackbarContent';
 import { Spinner, SpinnerProps } from './G1';
-import { BadgeVariant, GaugeVariant, MUI_SEVERITY, StatusVariant, ToastVariant, vx } from './variants';
+import { BadgeVariant, GaugeVariant, MUI_SEVERITY, StatusVariant, ToastVariant, TooltipVariant, vx } from './variants';
 
 type Opt<P, K extends keyof P> = Omit<P, K> & Partial<Pick<P, K>>;
 type Vars = CSSProperties & Record<`--${string}`, string>;
@@ -525,9 +525,9 @@ export function OtpSlots(p: Opt<CodeProps, 'label'>) { return <div className="bx
 export function ReceiptTear(p: ReceiptProps) { return <div className="bx-fx-torn"><TransactionReceipt {...p} /></div>; }
 
 /** A tick that draws itself, with what was done (said once). */
-export function SuccessCheck({ testID, label = 'Done', text, variant = 'standard' }: { testID?: string; label?: string; text?: string; /** The style: standard (drawn), filled or soft. */ variant?: StatusVariant }) {
+export function SuccessCheck({ testID, label = 'Done', text, variant = 'default' }: { testID?: string; label?: string; text?: string; /** The style: default (drawn), filled or soft. */ variant?: StatusVariant }) {
   return (
-    <div className={`bx-success-check ${vx('status', variant)}`} role="status" data-testid={testID}>
+    <div className={`bx-success-check${vx(variant)}`} role="status" data-testid={testID}>
       <svg className="bx-check-svg" viewBox="0 0 52 52" aria-hidden="true" focusable="false"><circle className="bx-check-ring" cx="26" cy="26" r="24" /><path className="bx-check-tick" d="M15 27 l7 7 l15 -16" /></svg>
       <strong className="bx-receipt-title">{label}</strong>{text ? <span className="bx-thing-text">{text}</span> : null}
     </div>
@@ -550,7 +550,7 @@ export function SwipeRow({ testID, heading, meta, value, actions, onAction }: Sw
 }
 
 /** A message the customer can swipe away, or close. */
-export function SwipeToast({ testID, message, severity = 'confirmation', onClose, variant = 'standard' }: { testID?: string; message: string; severity?: 'error' | 'warning' | 'confirmation' | 'info'; onClose?: () => void; /** The style: standard, snackbar (Material, on MUI), stacked or pill. */ variant?: ToastVariant }) {
+export function SwipeToast({ testID, message, severity = 'confirmation', onClose, variant = 'default' }: { testID?: string; message: string; severity?: 'error' | 'warning' | 'confirmation' | 'info'; onClose?: () => void; /** The style: default, snackbar (Material, on MUI), stacked or pill. */ variant?: ToastVariant }) {
   const [gone, setGone] = useState(false);
   const x0 = useRef<number | null>(null);
   if (gone) { return null; }
@@ -559,7 +559,7 @@ export function SwipeToast({ testID, message, severity = 'confirmation', onClose
     onPointerDown: (e: PointerEvent<HTMLDivElement>) => { x0.current = e.clientX; },
     onPointerUp: (e: PointerEvent<HTMLDivElement>) => { if (x0.current !== null && Math.abs(e.clientX - x0.current) > 60) { close(); } x0.current = null; },
   };
-  const css = `bx-toast bx-swipe-toast is-${severity} ${vx('toast', variant)}`;
+  const css = `bx-toast bx-swipe-toast is-${severity}${vx(variant)}`;
   const closeButton = <button type="button" className="bx-btn bx-btn--borderless bx-btn--icon bx-btn--sm" aria-label="Close the message" onClick={close}><span aria-hidden="true">×</span></button>;
   if (variant === 'snackbar') {
     return <SnackbarContent className={css} role="status" data-testid={testID} {...swipe} message={<span className="bx-toast-text">{message}</span>} action={closeButton} />;
@@ -611,16 +611,16 @@ export function ScrubField({ testID, label = 'Amount', value, onChange, min = 0,
   );
 }
 
-export interface GaugeProps { testID?: string; label?: string; value: number; max: number; unit?: string; /** The style: standard (half circle), ring or thin. */ variant?: GaugeVariant }
+export interface GaugeProps { testID?: string; label?: string; value: number; max: number; unit?: string; /** The style: default (half circle), ring or thin. */ variant?: GaugeVariant }
 /** A half-circle gauge of a budget; over the budget it turns red and says so. */
-export function BudgetGauge({ testID, label = 'Budget', value, max, unit, variant = 'standard' }: GaugeProps) {
+export function BudgetGauge({ testID, label = 'Budget', value, max, unit, variant = 'default' }: GaugeProps) {
   const id = useId();
   const share = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
   const over = value > max;
   const u = unit ? ` ${unit}` : '';
   const text = `${value.toLocaleString()}${u} of ${max.toLocaleString()}${u}` + (over ? ', over budget' : '');
   return (
-    <div className={`bx-gauge ${vx('progress', variant)}` + (over ? ' is-over' : share >= 0.9 ? ' is-near' : '')} role="progressbar" aria-valuemin={0} aria-valuemax={max} aria-valuenow={Math.min(value, max)} aria-valuetext={text}
+    <div className={`bx-gauge${vx(variant)}` + (over ? ' is-over' : share >= 0.9 ? ' is-near' : '')} role="progressbar" aria-valuemin={0} aria-valuemax={max} aria-valuenow={Math.min(value, max)} aria-valuetext={text}
          aria-labelledby={id} data-testid={testID}>
       {variant === 'ring'
         ? <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><circle className="bx-gauge-track" cx="50" cy="50" r="40" /><circle className="bx-gauge-fill" cx="50" cy="50" r="40" strokeDasharray="251.3" strokeDashoffset={Math.round(251.3 * (1 - share) * 10) / 10} /></svg>
@@ -631,9 +631,9 @@ export function BudgetGauge({ testID, label = 'Budget', value, max, unit, varian
 }
 
 /** A status as a mark and a word: success, error, pending or info. */
-export function StatusMark({ testID, label, status = 'success', variant = 'standard' }: { testID?: string; label: string; status?: 'success' | 'error' | 'pending' | 'info'; /** The style: standard, filled, outlined or dot. */ variant?: BadgeVariant }) {
+export function StatusMark({ testID, label, status = 'success', variant = 'default' }: { testID?: string; label: string; status?: 'success' | 'error' | 'pending' | 'info'; /** The style: default, filled, outlined or dot. */ variant?: BadgeVariant }) {
   const icon = <span className="bx-status-mark-icon" aria-hidden="true">{status === 'error' ? '!' : status === 'info' ? 'i' : ''}</span>;
-  const css = `bx-status-mark is-${status} ${vx('badges', variant)}`;
+  const css = `bx-status-mark is-${status}${vx(variant)}`;
   if (variant === 'filled' || variant === 'outlined') {
     return <MuiChip size="small" variant={variant} color={status === 'pending' ? 'default' : MUI_SEVERITY[status === 'success' ? 'confirmation' : status]} icon={icon} label={label} className={css} data-testid={testID} />;
   }
@@ -642,7 +642,7 @@ export function StatusMark({ testID, label, status = 'success', variant = 'stand
 /** Stars that lift as the pointer passes over them. */
 export function PeekRating(p: RatingProps) { return <div className="bx-fx-peek"><FeedbackRating {...p} /></div>; }
 /** A tooltip in warm colours. */
-export function WarmTooltip(p: { testID?: string; label: string; text: string }) { return <div className="bx-fx-warm"><Tooltip {...p} /></div>; }
+export function WarmTooltip(p: { testID?: string; label: string; text: string; variant?: TooltipVariant }) { return <div className="bx-fx-warm"><Tooltip {...p} /></div>; }
 
 export interface PromptBarProps { testID?: string; label?: string; placeholder?: string; suggestions?: ReadonlyArray<string>; busy?: boolean; onAsk?: (text: string) => void }
 /** The assistant's question box with suggestions; Enter or Ask sends. */
@@ -678,9 +678,9 @@ export function CallChip({ testID, label = 'Call the bank', number }: { testID?:
 }
 
 /** Waiting: a grid of squares that pulse, said once. */
-export function LatticeLoader({ testID, label = 'Loading', variant = 'standard', ...rest }: Omit<SpinnerProps, 'size'>) {
-  // the lattice is the standard look; the other variants are the spinner's loaders
-  if (variant !== 'standard') { return <Spinner testID={testID} label={label} variant={variant} {...rest} />; }
-  return <span className={`bx-lattice ${vx('spinner', variant)}`} role="status" data-testid={testID}><span className="bx-lattice-grid" aria-hidden="true">{[0, 2, 4, 2, 4, 6, 4, 6, 8].map((n, i) => <span key={i} className={`bx-d-${n}`} />)}</span><Hidden>{label}</Hidden></span>;
+export function LatticeLoader({ testID, label = 'Loading', variant = 'default', ...rest }: Omit<SpinnerProps, 'size'>) {
+  // the lattice is the default look; the other variants are the spinner's loaders
+  if (variant !== 'default') { return <Spinner testID={testID} label={label} variant={variant} {...rest} />; }
+  return <span className={`bx-lattice${vx(variant)}`} role="status" data-testid={testID}><span className="bx-lattice-grid" aria-hidden="true">{[0, 2, 4, 2, 4, 6, 4, 6, 8].map((n, i) => <span key={i} className={`bx-d-${n}`} />)}</span><Hidden>{label}</Hidden></span>;
 }
 

@@ -392,7 +392,7 @@ export interface PaymentStatusProps {
   steps?: ReadonlyArray<string>;
   /** The index of the step the payment is at; steps.length when it is complete. */
   value: number;
-  /** The style: standard, material, vertical or segmented. */
+  /** The style: default, material, vertical or segmented. */
   variant?: StepsProps['variant'];
 }
 

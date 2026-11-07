@@ -462,7 +462,7 @@ export function LiveChat({ testID, label = 'Chat with us', messages, suggestions
 /* ---------- FeedbackRating ---------- */
 
 export interface FeedbackRatingProps extends FieldProps<number | null> {
-  /** The style: standard (stars), emoji (faces) or numbers. */
+  /** The style: default (stars), emoji (faces) or numbers. */
   variant?: RatingVariant;
   /** A comment box under the stars. */
   comment?: string;
@@ -473,7 +473,7 @@ export interface FeedbackRatingProps extends FieldProps<number | null> {
 const WORDS = ['Very poor', 'Poor', 'All right', 'Good', 'Very good'];
 
 /** Rate the experience from one to five stars, each a radio that says its meaning. */
-export function FeedbackRating({ testID, label, value, onChange, comment, onCommentChange, onSubmit, disabled, readOnly, variant = 'standard' }: FeedbackRatingProps) {
+export function FeedbackRating({ testID, label, value, onChange, comment, onCommentChange, onSubmit, disabled, readOnly, variant = 'default' }: FeedbackRatingProps) {
   const t = useTheme();
   const s = styles(t);
   return (

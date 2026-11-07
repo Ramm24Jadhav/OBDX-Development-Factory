@@ -9,8 +9,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { OBDX_COMPONENTS } from '../src';
 import { violations } from './a11y';
 
-interface Entry { kind: string; packs: Record<string, { name: string; variants: string[] } | null> }
+interface Entry { kind: string; variants: { id: string; built: string[] }[] }
 const v3 = JSON.parse(readFileSync(resolve(__dirname, '../../variants/v3.json'), 'utf8')) as { components: Record<string, Entry> };
+const names: Record<string, Record<string, string>> = Object.fromEntries((JSON.parse(readFileSync(resolve(__dirname, '../../catalogue.json'), 'utf8')) as { categories: { components: { id: string; names: Record<string, string> }[] }[] })
+  .categories.flatMap((g) => g.components).map((c) => [c.id, c.names]));
 
 /** Each component class by its selector. */
 const BY_SELECTOR = new Map<string, Type<unknown>>(OBDX_COMPONENTS.map((c) => [reflectComponentType(c as Type<unknown>)!.selector, c as Type<unknown>]));
@@ -49,9 +51,7 @@ async function mount(c: Type<unknown>, inputs: Record<string, unknown>) {
 
 afterEach(() => { document.body.innerHTML = ''; TestBed.resetTestingModule(); });
 
-const rows = Object.entries(v3.components).flatMap(([id, c]) => (c.packs.angular
-  ? c.packs.angular.variants.map((variant) => ({ id, kind: c.kind, name: c.packs.angular!.name, variant })) : []));
-
+const rows = Object.entries(v3.components).flatMap(([id, c]) => c.variants.filter((v) => v.built.includes('angular')).map((v) => ({ id, kind: c.kind, name: names[id]['angular'], variant: v.id })));
 describe('V3 variants (feedback and status)', () => {
   it('lists every Angular component of the wave', () => {
     expect(new Set(rows.map((r) => r.id)).size).toBe(47);
@@ -60,7 +60,8 @@ describe('V3 variants (feedback and status)', () => {
 
   it.each(rows.map((r) => [`${r.name} ${r.variant}`, r] as const))('%s: has its class and passes axe', async (_, r) => {
     await mount(BY_SELECTOR.get(r.name)!, { ...SAMPLE[r.kind], ...BY_SELECTOR_SAMPLE[r.name], variant: r.variant });
-    expect(document.querySelector(`.bx-${r.kind}--${r.variant}`), `${r.name} ${r.variant}`).not.toBeNull();
+    // the default look adds no class; any other variant adds bx-v-<id>
+    if (r.variant === 'default') { expect(document.querySelector('[class*="bx-v-"]')).toBeNull(); } else { expect(document.querySelector(`.bx-v-${r.variant}`), `${r.name} ${r.variant}`).not.toBeNull(); }
     if (r.kind === 'progress') { expect(getAllByRole(document.body, 'progressbar').length).toBeGreaterThan(0); }
     if (r.kind === 'spinner') { expect(getByRole(document.body, 'status').textContent).toContain('Loading accounts'); }
     if (r.kind === 'rating') { expect(getAllByRole(document.body, 'radio')).toHaveLength(5); }

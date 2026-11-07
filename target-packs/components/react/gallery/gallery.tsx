@@ -114,6 +114,21 @@ function Gallery() {
           { id: '2', severity: 'confirmation', summary: 'Beneficiary added', autoTimeout: 0 },
           { id: '3', severity: 'warning', summary: 'Your session ends in 2 minutes', autoTimeout: 0 },
         ]} />
+        <div data-variant="snackbar"><Toast variant="snackbar" display="general" onClose={() => undefined} messages={[
+          { id: '1', severity: 'error', summary: 'Payment failed', detail: 'The account is blocked. Call the bank.', autoTimeout: 0 },
+          { id: '2', severity: 'confirmation', summary: 'Beneficiary added', autoTimeout: 0 },
+          { id: '3', severity: 'warning', summary: 'Your session ends in 2 minutes', autoTimeout: 0 },
+        ]} /></div>
+        <div data-variant="stacked"><Toast variant="stacked" display="general" onClose={() => undefined} messages={[
+          { id: '1', severity: 'error', summary: 'Payment failed', detail: 'The account is blocked. Call the bank.', autoTimeout: 0 },
+          { id: '2', severity: 'confirmation', summary: 'Beneficiary added', autoTimeout: 0 },
+          { id: '3', severity: 'warning', summary: 'Your session ends in 2 minutes', autoTimeout: 0 },
+        ]} /></div>
+        <div data-variant="pill"><Toast variant="pill" display="general" onClose={() => undefined} messages={[
+          { id: '1', severity: 'error', summary: 'Payment failed', detail: 'The account is blocked. Call the bank.', autoTimeout: 0 },
+          { id: '2', severity: 'confirmation', summary: 'Beneficiary added', autoTimeout: 0 },
+          { id: '3', severity: 'warning', summary: 'Your session ends in 2 minutes', autoTimeout: 0 },
+        ]} /></div>
       </Section>
       <Section id="card" title="Card">
         <div className="gate-row">
@@ -191,6 +206,9 @@ function Gallery() {
       </Section>
       <Section id="stepper" title="Stepper">
         <Stepper testID="st1" steps={['Details', 'Review', 'Done']} selectedStep="Review" />
+        <div data-variant="material"><Stepper variant="material" steps={['Details', 'Review', 'Done']} selectedStep="Review" /></div>
+        <div data-variant="vertical"><Stepper variant="vertical" steps={['Details', 'Review', 'Done']} selectedStep="Review" /></div>
+        <div data-variant="segmented"><Stepper variant="segmented" steps={['Details', 'Review', 'Done']} selectedStep="Review" /></div>
       </Section>
       <Section id="breadcrumb" title="Breadcrumb">
         <Breadcrumb testID="bc1" items={['Accounts', 'Savings ·· 4821', 'Statement']} />
@@ -221,34 +239,60 @@ function Gallery() {
         <StatusBadge testID="sb1" label="Completed" tone="success" />
         <StatusBadge label="Pending" tone="warning" />
         <StatusBadge label="Rejected" tone="danger" />
+        <div data-variant="filled"><StatusBadge variant="filled" label="Completed" tone="success" /></div>
+        <div data-variant="outlined"><StatusBadge variant="outlined" label="Completed" tone="success" /></div>
+        <div data-variant="dot"><StatusBadge variant="dot" label="Completed" tone="success" /></div>
       </Section>
       <Section id="timeline" title="Timeline">
         <Timeline testID="tl1" items={[{ label: 'Initiated', meta: '09:12 · A. Rao' }, { label: 'Approved', meta: '10:40 · Priya Nair' }, { label: 'Sent to the bank', meta: '10:41', state: 'current' }, { label: 'Completed', state: 'pending' }]} />
+        <div data-variant="compact"><Timeline variant="compact" items={[{ label: 'Initiated', meta: '09:12 · A. Rao' }, { label: 'Approved', meta: '10:40 · Priya Nair' }, { label: 'Sent to the bank', meta: '10:41', state: 'current' }, { label: 'Completed', state: 'pending' }]} /></div>
+        <div data-variant="cards"><Timeline variant="cards" items={[{ label: 'Initiated', meta: '09:12 · A. Rao' }, { label: 'Approved', meta: '10:40 · Priya Nair' }, { label: 'Sent to the bank', meta: '10:41', state: 'current' }, { label: 'Completed', state: 'pending' }]} /></div>
+        <div data-variant="horizontal"><Timeline variant="horizontal" items={[{ label: 'Initiated', meta: '09:12 · A. Rao' }, { label: 'Approved', meta: '10:40 · Priya Nair' }, { label: 'Sent to the bank', meta: '10:41', state: 'current' }, { label: 'Completed', state: 'pending' }]} /></div>
       </Section>
       <Section id="spinner" title="Spinner">
         <Spinner testID="sp1" />
         <Spinner testID="sp2" size="lg" label="Loading accounts" />
+        <div data-variant="material"><Spinner variant="material" /></div>
+        <div data-variant="dots"><Spinner variant="dots" /></div>
+        <div data-variant="orbs"><Spinner variant="orbs" /></div>
       </Section>
       <Section id="skeleton" title="Skeleton">
         <Skeleton testID="sk1" />
         <Skeleton testID="sk2" shape="card" lines={2} />
         <Skeleton testID="sk3" shape="circle" lines={1} />
+        <div data-variant="pulse"><Skeleton variant="pulse" /></div>
+        <div data-variant="soft"><Skeleton variant="soft" /></div>
       </Section>
       <Section id="empty-state" title="Empty state">
         <EmptyState testID="es1" heading="No payees yet" text="Add one to pay faster next time." actionLabel="Add a payee" />
+        <div data-variant="illustrated"><EmptyState variant="illustrated" heading="No payees yet" text="Add one to pay faster next time." actionLabel="Add a payee" /></div>
+        <div data-variant="compact"><EmptyState variant="compact" heading="No payees yet" text="Add one to pay faster next time." actionLabel="Add a payee" /></div>
+        <div data-variant="card"><EmptyState variant="card" heading="No payees yet" text="Add one to pay faster next time." actionLabel="Add a payee" /></div>
       </Section>
       <Section id="tooltip" title="Tooltip">
         <Tooltip testID="tt1" label="Available balance" text="What you can spend now: the balance less holds and pending card payments." />
+        <div data-variant="plain"><Tooltip variant="plain" label="Available balance" text="What you can spend now: the balance less holds and pending card payments." /></div>
+        <div data-variant="rich"><Tooltip variant="rich" label="Available balance" text="What you can spend now: the balance less holds and pending card payments." /></div>
+        <div data-variant="beak"><Tooltip variant="beak" label="Available balance" text="What you can spend now: the balance less holds and pending card payments." /></div>
       </Section>
       <Section id="alert-banner" title="Alert banner">
         <Alert testID="ab1" message="Transfers after 6 pm arrive the next working day." />
         <Alert testID="ab2" severity="warning" message="Your session ends in 2 minutes." dismissible />
+        <div data-variant="filled"><Alert variant="filled" message="Transfers after 6 pm arrive the next working day." /></div>
+        <div data-variant="outlined"><Alert variant="outlined" message="Transfers after 6 pm arrive the next working day." /></div>
+        <div data-variant="banner"><Alert variant="banner" message="Transfers after 6 pm arrive the next working day." /></div>
       </Section>
       <Section id="error-message" title="Error message">
         <ErrorMessage testID="em1" message="The amount is more than your daily limit of 5,000.00." actionLabel="Change the amount" />
+        <div data-variant="filled"><ErrorMessage variant="filled" message="The amount is more than your daily limit of 5,000.00." actionLabel="Change the amount" /></div>
+        <div data-variant="outlined"><ErrorMessage variant="outlined" message="The amount is more than your daily limit of 5,000.00." actionLabel="Change the amount" /></div>
+        <div data-variant="banner"><ErrorMessage variant="banner" message="The amount is more than your daily limit of 5,000.00." actionLabel="Change the amount" /></div>
       </Section>
       <Section id="success-message" title="Success message">
         <SuccessMessage testID="sm1" message="Payment sent. Reference FX-20391." actionLabel="View receipt" />
+        <div data-variant="filled"><SuccessMessage variant="filled" message="Payment sent. Reference FX-20391." actionLabel="View receipt" /></div>
+        <div data-variant="outlined"><SuccessMessage variant="outlined" message="Payment sent. Reference FX-20391." actionLabel="View receipt" /></div>
+        <div data-variant="banner"><SuccessMessage variant="banner" message="Payment sent. Reference FX-20391." actionLabel="View receipt" /></div>
       </Section>
       <Section id="notification-panel" title="Notification panel">
         <NotificationPanel testID="np1" items={notes} />
@@ -291,6 +335,9 @@ function Gallery() {
       </Section>
       <Section id="payment-status" title="Payment status">
         <PaymentStatus testID="ps1" steps={['Initiated', 'Approved', 'Sent', 'Completed']} selectedStep="Sent" />
+        <div data-variant="material"><PaymentStatus variant="material" steps={['Initiated', 'Approved', 'Sent', 'Completed']} selectedStep="Sent" /></div>
+        <div data-variant="vertical"><PaymentStatus variant="vertical" steps={['Initiated', 'Approved', 'Sent', 'Completed']} selectedStep="Sent" /></div>
+        <div data-variant="segmented"><PaymentStatus variant="segmented" steps={['Initiated', 'Approved', 'Sent', 'Completed']} selectedStep="Sent" /></div>
       </Section>
       <Section id="transaction-list" title="Transaction list">
         <TransactionHistory testID="tx1" currency="USD" items={txns} onAction={() => undefined} />
@@ -340,6 +387,9 @@ function Gallery() {
       </Section>
       <Section id="disbursement" title="Disbursement timeline">
         <DisbursementTimeline items={[{label: 'Sanctioned 30,000.00', meta: '02 Jan'}, {label: 'First disbursement 20,000.00', meta: '05 Jan'}, {label: 'Second disbursement 10,000.00', meta: 'Due 05 Mar', state: 'pending'}]} />
+        <div data-variant="compact"><DisbursementTimeline variant="compact" items={[{label: 'Sanctioned 30,000.00', meta: '02 Jan'}, {label: 'First disbursement 20,000.00', meta: '05 Jan'}, {label: 'Second disbursement 10,000.00', meta: 'Due 05 Mar', state: 'pending'}]} /></div>
+        <div data-variant="cards"><DisbursementTimeline variant="cards" items={[{label: 'Sanctioned 30,000.00', meta: '02 Jan'}, {label: 'First disbursement 20,000.00', meta: '05 Jan'}, {label: 'Second disbursement 10,000.00', meta: 'Due 05 Mar', state: 'pending'}]} /></div>
+        <div data-variant="horizontal"><DisbursementTimeline variant="horizontal" items={[{label: 'Sanctioned 30,000.00', meta: '02 Jan'}, {label: 'First disbursement 20,000.00', meta: '05 Jan'}, {label: 'Second disbursement 10,000.00', meta: 'Due 05 Mar', state: 'pending'}]} /></div>
       </Section>
       <Section id="card-tile" title="Card tile">
         <CardTile testID="ct1" label="Platinum" number="4111111111114821" holder="A. RAO" expiry="09/29" network="Visa" />
@@ -389,6 +439,8 @@ function Gallery() {
       <Section id="session-timeout" title="Session timeout">
         <SecondaryButton label="Show the warning" onAction={() => setTimeoutOpen(true)} />
         <SessionExpiryWarning testID="st1" open={timeout} seconds={90} onStay={() => setTimeoutOpen(false)} onSignOut={() => setTimeoutOpen(false)} onExpire={() => setTimeoutOpen(false)} />
+        <div data-variant="countdown"><SessionExpiryWarning variant="countdown" open={params.get('variant') === 'countdown'} seconds={90} onStay={() => setTimeoutOpen(false)} onSignOut={() => setTimeoutOpen(false)} onExpire={() => setTimeoutOpen(false)} /></div>
+        <div data-variant="sheet"><SessionExpiryWarning variant="sheet" open={params.get('variant') === 'sheet'} seconds={90} onStay={() => setTimeoutOpen(false)} onSignOut={() => setTimeoutOpen(false)} onExpire={() => setTimeoutOpen(false)} /></div>
       </Section>
       <Section id="secure-confirmation" title="Secure confirmation">
         <SecureConfirmation items={[{label: 'Pay', value: 'A. Rao'}, {label: 'Amount', value: '1,250.00 USD'}, {label: 'Code sent to', value: '•••• 0123'}]} />
@@ -398,18 +450,33 @@ function Gallery() {
       </Section>
       <Section id="kyc-steps" title="KYC steps">
         <KycSteps testID="ky1" selectedStep="Selfie" />
+        <div data-variant="material"><KycSteps variant="material" selectedStep="Selfie" /></div>
+        <div data-variant="vertical"><KycSteps variant="vertical" selectedStep="Selfie" /></div>
+        <div data-variant="segmented"><KycSteps variant="segmented" selectedStep="Selfie" /></div>
       </Section>
       <Section id="fraud-alert" title="Fraud alert">
         <FraudAlert testID="fa1" message="We stopped a payment of 899.00 to Unknown Ltd." />
+        <div data-variant="filled"><FraudAlert variant="filled" message="We stopped a payment of 899.00 to Unknown Ltd." /></div>
+        <div data-variant="outlined"><FraudAlert variant="outlined" message="We stopped a payment of 899.00 to Unknown Ltd." /></div>
+        <div data-variant="banner"><FraudAlert variant="banner" message="We stopped a payment of 899.00 to Unknown Ltd." /></div>
       </Section>
       <Section id="spending-chart" title="Spending chart">
         <SpendingChart items={[{label: 'Aug', value: 1240}, {label: 'Sep', value: 980}, {label: 'Oct', value: 1410}, {label: 'Nov', value: 1640}, {label: 'Dec', value: 2120}]} unit="USD" />
+        <div data-variant="rounded"><SpendingChart variant="rounded" items={[{label: 'Aug', value: 1240}, {label: 'Sep', value: 980}, {label: 'Oct', value: 1410}, {label: 'Nov', value: 1640}, {label: 'Dec', value: 2120}]} unit="USD" /></div>
+        <div data-variant="lollipop"><SpendingChart variant="lollipop" items={[{label: 'Aug', value: 1240}, {label: 'Sep', value: 980}, {label: 'Oct', value: 1410}, {label: 'Nov', value: 1640}, {label: 'Dec', value: 2120}]} unit="USD" /></div>
+        <div data-variant="meter"><SpendingChart variant="meter" items={[{label: 'Aug', value: 1240}, {label: 'Sep', value: 980}, {label: 'Oct', value: 1410}, {label: 'Nov', value: 1640}, {label: 'Dec', value: 2120}]} unit="USD" /></div>
       </Section>
       <Section id="budget-progress" title="Budget progress">
         <ProgressBar items={[{label: 'Groceries', value: 320, max: 400}, {label: 'Travel', value: 180, max: 300}, {label: 'Eating out', value: 210, max: 200}]} />
+        <div data-variant="linear"><ProgressBar variant="linear" items={[{label: 'Groceries', value: 320, max: 400}, {label: 'Travel', value: 180, max: 300}, {label: 'Eating out', value: 210, max: 200}]} /></div>
+        <div data-variant="ring"><ProgressBar variant="ring" items={[{label: 'Groceries', value: 320, max: 400}, {label: 'Travel', value: 180, max: 300}, {label: 'Eating out', value: 210, max: 200}]} /></div>
+        <div data-variant="segmented"><ProgressBar variant="segmented" items={[{label: 'Groceries', value: 320, max: 400}, {label: 'Travel', value: 180, max: 300}, {label: 'Eating out', value: 210, max: 200}]} /></div>
       </Section>
       <Section id="savings-goal" title="Savings goal">
         <SavingsGoal items={[{label: 'Holiday fund', value: 1800, max: 3000}]} unit="USD" />
+        <div data-variant="linear"><SavingsGoal variant="linear" items={[{label: 'Holiday fund', value: 1800, max: 3000}]} unit="USD" /></div>
+        <div data-variant="ring"><SavingsGoal variant="ring" items={[{label: 'Holiday fund', value: 1800, max: 3000}]} unit="USD" /></div>
+        <div data-variant="segmented"><SavingsGoal variant="segmented" items={[{label: 'Holiday fund', value: 1800, max: 3000}]} unit="USD" /></div>
       </Section>
       <Section id="spend-categories" title="Spend categories">
         <SpendCategories options={['Eating out', 'Groceries', 'Travel', 'Shopping']} label="Coffee House · 4.50 is" value={cats} onChange={setCats} />
@@ -422,12 +489,18 @@ function Gallery() {
       </Section>
       <Section id="approval-journey" title="Approval journey">
         <ApprovalJourney items={[{label: 'Initiated', meta: 'A. Rao · 09:12'}, {label: 'Approved, level 1', meta: 'P. Nair · 10:40'}, {label: 'Waiting, level 2', meta: 'Finance head', state: 'current'}, {label: 'Release', meta: 'Treasury', state: 'pending'}]} />
+        <div data-variant="compact"><ApprovalJourney variant="compact" items={[{label: 'Initiated', meta: 'A. Rao · 09:12'}, {label: 'Approved, level 1', meta: 'P. Nair · 10:40'}, {label: 'Waiting, level 2', meta: 'Finance head', state: 'current'}, {label: 'Release', meta: 'Treasury', state: 'pending'}]} /></div>
+        <div data-variant="cards"><ApprovalJourney variant="cards" items={[{label: 'Initiated', meta: 'A. Rao · 09:12'}, {label: 'Approved, level 1', meta: 'P. Nair · 10:40'}, {label: 'Waiting, level 2', meta: 'Finance head', state: 'current'}, {label: 'Release', meta: 'Treasury', state: 'pending'}]} /></div>
+        <div data-variant="horizontal"><ApprovalJourney variant="horizontal" items={[{label: 'Initiated', meta: 'A. Rao · 09:12'}, {label: 'Approved, level 1', meta: 'P. Nair · 10:40'}, {label: 'Waiting, level 2', meta: 'Finance head', state: 'current'}, {label: 'Release', meta: 'Treasury', state: 'pending'}]} /></div>
       </Section>
       <Section id="reroute" title="Re-route">
         <Reroute testID="rr1" options={approvers} value={reroute} onChange={setReroute} />
       </Section>
       <Section id="modification-requested" title="Modification requested">
         <ModificationNotice message="PAY-4410 was sent back: change the value date to a working day." />
+        <div data-variant="filled"><ModificationNotice variant="filled" message="PAY-4410 was sent back: change the value date to a working day." /></div>
+        <div data-variant="outlined"><ModificationNotice variant="outlined" message="PAY-4410 was sent back: change the value date to a working day." /></div>
+        <div data-variant="banner"><ModificationNotice variant="banner" message="PAY-4410 was sent back: change the value date to a working day." /></div>
       </Section>
       <Section id="pending-release" title="Pending release">
         <PendingRelease items={[{title: 'Payroll Jan', meta: 'Approved 3 of 3', value: '182,400.00'}, {title: 'Tax payment', meta: 'Approved 2 of 2', value: '9,800.00'}]} />
@@ -443,9 +516,15 @@ function Gallery() {
       </Section>
       <Section id="intercompany-limits" title="Intercompany limits">
         <LendLimits items={[{label: 'Payroll Ltd', value: 120, max: 500}, {label: 'Vendors Ltd', value: 340, max: 400}]} unit="k" />
+        <div data-variant="linear"><LendLimits variant="linear" items={[{label: 'Payroll Ltd', value: 120, max: 500}, {label: 'Vendors Ltd', value: 340, max: 400}]} unit="k" /></div>
+        <div data-variant="ring"><LendLimits variant="ring" items={[{label: 'Payroll Ltd', value: 120, max: 500}, {label: 'Vendors Ltd', value: 340, max: 400}]} unit="k" /></div>
+        <div data-variant="segmented"><LendLimits variant="segmented" items={[{label: 'Payroll Ltd', value: 120, max: 500}, {label: 'Vendors Ltd', value: 340, max: 400}]} unit="k" /></div>
       </Section>
       <Section id="sweep-monitor" title="Sweep monitor">
         <SweepMonitor items={[{label: 'Sweep started', meta: '18:00'}, {label: '3 of 3 accounts swept', meta: '18:02'}, {label: 'Interest reallocated', meta: '18:05', state: 'current'}]} />
+        <div data-variant="compact"><SweepMonitor variant="compact" items={[{label: 'Sweep started', meta: '18:00'}, {label: '3 of 3 accounts swept', meta: '18:02'}, {label: 'Interest reallocated', meta: '18:05', state: 'current'}]} /></div>
+        <div data-variant="cards"><SweepMonitor variant="cards" items={[{label: 'Sweep started', meta: '18:00'}, {label: '3 of 3 accounts swept', meta: '18:02'}, {label: 'Interest reallocated', meta: '18:05', state: 'current'}]} /></div>
+        <div data-variant="horizontal"><SweepMonitor variant="horizontal" items={[{label: 'Sweep started', meta: '18:00'}, {label: '3 of 3 accounts swept', meta: '18:02'}, {label: 'Interest reallocated', meta: '18:05', state: 'current'}]} /></div>
       </Section>
       <Section id="profile" title="Profile">
         <Profile items={[{label: 'Name', value: 'A. Rao'}, {label: 'Email', value: 'a.rao@mail.example'}, {label: 'Mobile', value: '•••• 0123'}, {label: 'Address', value: '12 Bridge St, London'}]} />
@@ -476,15 +555,24 @@ function Gallery() {
       </Section>
       <Section id="transaction-limits" title="Transaction limits">
         <TransactionLimits items={[{label: 'Daily transfers', value: 1200, max: 5000}, {label: 'Bill payments', value: 300, max: 2000}]} />
+        <div data-variant="linear"><TransactionLimits variant="linear" items={[{label: 'Daily transfers', value: 1200, max: 5000}, {label: 'Bill payments', value: 300, max: 2000}]} /></div>
+        <div data-variant="ring"><TransactionLimits variant="ring" items={[{label: 'Daily transfers', value: 1200, max: 5000}, {label: 'Bill payments', value: 300, max: 2000}]} /></div>
+        <div data-variant="segmented"><TransactionLimits variant="segmented" items={[{label: 'Daily transfers', value: 1200, max: 5000}, {label: 'Bill payments', value: 300, max: 2000}]} /></div>
       </Section>
       <Section id="session-summary" title="Session summary">
         <SessionSummary items={[{label: 'Today 08:12', meta: 'iPhone 15 · London'}, {label: 'Yesterday 19:40', meta: 'Chrome on Windows · London'}, {label: '3 Jan 07:55', meta: 'iPhone 15 · Paris'}]} />
+        <div data-variant="compact"><SessionSummary variant="compact" items={[{label: 'Today 08:12', meta: 'iPhone 15 · London'}, {label: 'Yesterday 19:40', meta: 'Chrome on Windows · London'}, {label: '3 Jan 07:55', meta: 'iPhone 15 · Paris'}]} /></div>
+        <div data-variant="cards"><SessionSummary variant="cards" items={[{label: 'Today 08:12', meta: 'iPhone 15 · London'}, {label: 'Yesterday 19:40', meta: 'Chrome on Windows · London'}, {label: '3 Jan 07:55', meta: 'iPhone 15 · Paris'}]} /></div>
+        <div data-variant="horizontal"><SessionSummary variant="horizontal" items={[{label: 'Today 08:12', meta: 'iPhone 15 · London'}, {label: 'Yesterday 19:40', meta: 'Chrome on Windows · London'}, {label: '3 Jan 07:55', meta: 'iPhone 15 · Paris'}]} /></div>
       </Section>
       <Section id="raise-request" title="Raise request">
         <RaiseRequest items={[{label: 'Request', value: 'Cheque book'}, {label: 'Account', value: 'Savings ·· 4821'}, {label: 'Leaves', value: '25'}]} />
       </Section>
       <Section id="track-requests" title="Track requests">
         <TrackRequests items={[{label: 'Received', meta: 'SR-2210 · 10 Jan'}, {label: 'In progress', meta: 'Printing the cheque book', state: 'current'}, {label: 'Dispatched', meta: 'Expected 15 Jan', state: 'pending'}]} />
+        <div data-variant="compact"><TrackRequests variant="compact" items={[{label: 'Received', meta: 'SR-2210 · 10 Jan'}, {label: 'In progress', meta: 'Printing the cheque book', state: 'current'}, {label: 'Dispatched', meta: 'Expected 15 Jan', state: 'pending'}]} /></div>
+        <div data-variant="cards"><TrackRequests variant="cards" items={[{label: 'Received', meta: 'SR-2210 · 10 Jan'}, {label: 'In progress', meta: 'Printing the cheque book', state: 'current'}, {label: 'Dispatched', meta: 'Expected 15 Jan', state: 'pending'}]} /></div>
+        <div data-variant="horizontal"><TrackRequests variant="horizontal" items={[{label: 'Received', meta: 'SR-2210 · 10 Jan'}, {label: 'In progress', meta: 'Printing the cheque book', state: 'current'}, {label: 'Dispatched', meta: 'Expected 15 Jan', state: 'pending'}]} /></div>
       </Section>
       <Section id="mailbox" title="Mailbox">
         <Mailbox items={[{title: 'Your cheque book is on the way', meta: 'Today', value: 'Mail', unread: true}, {title: 'Low balance on Current ·· 7730', meta: 'Yesterday', value: 'Alert'}, {title: 'New statement ready', meta: '2 days ago', value: 'Notice'}]} />
@@ -506,15 +594,24 @@ function Gallery() {
       </Section>
       <Section id="self-register" title="Self registration">
         <SelfRegister selectedStep="Verify" />
+        <div data-variant="material"><SelfRegister variant="material" selectedStep="Verify" /></div>
+        <div data-variant="vertical"><SelfRegister variant="vertical" selectedStep="Verify" /></div>
+        <div data-variant="segmented"><SelfRegister variant="segmented" selectedStep="Verify" /></div>
       </Section>
       <Section id="fatca-crs" title="FATCA and CRS">
         <TaxSelfCertification selectedStep="Tax residency" />
+        <div data-variant="material"><TaxSelfCertification variant="material" selectedStep="Tax residency" /></div>
+        <div data-variant="vertical"><TaxSelfCertification variant="vertical" selectedStep="Tax residency" /></div>
+        <div data-variant="segmented"><TaxSelfCertification variant="segmented" selectedStep="Tax residency" /></div>
       </Section>
       <Section id="product-showcase" title="Product showcase">
         <ProductCard heading="Platinum credit card" text="2% cashback · no annual fee in year one" badge="New" actionLabel="Apply now →" />
       </Section>
       <Section id="application-tracker" title="Application tracker">
         <ApplicationTracker items={[{label: 'Submitted', meta: '12 Jan'}, {label: 'Documents checked', meta: '13 Jan'}, {label: 'Credit decision', meta: 'Expected 16 Jan', state: 'current'}, {label: 'Card sent', meta: '—', state: 'pending'}]} />
+        <div data-variant="compact"><ApplicationTracker variant="compact" items={[{label: 'Submitted', meta: '12 Jan'}, {label: 'Documents checked', meta: '13 Jan'}, {label: 'Credit decision', meta: 'Expected 16 Jan', state: 'current'}, {label: 'Card sent', meta: '—', state: 'pending'}]} /></div>
+        <div data-variant="cards"><ApplicationTracker variant="cards" items={[{label: 'Submitted', meta: '12 Jan'}, {label: 'Documents checked', meta: '13 Jan'}, {label: 'Credit decision', meta: 'Expected 16 Jan', state: 'current'}, {label: 'Card sent', meta: '—', state: 'pending'}]} /></div>
+        <div data-variant="horizontal"><ApplicationTracker variant="horizontal" items={[{label: 'Submitted', meta: '12 Jan'}, {label: 'Documents checked', meta: '13 Jan'}, {label: 'Credit decision', meta: 'Expected 16 Jan', state: 'current'}, {label: 'Card sent', meta: '—', state: 'pending'}]} /></div>
       </Section>
       <Section id="terms-consent" title="Terms consent">
         <TermsConsent options={['I accept the terms and conditions', 'Send me offers by email']} value={terms} onChange={setTerms} />
@@ -542,6 +639,8 @@ function Gallery() {
       </Section>
       <Section id="feedback" title="Feedback rating">
         <FeedbackRating label="How was this payment?" value={stars} onChange={setStars} />
+        <div data-variant="emoji"><FeedbackRating variant="emoji" label="How was this payment?" value={stars} onChange={setStars} /></div>
+        <div data-variant="numbers"><FeedbackRating variant="numbers" label="How was this payment?" value={stars} onChange={setStars} /></div>
       </Section>
       <Section id="nominations" title="Nominations">
         <Nominations items={[{title: 'S. Rao · spouse', meta: 'Savings ·· 4821', value: '50%'}, {title: 'K. Rao · son', meta: 'Savings ·· 4821', value: '50%'}]} />
@@ -563,18 +662,30 @@ function Gallery() {
       </Section>
       <Section id="spend-analysis" title="Spend analysis">
         <SpendAnalysisWidget items={[{label: 'Groceries', value: 320}, {label: 'Travel', value: 180}, {label: 'Eating out', value: 210}, {label: 'Shopping', value: 140}]} unit="USD" />
+        <div data-variant="rounded"><SpendAnalysisWidget variant="rounded" items={[{label: 'Groceries', value: 320}, {label: 'Travel', value: 180}, {label: 'Eating out', value: 210}, {label: 'Shopping', value: 140}]} unit="USD" /></div>
+        <div data-variant="lollipop"><SpendAnalysisWidget variant="lollipop" items={[{label: 'Groceries', value: 320}, {label: 'Travel', value: 180}, {label: 'Eating out', value: 210}, {label: 'Shopping', value: 140}]} unit="USD" /></div>
+        <div data-variant="meter"><SpendAnalysisWidget variant="meter" items={[{label: 'Groceries', value: 320}, {label: 'Travel', value: 180}, {label: 'Eating out', value: 210}, {label: 'Shopping', value: 140}]} unit="USD" /></div>
       </Section>
       <Section id="goals" title="Goals">
         <GoalsWidget items={[{label: 'Holiday fund', value: 1800, max: 3000}, {label: 'New car', value: 4200, max: 15000}]} />
+        <div data-variant="linear"><GoalsWidget variant="linear" items={[{label: 'Holiday fund', value: 1800, max: 3000}, {label: 'New car', value: 4200, max: 15000}]} /></div>
+        <div data-variant="ring"><GoalsWidget variant="ring" items={[{label: 'Holiday fund', value: 1800, max: 3000}, {label: 'New car', value: 4200, max: 15000}]} /></div>
+        <div data-variant="segmented"><GoalsWidget variant="segmented" items={[{label: 'Holiday fund', value: 1800, max: 3000}, {label: 'New car', value: 4200, max: 15000}]} /></div>
       </Section>
       <Section id="budgets" title="Budgets">
         <BudgetsWidget items={[{label: 'Groceries', value: 320, max: 400}, {label: 'Travel', value: 180, max: 300}, {label: 'Eating out', value: 210, max: 200}]} />
+        <div data-variant="linear"><BudgetsWidget variant="linear" items={[{label: 'Groceries', value: 320, max: 400}, {label: 'Travel', value: 180, max: 300}, {label: 'Eating out', value: 210, max: 200}]} /></div>
+        <div data-variant="ring"><BudgetsWidget variant="ring" items={[{label: 'Groceries', value: 320, max: 400}, {label: 'Travel', value: 180, max: 300}, {label: 'Eating out', value: 210, max: 200}]} /></div>
+        <div data-variant="segmented"><BudgetsWidget variant="segmented" items={[{label: 'Groceries', value: 320, max: 400}, {label: 'Travel', value: 180, max: 300}, {label: 'Eating out', value: 210, max: 200}]} /></div>
       </Section>
       <Section id="calculators" title="Calculators">
         <CalculatorsWidget currency="USD" />
       </Section>
       <Section id="credit-score" title="Credit score">
         <CreditScoreWidget items={[{label: 'Credit score', value: 742, max: 900}]} />
+        <div data-variant="linear"><CreditScoreWidget variant="linear" items={[{label: 'Credit score', value: 742, max: 900}]} /></div>
+        <div data-variant="ring"><CreditScoreWidget variant="ring" items={[{label: 'Credit score', value: 742, max: 900}]} /></div>
+        <div data-variant="segmented"><CreditScoreWidget variant="segmented" items={[{label: 'Credit score', value: 742, max: 900}]} /></div>
       </Section>
       <Section id="rewards" title="Rewards">
         <RewardsWidget items={[{label: 'Points', value: '12,400', meta: 'Redeem for merchandise, vouchers or air miles'}, {label: 'Vouchers', value: '3', meta: 'Expire 31 Mar'}, {label: 'Cashback', value: '45.00', meta: 'Paid on the 1st'}]} />
@@ -593,15 +704,24 @@ function Gallery() {
       </Section>
       <Section id="delinquency-notice" title="Delinquency notice">
         <DelinquencyNotice message="Your car loan ·· 3310 is 12 days overdue: 412.00." />
+        <div data-variant="filled"><DelinquencyNotice variant="filled" message="Your car loan ·· 3310 is 12 days overdue: 412.00." /></div>
+        <div data-variant="outlined"><DelinquencyNotice variant="outlined" message="Your car loan ·· 3310 is 12 days overdue: 412.00." /></div>
+        <div data-variant="banner"><DelinquencyNotice variant="banner" message="Your car loan ·· 3310 is 12 days overdue: 412.00." /></div>
       </Section>
       <Section id="financial-overview" title="Financial overview">
         <FinancialOverviewWidget items={[{label: 'Assets', value: '4.2M', meta: 'CASA, deposits'}, {label: 'Liabilities', value: '1.1M', meta: 'Loans'}, {label: 'Net worth', value: '3.1M', meta: 'Assets less liabilities'}]} />
       </Section>
       <Section id="position-by-currency" title="Position by currency">
         <CurrencyPositionWidget items={[{label: 'USD', value: 88}, {label: 'EUR', value: 60}, {label: 'GBP', value: 42}, {label: 'INR', value: 30}, {label: 'AED', value: 18}]} note="In millions, assets" />
+        <div data-variant="rounded"><CurrencyPositionWidget variant="rounded" items={[{label: 'USD', value: 88}, {label: 'EUR', value: 60}, {label: 'GBP', value: 42}, {label: 'INR', value: 30}, {label: 'AED', value: 18}]} note="In millions, assets" /></div>
+        <div data-variant="lollipop"><CurrencyPositionWidget variant="lollipop" items={[{label: 'USD', value: 88}, {label: 'EUR', value: 60}, {label: 'GBP', value: 42}, {label: 'INR', value: 30}, {label: 'AED', value: 18}]} note="In millions, assets" /></div>
+        <div data-variant="meter"><CurrencyPositionWidget variant="meter" items={[{label: 'USD', value: 88}, {label: 'EUR', value: 60}, {label: 'GBP', value: 42}, {label: 'INR', value: 30}, {label: 'AED', value: 18}]} note="In millions, assets" /></div>
       </Section>
       <Section id="credit-line-usage" title="Credit line usage">
         <CreditLineWidget items={[{label: 'Working capital', value: 720, max: 1000}, {label: 'Import LC line', value: 300, max: 500}, {label: 'Guarantees', value: 90, max: 400}]} unit="k" />
+        <div data-variant="linear"><CreditLineWidget variant="linear" items={[{label: 'Working capital', value: 720, max: 1000}, {label: 'Import LC line', value: 300, max: 500}, {label: 'Guarantees', value: 90, max: 400}]} unit="k" /></div>
+        <div data-variant="ring"><CreditLineWidget variant="ring" items={[{label: 'Working capital', value: 720, max: 1000}, {label: 'Import LC line', value: 300, max: 500}, {label: 'Guarantees', value: 90, max: 400}]} unit="k" /></div>
+        <div data-variant="segmented"><CreditLineWidget variant="segmented" items={[{label: 'Working capital', value: 720, max: 1000}, {label: 'Import LC line', value: 300, max: 500}, {label: 'Guarantees', value: 90, max: 400}]} unit="k" /></div>
       </Section>
       <Section id="bills-receivable-payable" title="Bills receivable and payable">
         <TradeBillsWidget items={[{label: 'Receivable', value: '1.8M', meta: 'Export bills'}, {label: 'Payable', value: '0.9M', meta: 'Import bills'}]} />
@@ -617,6 +737,9 @@ function Gallery() {
       </Section>
       <Section id="corporate-limits" title="Corporate limits">
         <CorporateLimitsWidget items={[{label: 'Daily, own transfers', value: 420, max: 1000}, {label: 'Monthly, payments', value: 6200, max: 20000}]} unit="k" />
+        <div data-variant="linear"><CorporateLimitsWidget variant="linear" items={[{label: 'Daily, own transfers', value: 420, max: 1000}, {label: 'Monthly, payments', value: 6200, max: 20000}]} unit="k" /></div>
+        <div data-variant="ring"><CorporateLimitsWidget variant="ring" items={[{label: 'Daily, own transfers', value: 420, max: 1000}, {label: 'Monthly, payments', value: 6200, max: 20000}]} unit="k" /></div>
+        <div data-variant="segmented"><CorporateLimitsWidget variant="segmented" items={[{label: 'Daily, own transfers', value: 420, max: 1000}, {label: 'Monthly, payments', value: 6200, max: 20000}]} unit="k" /></div>
       </Section>
       <Section id="transactions-widget" title="Transactions (corporate)">
         <TransactionsWidget items={[{id: 'pending', label: 'Pending', summary: '6 waiting: 4 financial, 2 non-financial'}, {id: 'initiated', label: 'Initiated', summary: '3 initiated today'}, {id: 'log', label: 'Log', summary: '42 this week'}, {id: 'approved', label: 'Approved', summary: '18 approved today'}]} />
@@ -638,9 +761,15 @@ function Gallery() {
       </Section>
       <Section id="pending-for-action" title="Pending for action">
         <PendingActionWidget items={[{label: 'Payments', value: 70}, {label: 'Trade', value: 35}, {label: 'Accounts', value: 20}, {label: 'Limits', value: 10}]} unit="pending" />
+        <div data-variant="rounded"><PendingActionWidget variant="rounded" items={[{label: 'Payments', value: 70}, {label: 'Trade', value: 35}, {label: 'Accounts', value: 20}, {label: 'Limits', value: 10}]} unit="pending" /></div>
+        <div data-variant="lollipop"><PendingActionWidget variant="lollipop" items={[{label: 'Payments', value: 70}, {label: 'Trade', value: 35}, {label: 'Accounts', value: 20}, {label: 'Limits', value: 10}]} unit="pending" /></div>
+        <div data-variant="meter"><PendingActionWidget variant="meter" items={[{label: 'Payments', value: 70}, {label: 'Trade', value: 35}, {label: 'Accounts', value: 20}, {label: 'Limits', value: 10}]} unit="pending" /></div>
       </Section>
       <Section id="my-limits" title="My limits">
         <MyLimitsWidget items={[{label: 'Initiate, per transaction', value: 50, max: 100}, {label: 'Approve, daily', value: 240, max: 500}]} unit="k" />
+        <div data-variant="linear"><MyLimitsWidget variant="linear" items={[{label: 'Initiate, per transaction', value: 50, max: 100}, {label: 'Approve, daily', value: 240, max: 500}]} unit="k" /></div>
+        <div data-variant="ring"><MyLimitsWidget variant="ring" items={[{label: 'Initiate, per transaction', value: 50, max: 100}, {label: 'Approve, daily', value: 240, max: 500}]} unit="k" /></div>
+        <div data-variant="segmented"><MyLimitsWidget variant="segmented" items={[{label: 'Initiate, per transaction', value: 50, max: 100}, {label: 'Approve, daily', value: 240, max: 500}]} unit="k" /></div>
       </Section>
       <Section id="pending-approvals" title="Pending approvals">
         <PendingApprovalsWidget items={[{title: 'Payroll Feb · prioritized', meta: 'Financial · 182,400.00', value: 'PAY-4410'}, {title: 'Add payee J. Mehta', meta: 'Non-financial', value: 'BEN-218'}]} />
@@ -800,12 +929,17 @@ function Gallery() {
       </Section>
       <Section id="success-check" title="Success check">
         <SuccessCheck label="Payment sent" text="1,250.00 USD to A. Rao" />
+        <div data-variant="filled"><SuccessCheck variant="filled" label="Payment sent" text="1,250.00 USD to A. Rao" /></div>
+        <div data-variant="soft"><SuccessCheck variant="soft" label="Payment sent" text="1,250.00 USD to A. Rao" /></div>
       </Section>
       <Section id="swipe-row" title="Swipe row">
         <SwipeRow heading="Coffee House" meta="Today 08:14" value="-4.50" actions={[{value: 'split', label: 'Split'}, {value: 'dispute', label: 'Dispute', tone: 'danger'}]} />
       </Section>
       <Section id="swipe-toast" title="Swipe toast">
         <SwipeToast message="Saved as a payee" />
+        <div data-variant="snackbar"><SwipeToast variant="snackbar" message="Saved as a payee" /></div>
+        <div data-variant="stacked"><SwipeToast variant="stacked" message="Saved as a payee" /></div>
+        <div data-variant="pill"><SwipeToast variant="pill" message="Saved as a payee" /></div>
       </Section>
       <Section id="bell-toggle" title="Bell toggle">
         <BellToggle value />
@@ -827,18 +961,28 @@ function Gallery() {
       </Section>
       <Section id="budget-gauge" title="Budget gauge">
         <BudgetGauge label="Groceries" value={320} max={400} unit="USD" />
+        <div data-variant="ring"><BudgetGauge variant="ring" label="Groceries" value={320} max={400} unit="USD" /></div>
+        <div data-variant="thin"><BudgetGauge variant="thin" label="Groceries" value={320} max={400} unit="USD" /></div>
       </Section>
       <Section id="status-mark" title="Status mark">
         <StatusMark label="Approved" status="success" />
+        <div data-variant="filled"><StatusMark variant="filled" label="Approved" status="success" /></div>
+        <div data-variant="outlined"><StatusMark variant="outlined" label="Approved" status="success" /></div>
+        <div data-variant="dot"><StatusMark variant="dot" label="Approved" status="success" /></div>
       </Section>
       <Section id="favourite-heart" title="Favourite heart">
         <FavouriteHeart name="A. Rao" value />
       </Section>
       <Section id="peek-rating" title="Peek rating">
         <PeekRating label="How was this payment?" value={4} />
+        <div data-variant="emoji"><PeekRating variant="emoji" label="How was this payment?" value={4} /></div>
+        <div data-variant="numbers"><PeekRating variant="numbers" label="How was this payment?" value={4} /></div>
       </Section>
       <Section id="warm-tooltip" title="Warm tooltip">
         <WarmTooltip label="Reward points" text="Points expire after 2 years." />
+        <div data-variant="plain"><WarmTooltip variant="plain" label="Reward points" text="Points expire after 2 years." /></div>
+        <div data-variant="rich"><WarmTooltip variant="rich" label="Reward points" text="Points expire after 2 years." /></div>
+        <div data-variant="beak"><WarmTooltip variant="beak" label="Reward points" text="Points expire after 2 years." /></div>
       </Section>
       <Section id="prompt-bar" title="Prompt bar">
         <PromptBar suggestions={['What did I spend on travel?', 'When is my card bill due?']} />
@@ -851,6 +995,9 @@ function Gallery() {
       </Section>
       <Section id="lattice-loader" title="Lattice loader">
         <LatticeLoader label="Loading your accounts" />
+        <div data-variant="material"><LatticeLoader variant="material" label="Loading your accounts" /></div>
+        <div data-variant="dots"><LatticeLoader variant="dots" label="Loading your accounts" /></div>
+        <div data-variant="orbs"><LatticeLoader variant="orbs" label="Loading your accounts" /></div>
       </Section>
     </main>
   );
