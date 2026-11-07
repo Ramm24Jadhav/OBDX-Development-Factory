@@ -2,6 +2,8 @@
   transition: transform var(--bx-dur) var(--bx-ease), box-shadow var(--bx-dur) var(--bx-ease), border-color var(--bx-dur) var(--bx-ease); }
 .bx-card.is-interactive { cursor: pointer; outline: none; }
 .bx-card.is-interactive:focus-visible { box-shadow: var(--bx-focus), var(--bx-shadow-2); }
+/* Variant outlined (variants.json): flat, drawn by its edge, for dense pages */
+.bx-card.bx-v-outlined { box-shadow: none; border-color: var(--bx-border-strong); }
 .bx-card.is-selected { border-color: var(--bx-brand); }
 .bx-card-head { display: flex; flex-direction: column; gap: 2px; }
 .bx-card-title { margin: 0; font-size: 16px; font-weight: var(--bx-weight-title); color: var(--bx-text); }

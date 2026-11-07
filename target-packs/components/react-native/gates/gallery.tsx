@@ -5,7 +5,7 @@
  */
 import { ReactElement, ReactNode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { SAMPLES } from './samples';
 
@@ -44,6 +44,12 @@ function Section({ id, title, children }: { id: string; title: string; children:
       <div className="gate-body">{children}</div>
     </section>
   );
+}
+
+/** A variant of the section's component (variants.json): ?only=<id>&variant=<id> shows only it (index.html). */
+function Variant({ id, children }: { id: string; children: ReactNode }) {
+  // react-native-web writes dataSet as data-* attributes (React Native's own types do not list it)
+  return <View {...({ dataSet: { variant: id } } as object)}>{children}</View>;
 }
 
 /** A controlled component with its own state, so a section needs one line. */
@@ -88,7 +94,8 @@ function Gallery() {
           <Toast onClose={noop} messages={[{ id: '1', severity: 'error', summary: 'Payment failed', detail: 'The account is blocked. Call the bank.', autoTimeout: 0 },
             { id: '2', severity: 'confirmation', summary: 'Beneficiary added', autoTimeout: 0 }]} />
         </Section>
-        <Section id="card" title="Card"><Card heading="Savings •••• 4521" subheading="Available balance"><Line>₹85,000.00</Line></Card></Section>
+        <Section id="card" title="Card"><Card heading="Savings •••• 4521" subheading="Available balance"><Line>₹85,000.00</Line></Card>
+          <Variant id="outlined"><Card variant="outlined" heading="Savings •••• 4521" subheading="Available balance"><Line>₹85,000.00</Line></Card></Variant></Section>
         <Section id="tabs" title="Tabs">
           <Held initial="c">{(v, set) => <Tabs label="Accounts" selection={v} onSelectionChange={set} tabs={[{ id: 'c', label: 'Current', content: <Line>2 current accounts</Line> },
             { id: 's', label: 'Savings', content: <Line>1 savings account</Line> }]} />}</Held>
