@@ -28,7 +28,8 @@
         };
         new ResizeObserver(post).observe(document.documentElement);
         addEventListener('load', post);
-        setTimeout(post, 600);
+        // a slow first render (Angular's compiler in the browser) may not resize the page: say the height again as it loads
+        [600, 1500, 3000, 6000].forEach(function (t) { setTimeout(post, t); });
       })();
     </script>
   </head>
