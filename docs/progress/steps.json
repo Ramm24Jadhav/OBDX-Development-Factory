@@ -379,15 +379,15 @@
         },
         {
           "name": "Full build passed",
-          "done": false
+          "done": true
         },
         {
           "name": "Browser gates passed",
-          "done": false
+          "done": true
         },
         {
           "name": "Merged",
-          "done": false
+          "done": true
         }
       ]
     },
@@ -416,7 +416,7 @@
         },
         {
           "name": "GitHub build of the wrapped app",
-          "done": false
+          "done": true
         }
       ]
     },
@@ -441,7 +441,7 @@
         },
         {
           "name": "Gradle wrapper and release pin guard",
-          "done": false
+          "done": true
         },
         {
           "name": "iOS built on a Mac",

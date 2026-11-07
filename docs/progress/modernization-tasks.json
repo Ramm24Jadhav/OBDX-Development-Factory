@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-06T22:30:50.197Z",
+ "generated": "2026-11-07T02:28:37.424Z",
  "rows": [
   {
    "id": "P0",
@@ -11,7 +11,7 @@
    "unit": "steps",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "SCR",
@@ -23,7 +23,7 @@
    "unit": "screens",
    "status": "Done",
    "note": "Work; being brought to the boards one by one",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "S0",
@@ -35,7 +35,7 @@
    "unit": "parts",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "S1",
@@ -47,7 +47,7 @@
    "unit": "screens",
    "status": "Done",
    "note": "Overview differences found",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "S2",
@@ -59,7 +59,7 @@
    "unit": "screens",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "S3",
@@ -71,7 +71,7 @@
    "unit": "screens",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "S4",
@@ -83,7 +83,7 @@
    "unit": "screens",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "C0",
@@ -95,7 +95,7 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "M1",
@@ -107,7 +107,7 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "W1",
@@ -119,7 +119,7 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "W2",
@@ -131,7 +131,7 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "W3",
@@ -143,7 +143,7 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "W4",
@@ -155,7 +155,7 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "W5",
@@ -167,7 +167,7 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "W6",
@@ -179,7 +179,7 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "W7",
@@ -191,7 +191,7 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "N1",
@@ -203,7 +203,7 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "N2",
@@ -215,7 +215,7 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "N3",
@@ -227,7 +227,7 @@
    "unit": "components",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "TP0",
@@ -239,7 +239,7 @@
    "unit": "packs",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "T1",
@@ -251,7 +251,7 @@
    "unit": "packs",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "T2",
@@ -263,7 +263,7 @@
    "unit": "packs",
    "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "G0",
@@ -275,7 +275,7 @@
    "unit": "components",
    "status": "In progress",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "Q1",
@@ -287,7 +287,7 @@
    "unit": "checks",
    "status": "In progress",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "SHIP",
@@ -299,115 +299,115 @@
    "unit": "phases",
    "status": "Not started",
    "note": "One per phase",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "LG0",
    "track": "Liquid glass",
    "task": "LG0 Glisse research and the glass spec",
    "session": "Catalogue (web)",
-   "done": 0,
+   "done": 3,
    "total": 3,
    "unit": "steps",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "LG1",
    "track": "Liquid glass",
    "task": "LG1 Liquid glass in React (Glisse)",
    "session": "Catalogue (web)",
-   "done": 0,
+   "done": 2,
    "total": 2,
    "unit": "steps",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "LG2",
    "track": "Liquid glass",
    "task": "LG2 Liquid glass in JET and Angular (CSS and SVG)",
    "session": "Catalogue (web)",
-   "done": 0,
+   "done": 2,
    "total": 2,
    "unit": "steps",
-   "status": "Not started",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "LG3",
    "track": "Liquid glass",
    "task": "LG3 Liquid glass in React Native",
    "session": "Catalogue (phone)",
-   "done": 0,
+   "done": 1,
    "total": 2,
    "unit": "steps",
-   "status": "Not started",
-   "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "status": "In progress",
+   "note": "expo-blur BlurView (optional), fill and rim as the fallback",
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "LG4",
    "track": "Liquid glass",
    "task": "LG4 Liquid glass in the other technologies",
    "session": "Main",
-   "done": 0,
+   "done": 3,
    "total": 3,
    "unit": "steps",
-   "status": "Not started",
-   "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "status": "Done",
+   "note": "The factory does not write the bank's style into the starters yet",
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "LG5",
    "track": "Liquid glass",
    "task": "LG5 Liquid glass gates",
    "session": "Main",
-   "done": 0,
+   "done": 4,
    "total": 4,
    "unit": "steps",
-   "status": "Not started",
-   "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "status": "Done",
+   "note": "gates/specs/liquid.spec.ts: React, Angular and JET 21 in Chromium; contrast in both themes, reduced transparency and forced colours drop the frost, a screenshot per theme, no frame loop while still",
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "AC",
    "track": "Decisions of 7 Nov",
    "task": "Angular pack: the 34 missing components",
    "session": "Angular components",
-   "done": 1,
+   "done": 4,
    "total": 4,
    "unit": "steps",
-   "status": "In progress",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "CA",
    "track": "Decisions of 7 Nov",
    "task": "Capacitor wraps the Angular app too",
    "session": "Capacitor for Angular",
-   "done": 4,
+   "done": 5,
    "total": 5,
    "unit": "steps",
-   "status": "In progress",
+   "status": "Done",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   },
   {
    "id": "NX",
    "track": "Decisions of 7 Nov",
    "task": "Native starters: pinning, XcodeGen, ViewInspector, device run",
    "session": "Native extras",
-   "done": 3,
+   "done": 4,
    "total": 5,
    "unit": "steps",
    "status": "In progress",
    "note": "",
-   "asOf": "2026-11-06T22:30:50.197Z"
+   "asOf": "2026-11-07T02:28:37.424Z"
   }
  ]
 }

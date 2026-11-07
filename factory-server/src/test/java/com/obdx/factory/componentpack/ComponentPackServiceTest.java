@@ -86,14 +86,14 @@ class ComponentPackServiceTest {
         assertThat(find(c, "card").packs().get("react").readiness()).isEqualTo("available");
         assertThat(find(c, "button").packs().get("angular").gates().get("parity")).isEqualTo("passed");
         assertThat(find(c, "segmented").packs().get("angular").gates().get("parity")).isEqualTo("not-run");
-        // Angular's newest components are built and unit tested; their browser gates are not recorded yet
-        assertThat(find(c, "overview").packs().get("angular").readiness()).isEqualTo("in-test");
+        // Angular's newest components passed their browser gates too; overview replaces no JET element, so it is Available
+        assertThat(find(c, "overview").packs().get("angular").readiness()).isEqualTo("available");
         assertThat(c.packs()).allSatisfy((p) -> assertThat(p.counts().available() + p.counts().inTest() + p.counts().planned() + p.counts().notInPack()).isEqualTo(245));
         assertThat(c.packs().get(1).counts().available()).isEqualTo(219);
         assertThat(c.packs().get(1).counts().inTest()).isEqualTo(26);
         assertThat(c.packs().get(2).counts().available()).isZero();
-        assertThat(c.packs().get(3).counts().available()).isEqualTo(189);
-        assertThat(c.packs().get(3).counts().inTest()).isEqualTo(56);
+        assertThat(c.packs().get(3).counts().available()).isEqualTo(219);
+        assertThat(c.packs().get(3).counts().inTest()).isEqualTo(26);
 
         // Available only when every gate passes (parity does not apply to a component with nothing to replace)
         ComponentRegistry.Entry card = REGISTRY.component("card");
