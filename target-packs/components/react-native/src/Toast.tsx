@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react';
-import { AccessibilityInfo, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Pressable, Text, View } from 'react-native';
 
 import { IconButton } from './Button';
 import { Enter } from './motion';
 import { Theme, useTheme } from './theme';
+import { Touch } from './parts';
 import { ToastVariant, toastLook } from './variants';
 
 export type Severity = 'error' | 'warning' | 'confirmation' | 'info';
@@ -34,6 +35,7 @@ const tone = (t: Theme, s: Severity) => (s === 'error' ? t.color.danger : s === 
  */
 export function Toast({ messages, onClose, testID, variant = 'default' }: ToastProps) {
   const t = useTheme();
+  const [open, setOpen] = useState(false);
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const said = useRef(new Set<string>());
   const close = useRef(onClose);
@@ -55,7 +57,7 @@ export function Toast({ messages, onClose, testID, variant = 'default' }: ToastP
   }, [messages]);
   useEffect(() => () => { timers.current.forEach((x) => clearTimeout(x)); timers.current.clear(); }, []);
   return (
-    <View testID={testID} style={{ gap: variant === 'stacked' ? 6 : 10 }} pointerEvents="box-none">
+    <Pressable testID={testID} style={{ gap: variant === 'stacked' ? 6 : 10 }} accessible={false} onPress={variant === 'stacked' ? () => setOpen(!open) : undefined}>
       {messages.map((m, i) => {
         const severity = m.severity ?? 'info';
         const look = toastLook(t, variant, tone(t, severity));
@@ -63,7 +65,8 @@ export function Toast({ messages, onClose, testID, variant = 'default' }: ToastP
           <Enter key={m.id} effect="slide-down" testID={`toast-${m.id}`}
                 style={{ flexDirection: 'row', alignItems: variant === 'pill' ? 'center' : 'flex-start', gap: 12, padding: 12, ...look.box,
                   // the stack: older messages sit a little narrower behind the newest
-                  ...(variant === 'stacked' ? { marginHorizontal: Math.min(i, 2) * 8 } : {}) }}>
+                  // the stack: older messages tuck behind the newest until the stack is tapped open
+                  ...(variant === 'stacked' && i > 0 && !open ? { marginTop: -52, marginHorizontal: Math.min(i, 2) * 8, opacity: 0.9 } : {}), zIndex: messages.length - i }}>
             <View importantForAccessibility="no-hide-descendants"
                   style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: tone(t, severity), alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>{ICON[severity]}</Text>
@@ -74,10 +77,12 @@ export function Toast({ messages, onClose, testID, variant = 'default' }: ToastP
               <Text style={{ fontSize: 14, fontWeight: '700', color: look.fg }}>{m.summary}</Text>
               {m.detail ? <Text style={{ fontSize: 14, color: look.body }}>{m.detail}</Text> : null}
             </View>
-            <IconButton label="Close the message" icon="close" onAction={() => onClose(m)} />
+            {variant === 'snackbar'
+              ? <Touch label="Close the message" onPress={() => onClose(m)} style={{ width: t.minTouch, alignItems: 'center' }}><Text style={{ fontSize: 18, color: look.fg }}>×</Text></Touch>
+              : <IconButton label="Close the message" icon="close" onAction={() => onClose(m)} />}
           </Enter>
         );
       })}
-    </View>
+    </Pressable>
   );
 }

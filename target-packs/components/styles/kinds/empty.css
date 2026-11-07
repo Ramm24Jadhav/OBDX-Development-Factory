@@ -11,5 +11,6 @@
 .bx-empty.bx-v-compact .bx-empty-icon { grid-row: 1 / span 2; width: 36px; height: 36px; font-size: 16px; }
 .bx-empty.bx-v-compact .bx-empty-title { margin: 0; font-size: 14.5px; }
 .bx-empty.bx-v-compact .bx-empty-text { margin: 0; font-size: 13px; }
+.bx-empty.bx-v-compact :is(.bx-empty-title, .bx-empty-text) { grid-column: 2; }
 .bx-empty.bx-v-compact > .bx-btn { grid-column: 3; grid-row: 1 / span 2; }
 .bx-empty.bx-v-card { border: calc(var(--bx-bw) * 1.5) dashed var(--bx-border-strong); border-radius: var(--bx-radius-lg); background: var(--bx-card); }

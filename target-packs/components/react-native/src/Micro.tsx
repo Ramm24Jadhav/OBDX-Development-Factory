@@ -126,13 +126,14 @@ export function SuccessCheck({ testID, label, size = 64, variant = 'default' }: 
   return (
     <View testID={testID} accessible accessibilityRole="summary" accessibilityLabel={label} style={{ alignItems: 'center', gap: 8 }}>
       <View style={variant === 'soft' ? { padding: size * 0.2, borderRadius: size, backgroundColor: t.color.successSoft } : undefined}>
-      <Animated.View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: variant === 'filled' ? t.color.successText : t.color.success, transform: [{ scale: ring }],
-        ...(variant === 'filled' ? t.elevation(3) : {}) }}>
+      {/* soft: the tick in the success colour on its tinted halo; filled: the disc raised and a size up */}
+      <Animated.View style={{ width: variant === 'filled' ? size * 1.15 : size, height: variant === 'filled' ? size * 1.15 : size, borderRadius: size, backgroundColor: variant === 'soft' ? t.color.successSoft : t.color.success,
+        transform: [{ scale: ring }], ...(variant === 'filled' ? t.elevation(3) : {}) }}>
         <View style={{ position: 'absolute', left: size * 0.28, top: size * 0.5, width: size * 0.2, height: 4, overflow: 'hidden', transform: [{ rotate: '45deg' }] }}>
-          <Animated.View style={{ height: 4, borderRadius: 2, backgroundColor: '#fff', width: tick.interpolate({ inputRange: [0, 0.4, 1], outputRange: ['0%', '100%', '100%'] }) }} />
+          <Animated.View style={{ height: 4, borderRadius: 2, backgroundColor: variant === 'soft' ? t.color.successText : '#fff', width: tick.interpolate({ inputRange: [0, 0.4, 1], outputRange: ['0%', '100%', '100%'] }) }} />
         </View>
         <View style={{ position: 'absolute', left: size * 0.38, top: size * 0.44, width: size * 0.38, height: 4, overflow: 'hidden', transform: [{ rotate: '-50deg' }] }}>
-          <Animated.View style={{ height: 4, borderRadius: 2, backgroundColor: '#fff', width: tick.interpolate({ inputRange: [0, 0.4, 1], outputRange: ['0%', '0%', '100%'] }) }} />
+          <Animated.View style={{ height: 4, borderRadius: 2, backgroundColor: variant === 'soft' ? t.color.successText : '#fff', width: tick.interpolate({ inputRange: [0, 0.4, 1], outputRange: ['0%', '0%', '100%'] }) }} />
         </View>
       </Animated.View>
       </View>
@@ -152,7 +153,7 @@ export function StatusMark({ testID, status, label, variant = 'default' }: { tes
   const word = status === 'success' ? 'done' : status === 'failed' ? 'failed' : 'in progress';
   return (
     <View testID={testID} accessible accessibilityLabel={`${label}, ${word}`} accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'center', gap: variant === 'dot' ? 6 : 10,
-      ...(variant === 'filled' ? { alignSelf: 'flex-start', paddingVertical: 4, paddingLeft: 4, paddingRight: 12, borderRadius: 999, backgroundColor: t.color.surface2 }
+      ...(variant === 'filled' ? { alignSelf: 'flex-start', paddingVertical: 4, paddingLeft: 4, paddingRight: 12, borderRadius: 999, backgroundColor: status === 'success' ? t.color.successSoft : status === 'failed' ? t.color.dangerSoft : t.color.primarySoft }
         : variant === 'outlined' ? { alignSelf: 'flex-start', paddingVertical: 3, paddingLeft: 3, paddingRight: 12, borderRadius: 999, borderWidth: 1, borderColor: color } : {}) }}>
       {variant === 'dot' ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: color }} /> : (
       <Animated.View style={[{ width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center',

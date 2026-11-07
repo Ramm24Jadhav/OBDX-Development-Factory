@@ -32,6 +32,8 @@
 .bx-meters.bx-v-ring .bx-meter-track { height: auto; border-radius: 0; background: none; overflow: visible; }
 .bx-meter-ring { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 72px; height: 72px; }
 .bx-meter-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+/* React's ring is MUI's, which has no track of its own */
+.bx-meter-ring:has(.MuiCircularProgress-root)::before { content: ""; position: absolute; inset: 4px; border: 5px solid var(--bx-track); border-radius: 50%; }
 .bx-meter-ring .MuiCircularProgress-root { position: absolute; inset: 0; width: 100% !important; height: 100% !important; color: var(--bx-brand); }
 .bx-meter-ring.is-near .MuiCircularProgress-root { color: var(--bx-warning); }
 .bx-meter-ring.is-over .MuiCircularProgress-root { color: var(--bx-danger); }
@@ -50,4 +52,8 @@
 .bx-gauge.bx-v-ring svg { width: 140px; }
 .bx-gauge.bx-v-ring .bx-gauge-fill { stroke-dasharray: 251.3; transform: rotate(-90deg); transform-origin: 50% 50%; transform-box: fill-box; animation-name: bx-gauge-ring-in; }
 @keyframes bx-gauge-ring-in { from { stroke-dashoffset: 251.3; } }
+/* thin: a small widget gauge, a fine arc and the figure in one line */
+.bx-gauge.bx-v-thin { width: 140px; }
 .bx-gauge.bx-v-thin :is(.bx-gauge-track, .bx-gauge-fill) { stroke-width: 4; }
+.bx-gauge.bx-v-thin .bx-gauge-label { font-size: 13px; }
+.bx-gauge.bx-v-thin .bx-gauge-text { font-size: 12px; }

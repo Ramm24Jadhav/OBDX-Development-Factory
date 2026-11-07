@@ -43,5 +43,7 @@
 /* Reduced motion: nothing moves, everything shows its end state */
 @media (prefers-reduced-motion: reduce) {
   [class*="bx-"], [class*="bx-"]::before, [class*="bx-"]::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  /* React's MUI parts (the Material spinner's arc, linear meters) sit inside bx- elements without a bx- class */
+  [class*="bx-"] [class*="Mui"], [class*="bx-"] [class*="Mui"]::before, [class*="bx-"] [class*="Mui"]::after { animation: none !important; transition: none !important; }
 }
 @media (pointer: coarse) { :root, .bx-theme { --bx-height: 48px; } }

@@ -12,6 +12,6 @@
 .bx-skeleton.bx-v-pulse :is(.bx-skel-line, .bx-skel-block) { background: var(--bx-track); border-radius: var(--bx-radius-sm); animation: bx-skel-pulse 1.5s ease-in-out infinite; }
 .bx-skeleton.bx-v-pulse.is-circle .bx-skel-block { border-radius: 50%; }
 @keyframes bx-skel-pulse { 50% { opacity: 0.45; } }
-.bx-skeleton.bx-v-soft :is(.bx-skel-line, .bx-skel-block) { background: var(--bx-surface-2); border-radius: var(--bx-radius-pill); animation: none; }
+.bx-skeleton.bx-v-soft :is(.bx-skel-line, .bx-skel-block) { background: color-mix(in srgb, var(--bx-text) 7%, var(--bx-card)); border-radius: var(--bx-radius-pill); animation: none; }
 .bx-skeleton.bx-v-soft .bx-skel-block { border-radius: var(--bx-radius-lg); }
 .bx-skeleton.bx-v-soft.is-circle .bx-skel-block { border-radius: 50%; }

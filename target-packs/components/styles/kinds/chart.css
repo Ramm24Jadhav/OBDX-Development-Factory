@@ -15,8 +15,10 @@
 .bx-chart.is-columns .bx-bar-value { font-size: 12px; }
 @keyframes bx-grow-y { from { transform: scaleY(0); } }
 /* variants (variants.json, wave V3) */
-.bx-chart.bx-v-rounded .bx-bar-track { height: 18px; background: color-mix(in srgb, var(--bx-brand) 8%, var(--bx-track)); }
+.bx-chart.bx-v-rounded .bx-bar-track { height: 18px; background: color-mix(in srgb, var(--bx-brand) 16%, var(--bx-track)); }
 .bx-chart.bx-v-rounded .bx-bar-fill { background: var(--bx-brand); }
+.bx-chart.bx-v-rounded .bx-bar-fill.is-danger, .bx-chart.bx-v-lollipop .bx-bar-fill.is-danger::after { background: var(--bx-danger); }
+.bx-chart.bx-v-rounded .bx-bar-fill.is-success, .bx-chart.bx-v-lollipop .bx-bar-fill.is-success::after { background: var(--bx-success); }
 .bx-chart.is-columns.bx-v-rounded .bx-bar-track { width: min(44px, 100%); border-radius: var(--bx-radius-pill); }
 .bx-chart.bx-v-lollipop .bx-bar-track { background: none; overflow: visible; }
 .bx-chart.bx-v-lollipop .bx-bar-fill { top: 5px; bottom: auto; height: 2px; border-radius: 0; background: var(--bx-border-strong); }
@@ -32,7 +34,8 @@
 .bx-chart.bx-v-meter .bx-bar::before { content: ""; width: 10px; height: 10px; border-radius: calc(var(--bx-radius-sm) / 2); background: var(--bx-brand); }
 .bx-seg-0, .bx-chart.bx-v-meter .bx-bar:nth-child(6n+1)::before { background: var(--bx-brand); }
 .bx-seg-1, .bx-chart.bx-v-meter .bx-bar:nth-child(6n+2)::before { background: var(--bx-brand-2); }
-.bx-seg-2, .bx-chart.bx-v-meter .bx-bar:nth-child(6n+3)::before { background: var(--bx-info); }
-.bx-seg-3, .bx-chart.bx-v-meter .bx-bar:nth-child(6n+4)::before { background: var(--bx-success); }
-.bx-seg-4, .bx-chart.bx-v-meter .bx-bar:nth-child(6n+5)::before { background: var(--bx-warning); }
-.bx-seg-5, .bx-chart.bx-v-meter .bx-bar:nth-child(6n+6)::before { background: var(--bx-danger); }
+/* category colours from the brand, not the status colours, so a category never reads as an error */
+.bx-seg-2, .bx-chart.bx-v-meter .bx-bar:nth-child(6n+3)::before { background: color-mix(in srgb, var(--bx-brand) 55%, var(--bx-card)); }
+.bx-seg-3, .bx-chart.bx-v-meter .bx-bar:nth-child(6n+4)::before { background: color-mix(in srgb, var(--bx-brand-2) 55%, var(--bx-card)); }
+.bx-seg-4, .bx-chart.bx-v-meter .bx-bar:nth-child(6n+5)::before { background: var(--bx-info); }
+.bx-seg-5, .bx-chart.bx-v-meter .bx-bar:nth-child(6n+6)::before { background: var(--bx-muted); }

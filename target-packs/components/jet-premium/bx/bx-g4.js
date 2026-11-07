@@ -58,7 +58,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2', './bx-g3'], functi
         var state = over ? ' is-over' : step(v, max) >= self.props.warnAt ? ' is-near' : '';
         var pct = max > 0 ? Math.round(Math.min(1, Math.max(0, v / max)) * 100) : 0;
         var segs = [];
-        for (var s = 0; s < 10; s++) { segs.push({ css: s < Math.round(step(v, max) / 10) ? 'is-on' : '' }); }
+        for (var s = 0; s < 10; s++) { segs.push({ css: s < Math.floor(step(v, max) / 10) ? 'is-on' : '' }); }
         return { label: o.label, text: text, now: String(Math.min(v, max)), max: String(max), key: self.id + '-' + o.i, over: over,
           css: 'bx-meter-fill bx-w-' + step(v, max) + state, ring: 'bx-meter-ring' + state, segsCss: 'bx-meter-segs' + state, segs: segs, pct: pct + '%', offset: k.variants.ringOffset(pct / 100, 18) };
       });

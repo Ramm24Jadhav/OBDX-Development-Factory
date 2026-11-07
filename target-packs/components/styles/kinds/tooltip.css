@@ -7,9 +7,10 @@
 .bx-tip[hidden] { display: none; }
 .bx-fx-warm .bx-tip { background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3); animation: bx-pop var(--bx-dur-slow) var(--bx-ease-spring); }
 /* variants (variants.json, wave V3) */
-.bx-tooltip.bx-v-plain .bx-tip { padding: 4px 8px; border-radius: var(--bx-radius-sm); font-size: 12px; max-width: 200px; box-shadow: none; }
-.bx-tooltip.bx-v-rich .bx-tip { max-width: 300px; padding: 12px 14px; border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-raised); color: var(--bx-text-body);
+/* plain sits under its term, centred and compact, as Material's plain tooltip */
+.bx-tooltip.bx-v-plain .bx-tip { top: calc(100% + 6px); bottom: auto; left: 50%; transform: translateX(-50%); padding: 4px 8px; border-radius: var(--bx-radius-sm); font-size: 12px; max-width: 200px; box-shadow: none; }
+.bx-tooltip.bx-v-rich .bx-tip { max-width: min(300px, calc(100vw - 32px)); padding: 12px 14px; border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-raised); color: var(--bx-text-body);
   font-size: 13.5px; line-height: 1.5; box-shadow: var(--bx-shadow-3); }
-.bx-tooltip.bx-v-beak .bx-tip { border: var(--bx-bw) solid var(--bx-border-strong); border-radius: var(--bx-radius-sm); background: var(--bx-raised); color: var(--bx-text); overflow: visible; }
-.bx-tooltip.bx-v-beak .bx-tip::after { content: ""; position: absolute; left: 14px; bottom: -6px; width: 10px; height: 10px; background: inherit; border: inherit; border-width: 0 var(--bx-bw) var(--bx-bw) 0;
+.bx-tooltip.bx-v-beak .bx-tip { left: auto; right: 0; border: var(--bx-bw) solid var(--bx-border-strong); border-radius: var(--bx-radius-sm); background: var(--bx-raised); color: var(--bx-text); overflow: visible; }
+.bx-tooltip.bx-v-beak .bx-tip::after { content: ""; position: absolute; right: 7px; bottom: -6px; width: 10px; height: 10px; background: inherit; border: inherit; border-width: 0 var(--bx-bw) var(--bx-bw) 0;
   transform: rotate(45deg); }

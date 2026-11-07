@@ -10,15 +10,22 @@
 .bx-step-item.is-failed .bx-step-mark { border-color: var(--bx-danger); background: var(--bx-danger); color: #fff; }
 /* variants (variants.json, wave V3) */
 .bx-steps.bx-v-material .bx-step-mark { width: 24px; height: 24px; border: 0; background: var(--bx-track); font-size: 12px; }
+.bx-steps.bx-v-material .bx-step-item:not(.is-done, .is-current, .is-failed) .bx-step-mark { color: var(--bx-text-body); }
 .bx-steps.bx-v-material .bx-step-item.is-current .bx-step-mark { background: var(--bx-brand); color: var(--bx-on-brand); box-shadow: none; }
 .bx-steps.bx-v-material .bx-step-item.is-current { color: var(--bx-brand-text); }
 .bx-steps.bx-v-material .bx-step-item + .bx-step-item::before { top: 12px; right: calc(50% + 16px); width: calc(100% - 32px); height: var(--bx-bw); }
 .bx-steps.bx-v-vertical { flex-direction: column; gap: 14px; }
-.bx-steps.bx-v-vertical .bx-step-item { flex-direction: row; align-items: center; gap: 12px; text-align: left; }
-.bx-steps.bx-v-vertical .bx-step-item + .bx-step-item::before { top: -14px; left: 14px; right: auto; width: calc(var(--bx-bw) * 2); height: 14px; }
+.bx-steps.bx-v-vertical .bx-step-item { flex-direction: row; align-items: flex-start; gap: 12px; text-align: left; }
+.bx-steps.bx-v-vertical .bx-step-label { padding-top: 5px; }
+.bx-steps.bx-v-vertical .bx-step-item + .bx-step-item::before { display: none; }
+/* the line runs from each mark down to the next, however tall the label */
+.bx-steps.bx-v-vertical .bx-step-item:not(:last-child)::after { content: ""; position: absolute; left: 14px; top: 30px; bottom: -14px; width: calc(var(--bx-bw) * 2); background: var(--bx-border-strong); }
+.bx-steps.bx-v-vertical .bx-step-item.is-done:not(:last-child)::after { background: var(--bx-brand); }
 .bx-steps.bx-v-segmented { gap: 4px; }
 .bx-steps.bx-v-segmented .bx-step-item { align-items: stretch; gap: 6px; text-align: left; font-size: 12px; }
 .bx-steps.bx-v-segmented .bx-step-item + .bx-step-item::before { display: none; }
-.bx-steps.bx-v-segmented .bx-step-mark { width: auto; height: 6px; border: 0; border-radius: var(--bx-radius-pill); background: var(--bx-track); color: transparent; font-size: 0; box-shadow: none; animation: none; }
-.bx-steps.bx-v-segmented .bx-step-item:is(.is-done, .is-current) .bx-step-mark { background: var(--bx-brand); }
+.bx-steps.bx-v-segmented .bx-step-mark { width: auto; height: 6px; border: 0; border-radius: var(--bx-radius-pill); background: color-mix(in srgb, var(--bx-muted) 80%, var(--bx-surface)); color: transparent; font-size: 0; box-shadow: none; animation: none; }
+.bx-steps.bx-v-segmented .bx-step-item.is-done .bx-step-mark { background: var(--bx-brand); }
+.bx-steps.bx-v-segmented .bx-step-item.is-current .bx-step-mark { background: linear-gradient(90deg, var(--bx-brand) 50%, color-mix(in srgb, var(--bx-brand) 35%, var(--bx-surface)) 50%); }
+.bx-steps.bx-v-segmented .bx-step-item.is-done { color: var(--bx-muted); font-weight: 500; }
 .bx-steps.bx-v-segmented .bx-step-item.is-failed .bx-step-mark { background: var(--bx-danger); }

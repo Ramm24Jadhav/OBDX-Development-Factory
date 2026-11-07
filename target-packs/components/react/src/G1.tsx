@@ -471,11 +471,15 @@ export interface SpinnerProps {
 }
 const SPIN_PX = { sm: 16, md: 24, lg: 40 };
 export function Spinner({ testID, label = 'Loading', size = 'md', variant = 'default', orbState = 'working' }: SpinnerProps) {
+  // the orb's ink follows the bx theme (.bx-dark), as in the other packs, not the device's setting
+  const ref = useRef<HTMLSpanElement>(null);
+  const [dark, setDark] = useState(false);
+  useEffect(() => { setDark(!!ref.current?.closest('.bx-dark')); }, []);
   const mark = variant === 'material' ? <CircularProgress size={SPIN_PX[size]} thickness={4.5} aria-hidden="true" className={`bx-spinner-mui is-${size}`} />
     : variant === 'dots' ? <span className={`bx-spinner-dots is-${size}`} aria-hidden="true"><span /><span /><span /></span>
-    : variant === 'orbs' ? <ThinkingOrb state={orbState} size={size === 'lg' ? 64 : 20} aria-hidden="true" className={`bx-orb is-${size}`} />
+    : variant === 'orbs' ? <ThinkingOrb state={orbState} size={size === 'lg' ? 64 : 20} theme={dark ? 'dark' : 'light'} aria-hidden="true" className={`bx-orb is-${size}`} />
     : <span className={`bx-spinner is-${size}`} aria-hidden="true" />;
-  return <span className={`bx-spinner-wrap${vx(variant)}`} role="status" data-testid={testID}>{mark}<span className="bx-visually-hidden">{label}</span></span>;
+  return <span ref={ref} className={`bx-spinner-wrap${vx(variant)}`} role="status" data-testid={testID}>{mark}<span className="bx-visually-hidden">{label}</span></span>;
 }
 
 /** Where content is coming: grey lines that shimmer. */

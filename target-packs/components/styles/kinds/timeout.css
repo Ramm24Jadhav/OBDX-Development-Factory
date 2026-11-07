@@ -6,6 +6,6 @@
 .bx-countdown-fill { stroke: var(--bx-brand); stroke-linecap: round; stroke-dasharray: 125.7; transition: stroke-dashoffset 1s linear; }
 .bx-countdown-num { font-size: 28px; font-weight: var(--bx-weight-title); font-variant-numeric: tabular-nums; color: var(--bx-text); }
 .bx-dialog.bx-timeout.bx-v-countdown .bx-dialog-body { text-align: center; }
-.bx-dialog.bx-timeout.bx-v-sheet { top: auto; bottom: 0; left: 0; right: 0; width: 100%; max-width: none; transform: none; border-radius: var(--bx-radius-xl) var(--bx-radius-xl) 0 0;
-  animation: bx-sheet-up var(--bx-dur-slow) var(--bx-ease-standard); }
-@keyframes bx-sheet-up { from { transform: translateY(100%); } }
+.bx-dialog.bx-timeout.bx-v-sheet { top: auto; bottom: 0; left: 50%; right: auto; width: min(560px, 100%); max-width: none; transform: translateX(-50%); border-radius: var(--bx-radius-xl) var(--bx-radius-xl) 0 0;
+  padding-bottom: env(safe-area-inset-bottom); animation: bx-sheet-up var(--bx-dur-slow) var(--bx-ease-standard); }
+@keyframes bx-sheet-up { from { transform: translate(-50%, 100%); } }

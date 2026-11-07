@@ -1639,7 +1639,7 @@
       "variants": [
         { "id": "default", "name": "Standard", "purpose": "A short note on a term (the component as drawn today)", "pattern": "Oracle Redwood note window", "source": "own", "licence": "own", "built": ["jet-premium", "react", "angular", "react-native"] },
         { "id": "plain", "name": "Plain", "purpose": "One short line on the inverse surface", "pattern": "Material 3 plain tooltip", "source": "own", "licence": "own", "note": "React: drawn: MUI Tooltip moves the note into a portal and changes the focus and Escape behaviour the parity test checks", "built": ["jet-premium", "react", "angular", "react-native"] },
-        { "id": "rich", "name": "Rich", "purpose": "A longer note on a raised surface with a heading line", "pattern": "Material 3 rich tooltip", "source": "own", "licence": "own", "note": "React: drawn, as plain", "built": ["jet-premium", "react", "angular", "react-native"] },
+        { "id": "rich", "name": "Rich", "purpose": "A longer note on a raised surface, set for reading", "pattern": "Material 3 rich tooltip", "source": "own", "licence": "own", "note": "React: drawn, as plain", "built": ["jet-premium", "react", "angular", "react-native"] },
         { "id": "beak", "name": "With beak", "purpose": "Points at its term with a small arrow", "pattern": "Fluent 2 tooltip", "source": "own", "licence": "own", "built": ["jet-premium", "react", "angular", "react-native"] }
       ],
       "motion": { "enter": "fade", "hover": null, "press": null, "change": null, "reduced": "Appears and hides at once, no fade" }
@@ -2063,7 +2063,7 @@
       "variants": [
         { "id": "default", "name": "Standard", "purpose": "A short note on a term (the component as drawn today)", "pattern": "Oracle Redwood note window", "source": "own", "licence": "own", "built": ["jet-premium", "react", "angular", "react-native"] },
         { "id": "plain", "name": "Plain", "purpose": "One short line on the inverse surface", "pattern": "Material 3 plain tooltip", "source": "own", "licence": "own", "note": "React: drawn: MUI Tooltip moves the note into a portal and changes the focus and Escape behaviour the parity test checks", "built": ["jet-premium", "react", "angular", "react-native"] },
-        { "id": "rich", "name": "Rich", "purpose": "A longer note on a raised surface with a heading line", "pattern": "Material 3 rich tooltip", "source": "own", "licence": "own", "note": "React: drawn, as plain", "built": ["jet-premium", "react", "angular", "react-native"] },
+        { "id": "rich", "name": "Rich", "purpose": "A longer note on a raised surface, set for reading", "pattern": "Material 3 rich tooltip", "source": "own", "licence": "own", "note": "React: drawn, as plain", "built": ["jet-premium", "react", "angular", "react-native"] },
         { "id": "beak", "name": "With beak", "purpose": "Points at its term with a small arrow", "pattern": "Fluent 2 tooltip", "source": "own", "licence": "own", "built": ["jet-premium", "react", "angular", "react-native"] }
       ],
       "motion": { "enter": "fade", "hover": null, "press": null, "change": null, "reduced": "Appears and hides at once, no fade" }

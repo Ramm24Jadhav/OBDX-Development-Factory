@@ -114,7 +114,7 @@ export abstract class MetersBase extends Part {
     const state = over ? ' is-over' : share >= (this.warnAt() ?? this.defaultWarnAt) ? ' is-near' : '';
     const pct = o.max > 0 ? Math.round(Math.min(1, Math.max(0, o.value / o.max)) * 100) : 0;
     return { label: o.label, text, over, max: o.max, now: Math.min(o.value, o.max), css: `bx-meter-fill bx-w-${share}` + state, state, pct, offset: ringOffset(pct / 100, 18),
-      segs: Array.from({ length: 10 }, (_, k) => k < Math.round(share / 10)) };
+      segs: Array.from({ length: 10 }, (_, k) => k < Math.floor(share / 10)) };
   }));
 }
 

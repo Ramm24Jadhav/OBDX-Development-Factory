@@ -16,13 +16,24 @@
   .bx-motion-scroll-fadeup .bx-alert { animation: bx-in-up linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
 }
 /* variants (variants.json, wave V3) */
-.bx-alert.bx-v-filled { border-color: transparent; background: var(--bx-info-text); color: var(--bx-surface); box-shadow: var(--bx-shadow-2); }
+/* React draws filled and outlined on MUI Alert: keep the bx shape, type and colours over MUI's */
+.bx-alert:is(.bx-v-filled, .bx-v-outlined) { padding: 12px 14px; border-radius: var(--bx-radius-lg); font: inherit; font-size: 14px; }
+.bx-alert .MuiAlert-icon { margin-right: 0; padding: 1px 0; font-size: 20px; opacity: 1; }
+.bx-alert .MuiAlert-message { padding: 0; }
+.bx-alert .MuiAlert-action { margin-right: 0; padding: 0; }
+.bx-alert.bx-v-filled { border-color: transparent; background: var(--bx-info-text); color: var(--bx-surface); box-shadow: var(--bx-shadow-2);
+  --bx-focus: 0 0 0 3px color-mix(in srgb, currentColor 75%, transparent); }
+.bx-alert.bx-v-filled .MuiAlert-icon { color: inherit; }
 .bx-alert.bx-v-filled.is-error { background: var(--bx-danger-text); }
 .bx-alert.bx-v-filled.is-warning { background: var(--bx-warning-text); }
 .bx-alert.bx-v-filled.is-confirmation { background: var(--bx-success-text); }
 .bx-alert.bx-v-filled .bx-alert-text strong, .bx-alert.bx-v-filled .bx-alert-action, .bx-alert.bx-v-filled .bx-btn { color: inherit; }
 .bx-alert.bx-v-filled .bx-alert-icon { background: color-mix(in srgb, var(--bx-surface) 24%, transparent); color: inherit; }
-.bx-alert.bx-v-outlined { background: var(--bx-card); border-color: var(--bx-info); box-shadow: none; }
+.bx-alert.bx-v-outlined { background: var(--bx-card); border-color: var(--bx-info); box-shadow: none; color: var(--bx-text-body); }
+.bx-alert.bx-v-outlined .MuiAlert-icon { color: var(--bx-info); }
+.bx-alert.bx-v-outlined.is-error .MuiAlert-icon { color: var(--bx-danger); }
+.bx-alert.bx-v-outlined.is-warning .MuiAlert-icon { color: var(--bx-warning); }
+.bx-alert.bx-v-outlined.is-confirmation .MuiAlert-icon { color: var(--bx-success); }
 .bx-alert.bx-v-outlined.is-error { border-color: var(--bx-danger); }
 .bx-alert.bx-v-outlined.is-warning { border-color: var(--bx-warning); }
 .bx-alert.bx-v-outlined.is-confirmation { border-color: var(--bx-success); }

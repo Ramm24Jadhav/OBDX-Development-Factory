@@ -28,6 +28,9 @@
 .bx-badge.bx-v-dot.is-warning .bx-badge-dot { background: var(--bx-warning); }
 .bx-badge.bx-v-dot.is-danger .bx-badge-dot { background: var(--bx-danger); }
 .bx-status-mark.bx-v-filled { padding: 3px 12px 3px 3px; border-radius: var(--bx-radius-pill); background: var(--bx-track); }
+/* React draws these on MUI Chip, whose own label colour would win the tie */
+.bx-status-mark:is(.bx-v-filled, .bx-v-outlined) { color: var(--bx-text); }
+.bx-badge.bx-v-outlined.is-neutral, .bx-badge.bx-v-outlined:not([class*="is-"]) { color: var(--bx-text-body); }
 .bx-status-mark.bx-v-outlined { padding: 2px 12px 2px 2px; border: var(--bx-bw) solid var(--bx-border-strong); border-radius: var(--bx-radius-pill); }
 .bx-status-mark.bx-v-dot { gap: 6px; font-weight: 500; }
 .bx-status-mark.bx-v-dot .bx-status-mark-icon { width: 8px; height: 8px; font-size: 0; border-width: 0; animation: none; }

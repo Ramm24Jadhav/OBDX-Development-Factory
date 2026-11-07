@@ -503,7 +503,7 @@ export function Tooltip({ testID, label, text, children, variant = 'default' }: 
       </View>
       {open ? (
         <View style={{ alignSelf: 'flex-start' }}>
-          {variant === 'beak' ? <View style={{ marginLeft: 14, marginBottom: -6, width: 10, height: 10, backgroundColor: t.color.surface, borderLeftWidth: 1, borderTopWidth: 1,
+          {variant === 'beak' ? <View style={{ marginLeft: 14, marginBottom: -6, width: 10, height: 10, backgroundColor: t.raised, borderLeftWidth: 1, borderTopWidth: 1,
             borderColor: t.color.borderStrong, transform: [{ rotate: '45deg' }], zIndex: 1 }} /> : null}
           <View testID={testID ? `${testID}-text` : undefined} role="tooltip" style={{ ...look.bubble, maxWidth: 280 }}>
             <Text style={{ fontSize: variant === 'rich' ? 14 : 13, lineHeight: variant === 'rich' ? 20 : undefined, color: look.fg }}>{text}</Text>

@@ -4,7 +4,7 @@
  * Each named component in G1.tsx to G6.tsx is one of these with its banking meaning, so they look and read alike.
  */
 import { ComponentRef, ReactNode, useRef, useState } from 'react';
-import { Animated, Modal, PanResponder, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Button } from './Button';
 import { panelRole } from './Dialog';
@@ -13,7 +13,7 @@ import type { Severity } from './Toast';
 import { FieldProps, styles, useField } from './field';
 import { Enter, MODAL_FADE, Pop, Press, Roll, Shake, useGrow, useOpen, useSlide } from './motion';
 import { Theme, useTheme } from './theme';
-import { AlertVariant, ChartVariant, DotRing, ProgressVariant, StepperVariant, TimelineVariant, alertLook } from './variants';
+import { AlertVariant, ChartVariant, DotRing, ProgressVariant, StepperVariant, TimelineVariant, alertLook, alpha, segColours } from './variants';
 
 /** A form's props: the field props with the heading optional. */
 export type FormProps<T> = Omit<FieldProps<T>, 'label'> & { label?: string };
@@ -443,7 +443,7 @@ export function TimelineList({ testID, label, items, variant = 'default' }: Time
   return (
     <Enter testID={testID} style={small ? { ...panel(t), gap: 4, padding: 12 } : panel(t)}>
       {label ? <Heading t={t}>{label}</Heading> : null}
-      <View style={across ? { flexDirection: 'row' } : card ? { gap: 8 } : undefined}>
+      <Strip across={across} style={card ? { gap: 8 } : undefined}>
       {items.map((e, i) => {
         const state = e.state ?? 'done';
         const dot = state === 'done' ? t.color.success : state === 'current' ? t.color.primary : state === 'failed' ? t.color.danger : t.color.borderStrong;
@@ -451,7 +451,7 @@ export function TimelineList({ testID, label, items, variant = 'default' }: Time
         const mark = <View style={{ width: size, height: size, borderRadius: size / 2, marginTop: across ? 0 : small ? 5 : 4, backgroundColor: state === 'pending' ? t.color.surface : dot, borderWidth: 2, borderColor: dot }} />;
         return (
           <Enter key={e.id ?? `${e.label}-${i}`} effect="settle" accessible accessibilityLabel={`${e.label}${e.meta ? `, ${e.meta}` : ''}, ${said[state]}`}
-                style={across ? { flex: 1, gap: 6 } : card ? { flexDirection: 'row', gap: 12, padding: 12, borderRadius: t.radius.control, borderWidth: 1, borderColor: t.color.border, backgroundColor: t.color.surface2 }
+                style={across ? { flex: 1, minWidth: 120, gap: 6 } : card ? { flexDirection: 'row', gap: 12, padding: 12, borderRadius: t.radius.control, borderWidth: 1, borderColor: t.color.border, backgroundColor: t.color.surface2 }
                   : { flexDirection: 'row', gap: small ? 8 : 12 }}>
             {across ? (
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -471,9 +471,14 @@ export function TimelineList({ testID, label, items, variant = 'default' }: Time
           </Enter>
         );
       })}
-      </View>
+      </Strip>
     </Enter>
   );
+}
+
+/** A row that scrolls sideways (the horizontal timeline), or a plain column. */
+function Strip({ across, style, children }: { across: boolean; style?: object; children: ReactNode }) {
+  return across ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>{children}</ScrollView> : <View style={style}>{children}</View>;
 }
 
 /* ---------- ProgressList ---------- */
@@ -523,7 +528,7 @@ export function ProgressList({ testID, label, items, currency, measure = 'used',
               </DotRing>
             ) : variant === 'segmented' ? (
               <View style={{ flexDirection: 'row', gap: 3 }} importantForAccessibility="no-hide-descendants">
-                {Array.from({ length: 10 }, (_, k) => <View key={k} style={{ flex: 1, height: 8, borderRadius: 2, backgroundColor: k < Math.round(Math.min(1, share) * 10) ? fill(share, over) : t.track }} />)}
+                {Array.from({ length: 10 }, (_, k) => <View key={k} style={{ flex: 1, height: 8, borderRadius: 2, backgroundColor: k < Math.floor(Math.min(1, share) * 10) ? fill(share, over) : t.track }} />)}
               </View>
             ) : (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: variant === 'linear' ? 4 : 0 }}>
@@ -580,12 +585,12 @@ export function Bars({ testID, label, bars, currency, value, onChange, horizonta
       </Text>
       {variant === 'meter' ? (
         <View style={{ flexDirection: 'row', height: 14, borderRadius: 7, overflow: 'hidden', gap: 2 }} importantForAccessibility="no-hide-descendants">
-          {bars.map((b, i) => <View key={b.label} style={{ flex: Math.max(0.001, b.value), backgroundColor: i % 2 ? t.color.primarySoft : t.color.primary,
+          {bars.map((b, i) => <View key={b.label} style={{ flex: Math.max(0.001, b.value), backgroundColor: segColours(t)[i % 6],
             opacity: b.label === picked || !picked ? 1 : 0.55 }} />)}
         </View>
       ) : null}
       <View style={across ? { gap: 6 } : { flexDirection: 'row', alignItems: 'flex-end', height: 150, gap: 8 }}>
-        {bars.map((b) => {
+        {bars.map((b, i) => {
           const on = b.label === picked;
           const size = Math.max(0.04, b.value / top);
           const thick = variant === 'rounded';
@@ -597,10 +602,11 @@ export function Bars({ testID, label, bars, currency, value, onChange, horizonta
                 {across ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.color.primary, marginLeft: -2 }} /> : null}
               </View>
             : <Grow share={size} vertical={!across} style={{ ...(across ? { height: thick ? 18 : 14 } : { width: '100%' }), borderRadius: thick ? 9 : 4,
-                backgroundColor: on ? t.color.primary : t.color.primarySoft, borderWidth: thick ? 0 : 1, borderColor: t.color.primary }} />;
+                backgroundColor: on ? t.color.primary : thick ? alpha(t.color.primary, 0.55) : t.color.primarySoft, borderWidth: thick ? 0 : 1, borderColor: t.color.primary }} />;
           return (
             <Touch key={b.label} testID={`${testID}-${b.label}`} label={horizontal ? undefined : `${b.label}, ${show(b.value)}`} selected={on} onPress={() => pick(b.label)}
                    style={across ? { flexDirection: 'row', alignItems: 'center', gap: 8 } : { flex: 1, height: '100%', justifyContent: 'flex-end', gap: 4 }}>
+              {variant === 'meter' ? <View style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: segColours(t)[i % 6] }} /> : null}
               {across ? <Text style={{ width: 80, fontSize: 12.5, color: t.color.textBody }}>{b.label}</Text> : null}
               {/* Horizontal: the bar's share is of the space left by the label and the value, so the value stays inside the card */}
               {across ? <View style={{ flex: 1 }}>{bar}</View> : bar}

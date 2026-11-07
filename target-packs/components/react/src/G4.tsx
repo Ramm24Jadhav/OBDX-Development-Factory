@@ -86,12 +86,12 @@ export function Meters({ testID, heading, items, unit, warnAt = 90, variant = 'd
 
 /** The filled part of one meter, drawn for its variant; the track around it carries the figures for screen readers. */
 function MeterMark({ variant, share, pct, state }: { variant: ProgressVariant; share: number; pct: number; state: string }) {
-  if (variant === 'linear') { return <LinearProgress variant="determinate" value={pct} aria-hidden="true" className={'bx-meter-mui' + state} />; }
+  if (variant === 'linear') { return <><LinearProgress variant="determinate" value={pct} aria-hidden="true" className={'bx-meter-mui' + state} /><span className="bx-meter-stop" aria-hidden="true" /></>; }
   if (variant === 'ring') {
     return <span className={'bx-meter-ring' + state} aria-hidden="true"><CircularProgress variant="determinate" value={pct} size={44} thickness={5} /><span className="bx-meter-pct">{pct}%</span></span>;
   }
   if (variant === 'segmented') {
-    return <span className={'bx-meter-segs' + state} aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <span key={i} className={i < Math.round(share / 10) ? 'is-on' : ''} />)}</span>;
+    return <span className={'bx-meter-segs' + state} aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <span key={i} className={i < Math.floor(share / 10) ? 'is-on' : ''} />)}</span>;
   }
   return <span className={`bx-meter-fill bx-w-${share}` + state} />;
 }

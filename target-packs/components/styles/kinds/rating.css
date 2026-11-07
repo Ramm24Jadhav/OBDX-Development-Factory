@@ -17,4 +17,5 @@
 .bx-rating.bx-v-numbers .bx-star:first-of-type { border-radius: var(--bx-radius-control) 0 0 var(--bx-radius-control); }
 .bx-rating.bx-v-numbers .bx-star:last-of-type { border-radius: 0 var(--bx-radius-control) var(--bx-radius-control) 0; }
 .bx-rating.bx-v-numbers .bx-star:hover { transform: none; background: var(--bx-track); }
+.bx-rating.bx-v-numbers .bx-star:focus-within { z-index: 2; }
 .bx-rating.bx-v-numbers .bx-star.is-chosen { position: relative; z-index: 1; border-color: var(--bx-brand); background: var(--bx-brand); color: var(--bx-on-brand); }

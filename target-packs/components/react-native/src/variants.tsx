@@ -31,6 +31,10 @@ export type OrbState = 'working' | 'searching' | 'solving' | 'listening' | 'conn
 /** A tone's colours (toneColors in parts). */
 export interface ToneColors { fg: string; bg: string; line: string }
 
+/** A colour (#rrggbb) at an opacity. */
+export const alpha = (hex: string, a: number) => (/^#[0-9a-f]{6}$/i.test(hex) ? `${hex}${Math.round(a * 255).toString(16).padStart(2, '0')}` : hex);
+/** The meter chart's category colours, the same order as the web packs' bx-seg-0 to 5. */
+export const segColours = (t: Theme) => [t.color.primary, t.color.primaryText, alpha(t.color.primary, 0.55), alpha(t.color.primaryText, 0.55), t.color.info, t.color.textMuted];
 /** True when the theme's surface is dark. */
 export const isDark = (t: Theme) => { const h = t.color.surface.replace('#', ''); return h.length >= 6 && parseInt(h.slice(0, 2), 16) + parseInt(h.slice(2, 4), 16) + parseInt(h.slice(4, 6), 16) < 384; };
 
@@ -71,7 +75,7 @@ export function badgeLook(t: Theme, variant: BadgeVariant = 'default', c: ToneCo
 
 /** A skeleton shape's fill and how much rounder its corners are. */
 export function skeletonLook(t: Theme, variant: SkeletonVariant = 'default') {
-  return variant === 'soft' ? { fill: t.fill, round: 2 } : variant === 'pulse' ? { fill: t.track, round: 0.5 } : { fill: t.track, round: 1 };
+  return variant === 'soft' ? { fill: alpha(t.color.text, 0.07), round: 2 } : variant === 'pulse' ? { fill: t.track, round: 0.5 } : { fill: t.track, round: 1 };
 }
 
 /** An empty state's frame, whether it lays out in a row, and its icon disc size. */
@@ -88,7 +92,8 @@ export const FACES = ['😞', '🙁', '😐', '🙂', '😄'];
 /** A ring of dots, the first share of them in colour (plain views: no drawing library), with its children in the middle. */
 export function DotRing({ share, size, color, track, children, dots = 24 }: { share: number; size: number; color: string; track: string; children?: ReactNode; dots?: number }) {
   const on = Math.round(Math.max(0, Math.min(1, share)) * dots);
-  const d = Math.max(3, size / 9);
+  // the dots keep about a third of their size apart, however many there are
+  const d = Math.max(3, Math.min(size / 9, (Math.PI * size) / dots / 1.8));
   const r = size / 2 - d / 2;
   return (
     <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
