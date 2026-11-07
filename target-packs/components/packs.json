@@ -14951,6 +14951,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "icon-button": {
@@ -14973,6 +14977,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "text-field": {
@@ -14995,6 +15003,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "amount": {
@@ -15017,6 +15029,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "select": {
@@ -15039,6 +15055,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "checkbox-group": {
@@ -15061,6 +15081,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "choice-group": {
@@ -15083,6 +15107,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "date": {
@@ -15105,6 +15133,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "dialog": {
@@ -15127,6 +15159,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "toast": {
@@ -15149,6 +15185,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "card": {
@@ -15193,6 +15233,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "data-grid": {
@@ -15215,6 +15259,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "text-area": {
@@ -15237,6 +15285,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "password": {
@@ -15259,6 +15311,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "number-input": {
@@ -15281,6 +15337,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "currency-picker": {
@@ -15303,6 +15363,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "multi-select": {
@@ -15325,6 +15389,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "switch": {
@@ -15347,6 +15415,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "date-range": {
@@ -15369,6 +15441,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "search": {
@@ -15391,6 +15467,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "autocomplete": {
@@ -15413,6 +15493,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "document-upload": {
@@ -15435,6 +15519,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "secondary-button": {
@@ -15457,6 +15545,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "danger-button": {
@@ -15479,6 +15571,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "savings-slider": {
@@ -15523,6 +15619,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "filter-chips": {
@@ -15567,6 +15667,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "accordion": {
@@ -15589,6 +15693,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "stepper": {
@@ -15611,6 +15719,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "side-nav": {
@@ -15633,6 +15745,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "sheet": {
@@ -15655,6 +15771,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "grid": {
@@ -15743,6 +15863,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "status-badge": {
@@ -15875,6 +15999,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "alert-banner": {
@@ -15897,6 +16025,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "error-message": {
@@ -15919,6 +16051,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "success-message": {
@@ -15941,6 +16077,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "notification-panel": {
@@ -15985,6 +16125,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "account-summary": {
@@ -16095,6 +16239,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "quick-actions": {
@@ -16139,6 +16287,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "beneficiary-card": {
@@ -16227,6 +16379,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "transaction-list": {
@@ -16249,6 +16405,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "transaction-filter": {
@@ -16315,6 +16475,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "receipt": {
@@ -16865,6 +17029,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "biometric": {
@@ -16909,6 +17077,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "secure-confirmation": {
@@ -16953,6 +17125,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "kyc-steps": {
@@ -16975,6 +17151,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "fraud-alert": {
@@ -17019,6 +17199,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "budget-progress": {
@@ -17041,6 +17225,10 @@
           "responsive": {
             "status": "passed",
             "evidence": "target-packs/components/react-native/gates: controls at least 44 by 44 points on a phone, and nothing scrolls sideways on a phone or a tablet; GitHub Actions run 42330393407 (commit c4ffc6a), all checks passed"
+          },
+          "parity": {
+            "status": "passed",
+            "evidence": "target-packs/components/react-native/gates/specs/parity.spec.ts: in react-native-web, the same values, messages, names and events as the JET element, on JET 6.2 and JET 21"
           }
         },
         "savings-goal": {
