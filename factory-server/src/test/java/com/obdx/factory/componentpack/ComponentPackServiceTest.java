@@ -72,8 +72,8 @@ class ComponentPackServiceTest {
         assertThat(find(c, "dialog").packs().get("react-native").gates().get("accessibility")).isEqualTo("passed");
         assertThat(find(c, "dialog").packs().get("react-native").gates().get("visual")).isEqualTo("passed");
         assertThat(find(c, "dialog").packs().get("react-native").gates().get("responsive")).isEqualTo("passed");
-        // React Native has no parity spec against the JET element (it is drawn by react-native-web, not in a JET page)
-        assertThat(find(c, "dialog").packs().get("react-native").gates().get("parity")).isEqualTo("not-run");
+        // React Native has parity with the JET element too (react-native/gates/specs/parity.spec.ts, JET 6.2 and 21)
+        assertThat(find(c, "dialog").packs().get("react-native").gates().get("parity")).isEqualTo("passed");
         // The group 2 pack components replaced the starters' own; the forms wave replaced their switch
         assertThat(find(c, "account-picker").packs().get("react").source()).isEqualTo("target-packs/components/react/src#AccountSelector");
         assertThat(find(c, "switch").packs().get("react").source()).isEqualTo("target-packs/components/react/src#Toggle");
@@ -92,7 +92,7 @@ class ComponentPackServiceTest {
         assertThat(c.packs()).allSatisfy((p) -> assertThat(p.counts().available() + p.counts().inTest() + p.counts().planned() + p.counts().notInPack()).isEqualTo(245));
         assertThat(c.packs().get(1).counts().available()).isEqualTo(245);
         assertThat(c.packs().get(1).counts().inTest()).isZero();
-        assertThat(c.packs().get(2).counts().available()).isEqualTo(180);
+        assertThat(c.packs().get(2).counts().available()).isEqualTo(227);
         assertThat(c.packs().get(3).counts().available()).isEqualTo(245);
         assertThat(c.packs().get(3).counts().inTest()).isZero();
 
