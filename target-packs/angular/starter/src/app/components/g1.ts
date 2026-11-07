@@ -8,6 +8,7 @@ import { ChangeDetectionStrategy, Component, Directive, ElementRef, computed, ef
 
 import { Button } from './button';
 import { nextId } from './field';
+import { AvatarVariant, BillsVariant, LOADING, hueOf, withVariant } from './variant';
 
 /* ---------- items: strings or objects, each with an id and a label ---------- */
 
@@ -480,15 +481,18 @@ export class Divider extends Part {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (src()) {
-      <img [class]="'bx-avatar is-' + size()" [src]="src()" [alt]="name()" [attr.data-testid]="testID() || null" />
+      <img [class]="css()" [src]="src()" [alt]="name()" [attr.data-testid]="testID() || null" />
     } @else {
-      <span [class]="'bx-avatar is-' + size()" role="img" [attr.aria-label]="name()" [attr.data-testid]="testID() || null"><span aria-hidden="true">{{ letters() }}</span></span>
+      <span [class]="css()" [style.--bx-avatar-hue]="hue()" role="img" [attr.aria-label]="name()" [attr.data-testid]="testID() || null"><span aria-hidden="true">{{ letters() }}</span></span>
     }`,
 })
 export class Avatar extends Part {
   readonly name = input.required<string>();
   readonly src = input('');
   readonly size = input<'sm' | 'md' | 'lg'>('md');
+  readonly variant = input<AvatarVariant | undefined>(undefined);
+  protected readonly css = computed(() => withVariant('bx-avatar is-' + this.size(), 'avatar', this.variant()));
+  protected readonly hue = computed(() => (this.variant() === 'tonal' ? hueOf(this.name()) : null));
   protected readonly letters = computed(() => initials(this.name()));
 }
 
@@ -699,9 +703,11 @@ export class SuccessMessage extends AlertBase { protected override readonly defa
 export interface RowItem { id?: string; title: string; meta?: string; value?: string; tone?: Tone; unread?: boolean; [key: string]: unknown }
 
 export const ROWS = `
-  <section class="bx-panel" [attr.aria-label]="head() || null" [attr.data-testid]="testID() || null">
+  <section [class]="css()" [attr.aria-label]="head() || null" [attr.data-testid]="testID() || null">
     @if (head()) { <h3 class="bx-panel-title">{{ head() }}</h3> }
-    @if (items().length === 0) {
+    @if (loading()) {
+      ${LOADING}
+    } @else if (items().length === 0) {
       <p class="bx-panel-empty">{{ empty() }}</p>
     } @else {
       <ul class="bx-rows">
@@ -727,7 +733,11 @@ export abstract class RowsBase extends Part {
   readonly actionLabel = input<string | undefined>(undefined);
   /** Leave out for the component's own. */
   readonly emptyText = input<string | undefined>(undefined);
+  readonly variant = input<BillsVariant | undefined>(undefined);
+  /** Skeleton rows while the screen fetches the items. */
+  readonly loading = input(false);
   readonly action = output<RowItem>();
+  protected readonly css = computed(() => withVariant('bx-panel', 'bills', this.variant()));
   protected readonly defaults: { heading?: string; actionLabel?: string; emptyText?: string } = {};
   protected readonly empty = computed(() => this.emptyText() ?? this.defaults.emptyText ?? 'Nothing here yet.');
   protected readonly head = computed(() => this.heading() ?? this.defaults.heading ?? '');

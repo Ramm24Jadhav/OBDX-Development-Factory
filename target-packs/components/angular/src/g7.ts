@@ -12,6 +12,7 @@ import { CHOICE, ChoiceBase, Detail, TransactionReceipt, money } from './g2';
 import { OtpInput, SETTING, SettingBase, masked } from './g3';
 import { QuickItem, QuickLinksWidget } from './g6';
 import { reducedMotion } from './motion';
+import { BoardVariant, PromptVariant, ReceiptVariant, SensitiveVariant, withVariant } from './variant';
 
 /** A stagger step class (bx-d-0 to bx-d-19), so delays need no inline style. */
 export const stagger = (i: number): string => `bx-d-${Math.min(i, 19)}`;
@@ -97,7 +98,7 @@ export interface FlapRow { label: string; value: string }
 /** Rates on flip tiles, each row read as a whole. */
 @Component({
   selector: 'bx-split-flap-board', changeDetection: OnPush,
-  template: `<section class="bx-panel bx-flap" [attr.aria-label]="heading() || null" [attr.data-testid]="testID() || null">
+  template: `<section [class]="css()" [attr.aria-label]="heading() || null" [attr.data-testid]="testID() || null">
     @if (heading()) { <h3 class="bx-panel-title">{{ heading() }}</h3> }
     <ul class="bx-flap-rows">@for (r of rows(); track r.label) {
       <li class="bx-flap-row"><span class="bx-visually-hidden">{{ r.label }} {{ r.value }}</span><span class="bx-flap-label" aria-hidden="true">{{ r.label }}</span>
@@ -107,13 +108,15 @@ export interface FlapRow { label: string; value: string }
 export class SplitFlapBoard extends Part {
   readonly heading = input('Exchange rates');
   readonly items = input<ReadonlyArray<FlapRow>>([]);
+  readonly variant = input<BoardVariant | undefined>(undefined);
+  protected readonly css = computed(() => withVariant('bx-panel bx-flap', 'board', this.variant()));
   protected readonly rows = computed(() => this.items().map((o) => ({ ...o, tiles: chars(o.value) })));
 }
 
 /** An account number masked to its last four digits; Show reveals it digit by digit. */
 @Component({
   selector: 'bx-reveal-digits', changeDetection: OnPush,
-  template: `<div class="bx-field bx-reveal-digits" [attr.data-testid]="testID() || null"><span class="bx-label" [id]="id">{{ label() }}</span>
+  template: `<div [class]="css()" [attr.data-testid]="testID() || null"><span class="bx-label" [id]="id">{{ label() }}</span>
     <div class="bx-control is-readonly" role="group" [attr.aria-labelledby]="id"><span class="bx-input bx-mono bx-sensitive-value"><span class="bx-visually-hidden">{{ text() }}</span>
       <span aria-hidden="true">@for (t of tiles(); track $index) {<span [class]="t.css">{{ t.ch }}</span>}</span></span>
       <button type="button" class="bx-reveal" [attr.aria-pressed]="shown()" [attr.aria-label]="(shown() ? 'Hide ' : 'Show ') + label()" (click)="shown.set(!shown())">{{ shown() ? 'Hide' : 'Show' }}</button></div></div>`,
@@ -121,6 +124,8 @@ export class SplitFlapBoard extends Part {
 export class RevealDigits extends Part {
   readonly label = input('Account number');
   readonly value = input('');
+  readonly variant = input<SensitiveVariant | undefined>(undefined);
+  protected readonly css = computed(() => withVariant('bx-field bx-reveal-digits', 'sensitive', this.variant()));
   protected readonly shown = signal(false);
   protected readonly text = computed(() => (this.shown() ? this.value() : masked(this.value())));
   protected readonly tiles = computed(() => chars(this.text()));
@@ -671,13 +676,15 @@ export class OtpSlots extends Part {
   readonly completed = output<string>();
 }
 /** A receipt with a torn edge that rises in; actions in the default slot. */
-@Component({ selector: 'bx-receipt-tear', changeDetection: OnPush, imports: [TransactionReceipt], template: `<div class="bx-fx-torn"><bx-receipt [testID]="testID()" [heading]="heading()" [amount]="amount()" [currency]="currency()" [items]="items()" [reference]="reference()"><ng-content /></bx-receipt></div>` })
+@Component({ selector: 'bx-receipt-tear', changeDetection: OnPush, imports: [TransactionReceipt], template: `<div class="bx-fx-torn"><bx-receipt [testID]="testID()" [heading]="heading()" [amount]="amount()" [currency]="currency()" [items]="items()" [reference]="reference()"
+  [variant]="variant()"><ng-content /></bx-receipt></div>` })
 export class ReceiptTear extends Part {
   readonly heading = input('Payment sent');
   readonly amount = input<number | string>('');
   readonly currency = input('');
   readonly items = input<ReadonlyArray<Detail>>([]);
   readonly reference = input('');
+  readonly variant = input<ReceiptVariant | undefined>(undefined);
 }
 
 /** A tick that draws itself, with what was done (said once). */
@@ -827,7 +834,7 @@ export class WarmTooltip extends Part {
 /** The assistant's question box with suggestions; Enter or Ask sends. (ask). */
 @Component({
   selector: 'bx-prompt-bar', changeDetection: OnPush,
-  template: `<div class="bx-prompt-bar" [attr.data-testid]="testID() || null"><div class="bx-chip-row" role="group" [attr.aria-label]="'Suggestions for ' + label()">@for (s of suggestions(); track s) {
+  template: `<div [class]="css()" [attr.data-testid]="testID() || null"><div class="bx-chip-row" role="group" [attr.aria-label]="'Suggestions for ' + label()">@for (s of suggestions(); track s) {
     <button type="button" class="bx-filter-chip" (click)="use(s)">{{ s }}</button>}</div><div class="bx-prompt-row"><div class="bx-control"><span class="bx-prompt-spark" aria-hidden="true">✦</span>
     <input class="bx-input bx-prompt-input" [attr.aria-label]="label()" [placeholder]="placeholder()" [value]="draft()" (input)="draft.set($any($event.target).value)" (keydown.enter)="$event.preventDefault(); send()" /></div>
     <button type="button" class="bx-btn bx-btn--callToAction" [disabled]="off()" [attr.aria-busy]="busy() || null" (click)="send()">Ask</button></div></div>`,
@@ -837,7 +844,9 @@ export class PromptBar extends Part {
   readonly placeholder = input('Ask about your accounts');
   readonly suggestions = input<ReadonlyArray<string>>([]);
   readonly busy = input(false);
+  readonly variant = input<PromptVariant | undefined>(undefined);
   readonly ask = output<string>();
+  protected readonly css = computed(() => withVariant('bx-prompt-bar', 'chat', this.variant()));
   protected readonly draft = signal('');
   protected readonly off = computed(() => !this.draft().trim() || this.busy());
   protected use(s: string): void { this.draft.set(s); this.focusLater('.bx-prompt-input'); }

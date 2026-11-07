@@ -8,6 +8,7 @@ import { ChangeDetectionStrategy, Component, Directive, computed, input, model, 
 import { ACCORDION, AccordionBase, Part, ROWS, RowsBase, SEGMENTS, SLIDER, STEPS, SegmentsBase, SliderBase, StepsBase, TIMELINE, TimelineBase } from './g1';
 import { FORM, FormBase, THING, ThingBase, money } from './g2';
 import { CHECKS, ChecksBase } from './g4';
+import { CalcVariant, ChatVariant, LOADING, LocatorVariant, withVariant } from './variant';
 
 /** The monthly instalment of a loan: principal, yearly rate in %, months. */
 export function instalment(principal: number, rate: number, months: number): number {
@@ -100,7 +101,7 @@ export class StatementRequest extends Part {
 /* ---------- calculators ---------- */
 
 export const CALC = `
-  <section class="bx-card bx-calc" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
+  <section [class]="css()" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
     <h3 class="bx-card-title" [id]="id">{{ head() }}</h3>
     <div class="bx-calc-fields">
       <div class="bx-field"><label class="bx-label" [attr.for]="id + '-a'">{{ amountLabel() }}</label><div class="bx-control">
@@ -123,6 +124,8 @@ export const CALC = `
 @Directive()
 export abstract class CalcBase extends Part {
   readonly heading = input<string | undefined>(undefined);
+  readonly variant = input<CalcVariant | undefined>(undefined);
+  protected readonly css = computed(() => withVariant('bx-card bx-calc', 'calc', this.variant()));
   readonly currency = input('');
   readonly toCurrency = input('');
   /** Yearly rate in % (loan, deposit), or the exchange rate (fx); leave out for the component's own. */
@@ -184,7 +187,7 @@ export interface Place { id: string; name: string; type: 'branch' | 'atm'; addre
   selector: 'bx-locator',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="bx-panel bx-locator" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
+    <section [class]="css()" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
       <h3 class="bx-panel-title" [id]="id">{{ heading() }}</h3>
       <div class="bx-control bx-payee-search"><span class="bx-search-icon" aria-hidden="true"></span>
         <input type="search" class="bx-input bx-search" aria-label="Search by name or area" placeholder="Name or area" [value]="query()" (input)="query.set($any($event.target).value)" /></div>
@@ -193,22 +196,30 @@ export interface Place { id: string; name: string; type: 'branch' | 'atm'; addre
           <button type="button" [class]="kind() === k.key ? 'bx-filter-chip is-on' : 'bx-filter-chip'" [attr.aria-pressed]="kind() === k.key" (click)="kind.set(k.key)">{{ k.label }}</button>
         }
       </div>
-      @if (rows().length === 0) { <p class="bx-panel-empty" role="status">{{ emptyText() }}</p> }
-      <ul class="bx-rows">
-        @for (o of rows(); track o.id) {
-          <li class="bx-row">
-            <span class="bx-row-main"><strong>{{ o.name }}</strong><span class="bx-row-meta">{{ o.meta }}</span>@if (o.hours) {<span class="bx-row-meta">{{ o.hours }}</span>}</span>
-            <button type="button" class="bx-btn bx-btn--borderless bx-btn--sm" [attr.aria-label]="'Directions to ' + o.name" (click)="action.emit(o)">Directions</button>
-          </li>
-        }
-      </ul>
+      @if (loading()) {
+        ${LOADING}
+      } @else {
+        @if (rows().length === 0) { <p class="bx-panel-empty" role="status">{{ emptyText() }}</p> }
+        <ul class="bx-rows">
+          @for (o of rows(); track o.id) {
+            <li class="bx-row">
+              <span class="bx-row-main"><strong>{{ o.name }}</strong><span class="bx-row-meta">{{ o.meta }}</span>@if (o.hours) {<span class="bx-row-meta">{{ o.hours }}</span>}</span>
+              <button type="button" class="bx-btn bx-btn--borderless bx-btn--sm" [attr.aria-label]="'Directions to ' + o.name" (click)="action.emit(o)">Directions</button>
+            </li>
+          }
+        </ul>
+      }
     </section>`,
 })
 export class Locator extends Part {
   readonly heading = input('Find a branch or ATM');
   readonly items = input<ReadonlyArray<Place>>([]);
   readonly emptyText = input('Nothing matches. Try another name or area.');
+  readonly variant = input<LocatorVariant | undefined>(undefined);
+  /** Skeleton rows while the screen fetches the places. */
+  readonly loading = input(false);
   readonly action = output<Place>();
+  protected readonly css = computed(() => withVariant('bx-panel bx-locator', 'locator', this.variant()));
   protected readonly kinds = [{ key: 'all', label: 'All' }, { key: 'branch', label: 'Branches' }, { key: 'atm', label: 'ATMs' }] as const;
   protected readonly query = signal('');
   protected readonly kind = signal<'all' | 'branch' | 'atm'>('all');
@@ -228,8 +239,9 @@ export interface ChatMessage { id: string; from: 'customer' | 'agent'; text: str
   selector: 'bx-live-chat',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="bx-panel bx-chat" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
+    <section [class]="css()" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
       <h3 class="bx-panel-title" [id]="id">{{ heading() }}</h3>
+      @if (loading()) { ${LOADING} }
       <div class="bx-chat-log" role="log" aria-live="polite" [attr.aria-labelledby]="id">
         @for (m of messages(); track m.id) {
           <div [class]="m.from === 'customer' ? 'bx-msg is-mine' : 'bx-msg'">
@@ -251,7 +263,11 @@ export class LiveChat extends Part {
   readonly typing = input(false);
   readonly disabled = input(false);
   readonly placeholder = input('Write a message');
+  readonly variant = input<ChatVariant | undefined>(undefined);
+  /** Skeleton lines while the screen fetches the history. */
+  readonly loading = input(false);
   readonly send = output<string>();
+  protected readonly css = computed(() => withVariant('bx-panel bx-chat', 'chat', this.variant()));
   protected readonly draft = signal('');
   protected readonly off = computed(() => !this.draft().trim() || this.disabled());
   protected go(): void { if (this.off()) { return; } const t = this.draft().trim(); this.draft.set(''); this.send.emit(t); }

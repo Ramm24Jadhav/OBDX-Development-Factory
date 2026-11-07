@@ -9,6 +9,7 @@ import { Dialog } from './dialog';
 import { FieldMessage } from './field';
 import { ALERT, AlertBase, Part, ROWS, RowsBase, SEGMENTS, SLIDER, STEPS, SegmentsBase, Severity, SliderBase, StepsBase, TIMELINE, TimelineBase } from './g1';
 import { DETAILS, DetailsBase, FORM, FormBase, TILES, TilesBase } from './g2';
+import { BiometricVariant, CardTileVariant, withVariant } from './variant';
 
 /** The last four digits behind dots, as banks show a card or account number. */
 export function masked(number: string): string {
@@ -118,7 +119,7 @@ export class ResetPin extends CodeBase { protected override readonly defaults = 
   selector: 'bx-card-tile',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div [class]="frozen() ? 'bx-card-face is-frozen' : 'bx-card-face'" role="img" [attr.aria-label]="name()" [attr.data-testid]="testID() || null">
+    <div [class]="css()" role="img" [attr.aria-label]="name()" [attr.data-testid]="testID() || null">
       <span class="bx-card-face-label" aria-hidden="true">{{ label() }}</span>
       <span class="bx-card-face-number bx-mono" aria-hidden="true">{{ shown() }}</span>
       <span class="bx-card-face-foot" aria-hidden="true"><span>{{ holder() }}</span><span>{{ expiry() }}</span><strong>{{ network() }}</strong></span>
@@ -132,6 +133,8 @@ export class CardTile extends Part {
   readonly expiry = input('');
   readonly network = input('');
   readonly frozen = input(false);
+  readonly variant = input<CardTileVariant | undefined>(undefined);
+  protected readonly css = computed(() => withVariant(this.frozen() ? 'bx-card-face is-frozen' : 'bx-card-face', 'cardtile', this.variant()));
   protected readonly shown = computed(() => masked(this.number()));
   protected readonly name = computed(() => [this.label(), this.network(), `ending ${(this.number() || '').replace(/\D/g, '').slice(-4)}`, this.frozen() ? 'blocked' : '']
     .filter(Boolean).join(', '));
@@ -146,7 +149,7 @@ const METHOD_ICON = { face: '☺', fingerprint: '◉', passkey: '⚿' };
   selector: 'bx-biometric',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="bx-card bx-challenge" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
+    <section [class]="css()" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
       <span [class]="state() === 'waiting' ? 'bx-challenge-icon is-waiting' : 'bx-challenge-icon'" aria-hidden="true">{{ icon() }}</span>
       <h3 class="bx-card-title" [id]="id">{{ heading() }}</h3>
       @if (text()) { <p class="bx-thing-text">{{ text() }}</p> }
@@ -163,6 +166,8 @@ export class AuthChallenge extends Part {
   readonly method = input<'face' | 'fingerprint' | 'passkey'>('fingerprint');
   readonly actionLabel = input('Use fingerprint');
   readonly otherLabel = input('Use a code instead');
+  readonly variant = input<BiometricVariant | undefined>(undefined);
+  protected readonly css = computed(() => withVariant('bx-card bx-challenge', 'biometric', this.variant()));
   /** ready, waiting (the device is asking) or failed. */
   readonly state = input<'ready' | 'waiting' | 'failed'>('ready');
   readonly failedText = input('That did not work. Try again, or use a code.');

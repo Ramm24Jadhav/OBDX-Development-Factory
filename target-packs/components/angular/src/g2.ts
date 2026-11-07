@@ -10,6 +10,7 @@ import { Dropdown } from './dropdown';
 import { FieldBase, FieldShell } from './field';
 import { CHIPS, ChipsBase, Part, ROWS, RowsBase, SEGMENTS, STEPS, SegmentsBase, StepsBase, initials } from './g1';
 import { decimalsOf } from './text-field';
+import { BalanceVariant, FormVariant, LOADING, PayeesVariant, ReceiptVariant, TxListVariant, withVariant } from './variant';
 
 /** An amount with its currency's decimals and the code after it; text is shown as given. */
 export function money(amount: number | string | null | undefined, currency?: string): string {
@@ -118,15 +119,19 @@ export class DepositsSummary extends TilesBase { protected override readonly def
   selector: 'bx-balance-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="bx-balance" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
+    <section [class]="css()" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
       <div class="bx-balance-head">
         <h3 class="bx-balance-label" [id]="id">{{ label() }}</h3>
-        @if (hideable()) {
+        @if (hideable() && !loading()) {
           <button type="button" class="bx-reveal" [attr.aria-pressed]="!amountHidden()" (click)="amountHidden.set(!amountHidden())">{{ amountHidden() ? 'Show balance' : 'Hide balance' }}</button>
         }
       </div>
-      <p class="bx-balance-amount">{{ amountHidden() ? '••••••' : shown() }}</p>
-      @if (meta() && !amountHidden()) { <p class="bx-balance-meta">{{ meta() }}</p> }
+      @if (loading()) {
+        ${LOADING}
+      } @else {
+        <p class="bx-balance-amount">{{ amountHidden() ? '••••••' : shown() }}</p>
+        @if (meta() && !amountHidden()) { <p class="bx-balance-meta">{{ meta() }}</p> }
+      }
     </section>`,
 })
 export class AccountBalance extends Part {
@@ -137,6 +142,10 @@ export class AccountBalance extends Part {
   readonly hideable = input(true);
   /** The amount is hidden: [(amountHidden)]. */
   readonly amountHidden = model(false);
+  readonly variant = input<BalanceVariant | undefined>(undefined);
+  /** A skeleton in place of the amount while the screen fetches it. */
+  readonly loading = input(false);
+  protected readonly css = computed(() => withVariant('bx-balance', 'balance', this.variant()));
   protected readonly shown = computed(() => money(this.amount(), this.currency() || undefined));
 }
 
@@ -246,23 +255,27 @@ export interface Payee { id: string; name: string; meta?: string }
   selector: 'bx-payee-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="bx-panel" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
+    <section [class]="css()" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
       <h3 class="bx-panel-title" [id]="id">{{ heading() }}</h3>
-      @if (searchable()) {
+      @if (searchable() && !loading()) {
         <div class="bx-control bx-payee-search"><span class="bx-search-icon" aria-hidden="true"></span>
           <input type="search" class="bx-input bx-search" [attr.aria-label]="'Search ' + heading()" placeholder="Name" [value]="query()" (input)="query.set($any($event.target).value)" /></div>
       }
-      @if (rows().length === 0) { <p class="bx-panel-empty" role="status">{{ emptyText() }}</p> }
-      <ul class="bx-rows">
-        @for (o of rows(); track o.id) {
-          <li class="bx-row">
-            <button type="button" class="bx-payee" (click)="action.emit(o)">
-              <span class="bx-avatar is-sm" aria-hidden="true">{{ o.initials }}</span>
-              <span class="bx-row-main"><strong>{{ o.name }}</strong>@if (o.meta) {<span class="bx-row-meta">{{ o.meta }}</span>}</span>
-            </button>
-          </li>
-        }
-      </ul>
+      @if (loading()) {
+        ${LOADING}
+      } @else {
+        @if (rows().length === 0) { <p class="bx-panel-empty" role="status">{{ emptyText() }}</p> }
+        <ul class="bx-rows">
+          @for (o of rows(); track o.id) {
+            <li class="bx-row">
+              <button type="button" class="bx-payee" (click)="action.emit(o)">
+                @if (variant() !== 'compact') { <span class="bx-avatar is-sm" aria-hidden="true">{{ o.initials }}</span> }
+                <span class="bx-row-main"><strong>{{ o.name }}</strong>@if (o.meta) {<span class="bx-row-meta">{{ o.meta }}</span>}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
     </section>`,
 })
 export class BeneficiarySelector extends Part {
@@ -270,7 +283,11 @@ export class BeneficiarySelector extends Part {
   readonly items = input<ReadonlyArray<Payee>>([]);
   readonly searchable = input(true);
   readonly emptyText = input('No payees match.');
+  readonly variant = input<PayeesVariant | undefined>(undefined);
+  /** Skeleton rows while the screen fetches the payees. */
+  readonly loading = input(false);
   readonly action = output<Payee>();
+  protected readonly css = computed(() => withVariant('bx-panel', 'payees', this.variant()));
   protected readonly query = signal('');
   protected readonly rows = computed(() => {
     const q = this.query().trim().toLowerCase();
@@ -281,7 +298,7 @@ export class BeneficiarySelector extends Part {
 /* ---------- forms ---------- */
 
 export const FORM = `
-  <section class="bx-card bx-form" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
+  <section [class]="css()" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
     <h3 class="bx-card-title" [id]="id">{{ head() }}</h3>
     <div class="bx-form-body"><ng-content /></div>
     @if (items().length) {
@@ -301,7 +318,9 @@ export abstract class FormBase extends Part {
   readonly submitLabel = input<string | undefined>(undefined);
   readonly cancelLabel = input('');
   readonly busy = input(false);
+  readonly variant = input<FormVariant | undefined>(undefined);
   readonly submitted = output<void>();
+  protected readonly css = computed(() => withVariant('bx-card bx-form', 'form', this.variant()));
   readonly cancelled = output<void>();
   protected readonly defaults: { heading: string; submitLabel: string } = { heading: '', submitLabel: 'Continue' };
   protected readonly head = computed(() => this.heading() ?? this.defaults.heading);
@@ -320,21 +339,22 @@ export class NewDepositForm extends FormBase { protected override readonly defau
 export interface Transaction { id: string; description: string; date?: string; meta?: string; amount: number | string; currency?: string }
 
 export const TRANSACTIONS = `
-    <section class="bx-panel" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
+    <section [class]="css()" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
       <h3 class="bx-panel-title" [id]="id">{{ head() }}</h3>
-      @if (rows().length === 0) { <p class="bx-panel-empty">{{ emptyText() }}</p> }
+      @if (loading()) { ${LOADING} } @else if (rows().length === 0) { <p class="bx-panel-empty">{{ emptyText() }}</p> }
+      @if (!loading()) {
       <ul class="bx-rows">
         @for (o of rows(); track o.item.id) {
           <li class="bx-row">
             @if (interactive()) {
               <button type="button" class="bx-payee bx-tx" (click)="action.emit(o.item)">
-                <span class="bx-avatar is-sm" aria-hidden="true">{{ o.initials }}</span>
+                @if (variant() !== 'compact') { <span class="bx-avatar is-sm" aria-hidden="true">{{ o.initials }}</span> }
                 <span class="bx-row-main"><strong>{{ o.item.description }}</strong>@if (o.meta) {<span class="bx-row-meta">{{ o.meta }}</span>}</span>
                 <span [class]="o.css"><span class="bx-visually-hidden">{{ o.direction }}</span>{{ o.shown }}</span>
               </button>
             } @else {
               <div class="bx-payee bx-tx">
-                <span class="bx-avatar is-sm" aria-hidden="true">{{ o.initials }}</span>
+                @if (variant() !== 'compact') { <span class="bx-avatar is-sm" aria-hidden="true">{{ o.initials }}</span> }
                 <span class="bx-row-main"><strong>{{ o.item.description }}</strong>@if (o.meta) {<span class="bx-row-meta">{{ o.meta }}</span>}</span>
                 <span [class]="o.css"><span class="bx-visually-hidden">{{ o.direction }}</span>{{ o.shown }}</span>
               </div>
@@ -342,6 +362,7 @@ export const TRANSACTIONS = `
           </li>
         }
       </ul>
+      }
     </section>`;
 
 /** What came in and went out; money in is green with a plus, and a screen reader says which. */
@@ -355,7 +376,11 @@ export class TransactionHistory extends Part {
   readonly currency = input('');
   readonly interactive = input(true);
   readonly emptyText = input('No transactions in this period.');
+  readonly variant = input<TxListVariant | undefined>(undefined);
+  /** Skeleton rows while the screen fetches the transactions. */
+  readonly loading = input(false);
   readonly action = output<Transaction>();
+  protected readonly css = computed(() => withVariant('bx-panel', 'txlist', this.variant()));
   protected readonly rows = computed(() => this.items().map((item) => {
     const n = typeof item.amount === 'number' ? item.amount : Number(String(item.amount).replace(/[^\d.-]/g, ''));
     const shown = typeof item.amount === 'number' ? (n > 0 ? '+' : n < 0 ? '−' : '') + money(Math.abs(n), item.currency ?? (this.currency() || undefined)) : item.amount;
@@ -371,7 +396,7 @@ export class TransactionHistory extends Part {
   selector: 'bx-receipt',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="bx-card bx-receipt" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
+    <section [class]="css()" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
       <span class="bx-receipt-mark" aria-hidden="true">✓</span>
       <h3 class="bx-receipt-title" [id]="id">{{ heading() }}</h3>
       @if (shown()) { <p class="bx-receipt-amount">{{ shown() }}</p> }
@@ -388,6 +413,8 @@ export class TransactionReceipt extends Part {
   readonly currency = input('');
   readonly items = input<ReadonlyArray<Detail>>([]);
   readonly reference = input('');
+  readonly variant = input<ReceiptVariant | undefined>(undefined);
+  protected readonly css = computed(() => withVariant('bx-card bx-receipt', 'receipt', this.variant()));
   protected readonly shown = computed(() => money(this.amount(), this.currency() || undefined));
 }
 

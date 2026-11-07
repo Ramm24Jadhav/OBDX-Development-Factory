@@ -78,3 +78,6 @@ import { Autocomplete, CurrencySelector, DateRangePicker, FileUpload, MultiSelec
 /** Every component, for a screen's imports: [...OBDX_COMPONENTS]. */
 export const OBDX_COMPONENTS = [Button, IconButton, TextField, AmountInput, Dropdown, CheckboxGroup, RadioGroup, DatePicker, Dialog, Toast, Card, Tabs,
   DataTable, TextArea, PasswordField, NumberInput, CurrencySelector, MultiSelect, Toggle, DateRangePicker, SearchField, Autocomplete, FileUpload, ...G1_COMPONENTS, ...G2_COMPONENTS, ...G3_COMPONENTS, ...G4_COMPONENTS, ...G5_COMPONENTS, ...G6_COMPONENTS, ...G7_COMPONENTS] as const;
+// The banking widgets' variant names (variants/v4.json)
+export type { AvatarVariant, BalanceVariant, BillsVariant, BiometricVariant, BoardVariant, CalcVariant, CardTileVariant, ChatVariant, FormVariant, LocatorVariant, PayeesVariant,
+  PromptVariant, ReceiptVariant, SensitiveVariant, TxListVariant } from './variant';

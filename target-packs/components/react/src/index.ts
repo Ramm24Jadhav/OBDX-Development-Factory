@@ -65,3 +65,6 @@ export { AnimatedList, BellToggle, BentoGrid, BlurInText, BudgetGauge, CallChip,
   TypedText, VoicePill, WarmTooltip, stagger } from './G7';
 export type { BackdropProps, BentoTile, CardNavItem, CountUpProps, DeckItem, FlipCardProps, FolderDoc, FxCardProps, GaugeProps, HoldProps, ListEntry, PressToggleProps,
   ProfileCardProps, PromptBarProps, RotatingTextProps, ScrubProps, SlideConfirmProps, SwipeAction, SwipeRowProps, WheelProps, WrapProps } from './G7';
+// The banking widgets' variant names (variants/v4.json)
+export type { AvatarVariant, BalanceVariant, BillsVariant, BiometricVariant, BoardVariant, CalcVariant, CardTileVariant, ChatVariant, FormVariant, LocatorVariant, PayeesVariant,
+  PromptVariant, ReceiptVariant, SensitiveVariant, TxListVariant } from './variant';
