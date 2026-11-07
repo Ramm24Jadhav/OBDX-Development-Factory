@@ -44,7 +44,8 @@ const check = process.argv.includes('--check');
 let stale = 0;
 Object.entries(files()).forEach(([rel, text]) => {
   const file = path.join(ROOT, rel);
-  const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+  // a Windows checkout has CRLF line ends (.gitattributes)
+  const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n') : '';
   if (old === text) { return; }
   if (check) { stale += 1; console.error(`${rel} is out of date: run node target-packs/components/tools/gen-variants.js`); } else { fs.writeFileSync(file, text); console.log(`wrote ${rel}`); }
 });
