@@ -235,6 +235,8 @@ for (const jet of ['6', '21']) {
       const s = await both(page, async (side) => {
         await page.locator(`#${side}-action-menu`).getByRole('button', { name: 'Account actions' }).click();
         await page.getByRole('menuitem', { name: 'Set a nickname' }).click();
+        // JET 21 animates its menu closed: wait until it is gone, so the next side's menu is the only one
+        await expect(page.getByRole('menuitem', { name: 'Set a nickname' })).toHaveCount(0);
       }, ['menuPicked']);
       expect(s.bx.menuPicked).toBe('nickname');
       await expect(page.getByRole('menuitem', { name: 'Set a nickname' })).toHaveCount(0);
