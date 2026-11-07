@@ -1,0 +1,224 @@
+# Capacitor target pack: the bank's web app in a Capacitor shell, as an Android and iOS app on the bank's OBDX REST
+# services. The starter is the React web app (Vite, React, TypeScript); wrap-angular.mjs wraps the Angular pack's app
+# in the same shell. The factory writes React pages, or Angular pages from the Angular pack when the app folder has
+# angular.json (TargetPacks.screens).
+id: capacitor
+title: Capacitor (mobile, from the web screens)
+description: An Android and iOS app made of the bank's React or Angular web screens in a Capacitor shell, calling the bank's OBDX REST services.
+# The screens are the React pack's, so the Design Studio shows them in its React preview
+preview: react
+defaultAppFolder: mobile-capacitor
+syntax: jsx
+
+# Where files go, relative to the app folder. {module} is a lowercase module folder (for example payments),
+# {Screen} the screen name in PascalCase (FundTransfer), {screenKey} the same in camelCase (fundTransfer).
+structure:
+  screen: src/screens/{module}/{Screen}Page.tsx
+  test: src/screens/{module}/__tests__/{Screen}Page.test.tsx
+  api: src/api/{module}Api.ts
+  texts: src/i18n/en.json
+  navigation: src/navigation/routes.tsx
+
+# Screen Model component type -> starter component (src/components). value: string, list (string[]) or boolean.
+components:
+  text: {component: TextField, value: string}
+  textarea: {component: TextField, value: string, props: multiline}
+  number: {component: NumberField, value: string}
+  amount: {component: AmountField, value: string}
+  date: {component: DateField, value: string}
+  select: {component: SelectField, value: string, options: true}
+  account: {component: AccountField, value: string, options: true}
+  radio: {component: RadioGroup, value: string, options: true}
+  checkbox: {component: CheckboxGroup, value: list, options: true}
+  switch: {component: SwitchField, value: boolean}
+  display: {component: ReadOnlyField, value: string}
+  # No table or OBDX JET components in this app yet: shown read-only until the screen is completed
+  table: {component: ReadOnlyField, value: string}
+  component: {component: ReadOnlyField, value: string}
+
+templates:
+  screen: templates/screen.tsx
+  test: templates/screen.test.tsx
+
+guidance: |
+  - This is a mobile app for Android and iOS made of React web screens (Vite, TypeScript) in a Capacitor shell, in its
+    own folder; it calls the bank's OBDX REST services. Do not change the OBDX JET UI for it. The screens are the same
+    as in the React pack, so write them as React web pages; the device is reached only through src/native.
+  - The app is React when its folder has vite.config.ts and src/**/*.tsx, Angular when it has angular.json and
+    src/app. In an Angular app follow the Angular pack's conventions (src/app/components, createForm, src/app/api,
+    src/app/i18n, app.routes.ts, (action) and (done)); its device code is in src/app/native. Never mix the two.
+  - Device features (the back button, biometric sign-in, sharing) go through Capacitor plugins in src/native, behind
+    isNative(), so every screen still runs in a browser and in its tests.
+  - Nothing secret is kept on the device: no passwords, tokens, PINs or one-time codes in Preferences or local
+    storage. Calls go through the platform HTTP stack (CapacitorHttp) so OBDX keeps the session in its cookie.
+  - Build pages only from the components in src/components (TextField, NumberField, AmountField, DateField,
+    SelectField, AccountField, RadioGroup, CheckboxGroup, SwitchField, ReadOnlyField, Button, Section, Screen). They
+    all take testID, label, value, onChange, error, required, readOnly, helpText, placeholder, maxLength (and options).
+    Style with the classes in components.css and its CSS variables, not inline colors.
+  - Every field and action of the approved Screen Model keeps its Screen Model id as testID (rendered as data-testid).
+  - Keep form state and validation in useForm (src/forms/useForm): rules for required and maxLength, check() for the
+    spec's other validations.
+  - All visible texts come from src/i18n/en.json through t('screenKey.name'); add the page's texts there.
+  - Call OBDX services only through src/api (api.get/post from client.ts) in a <module>Api.ts file with typed request
+    and response types; take the service paths and fields from the bank's OBDX REST services.
+  - Pages do not navigate themselves: they call onAction(actionId) and onDone(), which routes.tsx wires up.
+  - Write tests with vitest and @testing-library/react.
+  - The app's design comes from the factory's component style in src/component-style.json (look, motion, mode, brand;
+    style.ts puts obdx-look-* on the root, components/looks.css draws the nine designs, Liquid glass included). A
+    wrapped Angular app reads src/app/component-style.json and draws them with the Angular pack's bx.css. Do not style
+    a page for one design: use the components and their classes, and every design applies.
+
+rules:
+  - id: capacitor-no-live-server
+    title: No live-reload server in the app
+    severity: error
+    files: ["**/capacitor.config.ts", "**/capacitor.config.json"]
+    forbid: '\burl\s*:\s*[''"]https?://|cleartext\s*:\s*true|allowNavigation\s*:\s*\[[^\]]*\*'
+    message: Builds for customers load the screens from the app itself over https; remove server.url, cleartext and wildcard navigation.
+  - id: capacitor-no-secrets-on-device
+    title: No secrets on the device
+    severity: error
+    files: ["**/*.ts", "**/*.tsx"]
+    forbid: '(Preferences\.set|localStorage\.setItem|sessionStorage\.setItem)\([^)]*(password|token|pin|otp|nonce)'
+    message: Do not keep passwords, tokens, PINs or one-time codes on the device; OBDX keeps the session in its cookie.
+  - id: capacitor-plugins-in-native
+    title: Device features through src/native
+    severity: warning
+    files: ["**/src/screens/**/*.tsx", "**/src/app/screens/**/*.ts"]
+    forbid: 'from\s+[''"]@capacitor/'
+    message: Reach the device through src/native (behind isNative()), so screens still run in a browser and in tests.
+  - id: react-no-react-native
+    title: No React Native in the web app
+    severity: error
+    files: ["**/*.ts", "**/*.tsx"]
+    forbid: 'from\s+[''"]react-native[''"]'
+    message: This is the React web app; use the components in src/components and HTML elements, not react-native.
+  - id: angular-no-react
+    title: No React in the Angular app
+    severity: error
+    files: ["**/src/app/**/*.ts"]
+    forbid: 'from\s+[''"](react|react-dom|react-native)[''"]'
+    message: This is the Angular app; use the components in src/app/components, not React.
+  - id: angular-no-inner-html
+    title: No raw HTML
+    severity: error
+    files: ["**/src/app/**/*.ts", "**/src/app/**/*.html"]
+    forbid: '\[innerHTML\]|bypassSecurityTrust'
+    message: Do not insert raw HTML or bypass Angular's sanitising (it opens the app to script injection); render texts and components.
+  - id: react-no-inner-html
+    title: No raw HTML
+    severity: error
+    files: ["**/*.tsx"]
+    forbid: '\bdangerouslySetInnerHTML\b'
+    message: Do not insert raw HTML (it opens the app to script injection); render texts and components instead.
+  - id: app-no-jet
+    title: No Oracle JET in the new app
+    severity: error
+    files: ["**/*.ts", "**/*.tsx"]
+    forbid: '''ojs/|\bknockout\b|<oj-'
+    message: This is the new app; do not use Oracle JET or Knockout here.
+  - id: app-api-through-client
+    title: Services through src/api
+    severity: error
+    files: ["**/*.ts", "**/*.tsx"]
+    exclude: ["**/src/api/**", "**/src/app/api/**", "**/__tests__/**", "**/*.test.*", "**/*.spec.ts"]
+    forbid: '(?<![.\w])fetch\s*\(|\bXMLHttpRequest\b|\baxios\b'
+    message: Call OBDX services through src/api (api.get/post in a <module>Api.ts file), not with fetch directly.
+  - id: app-texts-from-i18n
+    title: Texts from i18n
+    severity: warning
+    files: ["**/src/screens/**/*.tsx", "**/src/app/screens/**/*.ts"]
+    exclude: ["**/__tests__/**", "**/*.test.*", "**/*.spec.ts"]
+    forbid: '>\s*[A-Za-z][^<>{}]*[A-Za-z]\s*</|\b(label|title|placeholder|helpText)="[^"]*[A-Za-z]'
+    message: Take visible texts from src/i18n/en.json with t('screenKey.name') so they can be translated.
+  - id: app-theme-colors
+    title: Colors from the theme
+    severity: warning
+    files: ["**/src/screens/**/*.tsx", "**/src/app/screens/**/*.ts"]
+    forbid: '[''"]#[0-9a-fA-F]{3,8}[''"]'
+    message: Use the classes and CSS variables of components.css, not literal color codes, so the design system applies.
+  - id: app-no-console
+    title: No console logging
+    severity: warning
+    files: ["**/*.ts", "**/*.tsx"]
+    exclude: ["**/__tests__/**", "**/*.test.*"]
+    forbid: '\bconsole\.(log|debug|info)\s*\('
+    message: Remove console logging from app code.
+  - id: app-no-any
+    title: Typed code
+    severity: warning
+    files: ["**/*.ts", "**/*.tsx"]
+    forbid: ':\s*any\b|\bas\s+any\b'
+    message: Use specific types (for example the request and response types of the API file) instead of any.
+
+recipes:
+  - id: app-screen
+    title: Page in the Capacitor app
+    when: A screen of the requirement is built (or changed) in the Capacitor mobile app.
+    guidance: |
+      - Start from the generated starting point: it already maps every field and action of the approved Screen Model to
+        the starter components, with testIDs, texts, required and length rules.
+      - Load data (for example the customer's accounts) and send the form through the module's API file.
+      - On success call onDone(); on an ApiError show its message (error state shown above the actions).
+    parts:
+      - id: screen
+        name: Screen
+        files: ["**/src/screens/**/*Page.tsx"]
+        examples: {files: ["**/src/screens/**/*Page.tsx"], exclude: ["**/__tests__/**"], contains: 'useForm|<Screen'}
+      - id: test
+        name: Screen test
+        files: ["**/src/screens/**/__tests__/*.test.tsx"]
+        examples: {files: ["**/src/**/__tests__/*.test.tsx"]}
+  - id: app-api
+    title: API file for a module
+    when: Screens of a module call OBDX REST services.
+    guidance: |
+      - One file per module in src/api, exporting typed functions (for example transfer(request): Promise<TransferResult>)
+        that call api.get/post with the OBDX service path.
+      - Declare request and response types with the field names the OBDX service uses.
+    parts:
+      - id: api
+        name: API file
+        files: ["**/src/api/*Api.ts"]
+        template: templates/api.ts
+        examples: {files: ["**/src/api/*Api.ts"]}
+  - id: app-texts
+    title: Texts and navigation
+    when: A screen is added or changed.
+    guidance: |
+      - en.json: keep all existing texts; add or change only the screen's own block (the generated starting point has it).
+      - routes.tsx: add one route for the page, with onAction/onDone wired to navigation (useNavigate).
+    parts:
+      - id: texts
+        name: Texts (en.json)
+        files: ["**/src/i18n/*.json"]
+      - id: navigation
+        name: Navigation
+        files: ["**/src/navigation/*.tsx"]
+  - id: app-screen-angular
+    title: Page in the Capacitor app (Angular)
+    when: The Capacitor app wraps the bank's Angular app (angular.json in the app folder) and a screen is built or changed.
+    guidance: |
+      - Write the page as in the Angular pack: a standalone component in src/app/screens/<module>/<Screen>Page.ts built
+        from src/app/components, form state in createForm, texts through t(), OBDX calls through src/app/api.
+      - Emit (action) and (done); add the route to src/app/app.routes.ts and the texts to src/app/i18n/en.json.
+      - Device features only through src/app/native (behind isNative()), so the page still runs in a browser and its test.
+    parts:
+      - id: screen
+        name: Screen
+        files: ["**/src/app/screens/**/*Page.ts"]
+        examples: {files: ["**/src/app/screens/**/*Page.ts"], contains: 'createForm|obdx-screen'}
+      - id: test
+        name: Screen test
+        files: ["**/src/app/screens/**/*Page.spec.ts"]
+        examples: {files: ["**/src/app/**/*.spec.ts"]}
+      - id: api
+        name: API file
+        files: ["**/src/app/api/*Api.ts"]
+        examples: {files: ["**/src/app/api/*Api.ts"]}
+      - id: texts
+        name: Texts (en.json)
+        files: ["**/src/app/i18n/*.json"]
+      - id: navigation
+        name: Navigation
+        files: ["**/src/app/app.routes.ts"]

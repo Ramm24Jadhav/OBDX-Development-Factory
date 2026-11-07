@@ -1,0 +1,148 @@
+# Flutter target pack: a new mobile app (Flutter, Dart) for Android and iOS on the bank's OBDX REST services.
+id: flutter
+title: Flutter (mobile)
+description: A new mobile app for Android and iOS built with Flutter (Dart) that calls the bank's OBDX REST services.
+# The Design Studio shows the screen in its mobile preview (the same bank tokens); Flutter widgets do not run in a browser
+preview: react-native
+defaultAppFolder: mobile-flutter
+# Screens are Flutter widgets in Dart
+syntax: dart
+
+# Where files go, relative to the app folder. {module} is a lowercase module folder (for example payments),
+# {screen_file} the screen name in snake_case (fund_transfer), as Dart names its files.
+structure:
+  screen: lib/screens/{module}/{screen_file}_page.dart
+  test: test/screens/{module}/{screen_file}_page_test.dart
+  api: lib/api/{module}_api.dart
+  texts: assets/i18n/en.json
+  navigation: lib/app.dart
+
+# Screen Model component type -> widget (lib/components). value: string, list (List<String>), boolean or number (double?).
+components:
+  text: {component: BxTextField, value: string}
+  textarea: {component: BxTextArea, value: string}
+  number: {component: BxTextField, value: string, props: 'keyboardType: TextInputType.number'}
+  amount: {component: BxAmountField, value: number}
+  date: {component: BxDateField, value: string}
+  select: {component: BxSelectField, value: string, options: true}
+  account: {component: BxSelectField, value: string, options: true}
+  radio: {component: BxRadioGroup, value: string, options: true}
+  checkbox: {component: BxCheckboxGroup, value: list, options: true}
+  switch: {component: BxSwitchField, value: boolean}
+  display: {component: BxReadOnlyField, value: string}
+  # No table or OBDX JET components in this app yet: shown read-only until the screen is completed
+  table: {component: BxReadOnlyField, value: string}
+  component: {component: BxReadOnlyField, value: string}
+
+templates:
+  screen: templates/screen.dart
+  test: templates/screen_test.dart
+
+guidance: |
+  - This is a Flutter app (Dart) for Android and iOS in its own folder; it calls the bank's OBDX REST services. Do not
+    change the OBDX JET UI for it.
+  - Build pages only from the widgets in lib/components: BxScreen, BxSection, BxTextField, BxTextArea, BxAmountField,
+    BxDateField, BxSelectField, BxRadioGroup, BxCheckboxGroup, BxSwitchField, BxReadOnlyField and BxButton. They take
+    label, value, onChanged, error, required, readOnly, helpText and placeholder (and options). Colours, sizes and
+    fonts come from the theme (bxTheme) and tokens.dart (BxColors, BxSizes), not literal values.
+  - Every field and action of the approved Screen Model keeps its Screen Model id as its key: key: const ValueKey('id').
+  - Keep form state and validation in a FormModel (lib/forms/form_model.dart): FieldRule for required and maxLength,
+    check for the spec's other validations. Read values with form.text/number/flag/list and change them with form.set.
+  - All visible texts come from assets/i18n/en.json through t('screenKey.name'); add the page's texts there.
+  - Call OBDX services only through lib/api (api.get/post from client.dart) in a <module>_api.dart file with typed
+    request and response classes; the client keeps the session cookie, adds the nonce and can pin the certificate.
+  - Pages do not navigate themselves: they call onAction with an action id and onDone, which lib/app.dart wires up.
+  - Write widget tests with flutter_test; find fields by find.byKey(ValueKey('id')).
+  - The app's design comes from the factory's component style in assets/component-style.json (look, mode,
+    brand, click effect; loaded into savedStyle); bxTheme draws the nine designs and BxGlass the glass of Glass and Liquid glass
+    (BackdropFilter). Do not style a page for one design: use the components and the theme, and every design applies.
+
+rules:
+  - id: flutter-no-web-ui
+    title: No web UI code in the Flutter app
+    severity: error
+    files: ["**/*.dart"]
+    forbid: 'dart:html|package:web/|dart:js'
+    message: This is the Flutter mobile app; use the widgets in lib/components, not web APIs.
+  - id: app-api-through-client
+    title: Services through lib/api
+    severity: error
+    files: ["**/lib/**/*.dart"]
+    exclude: ["**/lib/api/**"]
+    forbid: 'package:http/|\bHttpClient\s*\('
+    message: Call OBDX services through lib/api (api.get/post in a <module>_api.dart file), not directly.
+  - id: flutter-no-secrets-in-prefs
+    title: No secrets on the device
+    severity: error
+    files: ["**/lib/**/*.dart"]
+    forbid: 'SharedPreferences.*(password|token|pin|otp)'
+    message: Do not keep passwords, tokens or one-time codes on the device; OBDX keeps the session.
+  - id: app-texts-from-i18n
+    title: Texts from i18n
+    severity: warning
+    files: ["**/lib/screens/**/*.dart"]
+    forbid: '\b(label|title|placeholder|helpText):\s*''[^'']*[A-Za-z]'
+    message: Take visible texts from assets/i18n/en.json with t('screenKey.name') so they can be translated.
+  - id: app-theme-colors
+    title: Colors from the theme
+    severity: warning
+    files: ["**/lib/screens/**/*.dart"]
+    forbid: 'Color\(0x[0-9a-fA-F]{6,8}\)|Colors\.[a-z]'
+    message: Use the theme and tokens.dart (BxColors), not literal colours, so the bank's design applies.
+  - id: app-no-print
+    title: No printing
+    severity: warning
+    files: ["**/lib/**/*.dart"]
+    forbid: '\b(print|debugPrint)\s*\('
+    message: Remove printing from app code.
+  - id: flutter-no-dynamic
+    title: Typed code
+    severity: warning
+    files: ["**/lib/**/*.dart"]
+    forbid: '\bdynamic\b'
+    message: Use specific types (for example the request and response classes of the API file) instead of dynamic.
+
+recipes:
+  - id: app-screen
+    title: Page in the Flutter app
+    when: A screen of the requirement is built (or changed) in the Flutter mobile app.
+    guidance: |
+      - Start from the generated starting point: it already maps every field and action of the approved Screen Model to
+        the widgets, with keys, texts, required and length rules.
+      - Load data (for example the customer's accounts) and send the form through the module's API file.
+      - On success call onDone; on an ApiError show its message (failure, above the actions).
+    parts:
+      - id: screen
+        name: Screen
+        files: ["**/lib/screens/**/*_page.dart"]
+        examples: {files: ["**/lib/screens/**/*_page.dart"], contains: 'FormModel|BxScreen'}
+      - id: test
+        name: Screen test
+        files: ["**/test/screens/**/*_page_test.dart"]
+        examples: {files: ["**/test/**/*_test.dart"]}
+  - id: app-api
+    title: API file for a module
+    when: Screens of a module call OBDX REST services.
+    guidance: |
+      - One file per module in lib/api, with typed functions (for example Future<TransferResult> transfer(request))
+        that call api.get/post with the OBDX service path.
+      - Declare request and response classes with the field names the OBDX service uses (toJson, fromJson).
+    parts:
+      - id: api
+        name: API file
+        files: ["**/lib/api/*_api.dart"]
+        template: templates/api.dart
+        examples: {files: ["**/lib/api/*_api.dart"]}
+  - id: app-texts
+    title: Texts and navigation
+    when: A screen is added or changed.
+    guidance: |
+      - en.json: keep all existing texts; add or change only the screen's own block (the generated starting point has it).
+      - app.dart: add one route for the page; wire onAction and onDone to Navigator.
+    parts:
+      - id: texts
+        name: Texts (en.json)
+        files: ["**/assets/i18n/*.json"]
+      - id: navigation
+        name: Navigation
+        files: ["**/lib/app.dart"]

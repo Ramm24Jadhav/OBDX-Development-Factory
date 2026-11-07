@@ -1,29 +1,131 @@
-<div class="oj-hybrid-padding">
-  <h1>Account</h1>
-  <oj-bind-if test="[[user()]]">
-    <ul>
-      <li>Username: <oj-bind-text value="[[user().username]]"></oj-bind-text></li>
-      <li>Name: <oj-bind-text value="[[user().displayName]]"></oj-bind-text></li>
-      <li>Signs in with: <oj-bind-text value="[[sourceLabel]]"></oj-bind-text></li>
-      <li>Administrator: <oj-bind-text value="[[user().admin ? 'yes' : 'no']]"></oj-bind-text></li>
-      <li>Workspaces: <oj-bind-text value="[[workspaceSummary]]"></oj-bind-text></li>
-    </ul>
+<div class="factory-pg factory-acc">
+  <div class="factory-rq-head">
+    <div class="factory-rq-title">
+      <h1>Account</h1>
+      <p class="factory-rq-lead">Your profile, and how the factory looks and behaves for you. Preferences are kept in this browser.</p>
+    </div>
+    <div class="factory-rq-headbar">
+      <button type="button" id="signOutButton" class="fx-btn fx-btn--secondary" on-click="[[signOut]]"><span class="factory-nav-icon factory-ico-arrow factory-btn-icon" aria-hidden="true"></span>Sign out</button>
+      <fx-menu-button id="accMoreButton" variant="ghost" icon="more" icon-only label="More actions" align="end" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
+    </div>
+  </div>
 
-    <oj-bind-if test="[[user().canChangePassword]]">
-      <h2>Change password</h2>
-      <oj-form-layout max-columns="1" class="factory-narrow-form">
-        <oj-input-password id="currentPassword" label-hint="Current password" value="{{currentPassword}}" autocomplete="current-password"></oj-input-password>
-        <oj-input-password id="newPassword" label-hint="New password (at least 12 characters)" value="{{newPassword}}" autocomplete="new-password"></oj-input-password>
-        <oj-input-password id="repeatPassword" label-hint="Repeat new password" value="{{repeatPassword}}" autocomplete="new-password"></oj-input-password>
-      </oj-form-layout>
-      <oj-button id="changePasswordButton" chroming="callToAction" on-oj-action="[[changePassword]]"
-                 disabled="[[!currentPassword() || !newPassword()]]">Change password</oj-button>
-    </oj-bind-if>
-    <oj-bind-if test="[[!user().canChangePassword]]">
-      <p class="oj-text-color-secondary">Your password is managed by your organization's directory or single sign-on.</p>
-    </oj-bind-if>
-    <oj-bind-if test="[[message()]]">
-      <p id="accountMessage" :class="[[messageClass]]"><oj-bind-text value="[[message]]"></oj-bind-text></p>
-    </oj-bind-if>
+  <oj-bind-if test="[[user()]]">
+    <div class="factory-acc-layout">
+      <!-- The profile -->
+      <section class="fx-card factory-acc-profile" id="ac-sec-profile" aria-labelledby="accountName">
+        <div class="factory-acc-person">
+          <span :class="[[avatarCss]]" aria-hidden="true"><oj-bind-text value="[[initials]]"></oj-bind-text></span>
+          <div class="factory-acc-who"><h2 id="accountName"><oj-bind-text value="[[user().displayName]]"></oj-bind-text></h2>
+            <span class="factory-acc-role"><oj-bind-text value="[[roleText]]"></oj-bind-text></span></div>
+        </div>
+        <dl class="factory-acc-facts" id="profileFacts">
+          <oj-bind-for-each data="[[profileRows]]" as="r">
+            <template><div><dt><oj-bind-text value="[[r.data.label]]"></oj-bind-text></dt><dd :class="[[r.data.css]]" :title="[[r.data.value]]"><oj-bind-text value="[[r.data.value]]"></oj-bind-text></dd></div></template>
+          </oj-bind-for-each>
+        </dl>
+        <div class="factory-acc-wsblock">
+          <span class="factory-acc-label">Workspaces</span>
+          <div class="factory-acc-chips" id="profileWorkspaces">
+            <oj-bind-for-each data="[[workspaceChips]]" as="w"><template><span class="fx-badge" :title="[[w.data.tip]]"><oj-bind-text value="[[w.data.text]]"></oj-bind-text></span></template></oj-bind-for-each>
+            <oj-bind-if test="[[workspaceChips().length === 0]]"><span class="factory-acc-muted">None yet; ask an administrator.</span></oj-bind-if>
+          </div>
+        </div>
+        <p class="factory-acc-note">Your name and email come from <oj-bind-text value="[[sourceLabel().toLowerCase()]]"></oj-bind-text>; administrators change them.</p>
+      </section>
+
+      <div class="factory-acc-groups">
+        <!-- Appearance -->
+        <section class="fx-card factory-acc-group" id="ac-sec-preferences" aria-labelledby="accAppearanceTitle">
+          <h2 id="accAppearanceTitle">Appearance</h2>
+          <ul class="factory-acc-list">
+            <li><span class="factory-acc-text"><strong id="themeLabel">Theme</strong><span>The same as the top bar's light and dark switch</span></span>
+              <span class="fx-toggle-group factory-acc-themes" role="group" aria-labelledby="themeLabel">
+                <oj-bind-for-each data="[[themes]]" as="th"><template>
+                  <button type="button" :id="[['theme-' + th.data.value]]" :aria-pressed="[[th.data.pressed]]" on-click="[[th.data.pick]]" :title="[[th.data.tip]]">
+                    <span :class="[[th.data.iconClass]]" aria-hidden="true"></span><oj-bind-text value="[[th.data.label]]"></oj-bind-text></button>
+                </template></oj-bind-for-each>
+              </span></li>
+            <li><span class="factory-acc-text"><strong>Density</strong><span>Compact rows and controls on every page</span></span>
+              <fx-segmented id="densityPick" label="Density" options="[[densityOptions]]" value="{{prefs.density}}"></fx-segmented></li>
+            <li><span class="factory-acc-text"><strong>Font size</strong><span>Larger text on every page</span></span>
+              <fx-segmented id="textPick" label="Font size" options="[[textOptions]]" value="{{prefs.textSize}}"></fx-segmented></li>
+            <li><span class="factory-acc-text"><strong>Code editor theme</strong><span>Saved; the code views do not use it yet</span></span>
+              <fx-segmented id="editorThemePick" label="Code editor theme" options="[[editorThemeOptions]]" value="{{extra.editorTheme}}"></fx-segmented></li>
+          </ul>
+        </section>
+
+        <!-- Defaults -->
+        <section class="fx-card factory-acc-group" aria-labelledby="accDefaultsTitle">
+          <h2 id="accDefaultsTitle">Defaults</h2>
+          <ul class="factory-acc-list">
+            <li><span class="factory-acc-text"><strong>Default workspace</strong><span>Chosen in the top bar when the factory opens</span></span>
+              <fx-select id="workspacePick" class="factory-acc-select" label="Default workspace" hide-label placeholder="The first one" options="[[workspaceOptions]]" value="{{prefs.workspace}}"></fx-select></li>
+            <li><span class="factory-acc-text"><strong>Landing page</strong><span>Applies the next time the factory opens</span></span>
+              <fx-select id="landingPick" class="factory-acc-select" label="Landing page" hide-label options="[[landingOptions]]" value="{{prefs.landing}}"></fx-select></li>
+            <li><span class="factory-acc-text"><strong>Time format</strong><span id="timeSample"><oj-bind-text value="[[sample]]"></oj-bind-text></span></span>
+              <fx-segmented id="timeFormatPick" label="Time format" options="[[hourOptions]]" value="{{prefs.hour12}}"></fx-segmented></li>
+            <li><span class="factory-acc-text"><strong>Items per page</strong><span>Saved; the pages do not use it yet</span></span>
+              <fx-segmented id="pageSizePick" label="Items per page" options="[[pageSizeOptions]]" value="{{extra.pageSize}}"></fx-segmented></li>
+            <li><span class="factory-acc-text"><strong>Date format</strong><span>Saved; the pages do not use it yet</span></span>
+              <fx-select id="dateFormatPick" class="factory-acc-select" label="Date format" hide-label options="[[dateFormatOptions]]" value="{{extra.dateFormat}}"></fx-select></li>
+          </ul>
+        </section>
+
+        <!-- Notifications -->
+        <section class="fx-card factory-acc-group" id="ac-sec-notifications" aria-labelledby="accNotifyTitle">
+          <div class="factory-acc-grouphead"><h2 id="accNotifyTitle">Notifications</h2>
+            <button type="button" id="sendTestButton" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[sendTest]]">Send a test</button></div>
+          <ul class="factory-acc-list">
+            <oj-bind-for-each data="[[notifyRows]]" as="nr">
+              <template><li><span :class="[[nr.data.tileCss]]" aria-hidden="true"><span :class="[[nr.data.iconClass]]"></span></span>
+                <span class="factory-acc-text"><strong :id="[[nr.data.id + 'Label']]"><oj-bind-text value="[[nr.data.label]]"></oj-bind-text></strong><span><oj-bind-text value="[[nr.data.sub]]"></oj-bind-text></span></span>
+                <button type="button" class="fx-switch" role="switch" :id="[[nr.data.id]]" :aria-checked="[[nr.data.checkedText]]" on-click="[[nr.data.flip]]" :aria-labelledby="[[nr.data.id + 'Label']]"></button></li></template>
+            </oj-bind-for-each>
+          </ul>
+          <p class="factory-acc-note" id="notifyNote">These show in the bell and the Notification Center. Email and Teams delivery, security alerts and a weekly summary are not available yet.</p>
+        </section>
+
+        <!-- Assistant and shortcuts -->
+        <section class="fx-card factory-acc-group" aria-labelledby="accWorkTitle">
+          <h2 id="accWorkTitle">Assistant and shortcuts</h2>
+          <ul class="factory-acc-list">
+            <li><span class="factory-acc-text"><strong id="assistantToggleLabel">AI suggestions</strong><span>Show the AI Assistant panels on the pages</span></span>
+              <button type="button" class="fx-switch" role="switch" id="assistantToggle" :aria-checked="[[assistant.checkedText]]" on-click="[[assistant.flip]]" aria-labelledby="assistantToggleLabel"></button></li>
+            <li><span class="factory-acc-text"><strong id="shortcutsLabel">Keyboard shortcuts</strong><span>Or press <kbd class="factory-kbd">?</kbd> on any page</span></span>
+              <button type="button" id="shortcutsButton" class="fx-btn fx-btn--secondary fx-btn--sm" aria-describedby="shortcutsLabel" on-click="[[showShortcuts]]">Show</button></li>
+          </ul>
+          <p class="factory-acc-note" id="notSettingsNote">Not settings: pages save when you press Save, tooltips always show, each page decides when to ask before deleting, and the factory collects no usage data.</p>
+        </section>
+
+        <!-- Security -->
+        <section class="fx-card factory-acc-group" id="ac-sec-security" aria-labelledby="accSecurityTitle">
+          <h2 id="accSecurityTitle">Security</h2>
+          <ul class="factory-acc-list">
+            <li><span class="factory-acc-text"><strong>Password</strong>
+              <span><oj-bind-text value="[[canChange() ? 'At least 12 characters' : 'You sign in with ' + sourceLabel() + '; change your password there']]"></oj-bind-text></span></span>
+              <oj-bind-if test="[[canChange()]]"><button type="button" id="changePasswordStart" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[openPassword]]">Change</button></oj-bind-if></li>
+            <li><span class="factory-acc-text"><strong>Two-factor sign-in</strong><span>The factory has none of its own; with single sign-on, your bank's identity provider asks for it</span></span>
+              <span class="fx-badge">Set by your bank</span></li>
+            <li><span class="factory-acc-text"><strong>This session</strong><span><oj-bind-text value="[[browser + (timezone ? ' · ' + timezone : '')]]"></oj-bind-text></span></span>
+              <span class="fx-badge fx-badge--success">Current session</span></li>
+            <li><span class="factory-acc-text"><strong>API access</strong><span id="apiAccessNote">No personal API keys yet. Scripts call the REST API with a signed-in session; the endpoints are in docs/DEVELOPMENT.md.</span></span></li>
+          </ul>
+          <p class="factory-acc-note">Sessions on other devices are not listed: the factory does not keep a list of them. Sign out ends this session only. To remove your account, ask an administrator.</p>
+        </section>
+      </div>
+    </div>
+
+    <fx-sheet id="passwordSheet" open="{{passwordOpen}}" heading="Change password" subtitle="Use the new one the next time you sign in.">
+      <div class="factory-acc-sheet">
+        <fx-input id="currentPassword" type="password" label="Current password" value="{{currentPassword}}" autocomplete="current-password"></fx-input>
+        <fx-input id="newPassword" type="password" label="New password" value="{{newPassword}}" autocomplete="new-password"></fx-input>
+        <fx-input id="repeatPassword" type="password" label="Confirm the new password" value="{{repeatPassword}}" autocomplete="new-password"></fx-input>
+        <ul class="factory-ac-reqs" aria-label="Password requirements"><oj-bind-for-each data="[[rules]]" as="r"><template><li :class="[[r.data.rowCss]]"><span :class="[[r.data.css]]" aria-hidden="true"></span><oj-bind-text value="[[r.data.label]]"></oj-bind-text><span class="factory-sr"><oj-bind-text value="[[r.data.ok() ? ': done' : ': not yet']]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+        <oj-bind-if test="[[message()]]"><p class="fx-error" id="passwordMessage" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><oj-bind-text value="[[message]]"></oj-bind-text></p></oj-bind-if>
+        <div class="factory-adm-sheetfoot"><button type="button" class="fx-btn fx-btn--secondary" on-click="[[closePassword]]">Cancel</button>
+          <button type="button" id="changePasswordButton" class="fx-btn fx-btn--primary" on-click="[[changePassword]]">Update password</button></div>
+      </div>
+    </fx-sheet>
   </oj-bind-if>
 </div>

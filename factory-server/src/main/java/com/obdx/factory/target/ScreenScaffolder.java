@@ -29,6 +29,9 @@ public final class ScreenScaffolder {
      * @param content     the generated starting point
      * @param expectedIds Screen Model ids that must appear as testID in the finished file (screens only)
      */
+    /** A scaffold whose content is written as it is (a file the factory ships), not a starting point for the model. */
+    public static final String FIXED = "fixed";
+
     public record Scaffold(String kind, String content, List<String> expectedIds) {
     }
 
@@ -51,6 +54,16 @@ public final class ScreenScaffolder {
         return result.isEmpty() || Character.isDigit(result.charAt(0)) ? "Screen" + result : result;
     }
 
+    /** "Fund Transfer" gives fund-transfer: for an Angular element name. */
+    public static String kebab(String text) {
+        Matcher words = WORDS.matcher(text == null ? "" : text);
+        List<String> parts = new ArrayList<>();
+        while (words.find()) {
+            parts.add(words.group().toLowerCase(java.util.Locale.ROOT));
+        }
+        return parts.isEmpty() ? "screen" : String.join("-", parts);
+    }
+
     /** "Fund Transfer" gives fundTransfer. */
     public static String camel(String text) {
         String pascal = pascal(text);
@@ -58,8 +71,18 @@ public final class ScreenScaffolder {
     }
 
     /** The file of a screen, relative to the app folder. */
+    /** snake_case, as Dart names its files (Fund Transfer gives fund_transfer). */
+    public static String snake(String text) {
+        return kebab(text).replace('-', '_');
+    }
+
     public static String screenPath(TargetPack pack, ScreenModel model, String module) {
-        return pack.structure().get("screen").replace("{module}", module).replace("{Screen}", pascal(model.name()));
+        return path(pack.structure().get("screen"), model, module);
+    }
+
+    /** A structure path with its placeholders filled: {module}, {Screen} (PascalCase) and {screen_file} (snake_case). */
+    public static String path(String structure, ScreenModel model, String module) {
+        return structure.replace("{module}", module).replace("{Screen}", pascal(model.name())).replace("{screen_file}", snake(model.name()));
     }
 
     /** The starting point for one plan item of the app, if the factory can generate one for it. */
@@ -72,20 +95,37 @@ public final class ScreenScaffolder {
             String base = current != null ? current : pack.starter().getOrDefault(relative, "{}");
             return Optional.of(new Scaffold("texts", texts(base, models), List.of()));
         }
-        for (String kind : List.of("screen", "test")) {
+        for (String kind : pack.isNative() ? List.of("screen", "test", "screenIos", "testIos") : List.of("screen", "test")) {
             Matcher matcher = pattern(pack.structure().get(kind)).matcher(relative);
             if (matcher.matches()) {
                 ScreenModel model = byName(models, matcher.group("screen"));
                 if (model == null) {
                     return Optional.empty();
                 }
-                return Optional.of(kind.equals("screen") ? screen(pack, model, matcher.group("module")) : test(pack, model));
+                String module = matcher.group("module");
+                return Optional.of(switch (kind) {
+                    case "screen" -> screen(pack, model, module);
+                    case "screenIos" -> swiftScreen(pack, model, module);
+                    default -> test(pack, model, module, kind);
+                });
             }
         }
         return Optional.empty();
     }
 
     public static Scaffold screen(TargetPack pack, ScreenModel model, String module) {
+        if (pack.isAngular()) {
+            return angularScreen(pack, model, module);
+        }
+        if (pack.isDart()) {
+            return dartScreen(pack, model, module);
+        }
+        if (pack.isVue()) {
+            return vueScreen(pack, model, module);
+        }
+        if (pack.isNative()) {
+            return kotlinScreen(pack, model, module);
+        }
         Naming names = new Naming(model);
         String key = camel(model.name());
         Set<String> imports = new TreeSet<>(List.of("Button", "Screen", "Section"));
@@ -157,7 +197,537 @@ public final class ScreenScaffolder {
         return new Scaffold("screen", fill(template, values, Map.of()), List.copyOf(ids));
     }
 
+    /**
+     * An Angular screen: a standalone component whose template uses the pack's elements, with the form values as
+     * signals ([(value)]), the same texts, rules and testIDs as the JSX packs.
+     */
+    static Scaffold angularScreen(TargetPack pack, ScreenModel model, String module) {
+        Naming names = new Naming(model);
+        String key = camel(model.name());
+        Set<String> imports = new TreeSet<>(List.of("Button", "Screen", "Section"));
+        StringBuilder options = new StringBuilder();
+        StringBuilder initial = new StringBuilder();
+        StringBuilder rules = new StringBuilder();
+        StringBuilder sections = new StringBuilder();
+        List<String> ids = new ArrayList<>();
+        for (ScreenModel.Section section : model.sections()) {
+            sections.append("      <obdx-section").append(section.title() == null || section.title().isBlank() ? ""
+                            : " [title]=\"t('" + key + "." + names.section(section) + "')\"")
+                    .append(" [columns]=\"").append(section.columns() == null ? 1 : section.columns()).append("\">\n");
+            for (ScreenModel.Component c : section.components()) {
+                TargetPack.ComponentMapping mapping = pack.components().getOrDefault(c.type(), pack.components().get("text"));
+                String name = names.field(c);
+                imports.add(mapping.component());
+                ids.add(c.id());
+                initial.append("    ").append(name).append(": ").append(initialValue(mapping, c)).append(",\n");
+                boolean display = "display".equals(c.type()) || "ReadOnlyField".equals(mapping.component());
+                boolean required = Boolean.TRUE.equals(c.required()) && !Boolean.TRUE.equals(c.readonly()) && !display
+                        && !"boolean".equals(mapping.value());
+                if (c.validations() != null && !c.validations().isEmpty()) {
+                    rules.append("    // From the spec: ").append(c.validations().stream().map(v -> "\"" + v + "\"").collect(Collectors.joining("; ")))
+                            .append(" (add a check: (value) => message when not valid)\n");
+                }
+                if (required || c.maxLength() != null || (c.validations() != null && !c.validations().isEmpty())) {
+                    rules.append("    ").append(name).append(": { label: t('").append(key).append('.').append(name).append("')")
+                            .append(required ? ", required: true" : "").append(c.maxLength() != null ? ", maxLength: " + c.maxLength() : "")
+                            .append(" },\n");
+                }
+                if (mapping.options()) {
+                    options.append("  protected readonly ").append(name).append("Options");
+                    if ("account".equals(c.type())) {
+                        options.append(": string[] = []; // The customer's accounts (masked numbers): load them with the accounts API.\n");
+                    } else if (c.options() == null || c.options().isEmpty()) {
+                        options.append(": string[] = []; // Options: from the OBDX service or the spec.\n");
+                    } else {
+                        options.append(" = [").append(c.options().stream().map(ScreenScaffolder::quote).collect(Collectors.joining(", "))).append("];\n");
+                    }
+                }
+                sections.append(angularElement(mapping, c, name, key, display));
+            }
+            sections.append("      </obdx-section>\n");
+        }
+        StringBuilder actions = new StringBuilder();
+        boolean submitUsed = false;
+        for (ScreenModel.ActionButton action : model.actions()) {
+            ids.add(action.id());
+            String kind = action.kind() == null ? "secondary" : action.kind();
+            boolean submit = !submitUsed && "primary".equals(kind);
+            submitUsed |= submit;
+            String chroming = "primary".equals(kind) ? "callToAction" : "link".equals(kind) ? "borderless" : "outlined";
+            actions.append("        <bx-button testID=").append(attribute(action.id())).append(" [label]=\"t('").append(key).append('.')
+                    .append(names.action(action)).append("')\" chroming=\"").append(chroming).append('"')
+                    .append(submit ? " [busy]=\"busy()\" (action)=\"submit()\"" : " (action)=\"action.emit(" + quote(action.id()) + ")\"")
+                    .append(" />\n");
+        }
+        Map<String, String> values = new LinkedHashMap<>();
+        values.put("imports", String.join(", ", imports));
+        values.put("optionLists", options.toString());
+        values.put("initialValues", initial.toString());
+        values.put("rules", rules.toString());
+        values.put("sections", sections.toString());
+        values.put("actions", actions.toString());
+        values.putAll(common(model, module));
+        return new Scaffold("screen", fill(pack.templates().get("screen"), values, Map.of()), List.copyOf(ids));
+    }
+
+    /** One field in an Angular template: the pack's element with its inputs bound to the form and the texts. */
+    private static String angularElement(TargetPack.ComponentMapping mapping, ScreenModel.Component c, String name, String key, boolean display) {
+        String pad = "          ";
+        StringBuilder e = new StringBuilder("        <").append(mapping.tag()).append('\n');
+        e.append(pad).append("testID=").append(attribute(c.id())).append('\n');
+        e.append(pad).append("[label]=\"t('").append(key).append('.').append(name).append("')\"\n");
+        if (display) {
+            e.append(pad).append("[value]=\"form.values.").append(name).append("()\"\n");
+        } else {
+            e.append(pad).append("[(value)]=\"form.values.").append(name).append("\"\n");
+            e.append(pad).append("[error]=\"form.errors().").append(name).append(" ?? ''\"\n");
+        }
+        if (mapping.options()) {
+            e.append(pad).append("[options]=\"").append(name).append("Options\"\n");
+        }
+        if (Boolean.TRUE.equals(c.required()) && !display) {
+            e.append(pad).append("[required]=\"true\"\n");
+        }
+        if (Boolean.TRUE.equals(c.readonly()) && !display) {
+            e.append(pad).append("[readOnly]=\"true\"\n");
+        }
+        if (c.maxLength() != null && !display && "string".equals(mapping.value())
+                && ("TextField".equals(mapping.component()) || "TextArea".equals(mapping.component()))) {
+            e.append(pad).append("[maxLength]=\"").append(c.maxLength()).append("\"\n");
+        }
+        if (c.helpText() != null && !c.helpText().isBlank()) {
+            e.append(pad).append("[helpText]=\"t('").append(key).append('.').append(name).append("Help')\"\n");
+        }
+        if (c.placeholder() != null && !c.placeholder().isBlank() && !display) {
+            e.append(pad).append("[placeholder]=\"t('").append(key).append('.').append(name).append("Placeholder')\"\n");
+        }
+        if (mapping.props() != null && !mapping.props().isBlank()) {
+            e.append(pad).append(mapping.props()).append('\n');
+        }
+        return e.append("        />\n").toString();
+    }
+
+    /**
+     * A Vue screen: a single-file component whose template uses the pack's components with v-model on the form values,
+     * the same texts, rules and testIDs as the JSX packs.
+     */
+    static Scaffold vueScreen(TargetPack pack, ScreenModel model, String module) {
+        Naming names = new Naming(model);
+        String key = camel(model.name());
+        Set<String> imports = new TreeSet<>(List.of("Button", "Screen", "Section"));
+        StringBuilder options = new StringBuilder();
+        StringBuilder initial = new StringBuilder();
+        StringBuilder rules = new StringBuilder();
+        StringBuilder sections = new StringBuilder();
+        List<String> ids = new ArrayList<>();
+        for (ScreenModel.Section section : model.sections()) {
+            sections.append("    <Section").append(section.title() == null || section.title().isBlank() ? ""
+                            : " :title=\"t('" + key + "." + names.section(section) + "')\"")
+                    .append(" :columns=\"").append(section.columns() == null ? 1 : section.columns()).append("\">\n");
+            for (ScreenModel.Component c : section.components()) {
+                TargetPack.ComponentMapping mapping = pack.components().getOrDefault(c.type(), pack.components().get("text"));
+                String name = names.field(c);
+                imports.add(mapping.component());
+                ids.add(c.id());
+                initial.append("  ").append(name).append(": ").append(initialValue(mapping, c)).append(",\n");
+                boolean display = "display".equals(c.type()) || "ReadOnlyField".equals(mapping.component());
+                boolean required = Boolean.TRUE.equals(c.required()) && !Boolean.TRUE.equals(c.readonly()) && !display
+                        && !"boolean".equals(mapping.value());
+                if (c.validations() != null && !c.validations().isEmpty()) {
+                    rules.append("  // From the spec: ").append(c.validations().stream().map(v -> "\"" + v + "\"").collect(Collectors.joining("; ")))
+                            .append(" (add a check: (value) => message when not valid)\n");
+                }
+                if (required || c.maxLength() != null || (c.validations() != null && !c.validations().isEmpty())) {
+                    rules.append("  ").append(name).append(": { label: t('").append(key).append('.').append(name).append("')")
+                            .append(required ? ", required: true" : "").append(c.maxLength() != null ? ", maxLength: " + c.maxLength() : "")
+                            .append(" },\n");
+                }
+                if (mapping.options()) {
+                    options.append("const ").append(name).append("Options");
+                    if ("account".equals(c.type())) {
+                        options.append(": string[] = []; // The customer's accounts (masked numbers): load them with the accounts API.\n");
+                    } else if (c.options() == null || c.options().isEmpty()) {
+                        options.append(": string[] = []; // Options: from the OBDX service or the spec.\n");
+                    } else {
+                        options.append(" = [").append(c.options().stream().map(ScreenScaffolder::quote).collect(Collectors.joining(", "))).append("];\n");
+                    }
+                }
+                sections.append(vueElement(mapping, c, name, key, display));
+            }
+            sections.append("    </Section>\n");
+        }
+        StringBuilder actions = new StringBuilder();
+        boolean submitUsed = false;
+        for (ScreenModel.ActionButton action : model.actions()) {
+            ids.add(action.id());
+            String kind = action.kind() == null ? "secondary" : action.kind();
+            boolean submit = !submitUsed && "primary".equals(kind);
+            submitUsed |= submit;
+            actions.append("      <Button testID=").append(attribute(action.id())).append(" :label=\"t('").append(key).append('.')
+                    .append(names.action(action)).append("')\" variant=\"").append(kind).append('"')
+                    .append(submit ? " :busy=\"busy\" @press=\"submit\"" : " @press=\"emit('action', " + quote(action.id()).replace("\"", "&quot;") + ")\"")
+                    .append(" />\n");
+        }
+        Map<String, String> values = new LinkedHashMap<>();
+        values.put("imports", String.join(", ", imports));
+        values.put("optionLists", options.toString());
+        values.put("initialValues", initial.toString());
+        values.put("rules", rules.toString());
+        values.put("sections", sections.toString());
+        values.put("actions", actions.toString());
+        values.putAll(common(model, module));
+        return new Scaffold("screen", fill(pack.templates().get("screen"), values, Map.of()), List.copyOf(ids));
+    }
+
+    /** One field in a Vue template: the pack's component with v-model on the form and its props bound to the texts. */
+    private static String vueElement(TargetPack.ComponentMapping mapping, ScreenModel.Component c, String name, String key, boolean display) {
+        String pad = "        ";
+        StringBuilder e = new StringBuilder("      <").append(mapping.component()).append('\n');
+        e.append(pad).append("testID=").append(attribute(c.id())).append('\n');
+        e.append(pad).append(":label=\"t('").append(key).append('.').append(name).append("')\"\n");
+        if (display) {
+            e.append(pad).append(":modelValue=\"form.values.").append(name).append("\"\n");
+        } else {
+            e.append(pad).append("v-model=\"form.values.").append(name).append("\"\n");
+            e.append(pad).append(":error=\"form.errors.").append(name).append("\"\n");
+        }
+        if (mapping.options()) {
+            e.append(pad).append(":options=\"").append(name).append("Options\"\n");
+        }
+        if (Boolean.TRUE.equals(c.required()) && !display) {
+            e.append(pad).append("required\n");
+        }
+        if (Boolean.TRUE.equals(c.readonly()) && !display) {
+            e.append(pad).append(":readOnly=\"true\"\n");
+        }
+        if (c.maxLength() != null && !display && "string".equals(mapping.value())) {
+            e.append(pad).append(":maxLength=\"").append(c.maxLength()).append("\"\n");
+        }
+        if (c.helpText() != null && !c.helpText().isBlank()) {
+            e.append(pad).append(":helpText=\"t('").append(key).append('.').append(name).append("Help')\"\n");
+        }
+        if (c.placeholder() != null && !c.placeholder().isBlank() && !display) {
+            e.append(pad).append(":placeholder=\"t('").append(key).append('.').append(name).append("Placeholder')\"\n");
+        }
+        if (mapping.props() != null && !mapping.props().isBlank()) {
+            e.append(pad).append(mapping.props()).append('\n');
+        }
+        return e.append("      />\n").toString();
+    }
+
+    /**
+     * The Android screen of a native pack: a Jetpack Compose function whose body uses the pack's composables, with the
+     * values in a FormModel, the same texts, rules and test tags (the Screen Model ids) as the other packs.
+     */
+    static Scaffold kotlinScreen(TargetPack pack, ScreenModel model, String module) {
+        return nativeScreen(pack, model, module, false);
+    }
+
+    /** The iOS screen of a native pack: a SwiftUI view with the same fields, texts, rules and identifiers. */
+    static Scaffold swiftScreen(TargetPack pack, ScreenModel model, String module) {
+        return nativeScreen(pack, model, module, true);
+    }
+
+    private static Scaffold nativeScreen(TargetPack pack, ScreenModel model, String module, boolean swift) {
+        Naming names = new Naming(model);
+        String key = camel(model.name());
+        java.util.function.Function<String, String> literal = swift ? ScreenScaffolder::swiftQuote : ScreenScaffolder::kotlinQuote;
+        String in = swift ? "        " : "                ";
+        StringBuilder options = new StringBuilder();
+        StringBuilder initial = new StringBuilder();
+        StringBuilder rules = new StringBuilder();
+        StringBuilder sections = new StringBuilder();
+        List<String> ids = new ArrayList<>();
+        for (ScreenModel.Section section : model.sections()) {
+            String title = section.title() == null || section.title().isBlank() ? "" : "t(\"" + key + "." + names.section(section) + "\"), ";
+            int columns = section.columns() == null ? 1 : section.columns();
+            sections.append(swift ? "            BxSection(" + (title.isEmpty() ? "" : "title: " + title) + "columns: " + columns + ") {\n"
+                    : "        BxSection(" + (title.isEmpty() ? "" : "title = " + title) + "columns = " + columns + ") {\n");
+            for (ScreenModel.Component c : section.components()) {
+                TargetPack.ComponentMapping mapping = pack.components().getOrDefault(c.type(), pack.components().get("text"));
+                String name = names.field(c);
+                ids.add(c.id());
+                initial.append(in).append(literal.apply(name)).append(swift ? ": " : " to ").append(nativeInitial(mapping, c, swift)).append(",\n");
+                boolean display = "display".equals(c.type()) || "BxReadOnlyField".equals(mapping.component());
+                boolean required = Boolean.TRUE.equals(c.required()) && !Boolean.TRUE.equals(c.readonly()) && !display
+                        && !"boolean".equals(mapping.value());
+                if (c.validations() != null && !c.validations().isEmpty()) {
+                    rules.append(in).append("// From the spec: ").append(c.validations().stream().map(v -> "\"" + v + "\"").collect(Collectors.joining("; ")))
+                            .append(swift ? " (add check: { value in message when not valid })\n" : " (add check = { value -> message when not valid })\n");
+                }
+                if (required || c.maxLength() != null || (c.validations() != null && !c.validations().isEmpty())) {
+                    String eq = swift ? ": " : " = ";
+                    rules.append(in).append(literal.apply(name)).append(swift ? ": " : " to ").append("FieldRule(label").append(eq).append("t(\"")
+                            .append(key).append('.').append(name).append("\")").append(required ? ", required" + eq + "true" : "")
+                            .append(c.maxLength() != null ? ", maxLength" + eq + c.maxLength() : "").append("),\n");
+                }
+                if (mapping.options()) {
+                    String list = c.options() == null || c.options().isEmpty() ? null : c.options().stream().map(literal).collect(Collectors.joining(", "));
+                    String note = "account".equals(c.type()) ? " // The customer's accounts (masked numbers): load them with the accounts API.\n"
+                            : list == null ? " // Options: from the OBDX service or the spec.\n" : "\n";
+                    options.append(swift ? "    private let " + name + "Options: [String] = [" + (list == null ? "" : list) + "]"
+                            : "    val " + name + "Options = " + (list == null ? "emptyList<String>()" : "listOf(" + list + ")")).append(note);
+                }
+                sections.append(nativeElement(mapping, c, name, key, display, swift));
+            }
+            sections.append(swift ? "            }\n" : "        }\n");
+        }
+        StringBuilder actions = new StringBuilder();
+        boolean submitUsed = false;
+        for (ScreenModel.ActionButton action : model.actions()) {
+            ids.add(action.id());
+            String kind = action.kind() == null ? "secondary" : action.kind();
+            boolean submit = !submitUsed && "primary".equals(kind);
+            submitUsed |= submit;
+            String variant = "primary".equals(kind) ? "primary" : "link".equals(kind) ? "link" : "secondary";
+            String label = "t(\"" + key + "." + names.action(action) + "\")";
+            if (swift) {
+                actions.append("            BxButton(testID: ").append(literal.apply(action.id())).append(", label: ").append(label).append(", variant: .").append(variant)
+                        .append(submit ? ", busy: busy, action: submit)\n" : ", action: { onAction(" + literal.apply(action.id()) + ") })\n");
+            } else {
+                actions.append("            BxButton(testTag = ").append(literal.apply(action.id())).append(", label = ").append(label).append(", variant = BxVariant.")
+                        .append(Character.toUpperCase(variant.charAt(0))).append(variant.substring(1))
+                        .append(submit ? ", busy = busy, onClick = { submit() })\n" : ", onClick = { onAction(" + literal.apply(action.id()) + ") })\n");
+            }
+        }
+        if (swift) {
+            // An empty Swift dictionary is written [:]
+            for (StringBuilder dictionary : List.of(initial, rules)) {
+                if (dictionary.isEmpty()) {
+                    dictionary.append(in).append(":\n");
+                }
+            }
+        }
+        Map<String, String> values = new LinkedHashMap<>();
+        values.put("optionLists", options.toString());
+        values.put("initialValues", initial.toString());
+        values.put("rules", rules.toString());
+        values.put("sections", sections.toString());
+        values.put("actions", actions.toString());
+        values.putAll(common(model, module));
+        return new Scaffold("screen", fill(pack.templates().get(swift ? "screenIos" : "screen"), values, Map.of()), List.copyOf(ids));
+    }
+
+    /**
+     * One field of a native screen: the pack's composable (named arguments) or SwiftUI view (its arguments in the order
+     * the starter's initializers declare them: testID, label, value, error, options, required, readOnly, maxLength,
+     * helpText, placeholder).
+     */
+    private static String nativeElement(TargetPack.ComponentMapping mapping, ScreenModel.Component c, String name, String key, boolean display,
+                                        boolean swift) {
+        String getter = switch (mapping.value()) {
+            case "boolean" -> "flag";
+            case "number" -> "number";
+            case "list" -> "list";
+            default -> "text";
+        };
+        String field = swift ? swiftQuote(name) : kotlinQuote(name);
+        String eq = swift ? ": " : " = ";
+        List<String> args = new ArrayList<>();
+        args.add((swift ? "testID" : "testTag") + eq + (swift ? swiftQuote(c.id()) : kotlinQuote(c.id())));
+        args.add("label" + eq + "t(\"" + key + "." + name + "\")");
+        if (display) {
+            args.add("value" + eq + "form.display(" + field + ")");
+        } else if (swift) {
+            args.add("value: form." + getter + "(" + field + ")");
+            args.add("error: form.error(" + field + ")");
+        } else {
+            args.add("value = form." + getter + "(" + field + ")");
+            args.add("onValueChange = { form.set(" + field + ", it) }");
+            args.add("error = form.error(" + field + ")");
+        }
+        if (mapping.options()) {
+            args.add("options" + eq + name + "Options");
+        }
+        if (Boolean.TRUE.equals(c.required()) && !display) {
+            args.add("required" + eq + "true");
+        }
+        if (Boolean.TRUE.equals(c.readonly()) && !display) {
+            args.add("readOnly" + eq + "true");
+        }
+        if (c.maxLength() != null && !display && "string".equals(mapping.value())) {
+            args.add("maxLength" + eq + c.maxLength());
+        }
+        if (c.helpText() != null && !c.helpText().isBlank()) {
+            args.add("helpText" + eq + "t(\"" + key + "." + name + "Help\")");
+        }
+        if (c.placeholder() != null && !c.placeholder().isBlank() && !display) {
+            args.add("placeholder" + eq + "t(\"" + key + "." + name + "Placeholder\")");
+        }
+        if (mapping.props() != null && !mapping.props().isBlank()) {
+            args.add(mapping.props());
+        }
+        String pad = swift ? "                    " : "                ";
+        String open = swift ? "                " : "            ";
+        // Swift takes no comma after the last argument; Kotlin does, and keeps diffs small with it
+        return open + mapping.component() + "(\n" + pad + String.join(",\n" + pad, args) + (swift ? "\n" : ",\n") + open + ")\n";
+    }
+
+    private static String nativeInitial(TargetPack.ComponentMapping mapping, ScreenModel.Component c, boolean swift) {
+        String value = c.defaultValue() == null ? "" : c.defaultValue().strip();
+        java.util.function.Function<String, String> literal = swift ? ScreenScaffolder::swiftQuote : ScreenScaffolder::kotlinQuote;
+        return switch (mapping.value()) {
+            case "boolean" -> String.valueOf(value.equalsIgnoreCase("true") || value.equalsIgnoreCase("on") || value.equalsIgnoreCase("yes"));
+            case "number" -> value.matches("-?[0-9]+(\\.[0-9]+)?") ? (value.contains(".") ? value : value + ".0") : (swift ? "Double?.none" : "null");
+            case "list" -> (swift ? "[" : "listOf(") + (value.isEmpty() ? "" : java.util.Arrays.stream(value.split(",")).map(String::strip).map(literal)
+                    .collect(Collectors.joining(", "))) + (swift ? "] as [String]" : ")");
+            default -> literal.apply(value);
+        };
+    }
+
+    /** A Kotlin string literal: double quotes, with backslash, quote and $ escaped. */
+    static String kotlinQuote(String text) {
+        return "\"" + (text == null ? "" : text).replace("\\", "\\\\").replace("\"", "\\\"").replace("$", "\\$") + "\"";
+    }
+
+    /** A Swift string literal: double quotes, with backslash and quote escaped (a backslash also starts interpolation). */
+    static String swiftQuote(String text) {
+        return "\"" + (text == null ? "" : text).replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+    }
+
+    /**
+     * A Flutter screen: a StatefulWidget whose build uses the pack's widgets, with the values in a FormModel, the same
+     * texts, rules and keys (the Screen Model ids, as ValueKey) as the other packs.
+     */
+    static Scaffold dartScreen(TargetPack pack, ScreenModel model, String module) {
+        Naming names = new Naming(model);
+        String key = camel(model.name());
+        StringBuilder options = new StringBuilder();
+        StringBuilder initial = new StringBuilder();
+        StringBuilder rules = new StringBuilder();
+        StringBuilder sections = new StringBuilder();
+        List<String> ids = new ArrayList<>();
+        for (ScreenModel.Section section : model.sections()) {
+            sections.append("          BxSection(\n");
+            if (section.title() != null && !section.title().isBlank()) {
+                sections.append("            title: t('").append(key).append('.').append(names.section(section)).append("'),\n");
+            }
+            sections.append("            columns: ").append(section.columns() == null ? 1 : section.columns()).append(",\n");
+            sections.append("            children: [\n");
+            for (ScreenModel.Component c : section.components()) {
+                TargetPack.ComponentMapping mapping = pack.components().getOrDefault(c.type(), pack.components().get("text"));
+                String name = names.field(c);
+                ids.add(c.id());
+                initial.append("      '").append(name).append("': ").append(dartInitial(mapping, c)).append(",\n");
+                boolean display = "display".equals(c.type()) || "BxReadOnlyField".equals(mapping.component());
+                boolean required = Boolean.TRUE.equals(c.required()) && !Boolean.TRUE.equals(c.readonly()) && !display
+                        && !"boolean".equals(mapping.value());
+                if (c.validations() != null && !c.validations().isEmpty()) {
+                    rules.append("      // From the spec: ").append(c.validations().stream().map(v -> "\"" + v + "\"").collect(Collectors.joining("; ")))
+                            .append(" (add check: (value) => message when not valid)\n");
+                }
+                if (required || c.maxLength() != null || (c.validations() != null && !c.validations().isEmpty())) {
+                    rules.append("      '").append(name).append("': FieldRule(label: t('").append(key).append('.').append(name).append("')")
+                            .append(required ? ", required: true" : "").append(c.maxLength() != null ? ", maxLength: " + c.maxLength() : "")
+                            .append("),\n");
+                }
+                if (mapping.options()) {
+                    options.append("  final ").append(name).append("Options");
+                    if ("account".equals(c.type())) {
+                        options.append(" = <String>[]; // The customer's accounts (masked numbers): load them with the accounts API.\n");
+                    } else if (c.options() == null || c.options().isEmpty()) {
+                        options.append(" = <String>[]; // Options: from the OBDX service or the spec.\n");
+                    } else {
+                        options.append(" = const <String>[").append(c.options().stream().map(ScreenScaffolder::dartQuote).collect(Collectors.joining(", "))).append("];\n");
+                    }
+                }
+                sections.append(dartElement(mapping, c, name, key, display));
+            }
+            sections.append("            ],\n          ),\n");
+        }
+        StringBuilder actions = new StringBuilder();
+        boolean submitUsed = false;
+        for (ScreenModel.ActionButton action : model.actions()) {
+            ids.add(action.id());
+            String kind = action.kind() == null ? "secondary" : action.kind();
+            boolean submit = !submitUsed && "primary".equals(kind);
+            submitUsed |= submit;
+            String variant = "primary".equals(kind) ? "primary" : "link".equals(kind) ? "link" : "secondary";
+            actions.append("          BxButton(\n            key: const ValueKey(").append(dartQuote(action.id())).append("),\n")
+                    .append("            label: t('").append(key).append('.').append(names.action(action)).append("'),\n")
+                    .append("            variant: BxVariant.").append(variant).append(",\n")
+                    .append(submit ? "            busy: busy,\n            onPressed: submit,\n"
+                            : "            onPressed: () => widget.onAction?.call(" + dartQuote(action.id()) + "),\n")
+                    .append("          ),\n");
+        }
+        Map<String, String> values = new LinkedHashMap<>();
+        values.put("optionLists", options.toString());
+        values.put("initialValues", initial.toString());
+        values.put("rules", rules.toString());
+        values.put("sections", sections.toString());
+        values.put("actions", actions.toString());
+        values.putAll(common(model, module));
+        return new Scaffold("screen", fill(pack.templates().get("screen"), values, Map.of()), List.copyOf(ids));
+    }
+
+    /** One field in a Flutter build: the pack's widget with its value and onChanged on the form and the texts. */
+    private static String dartElement(TargetPack.ComponentMapping mapping, ScreenModel.Component c, String name, String key, boolean display) {
+        String pad = "                ";
+        String getter = switch (mapping.value()) {
+            case "boolean" -> "flag";
+            case "number" -> "number";
+            case "list" -> "list";
+            default -> "text";
+        };
+        StringBuilder e = new StringBuilder("              ").append(mapping.component()).append("(\n");
+        e.append(pad).append("key: const ValueKey(").append(dartQuote(c.id())).append("),\n");
+        e.append(pad).append("label: t('").append(key).append('.').append(name).append("'),\n");
+        e.append(pad).append("value: form.").append(getter).append("('").append(name).append("'),\n");
+        if (!display) {
+            e.append(pad).append("onChanged: (value) => form.set('").append(name).append("', value),\n");
+            e.append(pad).append("error: form.error('").append(name).append("'),\n");
+        }
+        if (mapping.options()) {
+            e.append(pad).append("options: ").append(name).append("Options,\n");
+        }
+        if (Boolean.TRUE.equals(c.required()) && !display) {
+            e.append(pad).append("required: true,\n");
+        }
+        if (Boolean.TRUE.equals(c.readonly()) && !display) {
+            e.append(pad).append("readOnly: true,\n");
+        }
+        if (c.maxLength() != null && !display && "string".equals(mapping.value())
+                && ("BxTextField".equals(mapping.component()) || "BxTextArea".equals(mapping.component()))) {
+            e.append(pad).append("maxLength: ").append(c.maxLength()).append(",\n");
+        }
+        if (c.helpText() != null && !c.helpText().isBlank()) {
+            e.append(pad).append("helpText: t('").append(key).append('.').append(name).append("Help'),\n");
+        }
+        if (c.placeholder() != null && !c.placeholder().isBlank() && !display) {
+            e.append(pad).append("placeholder: t('").append(key).append('.').append(name).append("Placeholder'),\n");
+        }
+        if (mapping.props() != null && !mapping.props().isBlank()) {
+            e.append(pad).append(mapping.props()).append(",\n");
+        }
+        return e.append("              ),\n").toString();
+    }
+
+    private static String dartInitial(TargetPack.ComponentMapping mapping, ScreenModel.Component c) {
+        String value = c.defaultValue() == null ? "" : c.defaultValue().strip();
+        return switch (mapping.value()) {
+            case "boolean" -> String.valueOf(value.equalsIgnoreCase("true") || value.equalsIgnoreCase("on") || value.equalsIgnoreCase("yes"));
+            case "number" -> value.matches("-?[0-9]+(\\.[0-9]+)?") ? (value.contains(".") ? value : value + ".0") : "null";
+            case "list" -> "<String>[" + (value.isEmpty() ? "" : java.util.Arrays.stream(value.split(",")).map(String::strip)
+                    .map(ScreenScaffolder::dartQuote).collect(Collectors.joining(", "))) + "]";
+            default -> dartQuote(value);
+        };
+    }
+
+    /** A Dart string literal: single quotes, with backslash, quote and $ escaped. */
+    static String dartQuote(String text) {
+        return "'" + (text == null ? "" : text).replace("\\", "\\\\").replace("'", "\\'").replace("$", "\\$") + "'";
+    }
+
     public static Scaffold test(TargetPack pack, ScreenModel model) {
+        return test(pack, model, null);
+    }
+
+    public static Scaffold test(TargetPack pack, ScreenModel model, String module) {
+        return test(pack, model, module, "test");
+    }
+
+    /** The test of a screen from the pack's template of that name (test, or testIos for the iOS view of a native pack). */
+    static Scaffold test(TargetPack pack, ScreenModel model, String module, String template) {
         List<String> ids = new ArrayList<>();
         int required = 0;
         for (ScreenModel.Section section : model.sections()) {
@@ -173,11 +743,13 @@ public final class ScreenScaffolder {
         }
         model.actions().forEach(a -> ids.add(a.id()));
         String primary = model.actions().stream().filter(a -> "primary".equals(a.kind())).map(ScreenModel.ActionButton::id).findFirst().orElse(null);
-        Map<String, String> values = new LinkedHashMap<>(common(model, null));
-        values.put("componentIds", ids.stream().map(ScreenScaffolder::quote).collect(Collectors.joining(", ")));
-        values.put("primaryAction", primary == null ? "" : primary.replace("'", "\\'"));
+        Map<String, String> values = new LinkedHashMap<>(common(model, module));
+        java.util.function.Function<String, String> literal = pack.isDart() ? ScreenScaffolder::dartQuote
+                : "testIos".equals(template) ? ScreenScaffolder::swiftQuote : pack.isNative() ? ScreenScaffolder::kotlinQuote : ScreenScaffolder::quote;
+        values.put("componentIds", ids.stream().map(literal).collect(Collectors.joining(", ")));
+        values.put("primaryAction", primary == null ? "" : pack.isNative() ? primary.replace("\\", "\\\\").replace("\"", "\\\"") : primary.replace("'", "\\'"));
         values.put("requiredCount", String.valueOf(required));
-        return new Scaffold("test", fill(pack.templates().get("test"), values, Map.of("requiredTest", required > 0 && primary != null)), List.of());
+        return new Scaffold("test", fill(pack.templates().get(template), values, Map.of("requiredTest", required > 0 && primary != null)), List.of());
     }
 
     /** The texts file with each model's block (title, sections, fields, help, placeholders, actions) added or replaced. */
@@ -257,6 +829,8 @@ public final class ScreenScaffolder {
         return switch (mapping.value()) {
             // "as boolean" keeps TypeScript from typing the field as the literal true or false.
             case "boolean" -> (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("on") || value.equalsIgnoreCase("yes")) + " as boolean";
+            // A number field (an amount) starts empty unless the spec gives a number
+            case "number" -> value.matches("-?[0-9]+(\\.[0-9]+)?") ? value + " as number | null" : "null as number | null";
             case "list" -> value.isEmpty() ? "[] as string[]"
                     : "[" + java.util.Arrays.stream(value.split(",")).map(String::strip).map(ScreenScaffolder::quote).collect(Collectors.joining(", "))
                     + "] as string[]";
@@ -267,10 +841,14 @@ public final class ScreenScaffolder {
     private static Map<String, String> common(ScreenModel model, String module) {
         Map<String, String> values = new LinkedHashMap<>();
         values.put("Screen", pascal(model.name()));
+        values.put("selector", kebab(model.name()));
         values.put("screenKey", camel(model.name()));
+        values.put("screen_file", snake(model.name()));
         values.put("title", oneLine(model.title() == null || model.title().isBlank() ? model.name() : model.title()));
         values.put("modelName", oneLine(model.name()).replace("\"", "'"));
         values.put("module", module == null ? "" : module);
+        // A Kotlin package name: the module folder without the characters a package cannot have
+        values.put("modulePackage", module == null || module.isBlank() ? "app" : module.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_]", "_"));
         return values;
     }
 
@@ -292,13 +870,13 @@ public final class ScreenScaffolder {
 
     private static Pattern pattern(String structure) {
         String regex = Pattern.quote(structure).replace("{module}", "\\E(?<module>[A-Za-z0-9_-]+)\\Q")
-                .replace("{Screen}", "\\E(?<screen>[A-Za-z0-9]+)\\Q");
+                .replace("{Screen}", "\\E(?<screen>[A-Za-z0-9]+)\\Q").replace("{screen_file}", "\\E(?<screen>[a-z0-9_]+)\\Q");
         return Pattern.compile(regex);
     }
 
     private static ScreenModel byName(List<ScreenModel> models, String screen) {
         for (ScreenModel model : models) {
-            if (pascal(model.name()).equals(screen) || (model.title() != null && pascal(model.title()).equals(screen))) {
+            if (pascal(model.name()).equals(screen) || snake(model.name()).equals(screen) || (model.title() != null && pascal(model.title()).equals(screen))) {
                 return model;
             }
         }

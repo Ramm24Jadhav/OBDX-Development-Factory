@@ -80,6 +80,9 @@ class DocumentTextExtractorTest {
                 .hasMessageContaining("No text found");
         assertThatThrownBy(() -> extractor.extract("broken.docx", "not a zip".getBytes(StandardCharsets.UTF_8)))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageStartingWith("Could not read broken.docx");
+                .hasMessageStartingWith("Could not read broken.docx")
+                // what to do, not the library's message
+                .hasMessageContaining("save it again")
+                .hasMessageNotContaining("zip").hasMessageNotContaining("Exception");
     }
 }

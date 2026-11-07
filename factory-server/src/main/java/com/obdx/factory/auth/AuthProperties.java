@@ -14,6 +14,7 @@ import java.util.List;
  * @param adminUsers           usernames that are always administrators, to set up a new installation
  * @param initialAdminPassword password for the first local "admin" account; if empty, a random one is logged once
  * @param maxFailedLogins      failed sign-ins in a row before a username is locked for lockDuration
+ * @param maxFailedLoginsPerAddress failed sign-ins from one address (any usernames) before each further one waits longer
  */
 @ConfigurationProperties(prefix = "factory.auth")
 public record AuthProperties(
@@ -22,6 +23,7 @@ public record AuthProperties(
         @DefaultValue("") String initialAdminPassword,
         @DefaultValue("5") int maxFailedLogins,
         @DefaultValue("15m") Duration lockDuration,
+        @DefaultValue("20") int maxFailedLoginsPerAddress,
         @DefaultValue Ldap ldap,
         @DefaultValue Oidc oidc,
         @DefaultValue Saml saml) {

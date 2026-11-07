@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Screen states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+:root{--fx-bg:#fafafc;--fx-surface-2:#f8fafc;--fx-surface-3:#f1f5f9;--fx-border:#e5e7eb;--fx-border-strong:#cbd5e1;--fx-text:#0f172a;--fx-text-body:#334155;--fx-text-muted:#64748b;--fx-primary:#4f46e5;--fx-primary-soft:#eef2ff;--fx-primary-text:#4338ca;--fx-success:#10b981;--fx-success-soft:#ecfdf5;--fx-success-text:#047857;--fx-warning-soft:#fffbeb;--fx-warning-text:#b45309;--fx-danger-soft:#fef2f2;--fx-danger-text:#b91c1c;--fx-radius:8px;--fx-radius-lg:12px;--fx-radius-xl:16px;--fx-radius-pill:999px}
+a{color:var(--fx-primary-text)}
+</style>
+</helmet>
+<div style="width:1440px;height:1160px;box-sizing:border-box;padding:28px 32px;display:flex;flex-direction:column;gap:16px;background:var(--fx-bg);font-family:Inter,'Segoe UI',system-ui,sans-serif;font-size:13px;color:var(--fx-text-body)">
+  <div style="display:flex;flex-direction:column;gap:4px">
+    <span style="font-size:12px;font-weight:600;letter-spacing:.08em;color:var(--fx-text-muted)">MODERNIZATION · STATES ON EVERY SCREEN</span>
+    <h1 style="margin:0;font-size:26px;line-height:32px;font-weight:700;color:var(--fx-text)">Empty, running, failed, and not allowed</h1>
+    <p style="margin:0;max-width:960px">Each screen shows one of these instead of empty panels. They follow the factory's rules: an empty state is an icon, one sentence and one action; a failure says what went wrong and what to do; running work keeps the page usable.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px">
+    <section aria-label="Empty" style="background:#ffffff;border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:28px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;min-height:300px">
+      <span style="height:22px;padding:0 9px;border-radius:var(--fx-radius-pill);background:var(--fx-surface-3);font-size:11px;font-weight:700;display:inline-flex;align-items:center;align-self:flex-start">Empty</span>
+      <span aria-hidden="true" style="width:56px;height:56px;border-radius:50%;background:var(--fx-primary-soft);color:var(--fx-primary-text);display:inline-flex;align-items:center;justify-content:center;font-size:24px;margin-top:20px">⌕</span>
+      <b style="font-size:16px;color:var(--fx-text)">The code has not been analysed yet</b>
+      <span>The analysis finds the modules, screens and components to modernize.</span>
+      <button type="button" style="margin-top:6px;height:38px;padding:0 16px;border-radius:var(--fx-radius);border:0;background:var(--fx-primary);color:#ffffff;font:inherit;font-weight:600">Run the first analysis</button>
+    </section>
+    <section aria-label="Running" style="background:#ffffff;border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:20px;display:flex;flex-direction:column;gap:10px;min-height:300px">
+      <span style="height:22px;padding:0 9px;border-radius:var(--fx-radius-pill);background:var(--fx-primary-soft);color:var(--fx-primary-text);font-size:11px;font-weight:700;display:inline-flex;align-items:center;align-self:flex-start">Running</span>
+      <span aria-hidden="true" style="height:3px;border-radius:2px;background:linear-gradient(90deg,var(--fx-primary) 0 45%,var(--fx-surface-3) 45% 100%)"></span>
+      <b style="font-size:16px;color:var(--fx-text)">Analysing bank-b-25 at r1490</b>
+      <span style="display:flex;gap:8px"><span style="color:var(--fx-success-text)" aria-hidden="true">✓</span>Read 214 screens</span>
+      <span style="display:flex;gap:8px"><span style="color:var(--fx-success-text)" aria-hidden="true">✓</span>Found 18 modules</span>
+      <span style="display:flex;gap:8px;font-weight:600;color:var(--fx-primary-text)"><span aria-hidden="true">…</span>Counting components (1,102 so far)</span>
+      <span style="display:flex;gap:8px;color:var(--fx-text-muted)"><span aria-hidden="true">○</span>Checking OBDX rules</span>
+      <span style="margin-top:auto;font-size:12px;color:var(--fx-text-muted)">You can leave this page. The bell tells you when it is done. The last results stay visible meanwhile.</span>
+    </section>
+    <section aria-label="Failed" style="background:#ffffff;border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:20px;display:flex;flex-direction:column;gap:10px;min-height:300px">
+      <span style="height:22px;padding:0 9px;border-radius:var(--fx-radius-pill);background:var(--fx-danger-soft);color:var(--fx-danger-text);font-size:11px;font-weight:700;display:inline-flex;align-items:center;align-self:flex-start">Failed</span>
+      <div role="alert" style="padding:12px;border-radius:var(--fx-radius);background:var(--fx-danger-soft);color:var(--fx-danger-text);display:flex;flex-direction:column;gap:6px">
+        <b>The analysis stopped: SVN asked for a password.</b>
+        <span>The saved SVN password for bank-b-25 is no longer accepted. Update it, then run the analysis again.</span>
+      </div>
+      <div style="display:flex;gap:8px"><button type="button" style="height:36px;padding:0 14px;border-radius:var(--fx-radius);border:0;background:var(--fx-primary);color:#ffffff;font:inherit;font-weight:600">Open Integrations</button><button type="button" style="height:36px;padding:0 14px;border-radius:var(--fx-radius);border:1px solid var(--fx-border-strong);background:#ffffff;color:var(--fx-text);font:inherit;font-weight:600">Try again</button></div>
+      <span style="margin-top:auto;font-size:12px;color:var(--fx-text-muted)">Shown as the page's one problem bar. The results from the last good analysis stay below it, marked with their date.</span>
+    </section>
+    <section aria-label="Not allowed" style="background:#ffffff;border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:20px;display:flex;flex-direction:column;gap:10px;min-height:300px">
+      <span style="height:22px;padding:0 9px;border-radius:var(--fx-radius-pill);background:var(--fx-warning-soft);color:var(--fx-warning-text);font-size:11px;font-weight:700;display:inline-flex;align-items:center;align-self:flex-start">Not allowed</span>
+      <b style="font-size:16px;color:var(--fx-text)">You can look, but not start a modernization</b>
+      <span>Starting a conversion, approving a plan or delivering to SVN needs the Manage code permission in this workspace.</span>
+      <button type="button" disabled style="height:36px;padding:0 14px;border-radius:var(--fx-radius);border:0;background:var(--fx-surface-3);color:var(--fx-text-muted);font:inherit;font-weight:600;align-self:flex-start" title="Needs the Manage code permission">Start a conversion</button>
+      <span>Ask an administrator, or see who has it on Administration › Workspace access.</span>
+      <span style="margin-top:auto;font-size:12px;color:var(--fx-text-muted)">Buttons stay visible but greyed out, with the reason in their tooltip, so people know the action exists.</span>
+    </section>
+  </div>
+
+  <section aria-labelledby="perTitle" style="flex:1;background:#ffffff;border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);overflow:hidden">
+    <h2 id="perTitle" style="margin:0;padding:12px 16px;font-size:15px;font-weight:700;color:var(--fx-text);border-bottom:1px solid var(--fx-border)">What each screen says</h2>
+    <div style="display:grid;grid-template-columns:1.1fr 1.6fr 1.6fr 1.6fr 1.3fr;gap:10px;padding:8px 16px;background:var(--fx-surface-2);font-size:12px;font-weight:700;color:var(--fx-text)"><span>Screen</span><span>Empty</span><span>Running</span><span>Failed</span><span>Not allowed</span></div>
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="11">
+      <div style="display:grid;grid-template-columns:1.1fr 1.6fr 1.6fr 1.6fr 1.3fr;gap:10px;padding:8px 16px;border-top:1px solid var(--fx-border);line-height:17px">
+        <b style="color:var(--fx-text);font-weight:600">{{r.s}}</b><span>{{r.e}}</span><span>{{r.r}}</span><span>{{r.f}}</span><span>{{r.n}}</span>
+      </div>
+    </sc-for>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1160}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const R = [
+      ['Overview', 'No analysis yet: Run the first analysis', 'Analysis steps with a progress bar', 'Problem bar with the cause and its fix', 'Read only; Analyze again greyed out'],
+      ['Choose a path', 'Needs an analysis first: Run it', 'Continue waits until the analysis is done', 'Save failed: try again', 'Path cards shown, Continue greyed out'],
+      ['Component inventory', 'No JET components found: check the code folder', 'Counts fill in as they are found', 'Inventory not read: Analyze again', 'Add to the plan greyed out'],
+      ['Component mapping', 'Choose a component in the inventory', 'Preview loads in place', 'Mapping not found in the pack: update the factory', 'Make the change greyed out'],
+      ['Upgrade plan', 'No components yet: Add from the inventory', 'Saving the plan', 'A wave could not start: see its change', 'Start wave greyed out'],
+      ['Technology catalogue', 'Never empty: the packs ship with the factory', 'n/a', 'Pack list not loaded: reload', 'Use greyed out'],
+      ['Migration planner', 'No technology chosen: Open the catalogue', 'Reading the module dependencies', 'Plan not saved: try again', 'Make the plan greyed out'],
+      ['Migration workspace', 'No module started: Open the planner', 'Steps list shows the running step', 'Step failed with the model or file message: Write it again', 'Write it again greyed out'],
+      ['Validation', 'No build yet: Run the tests', 'Pipeline step pulses; Jenkins console link', 'Jenkins build failed: first error and Open the log', 'Run again greyed out'],
+      ['Review and approval', 'Nothing to review yet', 'Delivering to SVN', 'SVN refused the commit: its message and Try again', 'Approve greyed out unless you are the approver'],
+      ['History', 'No runs yet: Start a modernization', 'Running rows show Running', 'Failed rows open their run details', 'Read only']
+    ];
+    return { rows: R.map((x) => ({ s: x[0], e: x[1], r: x[2], f: x[3], n: x[4] })) };
+  }
+}
+</script>
+</body>
+</html>

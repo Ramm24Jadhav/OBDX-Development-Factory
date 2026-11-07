@@ -1,0 +1,443 @@
+<div class="factory-pg factory-is">
+  <div class="factory-pg-head">
+    <div>
+      <h1>Issues</h1>
+      <p>When a bank reports an error, describe it and add the logs and screenshots. The factory finds the evidence, looks
+        it up in the bank's code and configuration and in the Oracle notes and manuals of the Library, and suggests the
+        cause and how to fix it. If it looks like a product defect, draft an Oracle Service Request.</p>
+    </div>
+  </div>
+
+  <oj-bind-if test="[[errorMessage()]]">
+    <div class="fx-alert fx-alert--danger factory-is-alert" id="issueError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+      <span class="fx-alert-text"><oj-bind-text value="[[errorMessage]]"></oj-bind-text></span></div>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[!workspaceId()]]">
+    <div class="fx-card fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span></span>Choose a workspace in the top bar.</div>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[workspaceId()]]">
+    <oj-bind-for-each data="[[repeated]]" as="g">
+      <template>
+        <div class="fx-alert fx-alert--warning factory-is-alert" role="status"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+          <span class="fx-alert-text"><oj-bind-text value="[[g.data.text]]"></oj-bind-text>
+            <button type="button" class="fx-btn fx-btn--link" on-click="[[g.data.show]]">Show them</button></span></div>
+      </template>
+    </oj-bind-for-each>
+
+    <oj-bind-if test="[[canFile()]]">
+      <section class="fx-card factory-is-new" aria-labelledby="newIssueTitle">
+        <h2 id="newIssueTitle">New issue</h2>
+        <div class="fx-form fx-form--2">
+          <fx-input id="issueTitle" label="Title (optional)" help="Leave empty to use the first line of the report." value="{{newTitle}}"></fx-input>
+          <fx-select id="issueEnvironment" label="Environment" options="[[environmentOptions]]" value="{{newEnvironment}}"></fx-select>
+        </div>
+        <fx-textarea id="issueDescription" label="What the bank reported" rows="3" value="{{newDescription}}"
+                     help="What the user did, what they saw, when it started, who is affected."></fx-textarea>
+        <fx-textarea id="issueLog" label="Log or stack trace (paste)" rows="6" mono value="{{newLog}}"></fx-textarea>
+        <div class="fx-field"><span class="fx-label" id="issueFilesLabel">Logs and screenshots</span>
+          <input type="file" id="issueFiles" class="fx-visually-hidden" multiple :accept="[[accepted]]" on-change="[[newFiles.selected]]">
+          <label for="issueFiles" id="chooseIssueFiles" :class="[[newFiles.css]]" aria-describedby="issueFilesLabel"
+                 on-dragover="[[newFiles.dragOver]]" on-dragenter="[[newFiles.dragOver]]" on-dragleave="[[newFiles.dragLeave]]" on-drop="[[newFiles.drop]]">
+            <span class="factory-nav-icon factory-ico-upload" aria-hidden="true"></span>
+            <strong>Drop files here or choose them</strong>
+            <span>Logs (.log, .txt, .out, up to 5 MB) and screenshots (.png, .jpg, up to 10 MB), at most 10</span>
+          </label>
+          <oj-bind-if test="[[newFiles.rows().length > 0]]">
+            <ul class="factory-is-chosen" aria-label="Chosen files">
+              <oj-bind-for-each data="[[newFiles.rows]]" as="f"><template><li><span class="factory-nav-icon factory-ico-doc" aria-hidden="true"></span>
+                <span class="factory-is-name"><oj-bind-text value="[[f.data.name]]"></oj-bind-text></span>
+                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon" :aria-label="[['Remove ' + f.data.name]]" on-click="[[f.data.remove]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span></button></li></template></oj-bind-for-each>
+            </ul>
+          </oj-bind-if>
+        </div>
+        <p class="fx-muted factory-is-note">With a chat model on this computer (Ollama), customer data in screenshots is found
+          and blacked out, and only the blurred copy is kept. With a model on another server, screenshots are sent to it as
+          they are: crop out customer names and account numbers first. Passwords, tokens and card or account numbers in
+          text are masked before anything is sent.</p>
+        <div class="factory-btn-row">
+          <button type="button" id="submitIssue" class="fx-btn fx-btn--primary" on-click="[[submit]]" :disabled="[[!canSubmit()]]">Analyze issue</button>
+        </div>
+      </section>
+    </oj-bind-if>
+
+    <section class="fx-card factory-is-list" aria-labelledby="issueListTitle">
+      <h2 id="issueListTitle">All issues</h2>
+      <oj-bind-if test="[[groupFilter()]]">
+        <p class="fx-muted">Showing one group of issues with the same error.
+          <button type="button" id="clearGroupFilter" class="fx-btn fx-btn--link" on-click="[[clearGroupFilter]]">Show all issues</button></p>
+      </oj-bind-if>
+      <oj-bind-if test="[[rows().length === 0]]">
+        <div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span></span>
+          <oj-bind-text value="[[listLoading() ? 'Loading…' : 'No issues yet.']]"></oj-bind-text></div>
+      </oj-bind-if>
+      <oj-bind-if test="[[rows().length > 0]]">
+        <div class="fx-table-wrap"><table class="fx-table" id="issueTable">
+          <thead><tr><th scope="col">Title</th><th scope="col">Status</th><th scope="col">Category</th><th scope="col">Environment</th><th scope="col">Filed by</th><th scope="col">Updated</th></tr></thead>
+          <tbody>
+            <oj-bind-for-each data="[[rows]]" as="r">
+              <template><tr :aria-current="[[r.data.current]]">
+                <td><button type="button" class="fx-btn fx-btn--link factory-is-open" on-click="[[r.data.open]]"><oj-bind-text value="[[r.data.title]]"></oj-bind-text></button></td>
+                <td><span :class="[[r.data.status.css]]"><span :class="[[r.data.status.iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[r.data.status.text]]"></oj-bind-text></span></td>
+                <td><oj-bind-text value="[[r.data.category]]"></oj-bind-text></td>
+                <td><oj-bind-text value="[[r.data.environment]]"></oj-bind-text></td>
+                <td><oj-bind-text value="[[r.data.createdBy]]"></oj-bind-text></td>
+                <td><oj-bind-text value="[[r.data.updated]]"></oj-bind-text></td>
+              </tr></template>
+            </oj-bind-for-each>
+          </tbody>
+        </table></div>
+      </oj-bind-if>
+    </section>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[detail()]]">
+    <section class="fx-card factory-is-detail" id="issueDetail" aria-labelledby="issueDetailTitle">
+      <div class="factory-is-dhead">
+        <div>
+          <h2 id="issueDetailTitle"><oj-bind-text value="[[detail().title]]"></oj-bind-text></h2>
+          <p class="fx-muted">
+            <span :class="[[status().css]]"><span :class="[[status().iconCss]]" aria-hidden="true"></span><oj-bind-text value="[[status().text]]"></oj-bind-text></span>
+            <oj-bind-if test="[[detail().environment]]"> · <oj-bind-text value="[[detail().environment]]"></oj-bind-text></oj-bind-if>
+            · filed by <oj-bind-text value="[[detail().createdBy]]"></oj-bind-text>
+            <oj-bind-if test="[[detail().sharedKnowledgeId]]"> · shared as product knowledge</oj-bind-if>
+          </p>
+        </div>
+        <div class="factory-btn-row">
+          <oj-bind-if test="[[!analyzing()]]">
+            <button type="button" id="analyzeIssue" class="fx-btn fx-btn--secondary" on-click="[[analyze]]">Analyze again</button>
+            <button type="button" id="draftSr" class="fx-btn fx-btn--secondary" on-click="[[draftSr]]">Draft Oracle SR</button>
+          </oj-bind-if>
+          <oj-bind-if test="[[canShare() && !sharing()]]">
+            <button type="button" id="startShare" class="fx-btn fx-btn--secondary" on-click="[[startShare]]">Share as product knowledge</button>
+          </oj-bind-if>
+          <oj-bind-if test="[[canApprove() && !analyzing()]]">
+            <button type="button" id="deleteIssue" class="fx-btn fx-btn--ghost" on-click="[[remove]]">Delete</button>
+          </oj-bind-if>
+        </div>
+      </div>
+
+      <oj-bind-if test="[[detail().message]]">
+        <div :class="[[messageCss]]" id="issueMessage" role="status"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+          <span class="fx-alert-text"><oj-bind-text value="[[detail().message]]"></oj-bind-text></span></div>
+      </oj-bind-if>
+
+      <oj-bind-if test="[[fromBank()]]">
+        <div class="factory-is-box" id="bankBox">
+          <h3>From the bank</h3>
+          <p><oj-bind-text value="[[reporterText]]"></oj-bind-text></p>
+          <p class="fx-muted"><oj-bind-text value="[[releasedText]]"></oj-bind-text> The bank sees the summary and the steps marked
+            "Bank can do it", never the evidence, code or files.</p>
+          <oj-bind-if test="[[canReleaseNow()]]">
+            <div class="factory-btn-row"><button type="button" id="releaseIssue" class="fx-btn fx-btn--primary" on-click="[[release]]">Release to the bank</button></div>
+          </oj-bind-if>
+        </div>
+      </oj-bind-if>
+
+      <oj-bind-if test="[[groupRows().length > 0]]">
+        <div class="factory-is-box" id="groupBox">
+          <h3>The same error in <oj-bind-text value="[[groupRows().length]]"></oj-bind-text> other issue(s)</h3>
+          <ul>
+            <oj-bind-for-each data="[[groupRows]]" as="g">
+              <template><li><button type="button" class="fx-btn fx-btn--link" on-click="[[g.data.open]]"><oj-bind-text value="[[g.data.title]]"></oj-bind-text></button>
+                <span :class="[[g.data.status.css]]"><oj-bind-text value="[[g.data.status.text]]"></oj-bind-text></span>
+                <span class="fx-muted"> <oj-bind-text value="[[g.data.when]]"></oj-bind-text></span></li></template>
+            </oj-bind-for-each>
+          </ul>
+        </div>
+      </oj-bind-if>
+
+      <oj-bind-if test="[[sharing()]]">
+        <div class="factory-is-box" id="shareForm">
+          <h3>Share as product knowledge</h3>
+          <p class="fx-muted">Every workspace will see this. Remove anything specific to this bank: its name, hosts, URLs, IP
+            addresses, customer or account details. The factory refuses URLs, IP addresses and the bank's name.</p>
+          <div class="fx-form fx-form--2">
+            <fx-input id="shareTitle" label="Title" value="{{shareTitle}}"></fx-input>
+            <fx-input id="shareComponent" label="Component (optional)" placeholder="Payments, Accounts, Login" value="{{shareComponent}}"></fx-input>
+            <fx-select id="shareCategory" label="Category" options="[[categoryOptions]]" value="{{shareCategory}}"></fx-select>
+          </div>
+          <fx-textarea id="shareRootCause" label="Root cause" rows="3" value="{{shareRootCause}}"></fx-textarea>
+          <fx-textarea id="shareResolution" label="What fixed it" rows="3" value="{{shareResolution}}"></fx-textarea>
+          <div class="factory-btn-row">
+            <button type="button" id="shareButton" class="fx-btn fx-btn--primary" on-click="[[share]]">Share</button>
+            <button type="button" id="cancelShare" class="fx-btn fx-btn--ghost" on-click="[[cancelShare]]">Cancel</button>
+          </div>
+        </div>
+      </oj-bind-if>
+
+      <oj-bind-if test="[[view()]]">
+        <div id="issueDiagnosis" class="factory-is-section">
+          <h3>Diagnosis</h3>
+          <p><span :class="[[view().category.css]]"><oj-bind-text value="[[view().category.text]]"></oj-bind-text></span>
+            <span :class="[[view().state.css]]"><oj-bind-text value="[[view().state.text]]"></oj-bind-text></span></p>
+          <oj-bind-if test="[[view().summary]]"><p><oj-bind-text value="[[view().summary]]"></oj-bind-text></p></oj-bind-if>
+          <p><strong>Root cause:</strong> <oj-bind-text value="[[view().rootCause]]"></oj-bind-text></p>
+          <oj-bind-if test="[[view().conflicts]]">
+            <div class="fx-alert fx-alert--warning factory-is-alert" role="status"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+              <span class="fx-alert-text"><strong>Screenshot and logs disagree:</strong> <oj-bind-text value="[[view().conflicts]]"></oj-bind-text></span></div>
+          </oj-bind-if>
+          <oj-bind-if test="[[view().evidence.length > 0]]">
+            <h4>Based on</h4>
+            <ul class="factory-is-evidence">
+              <oj-bind-for-each data="[[view().evidence]]" as="e">
+                <template><li><strong><oj-bind-text value="[[e.data.id]]"></oj-bind-text></strong>
+                  <span class="fx-muted"><oj-bind-text value="[[e.data.where]]"></oj-bind-text></span>
+                  <code><oj-bind-text value="[[e.data.text]]"></oj-bind-text></code></li></template>
+              </oj-bind-for-each>
+            </ul>
+          </oj-bind-if>
+          <oj-bind-if test="[[view().oracle.length > 0]]">
+            <h4>Oracle notes and manuals</h4>
+            <oj-bind-for-each data="[[view().oracle]]" as="o">
+              <template>
+                <div class="factory-is-step">
+                  <div><strong><oj-bind-text value="[[o.data.title]]"></oj-bind-text></strong>
+                    <oj-bind-if test="[[o.data.meta]]"><span class="fx-muted"> · <oj-bind-text value="[[o.data.meta]]"></oj-bind-text></span></oj-bind-if>
+                    <oj-bind-if test="[[o.data.href]]"> <a :href="[[o.data.href]]" target="_blank" rel="noopener">Open</a></oj-bind-if></div>
+                  <oj-bind-if test="[[o.data.why]]"><div><oj-bind-text value="[[o.data.why]]"></oj-bind-text></div></oj-bind-if>
+                  <oj-bind-if test="[[o.data.versionNote]]"><div class="fx-muted"><span class="fx-badge fx-badge--warning">Check the version</span>
+                    <oj-bind-text value="[[o.data.versionNote]]"></oj-bind-text></div></oj-bind-if>
+                </div>
+              </template>
+            </oj-bind-for-each>
+          </oj-bind-if>
+          <oj-bind-if test="[[view().steps.length > 0]]">
+            <h4>How to fix it</h4>
+            <oj-bind-for-each data="[[view().steps]]" as="step">
+              <template>
+                <div class="factory-is-step">
+                  <div><strong><oj-bind-text value="[[step.data.title]]"></oj-bind-text></strong>
+                    <span :class="[[step.data.risk.css]]"><oj-bind-text value="[[step.data.risk.text]]"></oj-bind-text></span>
+                    <oj-bind-if test="[[step.data.forBank]]"><span :class="[[step.data.audience.css]]"><oj-bind-text value="[[step.data.audience.text]]"></oj-bind-text></span></oj-bind-if></div>
+                  <oj-bind-if test="[[step.data.why]]"><div><oj-bind-text value="[[step.data.why]]"></oj-bind-text></div></oj-bind-if>
+                  <oj-bind-if test="[[step.data.file]]"><div class="fx-muted">File: <code><oj-bind-text value="[[step.data.file]]"></oj-bind-text></code></div></oj-bind-if>
+                  <oj-bind-if test="[[step.data.evidence]]"><div class="fx-muted">Evidence: <oj-bind-text value="[[step.data.evidence]]"></oj-bind-text></div></oj-bind-if>
+                </div>
+              </template>
+            </oj-bind-for-each>
+          </oj-bind-if>
+          <oj-bind-if test="[[view().alternatives.length > 0]]">
+            <h4>Other possible causes</h4>
+            <ul><oj-bind-for-each data="[[view().alternatives]]" as="a"><template><li><oj-bind-text value="[[a.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+          </oj-bind-if>
+          <oj-bind-if test="[[view().missing.length > 0]]">
+            <h4>To find out more, collect</h4>
+            <ul><oj-bind-for-each data="[[view().missing]]" as="m"><template><li><oj-bind-text value="[[m.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+          </oj-bind-if>
+          <oj-bind-if test="[[view().similar.length > 0]]">
+            <h4>Similar issues solved before</h4>
+            <ul><oj-bind-for-each data="[[view().similar]]" as="s"><template><li><strong><oj-bind-text value="[[s.data.title]]"></oj-bind-text></strong>
+              <span class="fx-muted"> (<oj-bind-text value="[[s.data.where]]"></oj-bind-text>)</span>. <oj-bind-text value="[[s.data.text]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+          </oj-bind-if>
+          <p class="fx-muted"><oj-bind-text value="[[view().model]]"></oj-bind-text></p>
+        </div>
+      </oj-bind-if>
+
+      <oj-bind-if test="[[detail().evidence]]">
+        <div class="factory-is-box" id="checkBox">
+          <h3>Check the fix</h3>
+          <p class="fx-muted">After a fix, paste or attach the new logs or screenshots. The factory compares them with the
+            original error, without the model.</p>
+          <oj-bind-for-each data="[[checks]]" as="c">
+            <template>
+              <div class="factory-is-step">
+                <div><span :class="[[c.data.result.css]]"><oj-bind-text value="[[c.data.result.text]]"></oj-bind-text></span>
+                  <span class="fx-muted"> <oj-bind-text value="[[c.data.meta]]"></oj-bind-text></span></div>
+                <div><oj-bind-text value="[[c.data.summary]]"></oj-bind-text></div>
+                <oj-bind-if test="[[c.data.details.length > 0]]">
+                  <ul class="fx-muted"><oj-bind-for-each data="[[c.data.details]]" as="d"><template><li><oj-bind-text value="[[d.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+                </oj-bind-if>
+                <oj-bind-if test="[[c.data.files.length > 0]]">
+                  <div class="fx-muted"><oj-bind-for-each data="[[c.data.files]]" as="f"><template><a :href="[[f.data.href]]" target="_blank" rel="noopener"><oj-bind-text value="[[f.data.name]]"></oj-bind-text></a> </template></oj-bind-for-each></div>
+                </oj-bind-if>
+              </div>
+            </template>
+          </oj-bind-for-each>
+          <fx-textarea id="checkLog" label="New log after the fix (paste)" rows="4" mono value="{{checkLog}}"></fx-textarea>
+          <input type="file" id="checkFiles" class="fx-visually-hidden" multiple :accept="[[accepted]]" on-change="[[checkFiles.selected]]">
+          <label for="checkFiles" :class="[[checkFiles.css]]" on-dragover="[[checkFiles.dragOver]]" on-dragenter="[[checkFiles.dragOver]]"
+                 on-dragleave="[[checkFiles.dragLeave]]" on-drop="[[checkFiles.drop]]">
+            <span class="factory-nav-icon factory-ico-upload" aria-hidden="true"></span><strong>Drop new logs or screenshots here, or choose them</strong></label>
+          <oj-bind-if test="[[checkFiles.rows().length > 0]]">
+            <ul class="factory-is-chosen" aria-label="Files for the check">
+              <oj-bind-for-each data="[[checkFiles.rows]]" as="f"><template><li><span class="factory-is-name"><oj-bind-text value="[[f.data.name]]"></oj-bind-text></span>
+                <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm fx-btn--icon" :aria-label="[['Remove ' + f.data.name]]" on-click="[[f.data.remove]]"><span class="factory-nav-icon factory-ico-x" aria-hidden="true"></span></button></li></template></oj-bind-for-each>
+            </ul>
+          </oj-bind-if>
+          <div class="factory-btn-row"><button type="button" id="runCheck" class="fx-btn fx-btn--secondary" on-click="[[runCheck]]" :disabled="[[!canCheck()]]">Check the fix</button></div>
+        </div>
+      </oj-bind-if>
+
+      <oj-bind-if test="[[targets().length > 0]]">
+        <div class="factory-is-box" id="liveBox">
+          <h3>Check the bank's hosts</h3>
+          <p class="fx-muted">Hosts and ports this issue mentions. A check runs from the factory: it looks up the name, connects
+            to the port and, for TLS, reads the certificate. Nothing is sent, and the bank does not see the result.</p>
+          <oj-bind-if test="[[prodNote()]]"><p class="fx-muted"><oj-bind-text value="[[prodNote]]"></oj-bind-text></p></oj-bind-if>
+          <oj-bind-for-each data="[[targets]]" as="t">
+            <template>
+              <div class="factory-is-step"><code><oj-bind-text value="[[t.data.label]]"></oj-bind-text></code>
+                <span class="fx-muted"> <oj-bind-text value="[[t.data.source]]"></oj-bind-text></span>
+                <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[t.data.check]]" :disabled="[[prodNote() !== '']]">Check</button></div>
+            </template>
+          </oj-bind-for-each>
+        </div>
+      </oj-bind-if>
+
+      <oj-bind-if test="[[!analyzing() && detail().status !== 'NEW']]">
+        <div class="factory-is-box" id="issueOutcome">
+          <h3>Outcome</h3>
+          <fx-textarea id="issueResolution" label="What fixed it, or what was tried" rows="3" value="{{resolution}}"></fx-textarea>
+          <div class="factory-btn-row">
+            <button type="button" id="markResolved" class="fx-btn fx-btn--primary" on-click="[[markResolved]]">Resolved</button>
+            <button type="button" id="markNotResolved" class="fx-btn fx-btn--secondary" on-click="[[markNotResolved]]">Not resolved</button>
+            <button type="button" id="markEscalated" class="fx-btn fx-btn--secondary" on-click="[[markEscalated]]">Escalated to Oracle</button>
+          </div>
+          <oj-bind-if test="[[canApprove() && groupRows().length > 0]]">
+            <p class="fx-muted">For all <oj-bind-text value="[[groupSize]]"></oj-bind-text> issues with the same error:</p>
+            <div class="factory-btn-row">
+              <button type="button" id="groupResolved" class="fx-btn fx-btn--secondary" on-click="[[groupResolved]]">Resolve all with this fix</button>
+              <button type="button" id="groupEscalated" class="fx-btn fx-btn--secondary" on-click="[[groupEscalated]]">Escalate all</button>
+            </div>
+          </oj-bind-if>
+        </div>
+      </oj-bind-if>
+
+      <div class="factory-is-box" id="questionBox">
+        <h3>Questions</h3>
+        <oj-bind-for-each data="[[questions]]" as="q">
+          <template>
+            <div class="factory-is-step">
+              <div><strong><oj-bind-text value="[[q.data.question]]"></oj-bind-text></strong></div>
+              <div :class="[[q.data.failed ? 'factory-is-answer factory-is-failed' : 'factory-is-answer']]"><oj-bind-text value="[[q.data.answer]]"></oj-bind-text></div>
+              <div class="fx-muted"><oj-bind-text value="[[q.data.meta]]"></oj-bind-text></div>
+            </div>
+          </template>
+        </oj-bind-for-each>
+        <fx-textarea id="issueQuestion" label="Ask about this issue" rows="2" value="{{question}}"
+                     placeholder="Why configuration? Which file should I check? What else should I collect?"></fx-textarea>
+        <div class="factory-btn-row"><button type="button" id="askQuestion" class="fx-btn fx-btn--secondary" on-click="[[ask]]" :disabled="[[!question().trim()]]">Ask</button></div>
+      </div>
+
+      <oj-bind-if test="[[detail().srDraft]]">
+        <div class="factory-is-section" id="srSection">
+          <h3>Oracle Service Request draft</h3>
+          <p class="fx-muted">Fill in the parts in brackets, then copy it into My Oracle Support. Nothing is sent from the factory.</p>
+          <div class="factory-btn-row"><button type="button" id="copySr" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[copySr]]">Copy</button></div>
+          <pre class="fx-log" id="srDraft"><oj-bind-text value="[[detail().srDraft]]"></oj-bind-text></pre>
+        </div>
+      </oj-bind-if>
+
+      <oj-bind-if test="[[screenshots().length > 0]]">
+        <div class="factory-is-section">
+          <h3>Screenshots</h3>
+          <oj-bind-for-each data="[[screenshots]]" as="shot">
+            <template>
+              <div class="factory-is-shot">
+                <a :href="[[shot.data.src]]" target="_blank" rel="noopener"><img :src="[[shot.data.src]]" :alt="[[shot.data.alt]]" class="factory-is-thumb"></a>
+                <div class="factory-is-shottext">
+                  <oj-bind-if test="[[!shot.data.hasText]]">
+                    <p class="fx-muted">Not read yet. Type the error text below and analyze again, or choose a chat model that reads images on the Models page.</p>
+                  </oj-bind-if>
+                  <oj-bind-if test="[[shot.data.hidden]]"><p><span class="fx-badge fx-badge--success"><oj-bind-text value="[[shot.data.hidden]]"></oj-bind-text></span></p></oj-bind-if>
+                  <fx-textarea label="[[shot.data.label]]" rows="4" value="{{shot.data.text}}"></fx-textarea>
+                  <div class="factory-btn-row">
+                    <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[shot.data.save]]" :disabled="[[analyzing]]">Save text</button>
+                    <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[shot.data.remove]]" :disabled="[[analyzing]]">Remove screenshot</button>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </oj-bind-for-each>
+        </div>
+      </oj-bind-if>
+
+      <oj-bind-if test="[[evidenceItems().length > 0]]">
+        <details class="fx-disclosure factory-is-more">
+          <summary>Evidence found in the logs, screenshots and Library (<oj-bind-text value="[[evidenceItems().length]]"></oj-bind-text>)</summary>
+          <div class="fx-table-wrap"><table class="fx-table factory-is-etable">
+            <thead><tr><th scope="col">Id</th><th scope="col">Kind</th><th scope="col">Where</th><th scope="col">Text</th></tr></thead>
+            <tbody>
+              <oj-bind-for-each data="[[evidenceItems]]" as="item">
+                <template><tr><td><oj-bind-text value="[[item.data.id]]"></oj-bind-text></td><td><oj-bind-text value="[[item.data.kind]]"></oj-bind-text></td>
+                  <td><oj-bind-text value="[[item.data.where]]"></oj-bind-text></td><td><code><oj-bind-text value="[[item.data.text]]"></oj-bind-text></code></td></tr></template>
+              </oj-bind-for-each>
+            </tbody>
+          </table></div>
+        </details>
+      </oj-bind-if>
+      <oj-bind-if test="[[codeItems().length > 0]]">
+        <details class="fx-disclosure factory-is-more">
+          <summary>The bank's code and configuration found for it (<oj-bind-text value="[[codeItems().length]]"></oj-bind-text>)</summary>
+          <oj-bind-for-each data="[[codeItems]]" as="code">
+            <template>
+              <p><strong><oj-bind-text value="[[code.data.id]]"></oj-bind-text></strong> <code><oj-bind-text value="[[code.data.where]]"></oj-bind-text></code></p>
+              <pre class="factory-code"><oj-bind-text value="[[code.data.text]]"></oj-bind-text></pre>
+            </template>
+          </oj-bind-for-each>
+        </details>
+      </oj-bind-if>
+      <details class="fx-disclosure factory-is-more">
+        <summary>What was reported</summary>
+        <p><oj-bind-text value="[[descriptionText]]"></oj-bind-text></p>
+        <oj-bind-if test="[[logFiles().length > 0]]">
+          <p>Log files:
+            <oj-bind-for-each data="[[logFiles]]" as="file">
+              <template><a :href="[[file.data.href]]" target="_blank" rel="noopener"><oj-bind-text value="[[file.data.name]]"></oj-bind-text></a> </template>
+            </oj-bind-for-each>
+          </p>
+        </oj-bind-if>
+        <oj-bind-if test="[[detail().logText]]"><pre class="fx-log"><oj-bind-text value="[[detail().logText]]"></oj-bind-text></pre></oj-bind-if>
+      </details>
+    </section>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[workspaceId() && canApprove()]]">
+    <section class="fx-card factory-is-links" id="issueLinks" aria-labelledby="issueLinksTitle">
+      <h2 id="issueLinksTitle">Links for the bank</h2>
+      <p class="fx-muted">A link lets the bank's administrators report an error with logs and screenshots without a factory
+        account. Each report gets its own follow link, where they see the diagnosis once you release it.</p>
+      <div class="fx-form fx-form--2">
+        <fx-input id="linkLabel" label="Who it is for" placeholder="Bank admins, UAT" value="{{linkLabel}}"></fx-input>
+        <fx-input id="linkDays" label="Valid for (days, 1 to 90)" type="number" value="{{linkDays}}"></fx-input>
+      </div>
+      <div class="factory-btn-row"><button type="button" id="createLink" class="fx-btn fx-btn--secondary" on-click="[[createLink]]" :disabled="[[!linkLabel().trim()]]">Make a link</button></div>
+      <oj-bind-if test="[[newLinkUrl()]]">
+        <div class="fx-alert fx-alert--info factory-is-alert" role="status" id="newLink"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span>
+          <span class="fx-alert-text">Send this link to the bank. It is shown only once.
+            <code class="factory-is-url"><oj-bind-text value="[[newLinkUrl]]"></oj-bind-text></code>
+            <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[copyLink]]">Copy</button></span></div>
+      </oj-bind-if>
+      <oj-bind-for-each data="[[links]]" as="l">
+        <template>
+          <div class="factory-is-step">
+            <strong><oj-bind-text value="[[l.data.label]]"></oj-bind-text></strong>
+            <span class="fx-muted"> <oj-bind-text value="[[l.data.meta]]"></oj-bind-text></span>
+            <oj-bind-if test="[[l.data.active]]"><button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[l.data.revoke]]">Revoke</button></oj-bind-if>
+          </div>
+        </template>
+      </oj-bind-for-each>
+    </section>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[knowledge().length > 0]]">
+    <section class="fx-card factory-is-knowledge" id="sharedKnowledge" aria-labelledby="knowledgeTitle">
+      <h2 id="knowledgeTitle">Shared product knowledge</h2>
+      <p class="fx-muted">Fixes leads shared from resolved issues. Every workspace's analysis uses them.</p>
+      <oj-bind-for-each data="[[knowledge]]" as="k">
+        <template>
+          <div class="factory-is-step">
+            <div><strong><oj-bind-text value="[[k.data.title]]"></oj-bind-text></strong></div>
+            <div class="fx-muted"><oj-bind-text value="[[k.data.meta]]"></oj-bind-text></div>
+            <div><oj-bind-text value="[[k.data.text]]"></oj-bind-text></div>
+            <oj-bind-if test="[[k.data.canWithdraw]]">
+              <button type="button" class="fx-btn fx-btn--ghost fx-btn--sm" on-click="[[k.data.withdraw]]">Withdraw</button>
+            </oj-bind-if>
+          </div>
+        </template>
+      </oj-bind-for-each>
+    </section>
+  </oj-bind-if>
+</div>

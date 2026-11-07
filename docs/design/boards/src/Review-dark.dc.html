@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Review and approval</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+:root{--fx-bg:#fafafc;--fx-surface:#ffffff;--fx-surface-2:#f8fafc;--fx-surface-3:#f1f5f9;--fx-border:#e5e7eb;--fx-border-strong:#cbd5e1;--fx-text:#0f172a;--fx-text-body:#334155;--fx-text-muted:#64748b;--fx-text-faint:#94a3b8;--fx-primary:#4f46e5;--fx-primary-hover:#4338ca;--fx-primary-soft:#eef2ff;--fx-primary-text:#4338ca;--fx-primary-border:#c7d2fe;--fx-on-primary:#ffffff;--fx-success:#10b981;--fx-success-soft:#ecfdf5;--fx-success-text:#047857;--fx-warning:#f59e0b;--fx-warning-soft:#fffbeb;--fx-warning-text:#b45309;--fx-danger:#ef4444;--fx-danger-soft:#fef2f2;--fx-danger-text:#b91c1c;--fx-info:#0284c7;--fx-info-soft:#f0f9ff;--fx-info-text:#0369a1;--fx-radius-sm:6px;--fx-radius:8px;--fx-radius-lg:12px;--fx-radius-xl:16px;--fx-radius-pill:999px;--fx-shadow-sm:0 1px 2px rgba(15,23,42,.06);--fx-font-mono:"Cascadia Mono","JetBrains Mono",Consolas,monospace}
+.fx-dark{color-scheme:dark;--fx-bg:#0b1120;--fx-surface:#111827;--fx-surface-2:#162032;--fx-surface-3:#1e293b;--fx-border:#263247;--fx-border-strong:#3b4a63;--fx-text:#e5e7eb;--fx-text-body:#cbd5e1;--fx-text-muted:#94a3b8;--fx-text-faint:#64748b;--fx-primary:#4f46e5;--fx-primary-hover:#5b55eb;--fx-primary-soft:rgba(99,102,241,.16);--fx-primary-text:#a5b4fc;--fx-primary-border:rgba(129,140,248,.45);--fx-success-soft:rgba(16,185,129,.14);--fx-success-text:#34d399;--fx-warning-soft:rgba(245,158,11,.14);--fx-warning-text:#fbbf24;--fx-danger-soft:rgba(239,68,68,.14);--fx-danger-text:#f87171;--fx-info-soft:rgba(14,165,233,.14);--fx-info-text:#38bdf8}
+a{color:var(--fx-primary)}a:hover{color:var(--fx-primary-text)}
+
+/* Reflow at laptop sizes, the factory way: side columns drop below, tiles wrap, tables scroll in their box */
+.fx-cols3>*,.fx-cols2>*,.fx-cols3e>*{min-width:0}
+@media (max-width:1500px){.fx-cols3{grid-template-columns:minmax(220px,260px) minmax(0,1fr) !important}.fx-cols3>:nth-child(3){grid-column:1/-1}.fx-cols3.fx-main-first{grid-template-columns:minmax(0,1fr) minmax(260px,300px) !important}}
+@media (max-width:1366px){.fx-cols2{grid-template-columns:minmax(0,1fr) minmax(280px,32%) !important}.fx-cols3e{grid-template-columns:repeat(2,minmax(0,1fr)) !important}.fx-cols3e>:nth-child(3){grid-column:1/-1}}
+@media (max-width:1180px){.fx-cols3,.fx-cols3.fx-main-first,.fx-cols2{grid-template-columns:minmax(0,1fr) !important}.fx-cols3>:nth-child(3){grid-column:auto}}
+@media (max-width:900px){.fx-cols3e{grid-template-columns:minmax(0,1fr) !important}.fx-cols3e>:nth-child(3){grid-column:auto}}
+.fx-scroll{overflow-x:auto}
+.mono{font-family:var(--fx-font-mono);font-size:11.5px}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="position:relative;width:100%;min-height:100vh;display:flex;flex-direction:column;font-family:Inter,'Segoe UI',system-ui,sans-serif;font-size:12.5px;color:var(--fx-text-body);background:var(--fx-bg);overflow-x:clip">
+
+
+
+  <div style="flex:1;display:flex;min-height:0">
+    <div data-nav-rail style="position:sticky;top:0;height:100vh;flex:none;align-self:flex-start;z-index:4"><dc-import name="Nav" current="review" h="100vh" hint-size="244px,1010px"></dc-import></div>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <dc-import name="Topbar" dark="{{darkOn}}" fluid="{{yes}}" hint-size="100%,56px"></dc-import>
+
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <main style="flex:1;min-height:0;padding:12px 22px;display:flex;flex-direction:column;gap:10px">
+      <div data-simple style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px">
+        <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+          <div style="font-size:13px;color:var(--fx-text-muted)"><a href="Landing.dc.html" style="text-decoration:none">Modernization</a> <span aria-hidden="true">›</span> Review and approval</div>
+          <h1 style="margin:0;font-size:26px;line-height:32px;font-weight:700;color:var(--fx-text)">Review and approval</h1>
+          <p style="margin:0;color:var(--fx-text-body);font-size:13px">Payments · React + TypeScript · check the change, then approve it.</p>
+        </div>
+      </div>
+      <div data-steps-row style="margin-top:-2px;width:100%"><dc-import name="Steps" path="mig" step="5" dark="{{darkOn}}" hint-size="100%,48px"></dc-import></div>
+
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:var(--fx-text-body)"><span style="margin-right:4px">42 files · 38 screens · 286 components</span><span style="height:26px;padding:0 10px;border-radius:var(--fx-radius-pill);background:var(--fx-success-soft);color:var(--fx-success-text);font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px">✓ 366 of 366 tests passed</span><span style="height:26px;padding:0 10px;border-radius:var(--fx-radius-pill);background:var(--fx-warning-soft);color:var(--fx-warning-text);font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px">! 3 security findings</span><span style="height:26px;padding:0 10px;border-radius:var(--fx-radius-pill);background:var(--fx-success-soft);color:var(--fx-success-text);font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px">✓ 8 of 8 OBDX rules</span></div>
+
+      <div role="tablist" aria-label="Review views" style="display:flex;gap:22px;border-bottom:1px solid var(--fx-border)">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="7"><button type="button" onClick="{{t.pick}}" role="tab" aria-selected="{{t.on}}" style="font:inherit;font-size:13.5px;cursor:pointer;background:transparent;border:0;border-bottom:2px solid {{t.line}};height:34px;padding:0 2px;color:{{t.fg}};font-weight:{{t.weight}}">{{t.name}}</button></sc-for>
+      </div>
+<sc-if value="{{tbReviewFirst}}" hint-placeholder-val="{{true}}">
+
+      <div class="fx-cols3" style="flex:1;min-height:0;display:grid;grid-template-columns:240px minmax(0,1fr) 300px;gap:14px">
+        <section aria-labelledby="cfTitle" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:10px;display:flex;flex-direction:column;gap:5px;overflow-x:auto;overflow-y:hidden">
+          <div style="display:flex;align-items:center"><h2 id="cfTitle" style="margin:0;flex:1;font-size:14px;font-weight:700;color:var(--fx-text)">Changed files (42)</h2></div>
+          <label style="height:30px;border:1px solid var(--fx-border-strong);border-radius:8px;display:flex;align-items:center;gap:6px;padding:0 8px;color:var(--fx-text-muted)"><span aria-hidden="true">⌕</span><span style="position:absolute;left:-9999px">Search files</span><input type="search" placeholder="Search files" style="flex:1;border:0;outline:0;font:inherit;background:transparent;min-width:0"></label>
+          <sc-for list="{{tree}}" as="t" hint-placeholder-count="15">
+            <sc-if value="{{t.folder}}" hint-placeholder-val="{{false}}"><span style="display:flex;align-items:center;gap:6px;padding:3px 0 3px {{t.pad}};font-weight:600;color:var(--fx-text)"><span aria-hidden="true" style="color:var(--fx-text-muted)">{{t.caret}}</span><span aria-hidden="true" style="color:var(--fx-primary)">▭</span>{{t.name}}</span></sc-if>
+            <sc-if value="{{t.file}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{t.pick}}" aria-pressed="{{t.on}}" style="font:inherit;color:var(--fx-text);cursor:pointer;text-align:left;display:flex;align-items:center;gap:7px;padding:4px 6px 4px {{t.pad}};border:0;border-radius:7px;background:{{t.bg}}"><span style="width:16px;height:16px;border-radius:4px;background:{{t.mBg}};color:#ffffff;font-size:9.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center" aria-label="{{t.mName}}">{{t.mark}}</span>{{t.name}}</button></sc-if>
+          </sc-for>
+        </section>
+
+        <section aria-label="Code changes" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);display:flex;flex-direction:column;min-height:0;overflow-x:auto;overflow-y:hidden">
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--fx-border)">
+            <b class="mono" style="font-size:13px;color:var(--fx-text)">{{file}}</b>
+            <span style="height:20px;padding:0 8px;border-radius:7px;background:{{fBg}};color:{{fFg}};font-size:11px;font-weight:700;display:inline-flex;align-items:center">{{fState}}</span>
+            <div role="group" aria-label="Diff layout" style="margin-left:auto;display:flex;background:var(--fx-surface-3);border-radius:8px;padding:2px"><sc-for list="{{layouts}}" as="c" hint-placeholder-count="2"><button type="button" aria-pressed="{{c.on}}" onClick="{{c.pick}}" style="font:inherit;cursor:pointer;height:26px;padding:0 10px;border-radius:6px;border:0;background:{{c.bg}};color:{{c.fg}};font-weight:600">{{c.name}}</button></sc-for></div>
+          </div>
+          <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{cols}};gap:8px;padding:8px 12px">
+            <sc-if value="{{split}}" hint-placeholder-val="{{true}}">
+              <div style="border:1px solid var(--fx-danger);border-radius:var(--fx-radius);overflow:hidden">
+                <div style="padding:6px 10px;background:var(--fx-danger-soft);font-weight:700;color:var(--fx-text)">Before (Oracle JET)</div>
+                <sc-for list="{{before}}" as="l" hint-placeholder-count="12"><div class="mono" style="display:flex;line-height:17px;background:var(--fx-danger-soft)"><span style="width:28px;flex:none;text-align:right;padding-right:8px;color:var(--fx-text-faint)">{{l.n}}</span><span style="width:12px;color:var(--fx-danger-text)">-</span><span style="white-space:pre;color:var(--fx-danger-text)">{{l.t}}</span></div></sc-for>
+              </div>
+            </sc-if>
+            <div style="border:1px solid var(--fx-success);border-radius:var(--fx-radius);overflow:hidden">
+              <div style="padding:6px 10px;background:var(--fx-success-soft);font-weight:700;color:var(--fx-text)">{{afterTitle}}</div>
+              <sc-for list="{{after}}" as="l" hint-placeholder-count="16"><div class="mono" style="display:flex;line-height:17px;background:{{l.bg}}"><span style="width:28px;flex:none;text-align:right;padding-right:8px;color:var(--fx-text-faint)">{{l.n}}</span><span style="width:12px;color:{{l.sc}}">{{l.sign}}</span><span style="white-space:pre;color:{{l.c}}">{{l.t}}</span></div></sc-for>
+            </div>
+          </div>
+          <p style="margin:0;padding:10px 12px;border-top:1px solid var(--fx-border);line-height:18px;color:var(--fx-text-muted)">{{btext}}</p>
+                </section>
+
+        <section aria-labelledby="wfTitle" style="align-self:start;background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:14px 16px;display:flex;flex-direction:column;gap:4px">
+          <h2 id="wfTitle" style="margin:0 0 6px;font-size:15px;font-weight:700;color:var(--fx-text)">Review</h2>
+          <sc-for list="{{flow}}" as="f" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--fx-border)"><span style="width:24px;height:24px;flex:none;border-radius:50%;border:2px solid {{f.ring}};background:{{f.bg}};color:{{f.fg}};font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center" aria-hidden="true">{{f.mark}}</span><span style="flex:1;display:flex;flex-direction:column"><b style="color:var(--fx-text);font-weight:600">{{f.name}}</b><span style="font-size:12px;color:var(--fx-text-muted)">{{f.who}}</span></span><span style="height:22px;padding:0 9px;border-radius:var(--fx-radius-pill);background:{{f.cBg}};color:{{f.cFg}};font-size:11px;font-weight:700;display:inline-flex;align-items:center">{{f.state}}</span></div></sc-for>
+          <button type="button" onClick="{{openComments}}" style="margin-top:6px;align-self:flex-start;border:0;background:transparent;padding:0;color:var(--fx-primary);font:inherit;font-weight:600;cursor:pointer">Comments (2) →</button>
+        </section>
+      </div></sc-if>
+<sc-if value="{{tbReviewOther}}" hint-placeholder-val="{{false}}"><section style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);overflow-x:auto;overflow-y:hidden;display:flex;flex-direction:column;min-height:0;flex:1"><div style="padding:12px 14px;display:flex;flex-direction:column;gap:2px;border-bottom:1px solid var(--fx-border)"><h2 style="margin:0;font-size:15px;font-weight:700;color:var(--fx-text)">{{tbReviewGen.title}}</h2><span style="color:var(--fx-text-muted)">{{tbReviewGen.lead}}</span></div><div style="min-width:720px;display:grid;grid-template-columns:{{tbReviewGen.cols}};gap:10px;padding:8px 14px;background:var(--fx-surface-2);font-size:12px;font-weight:700;color:var(--fx-text)"><sc-for list="{{tbReviewGen.head}}" as="h" hint-placeholder-count="4"><span>{{h}}</span></sc-for></div><sc-for list="{{tbReviewGen.rows}}" as="r" hint-placeholder-count="5"><div style="min-width:720px;display:grid;grid-template-columns:{{r.cols}};gap:10px;padding:8px 14px;border-top:1px solid var(--fx-border)"><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="4"><span style="color:{{c.fg}};font-weight:{{c.w}}">{{c.t}}</span></sc-for></div></sc-for><sc-if value="{{tbReviewGen.hasNote}}" hint-placeholder-val="{{false}}"><p style="margin:0;padding:10px 14px;font-size:12px;color:var(--fx-text-muted);border-top:1px solid var(--fx-border)">{{tbReviewGen.note}}</p></sc-if></section></sc-if>
+
+    </main>
+
+    <footer style="flex:none;position:sticky;bottom:0;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 22px;border-top:1px solid var(--fx-border);background:var(--fx-surface)"><a href="Validation.dc.html" style="height:40px;padding:0 16px;border-radius:var(--fx-radius);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13.5px;border:1px solid var(--fx-border-strong);color:var(--fx-text);background:var(--fx-surface)">← Validation</a><span style="flex:1;min-width:12px"><span style="color:var(--fx-text-muted);white-space:nowrap">{{waitText}}</span></span><div style="position:relative"><button type="button" onClick="{{toggleMore}}" aria-haspopup="menu" aria-expanded="{{moreStr}}" aria-label="More actions" title="More actions" style="height:40px;padding:0 16px;border-radius:var(--fx-radius);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13.5px;padding:0 12px;border:1px solid var(--fx-border-strong);color:var(--fx-text);background:var(--fx-surface);font:inherit;font-weight:600;cursor:pointer">More ⋯</button><sc-if value="{{moreOn}}" hint-placeholder-val="{{false}}"><div role="menu" aria-label="More actions" style="position:absolute;right:0;bottom:48px;min-width:250px;background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);box-shadow:0 12px 32px rgba(15,23,42,.18);padding:6px;display:flex;flex-direction:column;gap:2px;z-index:8"><button type="button" role="menuitem" onClick="{{m_openPanel}}" style="text-align:left;padding:9px 12px;border-radius:6px;border:0;background:transparent;color:var(--fx-text);font:inherit;font-size:13px;cursor:pointer">Compare revisions</button><a role="menuitem" href="Validation.dc.html" style="padding:9px 12px;border-radius:6px;text-decoration:none;color:var(--fx-text);font-size:13px">Test evidence</a><button type="button" role="menuitem" onClick="{{m_say1}}" style="text-align:left;padding:9px 12px;border-radius:6px;border:0;background:transparent;color:var(--fx-text);font:inherit;font-size:13px;cursor:pointer">Download the review report</button><button type="button" role="menuitem" onClick="{{m_toggleSec}}" style="text-align:left;padding:9px 12px;border-radius:6px;border:0;background:transparent;color:var(--fx-text);font:inherit;font-size:13px;cursor:pointer">Preview: {{secLabel}}</button><button type="button" role="menuitem" onClick="{{m_openRej}}" style="text-align:left;padding:9px 12px;border-radius:6px;border:0;background:transparent;color:var(--fx-danger-text);font:inherit;font-size:13px;cursor:pointer">Reject the change</button></div></sc-if></div><button type="button" onClick="{{openReq}}" style="height:40px;padding:0 16px;border-radius:var(--fx-radius);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13.5px;border:1.5px solid var(--fx-primary);color:var(--fx-primary-text);background:var(--fx-surface);font:inherit;font-weight:600;cursor:pointer">Request changes</button><sc-if value="{{apLocked}}" hint-placeholder-val="{{true}}"><button onClick="{{say5}}" type="button" aria-disabled="true" title="The security review is not done yet" style="height:38px;padding:0 14px;white-space:nowrap;border-radius:var(--fx-radius);border:0;background:var(--fx-text-faint);color:#ffffff;font:inherit;font-weight:600;cursor:not-allowed">✓ Approve and deliver to SVN</button></sc-if><sc-if value="{{apOpen}}" hint-placeholder-val="{{false}}"><a href="Decisions.dc.html" style="height:38px;padding:0 14px;white-space:nowrap;border-radius:var(--fx-radius);background:var(--fx-primary);color:#ffffff;font-weight:600;text-decoration:none;display:inline-flex;align-items:center">✓ Approve and deliver to SVN</a></sc-if></footer>
+    </div>
+    </div>
+  </div>
+<sc-if value="{{panelOn}}" hint-placeholder-val="{{false}}"><div style="position:fixed;inset:0;background:rgba(15,23,42,.35);display:flex;justify-content:flex-end;z-index:5"><section role="dialog" aria-modal="true" aria-label="Compare revisions" style="width:480px;height:100%;background:var(--fx-surface);box-shadow:-12px 0 32px rgba(15,23,42,.18);display:flex;flex-direction:column"><div style="display:flex;align-items:flex-start;gap:10px;padding:18px 20px;border-bottom:1px solid var(--fx-border)"><div style="flex:1;display:flex;flex-direction:column;gap:3px"><h2 style="margin:0;font-size:18px;font-weight:700;color:var(--fx-text)">Compare revisions</h2><span style="color:var(--fx-text-muted)">What changed between two versions of this change.</span></div><button type="button" onClick="{{closePanel}}" aria-label="Close" style="width:32px;height:32px;border-radius:var(--fx-radius);border:0;background:var(--fx-surface-3);cursor:pointer;font-size:15px">✕</button></div><div style="flex:1;min-height:0;overflow:auto;padding:14px 20px;display:flex;flex-direction:column;gap:6px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label style="display:flex;flex-direction:column;gap:4px;font-weight:600;color:var(--fx-text)">From<span style="height:36px;border:1px solid var(--fx-border-strong);border-radius:var(--fx-radius);display:flex;align-items:center;padding:0 10px;font-weight:500" class="mono">r1490 · first version</span></label><label style="display:flex;flex-direction:column;gap:4px;font-weight:600;color:var(--fx-text)">To<span style="height:36px;border:1px solid var(--fx-border-strong);border-radius:var(--fx-radius);display:flex;align-items:center;padding:0 10px;font-weight:500" class="mono">r1512 · after review</span></label></div><b style="color:var(--fx-text);margin-top:6px">Files that changed (4)</b><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)"><span class="mono">MakePayment.tsx</span></span><span style="color:var(--fx-text);text-align:right"><span style="color:var(--fx-success-text)">+6</span> <span style="color:var(--fx-danger-text)">−2</span></span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)"><span class="mono">PaymentSummary.tsx</span></span><span style="color:var(--fx-text);text-align:right"><span style="color:var(--fx-success-text)">+3</span></span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)"><span class="mono">paymentApi.ts</span></span><span style="color:var(--fx-text);text-align:right"><span style="color:var(--fx-success-text)">+2</span> <span style="color:var(--fx-danger-text)">−1</span></span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)"><span class="mono">usePayment.ts</span></span><span style="color:var(--fx-text);text-align:right"><span style="color:var(--fx-success-text)">+4</span> <span style="color:var(--fx-danger-text)">−4</span></span></span><b style="color:var(--fx-text);margin-top:6px">Why it changed</b><span>Rahul asked for the bank wording on the error message; the nonce is now refreshed after a 2FA retry.</span></div><div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid var(--fx-border)"><button type="button" onClick="{{closePanel}}" style="height:36px;padding:0 14px;border-radius:var(--fx-radius);font:inherit;font-weight:600;cursor:pointer;border:0;background:var(--fx-primary);color:#ffffff">Open in the diff</button></div></section></div></sc-if>
+<sc-if value="{{reqOn}}" hint-placeholder-val="{{false}}"><div style="position:fixed;inset:0;background:rgba(15,23,42,.35);display:flex;align-items:center;justify-content:center;z-index:6"><section role="dialog" aria-modal="true" aria-label="Request changes" style="width:520px;background:var(--fx-surface);border-radius:var(--fx-radius-xl);box-shadow:0 24px 48px rgba(15,23,42,.25);display:flex;flex-direction:column"><div style="padding:18px 20px 6px;display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font-size:18px;font-weight:700;color:var(--fx-text)">Request changes</h2><span style="color:var(--fx-text-muted)">CHG-0057 · Payments · React + TypeScript</span></div><div style="padding:10px 20px;display:flex;flex-direction:column;gap:10px"><label style="display:flex;flex-direction:column;gap:5px;font-weight:600;color:var(--fx-text)">What should change?<textarea rows="4" placeholder="For example: use the bank wording on the amount error." style="font:inherit;font-weight:400;border:1px solid var(--fx-border-strong);border-radius:var(--fx-radius);padding:8px 10px;resize:none"></textarea></label><fieldset style="border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:6px"><legend style="font-weight:600;color:var(--fx-text);padding-bottom:4px">Which files?</legend><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" checked style="accent-color:var(--fx-primary);margin:0"> <span class="mono">MakePayment.tsx</span></label><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" style="accent-color:var(--fx-primary);margin:0"> <span class="mono">PaymentSummary.tsx</span></label><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" style="accent-color:var(--fx-primary);margin:0"> <span class="mono">All files in this change</span></label></fieldset><span style="font-size:12px;color:var(--fx-text-muted)">The change goes back to the workspace with your note. The factory can write the files again with it, and the review steps start over.</span></div><div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid var(--fx-border)"><button type="button" onClick="{{closeDlg}}" style="height:36px;padding:0 14px;border-radius:var(--fx-radius);border:1px solid var(--fx-border-strong);background:var(--fx-surface);color:var(--fx-text);font:inherit;font-weight:600;cursor:pointer">Cancel</button><button type="button" onClick="{{doReq}}" style="height:36px;padding:0 16px;border-radius:var(--fx-radius);border:0;background:var(--fx-primary);color:#ffffff;font:inherit;font-weight:600;cursor:pointer">Send back to the workspace</button></div></section></div></sc-if>
+<sc-if value="{{rejOn}}" hint-placeholder-val="{{false}}"><div style="position:fixed;inset:0;background:rgba(15,23,42,.35);display:flex;align-items:center;justify-content:center;z-index:6"><section role="dialog" aria-modal="true" aria-label="Reject this change" style="width:520px;background:var(--fx-surface);border-radius:var(--fx-radius-xl);box-shadow:0 24px 48px rgba(15,23,42,.25);display:flex;flex-direction:column"><div style="padding:18px 20px 6px;display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font-size:18px;font-weight:700;color:var(--fx-text)">Reject this change</h2><span style="color:var(--fx-text-muted)">CHG-0057 · Payments · React + TypeScript</span></div><div style="padding:10px 20px;display:flex;flex-direction:column;gap:10px"><div style="padding:10px 12px;border-radius:var(--fx-radius);background:var(--fx-danger-soft);color:var(--fx-danger-text)">Rejecting closes CHG-0057. Nothing is delivered to SVN, and the module goes back to Planned in the migration plan.</div><label style="display:flex;flex-direction:column;gap:5px;font-weight:600;color:var(--fx-text)">Why? (required)<textarea rows="3" placeholder="Tell the team what was wrong so the next attempt avoids it." style="font:inherit;font-weight:400;border:1px solid var(--fx-border-strong);border-radius:var(--fx-radius);padding:8px 10px;resize:none"></textarea></label></div><div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid var(--fx-border)"><button type="button" onClick="{{closeDlg}}" style="height:36px;padding:0 14px;border-radius:var(--fx-radius);border:1px solid var(--fx-border-strong);background:var(--fx-surface);color:var(--fx-text);font:inherit;font-weight:600;cursor:pointer">Cancel</button><button type="button" onClick="{{doRej}}" style="height:36px;padding:0 16px;border-radius:var(--fx-radius);border:0;background:var(--fx-danger-text);color:#ffffff;font:inherit;font-weight:600;cursor:pointer">Reject the change</button></div></section></div></sc-if>
+<sc-if value="{{toastOn}}" hint-placeholder-val="{{false}}"><div role="status" style="position:fixed;right:28px;bottom:84px;max-width:420px;padding:12px 16px;border-radius:var(--fx-radius-lg);background:#0f172a;color:#ffffff;font-size:13px;box-shadow:0 8px 24px rgba(15,23,42,.25);display:flex;gap:10px;align-items:center"><span aria-hidden="true">ⓘ</span>{{toastText}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { file: 'MakePayment.tsx', layout: 'split', btab: 'why' }; }
+  say(m) { this.setState({ toast: m }); clearTimeout(this.toastTimer); this.toastTimer = setTimeout(() => this.setState({ toast: '' }), 3500); }
+  renderVals() {
+    const v = this.renderPage();
+    v.yes = true;
+    v.themeClass = this.props.dark ? 'fx-dark' : '';
+    v.darkOn = !!this.props.dark;
+    const st = this.state || {};
+    v.toastOn = !!st.toast;
+    v.toastText = st.toast || '';
+    v.secDone = !!st.sec;
+    v.secStr = st.sec ? 'true' : 'false';
+    v.toggleSec = () => this.setState({ sec: !st.sec });
+    v.secLabel = st.sec ? 'security review done' : 'security review done?';
+    if (st.sec) { v.flow = (v.flow || []).map((x) => x.name === 'Security review' ? Object.assign({}, x, { mark: '✓', bg: 'var(--fx-success)', fg: '#ffffff', ring: 'var(--fx-success)', state: 'Done', cBg: 'var(--fx-success-soft)', cFg: 'var(--fx-success-text)' }) : (x.name === 'Approval' ? Object.assign({}, x, { state: 'Ready', cBg: 'var(--fx-primary-soft)', cFg: 'var(--fx-primary-text)', ring: 'var(--fx-primary)', fg: 'var(--fx-primary)' }) : x)); v.people = (v.people || []).map((p) => p.name === 'Priya Kulkarni' ? Object.assign({}, p, { state: 'Approved', cBg: 'var(--fx-success-soft)', cFg: 'var(--fx-success-text)' }) : p); }
+    v.waitText = st.sec ? 'Every review step is done' : 'Waiting for: security review';
+    v.apOpen = !!st.sec;
+    v.apLocked = !st.sec;
+    {
+      const D = [null,{"title":"Checks","lead":"Everything the factory and Jenkins checked on this change. Two need a look.","cols":"1.4fr 2.2fr 1fr","head":["Check","Result",""],"rows":[["Tests, build #58","366 of 366 passed","✓ Passed"],["Security","3 medium findings: nonce after a 2FA retry, timeout keeps the form, an error shows a service name","! Look at"],["Business logic","Same-day payment cut-off time needs a person to confirm","! Look at"],["OBDX service calls","Same 3 digx/v1 services, cookie and nonce","✓ Same"],["Components","oj-form-layout, oj-input-text, oj-select-single, oj-button replaced","✓ Same"],["OBDX rules","8 of 8","✓ Passed"]],"note":""},{"title":"Comments","lead":"Everything said on this change.","cols":"1fr 1fr 3fr","head":["Who","When","Comment"],"rows":[["Rahul Sharma","30 Oct, 11:24 am","Code looks good. Please change the error message to the bank wording."],["Priya Kulkarni","30 Oct, 12:03 pm","Found 3 medium security findings. Please fix them and run the security checks again."]],"note":"Add a comment from the box at the bottom of this tab when the factory is built."}];
+      const NM = null;
+      const list = NM ? NM.map((n) => ({ name: n })) : (v.tabs || []);
+      const a = st.tbReview || 0;
+      v.tabs = list.map((t, i) => Object.assign({}, t, { on: i === a ? 'true' : 'false', line: i === a ? 'var(--fx-primary)' : 'transparent', fg: i === a ? 'var(--fx-primary-text)' : 'var(--fx-text-body)', weight: i === a ? 700 : 500, pick: () => this.setState({ tbReview: i }) }));
+      v.tbReviewFirst = a === 0;
+      v.tbReviewOther = a > 0;
+      const g = D[a] || D[1];
+      const tone = (x) => x.indexOf('✓') === 0 ? 'var(--fx-success-text)' : (x.indexOf('!') === 0 ? 'var(--fx-warning-text)' : (x.indexOf('✕') === 0 ? 'var(--fx-danger-text)' : 'var(--fx-text-body)'));
+      v.tbReviewGen = { title: g.title, lead: g.lead, cols: g.cols, head: g.head, note: g.note, hasNote: !!g.note, rows: g.rows.map((r) => ({ cols: g.cols, cells: r.map((x, j) => ({ t: x, fg: j === 0 ? 'var(--fx-text)' : tone(x), w: j === 0 ? 600 : 400 })) })) };
+    }
+    v.reqOn = st.dlg === 'req';
+    v.rejOn = st.dlg === 'rej';
+    v.openReq = () => this.setState({ dlg: 'req' });
+    v.openRej = () => this.setState({ dlg: 'rej' });
+    v.closeDlg = () => this.setState({ dlg: '' });
+    v.doReq = () => { this.setState({ dlg: '' }); this.say('Sent back to the workspace with your note. Rahul and Priya are told.'); };
+    v.doRej = () => { this.setState({ dlg: '' }); this.say('CHG-0057 is rejected and closed. Payments is back to Planned.'); };
+    v.panelOn = !!st.panel;
+    v.panelKey = st.panel || '';
+    v.openPanel = () => this.setState({ panel: 'open' });
+    v.closePanel = () => this.setState({ panel: '' });
+    const M = ["Opens the Comments tab.","Downloading payments-review.pdf","Not designed yet: the revision compare panel.","Not designed yet: the Request changes dialog.","Not designed yet: the Reject dialog.","Waiting for the security review by Priya. Once it is done this opens the Approve dialog (board: Review decisions)."];
+    M.forEach((m, i) => { v['say' + i] = () => this.say(m); });
+    { const WHO = ['Jenkins build #58', 'Rahul Sharma', 'Priya Kulkarni', 'Amit Mehta (you)']; v.flow = (v.flow || []).map((f, i) => Object.assign({}, f, { who: WHO[i] })); }
+    v.openComments = () => this.setState({ tbReview: 2 });
+    v.moreOn = !!(this.state && this.state.more);
+    v.moreStr = v.moreOn ? 'true' : 'false';
+    v.toggleMore = () => this.setState({ more: !(this.state && this.state.more) });
+    ["openPanel","say1","toggleSec","openRej"].forEach((h) => { v['m_' + h] = () => { this.setState({ more: false }); if (v[h]) { v[h](); } }; });
+    return v;
+  }
+  renderPage() {
+    const s = this.state;
+    const LB = String.fromCharCode(123), RB = String.fromCharCode(125), L2 = LB + LB, R2 = RB + RB;
+    const subs = [['Overview', 'Landing.dc.html'], ['Choose path', 'ChoosePath.dc.html'], ['Component inventory', 'Components.dc.html'], ['Component mapping', 'Mapping.dc.html'], ['Technology catalogue', 'Catalogue.dc.html'], ['Migration planner', 'Migrate.dc.html'], ['Migration workspace', 'Workspace.dc.html'], ['Validation centre', 'Validation.dc.html'], ['Review and approval', 'Review.dc.html'], ['History', '#']];
+    const tab = (list, cur, key) => list.map((t) => ({ name: t[1], on: t[0] === cur ? 'true' : 'false', line: t[0] === cur ? 'var(--fx-primary)' : 'transparent', fg: t[0] === cur ? 'var(--fx-primary-text)' : 'var(--fx-text-body)', weight: t[0] === cur ? 700 : 500, pick: () => this.setState({ [key]: t[0] }) }));
+    const F = {
+      'MakePayment.tsx': { state: 'Changed',
+        before: ['<oj-form-layout>', '  <oj-input-text id="amount"', '    value="' + L2 + 'amount' + R2 + '"', '    required></oj-input-text>', '  <oj-select-single id="beneficiary"', '    value="' + L2 + 'beneficiary' + R2 + '">', '  </oj-select-single>', '  <oj-button id="submit"', '    on-oj-action="[[submitPayment]]">', '    Make payment', '  </oj-button>', '</oj-form-layout>'],
+        after: ['import ' + LB + ' useState ' + RB + ' from "react";', 'import ' + LB + ' TextField, Select, Button ' + RB + ' from "@factory/ui";', '', 'export const MakePayment = () => ' + LB, '  const [amount, setAmount] = useState("");', '  const [beneficiary, setBeneficiary] = useState("");', '', '  return (', '+    <Form layout="vertical">', '+      <TextField label="Amount"', '+        value=' + LB + 'amount' + RB + ' required />', '+      <Select label="Beneficiary"', '+        value=' + LB + 'beneficiary' + RB + ' required />', '+      <Button onClick=' + LB + 'submitPayment' + RB + '>Make payment</Button>', '+    </Form>', '  );', RB + ';'] },
+      'PaymentSummary.tsx': { state: 'New',
+        before: [],
+        after: ['+import ' + LB + ' Card, Amount ' + RB + ' from "@factory/ui";', '+', '+export const PaymentSummary = (' + LB + ' payment ' + RB + ') => (', '+  <Card title="Check the payment">', '+    <Amount value=' + LB + 'payment.amount' + RB + ' />', '+    <p>' + LB + 'payment.beneficiary.displayValue' + RB + '</p>', '+  </Card>', '+);'] }
+    };
+    const f = F[s.file] || F['MakePayment.tsx'];
+    const isNew = f.before.length === 0;
+    const split = s.layout === 'split' && !isNew;
+    const T = [['folder', 'payments (42)', 0, '⌄'], ['folder', 'src (24)', 1, '⌄'], ['folder', 'components (12)', 2, '⌄'], ['file', 'MakePayment.tsx', 3, 'M'], ['file', 'BeneficiarySelect.tsx', 3, 'M'], ['file', 'AmountField.tsx', 3, 'M'], ['file', 'PaymentSummary.tsx', 3, 'A'], ['folder', 'services (4)', 2, '›'], ['folder', 'hooks (3)', 2, '›'], ['folder', 'pages (8)', 1, '⌄'], ['file', 'MakePaymentPage.tsx', 2, 'M'], ['file', 'PaymentSuccess.tsx', 2, 'A'], ['folder', 'tests (6)', 1, '›'], ['folder', 'styles (2)', 1, '›']];
+    const BT = { why: 'The JET form, input, select and button became the factory React components Form, TextField, Select and Button. Validation, state and the call to the OBDX payment service work as before.', impact: '4 screens in Payments use this form: make payment, repeat payment, scheduled payment and the payment review.', deps: 'Uses usePayment for the service call and BeneficiarySelect for the payee list.', tests: '12 tests cover this file: 8 unit tests and 4 steps of the payment journey. All pass in build #58.' };
+    return {
+      sub: subs.map((n, i) => ({ name: n[0], href: n[1], current: i === 8 ? 'page' : 'false', bg: i === 8 ? 'var(--fx-primary)' : 'transparent', fg: i === 8 ? '#ffffff' : '#dcd7ff', weight: i === 8 ? 600 : 400 })),
+      tiles: [
+        { k: 'Files changed', v: '42', icon: '▤', bg: 'var(--fx-primary-soft)', fg: 'var(--fx-primary)', vfg: 'var(--fx-text)' },
+        { k: 'Screens moved', v: '38', icon: '▭', bg: 'var(--fx-primary-soft)', fg: 'var(--fx-primary)', vfg: 'var(--fx-text)' },
+        { k: 'Components replaced', v: '286', icon: '◇', bg: 'var(--fx-primary-soft)', fg: 'var(--fx-primary)', vfg: 'var(--fx-text)' },
+        { k: 'Tests passed, build #58', v: '366 of 366', icon: '✓', bg: 'var(--fx-success-soft)', fg: 'var(--fx-success-text)', vfg: 'var(--fx-success-text)' },
+        { k: 'Security findings open', v: '3', icon: '!', bg: 'var(--fx-warning-soft)', fg: 'var(--fx-warning-text)', vfg: 'var(--fx-warning-text)' },
+        { k: 'OBDX rules', v: '8 of 8', icon: '✓', bg: 'var(--fx-success-soft)', fg: 'var(--fx-success-text)', vfg: 'var(--fx-success-text)' }
+      ],
+      tabs: tab([['code', 'Changes'], ['checks', 'Checks'], ['cm', 'Comments (2)']], 'code', 'tab'),
+      tree: T.map((t) => ({ name: t[1], folder: t[0] === 'folder', file: t[0] === 'file', caret: t[3], pad: (4 + t[2] * 13) + 'px', mark: t[3], mName: t[3] === 'A' ? 'New file' : 'Changed file', mBg: t[3] === 'A' ? 'var(--fx-success)' : 'var(--fx-primary)', on: s.file === t[1] ? 'true' : 'false', bg: s.file === t[1] ? 'var(--fx-primary-soft)' : 'transparent', pick: () => this.setState({ file: F[t[1]] ? t[1] : s.file }) })),
+      file: s.file, fState: f.state, fBg: isNew ? 'var(--fx-success-soft)' : 'var(--fx-primary-soft)', fFg: isNew ? 'var(--fx-success-text)' : 'var(--fx-primary-text)',
+      layouts: [['split', 'Side by side'], ['unified', 'One column']].map((c) => ({ name: c[1], on: s.layout === c[0] ? 'true' : 'false', bg: s.layout === c[0] ? 'var(--fx-primary)' : 'transparent', fg: s.layout === c[0] ? '#ffffff' : 'var(--fx-text-body)', pick: () => this.setState({ layout: c[0] }) })),
+      split: split, cols: split ? 'minmax(0,.85fr) minmax(0,1.15fr)' : 'minmax(0,1fr)',
+      afterTitle: isNew ? 'New file (React + TypeScript)' : 'After (React + TypeScript)',
+      before: f.before.map((t, i) => ({ n: i + 1, t: t })),
+      after: f.after.map((t, i) => { const add = t.indexOf('+') === 0; return { n: i + 1, t: add ? t.slice(1) : t, sign: add ? '+' : '', sc: 'var(--fx-success-text)', bg: add ? 'var(--fx-success-soft)' : 'var(--fx-surface)', c: add ? 'var(--fx-success-text)' : 'var(--fx-text)' }; }),
+      btabs: tab([['why', 'What changed and why'], ['impact', 'What it touches'], ['deps', 'Dependencies'], ['tests', 'Tests']], s.btab, 'btab'),
+      btext: BT[s.btab],
+      flow: [['Validation', 'done'], ['Technical review', 'now'], ['Security review', 'wait'], ['Approval', 'wait']].map((x, i) => ({ name: x[0], mark: x[1] === 'done' ? '✓' : String(i + 1), bg: x[1] === 'done' ? 'var(--fx-success)' : 'var(--fx-surface)', fg: x[1] === 'done' ? '#ffffff' : (x[1] === 'now' ? 'var(--fx-primary)' : 'var(--fx-text-muted)'), ring: x[1] === 'done' ? 'var(--fx-success)' : (x[1] === 'now' ? 'var(--fx-primary)' : 'var(--fx-border-strong)'), line: i === 0 ? 'transparent' : (x[1] === 'wait' ? 'var(--fx-border-strong)' : 'var(--fx-primary)'), state: x[1] === 'done' ? 'Done' : (x[1] === 'now' ? 'In review' : 'Waiting'), cBg: x[1] === 'done' ? 'var(--fx-success-soft)' : (x[1] === 'now' ? 'var(--fx-primary-soft)' : 'var(--fx-surface-3)'), cFg: x[1] === 'done' ? 'var(--fx-success-text)' : (x[1] === 'now' ? 'var(--fx-primary-text)' : 'var(--fx-text-muted)') })),
+      people: [['RS', 'Rahul Sharma', 'Technical reviewer', 'In review', 'var(--fx-primary-soft)', 'var(--fx-primary-text)', 'var(--fx-primary-soft)'], ['PK', 'Priya Kulkarni', 'Security reviewer', 'Waiting', 'var(--fx-surface-3)', 'var(--fx-text-muted)', 'var(--fx-warning-soft)'], ['AM', 'Amit Mehta', 'Approver', 'Waiting', 'var(--fx-surface-3)', 'var(--fx-text-muted)', '#e2e8f0']].map((p) => ({ ini: p[0], name: p[1], role: p[2], state: p[3], cBg: p[4], cFg: p[5], av: p[6] })),
+      comments: [
+        { ini: 'RS', name: 'Rahul Sharma', when: '30 Oct, 11:24 am', text: 'Code looks good. Please change the error message to the bank wording.', av: 'var(--fx-primary-soft)' },
+        { ini: 'PK', name: 'Priya Kulkarni', when: '30 Oct, 12:03 pm', text: 'Found 3 medium security findings. Please fix them and run the security checks again.', av: 'var(--fx-warning-soft)' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

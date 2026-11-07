@@ -1,0 +1,89 @@
+<!-- Choose a path, as on the approved board (docs/design/boards/ChoosePath-*.png) -->
+<div class="factory-pg factory-mb factory-mp">
+  <div class="factory-mb-pagehead">
+    <h1>Choose a path</h1>
+    <p>Pick a path and set the scope.</p>
+  </div>
+
+  <nav class="factory-mz-stepbar" aria-label="Steps of this path"><span class="factory-mz-stepbar-name"><b><oj-bind-text value="[[pathName]]"></oj-bind-text></b><small>Step 1 of 5</small></span>
+    <ol><oj-bind-for-each data="[[steps]]" as="s"><template><li :class="[[s.data.css]]" :aria-current="[[s.data.current]]"><span class="factory-mz-dot"><oj-bind-text value="[[s.data.n]]"></oj-bind-text></span>
+      <oj-bind-if test="[[s.data.done]]"><a :href="[[s.data.href]]" on-click="[[s.data.go]]"><oj-bind-text value="[[s.data.label]]"></oj-bind-text></a></oj-bind-if>
+      <oj-bind-if test="[[!s.data.done]]"><span><oj-bind-text value="[[s.data.label]]"></oj-bind-text></span></oj-bind-if></li></template></oj-bind-for-each></ol></nav>
+
+  <oj-bind-if test="[[!workspaceId()]]"><div class="fx-empty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span></span><strong>No workspace chosen</strong>Choose a workspace in the top bar first.</div></oj-bind-if>
+  <oj-bind-if test="[[error()]]"><div class="fx-alert fx-alert--danger" id="mpError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><strong>The path did not load.</strong> <oj-bind-text value="[[error]]"></oj-bind-text></span></div></oj-bind-if>
+  <oj-bind-if test="[[needsAnalysis()]]"><div class="fx-alert fx-alert--warning" role="status" id="mpNeedsAnalysis"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+    <span class="fx-alert-text"><strong>Needs an analysis first.</strong> Both paths start from the analysis of the code.</span>
+    <button type="button" class="fx-btn fx-btn--primary fx-btn--sm" on-click="[[runAnalysis]]" :disabled="[[!canManage()]]">Run it</button></div></oj-bind-if>
+  <oj-bind-if test="[[saveError()]]"><div class="fx-alert fx-alert--danger" role="alert" id="mpSaveError"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+    <span class="fx-alert-text"><strong>The choice was not saved.</strong> <oj-bind-text value="[[saveError]]"></oj-bind-text></span>
+    <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[retrySave]]">Try again</button></div></oj-bind-if>
+  <oj-bind-if test="[[!canManage() && workspaceId()]]"><div class="fx-alert fx-alert--info" role="status" id="mpNotAllowed"><span class="factory-nav-icon factory-ico-info" aria-hidden="true"></span><span class="fx-alert-text">You can look, but not start a modernization. Choosing and starting a path needs the Manage code permission; ask a workspace administrator.</span></div></oj-bind-if>
+
+  <oj-bind-if test="[[overview()]]">
+    <div class="factory-mb-choose" role="radiogroup" aria-label="Path" on-keydown="[[cardKey]]">
+      <oj-bind-for-each data="[[cards]]" as="c">
+        <template>
+          <button type="button" :class="[[c.data.css]]" role="radio" :id="[['mpCard-' + c.data.id]]" :aria-checked="[[c.data.checked]]" :tabindex="[[c.data.tab]]" on-click="[[c.data.pick]]" :disabled="[[!canManage()]]">
+            <span class="factory-mb-choose-head">
+              <span class="factory-mb-path-icon" aria-hidden="true"><oj-bind-text value="[[c.data.glyph]]"></oj-bind-text></span>
+              <span class="factory-mb-choose-text"><b><oj-bind-text value="[[c.data.title]]"></oj-bind-text></b><span><oj-bind-text value="[[c.data.text]]"></oj-bind-text></span></span>
+              <span class="factory-mb-radio" aria-hidden="true"></span>
+            </span>
+            <span class="factory-mb-tags"><oj-bind-for-each data="[[c.data.tags]]" as="t"><template><span :class="[[t.data.css]]"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></span></template></oj-bind-for-each></span>
+            <span :class="[[c.data.noteCss]]"><span aria-hidden="true"><oj-bind-text value="[[c.data.note.icon]]"></oj-bind-text></span><span><b><oj-bind-text value="[[c.data.note.title]]"></oj-bind-text></b> <oj-bind-text value="[[c.data.note.text]]"></oj-bind-text></span></span>
+            <span class="factory-mb-points"><oj-bind-for-each data="[[c.data.points]]" as="p"><template><span><i aria-hidden="true">✓</i><oj-bind-text value="[[p.data]]"></oj-bind-text></span></template></oj-bind-for-each></span>
+          </button>
+        </template>
+      </oj-bind-for-each>
+    </div>
+
+    <section class="factory-mb-card factory-mb-config" aria-labelledby="mpConfigTitle">
+      <div><h2 id="mpConfigTitle">Configuration</h2><p><oj-bind-text value="[[path() === 'ui' ? 'The code, scope and way of working for the component upgrade.' : 'The code, scope and way of working for the migration.']]"></oj-bind-text></p></div>
+      <div class="factory-mb-grid3">
+        <fx-select id="mpWorkspace" label="Workspace" required options="[[workspaceOptions]]" value="[[workspaceId]]" on-value-changed="[[pickWorkspace]]"></fx-select>
+        <fx-select id="mpBranch" label="Source branch" required options="[[branchOptions]]" value="{{branch}}" class="factory-mb-monofield" title="The path works from the workspace's imported code; import another branch in Workspaces."></fx-select>
+        <fx-select id="mpRevision" label="Source revision" required options="[[revisionOptions]]" value="{{revision}}" class="factory-mb-monofield"></fx-select>
+      </div>
+      <div class="factory-mb-grid3">
+        <oj-bind-for-each data="[[choices]]" as="g">
+          <template>
+            <fieldset class="factory-mb-options" :id="[['mp-' + g.data.id]]">
+              <legend><oj-bind-text value="[[g.data.label]]"></oj-bind-text></legend>
+              <oj-bind-for-each data="[[g.data.opts]]" as="o">
+                <template>
+                  <button type="button" role="radio" :aria-checked="[[o.data.checked]]" :class="[[o.data.css]]" on-click="[[o.data.pick]]" :disabled="[[!canManage()]]">
+                    <span class="factory-mb-radio" aria-hidden="true"></span><span class="factory-mb-option-name"><oj-bind-text value="[[o.data.name]]"></oj-bind-text></span>
+                    <oj-bind-if test="[[o.data.tag]]"><span class="factory-mb-pill is-sm is-success"><oj-bind-text value="[[o.data.tag]]"></oj-bind-text></span></oj-bind-if>
+                  </button>
+                </template>
+              </oj-bind-for-each>
+            </fieldset>
+          </template>
+        </oj-bind-for-each>
+      </div>
+      <oj-bind-if test="[[scope() === 'some']]">
+        <div class="factory-mp-modules"><fx-multiselect id="mpModules" label="Modules" placeholder="Choose modules" options="[[moduleOptions]]" value="{{modules}}" error="[[modulesError]]" disabled="[[!canManage()]]"></fx-multiselect></div>
+      </oj-bind-if>
+      <dl class="factory-mb-factrow"><oj-bind-for-each data="[[facts]]" as="f"><template><div><dt><oj-bind-text value="[[f.data.k]]"></oj-bind-text></dt><dd :class="[[f.data.css]]"><oj-bind-text value="[[f.data.v]]"></oj-bind-text></dd></div></template></oj-bind-for-each></dl>
+    </section>
+
+    <footer class="factory-mb-footer">
+      <button type="button" class="factory-mb-btn is-plain" id="mpCancel" on-click="[[cancel]]"><span aria-hidden="true">←</span>Overview</button>
+      <span class="factory-mb-spacer"></span>
+      <fx-menu-button id="mpMore" variant="secondary" label="More ⋯" align="end" items="[[moreItems]]" on-fx-action="[[more]]"></fx-menu-button>
+      <button type="button" class="factory-mb-btn is-primary" id="mpContinue" on-click="[[proceed]]" :disabled="[[blocked]]" :title="[[blockedTitle]]"><oj-bind-text value="[[nextLabel]]"></oj-bind-text><span aria-hidden="true">→</span></button>
+    </footer>
+
+    <fx-sheet id="mpRunSheet" side="center" open="{{runOpen}}" heading="[[runTitle]]" subtitle="Reading the code before the next step">
+      <div class="factory-cf-detail-wrap"><div class="factory-mr-form" aria-live="polite">
+        <div class="fx-progress" role="progressbar" aria-label="Analysis" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="[[job() ? job().percent : 0]]"><span :style="[[runBar]]"></span></div>
+        <ol class="factory-mo-jobsteps"><oj-bind-for-each data="[[runSteps]]" as="r"><template><li :class="[['factory-mo-jobstep is-' + r.data.mark]]"><span class="factory-mz-dot" aria-hidden="true"></span><oj-bind-text value="[[r.data.t]]"></oj-bind-text></li></template></oj-bind-for-each></ol>
+        <p class="fx-muted"><oj-bind-text value="[[runMessage]]"></oj-bind-text></p>
+        <p class="fx-help">You can leave this page; the bell tells you when it is done.</p>
+        <div class="factory-mm-sheetfoot"><button type="button" class="fx-btn fx-btn--secondary" id="mpRunCancel" on-click="[[runCancel]]"><oj-bind-text value="[[runCancelLabel]]"></oj-bind-text></button>
+          <button type="button" class="fx-btn fx-btn--primary" id="mpRunContinue" on-click="[[runContinue]]" :disabled="[[!runDone()]]" :title="[[runDone() ? null : 'Opens once the analysis is finished']]"><oj-bind-text value="[[continueLabel]]"></oj-bind-text></button></div>
+      </div></div>
+    </fx-sheet>
+  </oj-bind-if>
+</div>

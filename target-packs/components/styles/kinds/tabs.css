@@ -1,0 +1,15 @@
+.bx-tabs { position: relative; display: inline-flex; gap: 4px; padding: 4px; border-radius: var(--bx-radius-lg); background: var(--bx-track); max-width: 100%; overflow-x: auto; }
+.bx-tab { border: 0; border-radius: var(--bx-radius-control); padding: 8px 16px; background: transparent; color: var(--bx-text-body); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap;
+  transition: background var(--bx-dur) var(--bx-ease), color var(--bx-dur) var(--bx-ease), box-shadow var(--bx-dur) var(--bx-ease); }
+.bx-tab:hover { color: var(--bx-text); }
+.bx-tab:focus-visible { outline: none; box-shadow: var(--bx-focus); }
+.bx-tab.is-on { background: var(--bx-fill); color: var(--bx-brand-text); font-weight: 650; box-shadow: var(--bx-shadow-1); }
+.bx-tab:disabled { opacity: 0.5; cursor: not-allowed; }
+.bx-tabs-ink { display: none; }
+.bx-motion-hover-lift .bx-tab:not(:disabled):not(.is-on):hover { transform: translateY(-1px); }
+.bx-motion-click-press .bx-tab:not(:disabled):active { transform: scale(0.96); }
+.bx-motion-click-bounce .bx-tab:not(:disabled):active { animation: bx-bounce 300ms var(--bx-ease-spring); }
+.bx-tab.is-on { animation: bx-tab-in var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-tabsum .bx-tabs { align-self: flex-start; margin-bottom: 8px; }
+.bx-tabsum-panel { display: flex; flex-direction: column; gap: 6px; animation: bx-settle var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-tabsum-figure { margin: 0; font-size: 20px; font-weight: 750; font-variant-numeric: tabular-nums; color: var(--bx-text); }

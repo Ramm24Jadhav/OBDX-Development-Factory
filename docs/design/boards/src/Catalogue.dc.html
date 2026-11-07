@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Technology catalogue</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+:root{--fx-bg:#fafafc;--fx-surface:#ffffff;--fx-surface-2:#f8fafc;--fx-surface-3:#f1f5f9;--fx-border:#e5e7eb;--fx-border-strong:#cbd5e1;--fx-text:#0f172a;--fx-text-body:#334155;--fx-text-muted:#64748b;--fx-text-faint:#94a3b8;--fx-primary:#4f46e5;--fx-primary-hover:#4338ca;--fx-primary-soft:#eef2ff;--fx-primary-text:#4338ca;--fx-primary-border:#c7d2fe;--fx-on-primary:#ffffff;--fx-success:#10b981;--fx-success-soft:#ecfdf5;--fx-success-text:#047857;--fx-warning:#f59e0b;--fx-warning-soft:#fffbeb;--fx-warning-text:#b45309;--fx-danger:#ef4444;--fx-danger-soft:#fef2f2;--fx-danger-text:#b91c1c;--fx-info:#0284c7;--fx-info-soft:#f0f9ff;--fx-info-text:#0369a1;--fx-radius-sm:6px;--fx-radius:8px;--fx-radius-lg:12px;--fx-radius-xl:16px;--fx-radius-pill:999px;--fx-shadow-sm:0 1px 2px rgba(15,23,42,.06);--fx-font-mono:"Cascadia Mono","JetBrains Mono",Consolas,monospace}
+.fx-dark{color-scheme:dark;--fx-bg:#0b1120;--fx-surface:#111827;--fx-surface-2:#162032;--fx-surface-3:#1e293b;--fx-border:#263247;--fx-border-strong:#3b4a63;--fx-text:#e5e7eb;--fx-text-body:#cbd5e1;--fx-text-muted:#94a3b8;--fx-text-faint:#64748b;--fx-primary:#4f46e5;--fx-primary-hover:#5b55eb;--fx-primary-soft:rgba(99,102,241,.16);--fx-primary-text:#a5b4fc;--fx-primary-border:rgba(129,140,248,.45);--fx-success-soft:rgba(16,185,129,.14);--fx-success-text:#34d399;--fx-warning-soft:rgba(245,158,11,.14);--fx-warning-text:#fbbf24;--fx-danger-soft:rgba(239,68,68,.14);--fx-danger-text:#f87171;--fx-info-soft:rgba(14,165,233,.14);--fx-info-text:#38bdf8}
+a{color:var(--fx-primary)}a:hover{color:var(--fx-primary-text)}
+
+/* Reflow at laptop sizes, the factory way: side columns drop below, tiles wrap, tables scroll in their box */
+.fx-cols3>*,.fx-cols2>*,.fx-cols3e>*{min-width:0}
+@media (max-width:1500px){.fx-cols3{grid-template-columns:minmax(220px,260px) minmax(0,1fr) !important}.fx-cols3>:nth-child(3){grid-column:1/-1}.fx-cols3.fx-main-first{grid-template-columns:minmax(0,1fr) minmax(260px,300px) !important}}
+@media (max-width:1366px){.fx-cols2{grid-template-columns:minmax(0,1fr) minmax(280px,32%) !important}.fx-cols3e{grid-template-columns:repeat(2,minmax(0,1fr)) !important}.fx-cols3e>:nth-child(3){grid-column:1/-1}}
+@media (max-width:1180px){.fx-cols3,.fx-cols3.fx-main-first,.fx-cols2{grid-template-columns:minmax(0,1fr) !important}.fx-cols3>:nth-child(3){grid-column:auto}}
+@media (max-width:900px){.fx-cols3e{grid-template-columns:minmax(0,1fr) !important}.fx-cols3e>:nth-child(3){grid-column:auto}}
+.fx-scroll{overflow-x:auto}
+@media (max-width:1440px){.fx-stack1440{grid-template-columns:minmax(0,1fr) !important}}
+.mono{font-family:var(--fx-font-mono);font-size:12px}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="position:relative;width:100%;min-height:100vh;display:flex;flex-direction:column;font-family:Inter,'Segoe UI',system-ui,sans-serif;font-size:13px;color:var(--fx-text-body);background:var(--fx-bg);overflow-x:clip">
+
+
+
+  <div style="flex:1;display:flex;min-height:0">
+    <div data-nav-rail style="position:sticky;top:0;height:100vh;flex:none;align-self:flex-start;z-index:4"><dc-import name="Nav" current="catalogue" h="100vh" hint-size="244px,1010px"></dc-import></div>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <dc-import name="Topbar" dark="{{darkOn}}" fluid="{{yes}}" hint-size="100%,56px"></dc-import>
+
+    <main style="flex:1;min-width:0;padding:14px 22px;display:flex;flex-direction:column;gap:12px">
+      <div data-simple style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px">
+        <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+          <div style="font-size:13px;color:var(--fx-text-muted)"><a href="Landing.dc.html" style="text-decoration:none">Modernization</a> <span aria-hidden="true">›</span> Technology catalogue</div>
+          <h1 style="margin:0;font-size:28px;line-height:34px;font-weight:700;color:var(--fx-text)">Technology catalogue</h1>
+          <p style="margin:0;color:var(--fx-text-body)">Technologies that keep OBDX as it is. Pick one to plan the move.</p>
+        </div>
+      </div>
+      <div data-steps-row style="margin-top:-2px;width:100%"><dc-import name="Steps" path="mig" step="2" dark="{{darkOn}}" hint-size="100%,48px"></dc-import></div>
+
+      <div role="tablist" aria-label="Catalogue views" style="display:flex;gap:26px;border-bottom:1px solid var(--fx-border)">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+          <button type="button" onClick="{{t.pick}}" role="tab" aria-selected="{{t.on}}" style="font:inherit;cursor:pointer;background:transparent;border:0;border-bottom:2px solid {{t.line}};height:38px;padding:0 4px;color:{{t.fg}};font-weight:{{t.weight}};font-size:14px">{{t.name}}</button>
+        </sc-for>
+      </div>
+<sc-if value="{{tbCatalogueFirst}}" hint-placeholder-val="{{true}}">
+
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <b style="color:var(--fx-text)">Platform</b>
+        <sc-for list="{{plats}}" as="c" hint-placeholder-count="3"><button type="button" aria-pressed="{{c.on}}" onClick="{{c.pick}}" style="font:inherit;cursor:pointer;height:30px;padding:0 14px;border-radius:var(--fx-radius-pill);border:1px solid {{c.border}};background:{{c.bg}};color:{{c.fg}};font-weight:600">{{c.name}}</button></sc-for>
+        <span style="width:1px;height:22px;background:var(--fx-border-strong);margin:0 4px"></span>
+        <b style="color:var(--fx-text)">Pack readiness</b>
+        <sc-for list="{{reads}}" as="c" hint-placeholder-count="4"><button type="button" aria-pressed="{{c.on}}" onClick="{{c.pick}}" style="font:inherit;cursor:pointer;height:30px;padding:0 12px;border-radius:var(--fx-radius-pill);border:1px solid {{c.border}};background:{{c.bg}};color:{{c.fg}};font-weight:600;display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:{{c.dot}}" aria-hidden="true"></span>{{c.name}}</button></sc-for>
+        <label style="margin-left:auto;width:250px;height:34px;border:1px solid var(--fx-border-strong);border-radius:var(--fx-radius);display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--fx-surface);color:var(--fx-text-muted)"><span aria-hidden="true">⌕</span><span style="position:absolute;left:-9999px">Search technologies</span><input type="search" placeholder="Search technologies" style="flex:1;border:0;outline:0;font:inherit;background:transparent"></label>
+      </div>
+
+      <div class="fx-cols2 fx-stack1440" style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 460px;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+          <sc-if value="{{showWeb}}" hint-placeholder-val="{{true}}">
+            <h2 style="margin:0;font-size:15px;font-weight:700;color:var(--fx-text)">Web (internet banking)</h2>
+            <div role="radiogroup" aria-label="Web technologies" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+              <sc-for list="{{web}}" as="t" hint-placeholder-count="4">
+                <button type="button" role="radio" aria-checked="{{t.on}}" onClick="{{t.pick}}" style="font:inherit;color:inherit;cursor:pointer;text-align:left;background:{{t.bg}};border:{{t.border}};border-radius:var(--fx-radius-lg);padding:12px 14px;display:flex;gap:12px;align-items:flex-start">
+                  <span style="width:40px;height:40px;flex:none;border-radius:var(--fx-radius);background:{{t.logoBg}};color:{{t.logoFg}};display:inline-flex;align-items:center;justify-content:center;font-weight:700" aria-hidden="true">{{t.logo}}</span>
+                  <span style="flex:1;display:flex;flex-direction:column;gap:3px"><b style="font-size:15px;color:var(--fx-text)">{{t.name}}</b><span style="color:var(--fx-text-body);line-height:17px">{{t.text}}</span><span style="font-size:12px;color:var(--fx-text-muted)">{{t.meta}}</span></span>
+                  <span style="height:22px;padding:0 8px;border-radius:var(--fx-radius-pill);background:{{t.rBg}};color:{{t.rFg}};font-size:11px;font-weight:700;display:inline-flex;align-items:center;white-space:nowrap">{{t.ready}}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{showMob}}" hint-placeholder-val="{{true}}">
+            <h2 style="margin:4px 0 0;font-size:15px;font-weight:700;color:var(--fx-text)">Mobile apps</h2>
+            <div role="radiogroup" aria-label="Mobile technologies" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+              <sc-for list="{{mob}}" as="t" hint-placeholder-count="4">
+                <button type="button" role="radio" aria-checked="{{t.on}}" onClick="{{t.pick}}" style="font:inherit;color:inherit;cursor:pointer;text-align:left;background:{{t.bg}};border:{{t.border}};border-radius:var(--fx-radius-lg);padding:12px 14px;display:flex;gap:12px;align-items:flex-start">
+                  <span style="width:40px;height:40px;flex:none;border-radius:var(--fx-radius);background:{{t.logoBg}};color:{{t.logoFg}};display:inline-flex;align-items:center;justify-content:center;font-weight:700" aria-hidden="true">{{t.logo}}</span>
+                  <span style="flex:1;display:flex;flex-direction:column;gap:3px"><b style="font-size:15px;color:var(--fx-text)">{{t.name}}</b><span style="color:var(--fx-text-body);line-height:17px">{{t.text}}</span><span style="font-size:12px;color:var(--fx-text-muted)">{{t.meta}}</span></span>
+                  <span style="height:22px;padding:0 8px;border-radius:var(--fx-radius-pill);background:{{t.rBg}};color:{{t.rFg}};font-size:11px;font-weight:700;display:inline-flex;align-items:center;white-space:nowrap">{{t.ready}}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <details style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:12px;padding:10px 14px">
+            <summary style="cursor:pointer;font-weight:700;color:var(--fx-text)">Not offered, and why (3)</summary>
+            <div style="display:flex;flex-direction:column;gap:5px;margin-top:8px;color:var(--fx-text-body)">
+              <span><b>Next.js server rendering</b>: puts a new server in front of OBDX that would hold the bank's session cookie. A static React build is offered instead.</span>
+              <span><b>Flutter Web</b>: draws on a canvas and its screen-reader support is off by default.</span>
+              <span><b>SvelteKit, Blazor, .NET MAUI</b>: few bank teams can staff or support them.</span>
+            </div>
+          </details>
+
+          
+        </div>
+
+        <section aria-labelledby="detTitle" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-xl);padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-height:0">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <span style="width:48px;height:48px;flex:none;border-radius:12px;background:{{d.logoBg}};color:{{d.logoFg}};display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:18px" aria-hidden="true">{{d.logo}}</span>
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px"><h2 id="detTitle" style="margin:0;font-size:20px;font-weight:700;color:var(--fx-text)">{{d.name}}</h2><span style="color:var(--fx-text-body)">{{d.text}}</span></div>
+            <span style="height:24px;padding:0 10px;border-radius:var(--fx-radius-pill);background:{{d.rBg}};color:{{d.rFg}};font-size:11px;font-weight:700;display:inline-flex;align-items:center">{{d.ready}}</span>
+          </div>
+          <div role="tablist" aria-label="Technology details" style="display:flex;gap:18px;border-bottom:1px solid var(--fx-border)">
+            <sc-for list="{{dtabs}}" as="t" hint-placeholder-count="4"><button type="button" onClick="{{t.pick}}" role="tab" aria-selected="{{t.on}}" style="font:inherit;cursor:pointer;background:transparent;border:0;border-bottom:2px solid {{t.line}};height:34px;padding:0 2px;color:{{t.fg}};font-weight:{{t.weight}}">{{t.name}}</button></sc-for>
+          </div>
+<sc-if value="{{tbCatalogueDetailFirst}}" hint-placeholder-val="{{true}}">
+          <div style="display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:12px">
+            <div style="border:1px solid var(--fx-border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px">
+              <b style="color:var(--fx-text)">Why it fits</b>
+              <sc-for list="{{d.points}}" as="p" hint-placeholder-count="4"><span style="display:flex;gap:8px;line-height:17px"><span style="color:var(--fx-success-text)" aria-hidden="true">✓</span>{{p}}</span></sc-for>
+            </div>
+            <div style="border:1px solid var(--fx-border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px">
+              <b style="color:var(--fx-text)">Target pack</b>
+              <sc-for list="{{d.pack}}" as="p" hint-placeholder-count="5"><span style="display:flex;justify-content:space-between;gap:8px"><span style="color:var(--fx-text-muted)">{{p.k}}</span><span class="mono" style="color:var(--fx-text)">{{p.v}}</span></span></sc-for>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:var(--fx-primary-soft)">
+            <span style="width:30px;height:30px;border-radius:50%;background:var(--fx-primary-soft);color:var(--fx-primary);display:inline-flex;align-items:center;justify-content:center;font-weight:700" aria-hidden="true">✓</span>
+            <span style="flex:1;display:flex;flex-direction:column"><b style="color:var(--fx-text)">OBDX rules covered</b><span style="color:var(--fx-text-muted)">{{d.rulesText}}</span></span>
+            <span role="img" aria-label="{{d.rulesN}} of 8 rules" style="display:flex;gap:3px"><sc-for list="{{d.rules}}" as="r" hint-placeholder-count="8"><span style="width:14px;height:8px;border-radius:3px;background:{{r}}"></span></sc-for></span>
+            <b style="color:var(--fx-text)">{{d.rulesN}} of 8</b>
+          </div>
+          <b style="color:var(--fx-text)">What the pack does</b>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">
+            <sc-for list="{{d.caps}}" as="c" hint-placeholder-count="8"><span style="border:1px solid var(--fx-border);border-radius:var(--fx-radius);padding:8px;text-align:center;font-size:12px;color:{{c.fg}};background:{{c.bg}}">{{c.t}}</span></sc-for>
+          </div>
+          </sc-if>
+<sc-if value="{{tbCatalogueDetailOther}}" hint-placeholder-val="{{false}}"><section style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);overflow-x:auto;overflow-y:hidden;display:flex;flex-direction:column;min-height:0;flex:1"><div style="padding:12px 14px;display:flex;flex-direction:column;gap:2px;border-bottom:1px solid var(--fx-border)"><h2 style="margin:0;font-size:15px;font-weight:700;color:var(--fx-text)">{{tbCatalogueDetailGen.title}}</h2><span style="color:var(--fx-text-muted)">{{tbCatalogueDetailGen.lead}}</span></div><div style="min-width:720px;display:grid;grid-template-columns:{{tbCatalogueDetailGen.cols}};gap:10px;padding:8px 14px;background:var(--fx-surface-2);font-size:12px;font-weight:700;color:var(--fx-text)"><sc-for list="{{tbCatalogueDetailGen.head}}" as="h" hint-placeholder-count="4"><span>{{h}}</span></sc-for></div><sc-for list="{{tbCatalogueDetailGen.rows}}" as="r" hint-placeholder-count="5"><div style="min-width:720px;display:grid;grid-template-columns:{{r.cols}};gap:10px;padding:8px 14px;border-top:1px solid var(--fx-border)"><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="4"><span style="color:{{c.fg}};font-weight:{{c.w}}">{{c.t}}</span></sc-for></div></sc-for><sc-if value="{{tbCatalogueDetailGen.hasNote}}" hint-placeholder-val="{{false}}"><p style="margin:0;padding:10px 14px;font-size:12px;color:var(--fx-text-muted);border-top:1px solid var(--fx-border)">{{tbCatalogueDetailGen.note}}</p></sc-if></section></sc-if>
+<div style="margin-top:auto;display:flex;gap:10px">
+            <button onClick="{{openPanel}}" type="button" style="flex:1;height:40px;border-radius:var(--fx-radius);border:1.5px solid var(--fx-primary);background:var(--fx-surface);color:var(--fx-primary-text);font:inherit;font-weight:600">The target pack</button>
+            <a href="{{d.useHref}}" aria-disabled="{{d.locked}}" style="flex:1.4;height:40px;border-radius:var(--fx-radius);background:{{d.btnBg}};color:#ffffff;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px">{{d.btn}}</a>
+          </div>
+        </section>
+      </div></sc-if>
+<sc-if value="{{tbCatalogueOther}}" hint-placeholder-val="{{false}}"><section style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);overflow-x:auto;overflow-y:hidden;display:flex;flex-direction:column;min-height:0;flex:1"><div style="padding:12px 14px;display:flex;flex-direction:column;gap:2px;border-bottom:1px solid var(--fx-border)"><h2 style="margin:0;font-size:15px;font-weight:700;color:var(--fx-text)">{{tbCatalogueGen.title}}</h2><span style="color:var(--fx-text-muted)">{{tbCatalogueGen.lead}}</span></div><div style="min-width:720px;display:grid;grid-template-columns:{{tbCatalogueGen.cols}};gap:10px;padding:8px 14px;background:var(--fx-surface-2);font-size:12px;font-weight:700;color:var(--fx-text)"><sc-for list="{{tbCatalogueGen.head}}" as="h" hint-placeholder-count="4"><span>{{h}}</span></sc-for></div><sc-for list="{{tbCatalogueGen.rows}}" as="r" hint-placeholder-count="5"><div style="min-width:720px;display:grid;grid-template-columns:{{r.cols}};gap:10px;padding:8px 14px;border-top:1px solid var(--fx-border)"><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="4"><span style="color:{{c.fg}};font-weight:{{c.w}}">{{c.t}}</span></sc-for></div></sc-for><sc-if value="{{tbCatalogueGen.hasNote}}" hint-placeholder-val="{{false}}"><p style="margin:0;padding:10px 14px;font-size:12px;color:var(--fx-text-muted);border-top:1px solid var(--fx-border)">{{tbCatalogueGen.note}}</p></sc-if></section></sc-if>
+
+    </main>
+    </div>
+  </div>
+<sc-if value="{{panelOn}}" hint-placeholder-val="{{false}}"><div style="position:fixed;inset:0;background:rgba(15,23,42,.35);display:flex;justify-content:flex-end;z-index:5"><section role="dialog" aria-modal="true" aria-label=": target pack" style="width:480px;height:100%;background:var(--fx-surface);box-shadow:-12px 0 32px rgba(15,23,42,.18);display:flex;flex-direction:column"><div style="display:flex;align-items:flex-start;gap:10px;padding:18px 20px;border-bottom:1px solid var(--fx-border)"><div style="flex:1;display:flex;flex-direction:column;gap:3px"><h2 style="margin:0;font-size:18px;font-weight:700;color:var(--fx-text)">{{d.name}}: target pack</h2><span style="color:var(--fx-text-muted)">Rules, templates and the starter project the factory uses to write this technology.</span></div><button type="button" onClick="{{closePanel}}" aria-label="Close" style="width:32px;height:32px;border-radius:var(--fx-radius);border:0;background:var(--fx-surface-3);cursor:pointer;font-size:15px">✕</button></div><div style="flex:1;min-height:0;overflow:auto;padding:14px 20px;display:flex;flex-direction:column;gap:6px"><b style="color:var(--fx-text);margin-top:6px">What it contains</b><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Conversion rules</span><span style="color:var(--fx-text);text-align:right">38</span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Code templates</span><span style="color:var(--fx-text);text-align:right">24 (screen, form, list, service call, test)</span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Starter project</span><span style="color:var(--fx-text);text-align:right">Login, 2FA, menus, session and nonce already wired</span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Where it lives</span><span style="color:var(--fx-text);text-align:right"><span class="mono">target-packs/react</span></span></span><b style="color:var(--fx-text);margin-top:6px">OBDX rules it checks</b><span style="display:flex;gap:8px"><span style="color:var(--fx-success-text)" aria-hidden="true">✓</span>Same digx services</span><span style="display:flex;gap:8px"><span style="color:var(--fx-success-text)" aria-hidden="true">✓</span>Session cookie through OHS</span><span style="display:flex;gap:8px"><span style="color:var(--fx-success-text)" aria-hidden="true">✓</span>Nonce with every request</span><span style="display:flex;gap:8px"><span style="color:var(--fx-success-text)" aria-hidden="true">✓</span>Server-driven 2FA</span><span style="display:flex;gap:8px"><span style="color:var(--fx-success-text)" aria-hidden="true">✓</span>Masked tokens sent back</span><span style="display:flex;gap:8px"><span style="color:var(--fx-success-text)" aria-hidden="true">✓</span>Password encrypted on screen</span><span style="display:flex;gap:8px"><span style="color:var(--fx-success-text)" aria-hidden="true">✓</span>Menus by role</span><span style="display:flex;gap:8px"><span style="color:var(--fx-success-text)" aria-hidden="true">✓</span>Labels and validations carried over</span><b style="color:var(--fx-text);margin-top:6px">Versions</b><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">1.2.0 · 12 Jan</span><span style="color:var(--fx-text);text-align:right"><span style="height:20px;padding:0 8px;border-radius:var(--fx-radius-pill);background:var(--fx-success-soft);color:var(--fx-success-text);font-size:10.5px;font-weight:700;display:inline-flex;align-items:center;white-space:nowrap">In use</span></span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">1.1.0 · 20 Nov</span><span style="color:var(--fx-text);text-align:right">Form templates for 2FA</span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">1.0.0 · 02 Oct</span><span style="color:var(--fx-text);text-align:right">First release</span></span><p style="margin:8px 0 0;font-size:12px;color:var(--fx-text-muted)">A factory update can bring a new pack version. Moving modules to it is proposed as a change, never applied by itself.</p></div><div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid var(--fx-border)"><button type="button" onClick="{{closePanel}}" style="height:36px;padding:0 14px;border-radius:var(--fx-radius);font:inherit;font-weight:600;cursor:pointer;border:1px solid var(--fx-border-strong);background:var(--fx-surface);color:var(--fx-text)">Download the starter project</button><button type="button" onClick="{{closePanel}}" style="height:36px;padding:0 14px;border-radius:var(--fx-radius);font:inherit;font-weight:600;cursor:pointer;border:0;background:var(--fx-primary);color:#ffffff">Close</button></div></section></div></sc-if>
+<sc-if value="{{toastOn}}" hint-placeholder-val="{{false}}"><div role="status" style="position:fixed;right:28px;bottom:84px;max-width:420px;padding:12px 16px;border-radius:var(--fx-radius-lg);background:#0f172a;color:#ffffff;font-size:13px;box-shadow:0 8px 24px rgba(15,23,42,.25);display:flex;gap:10px;align-items:center"><span aria-hidden="true">ⓘ</span>{{toastText}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { plat: 'all', ready: 'all', pick: 'react' }; }
+  say(m) { this.setState({ toast: m }); clearTimeout(this.toastTimer); this.toastTimer = setTimeout(() => this.setState({ toast: '' }), 3500); }
+  renderVals() {
+    const v = this.renderPage();
+    v.yes = true;
+    v.themeClass = this.props.dark ? 'fx-dark' : '';
+    v.darkOn = !!this.props.dark;
+    const st = this.state || {};
+    v.toastOn = !!st.toast;
+    v.toastText = st.toast || '';
+    {
+      const D = [null,{"title":"Target pack","lead":"What the pack holds.","cols":"1.4fr 1fr","head":["Part","In the pack"],"rows":[["Conversion rules","38"],["Code templates","24"],["Starter project","Login, 2FA, menus, session"],["Checks","All 8 OBDX rules"]],"note":""},{"title":"Components","lead":"Factory components the new app uses.","cols":"1.2fr 1.2fr","head":["Factory component","Replaces"],"rows":[["TextField","oj-input-text"],["Select","oj-select-single"],["DateField","oj-input-date"],["DataGrid","oj-table"],["Stepper","oj-train"]],"note":""},{"title":"Limits","lead":"What this technology does not cover yet.","cols":"2fr 1.4fr","head":["Limit","Workaround"],"rows":[["Charts","Keep the JET chart in a wrapper"],["Print layouts","Server-side PDF as today"],["Offline use","Not supported"]],"note":""}];
+      const NM = ["Overview","Target pack","Components","Limits"];
+      const list = NM ? NM.map((n) => ({ name: n })) : (v.dtabs || []);
+      const a = st.tbCatalogueDetail || 0;
+      v.dtabs = list.map((t, i) => Object.assign({}, t, { on: i === a ? 'true' : 'false', line: i === a ? 'var(--fx-primary)' : 'transparent', fg: i === a ? 'var(--fx-primary-text)' : 'var(--fx-text-body)', weight: i === a ? 700 : 500, pick: () => this.setState({ tbCatalogueDetail: i }) }));
+      v.tbCatalogueDetailFirst = a === 0;
+      v.tbCatalogueDetailOther = a > 0;
+      const g = D[a] || D[1];
+      const tone = (x) => x.indexOf('✓') === 0 ? 'var(--fx-success-text)' : (x.indexOf('!') === 0 ? 'var(--fx-warning-text)' : (x.indexOf('✕') === 0 ? 'var(--fx-danger-text)' : 'var(--fx-text-body)'));
+      v.tbCatalogueDetailGen = { title: g.title, lead: g.lead, cols: g.cols, head: g.head, note: g.note, hasNote: !!g.note, rows: g.rows.map((r) => ({ cols: g.cols, cells: r.map((x, j) => ({ t: x, fg: j === 0 ? 'var(--fx-text)' : tone(x), w: j === 0 ? 600 : 400 })) })) };
+    }
+    {
+      const D = [null,{"title":"Comparison","lead":"The approved technologies side by side.","cols":"1.4fr 1fr 1fr 1fr 1fr 1fr","head":["","React","Angular","JET Core Pack","React Native","Flutter"],"rows":[["Platform","Web","Web","Web","Mobile","Mobile"],["Used by banks","High","High","Medium","High","Medium"],["Keeps all 8 OBDX rules","✓ Yes","✓ Yes","✓ Yes","✓ Yes","✓ Yes"],["Runs beside JET screens","✓ Yes","✓ Yes","✓ Yes","Separate app","Separate app"],["Language","TypeScript","TypeScript","JavaScript","TypeScript","Dart"],["Target pack","✓ Ready","! In progress","Planned","✓ Ready","Planned"]],"note":""},{"title":"Target packs","lead":"What the factory has for each technology.","cols":"1.4fr .8fr 1fr .7fr .8fr 1fr","head":["Pack","Version","State","Rules","Templates","Last update"],"rows":[["React","1.2.0","✓ Ready","38","24","12 Jan"],["React Native","1.1.0","✓ Ready","34","21","05 Jan"],["Angular","0.6.0","! In progress","22","9","28 Dec"],["JET Core Pack","—","Planned","—","—","—"],["Flutter","—","Planned","—","—","—"]],"note":"Packs ship with the factory and update with it."},{"title":"How it connects to OBDX","lead":"What every new UI does so the OBDX server stays as it is.","cols":"1.3fr 2.2fr 1.6fr","head":["Concern","What the new UI does","OBDX side"],"rows":[["Services","Calls the same digx/v1, digx/ext, digx-social and digx-auth paths","Unchanged"],["Session","Served from the bank domain through OHS; keeps the Secure, HttpOnly cookie","Unchanged"],["CSRF","Gets nonces from /digx/v1/session/nonce, one per request","Unchanged"],["2FA","Shows the OTP, soft token or questions the server asks for","Unchanged"],["Sensitive data","Sends back masked tokens, never real numbers","Unchanged"],["Login","Encrypts the password with the bank public key","Unchanged"],["Menus","Filters menus by role and transaction","Unchanged"],["Labels","Carries over resources/nls and data-types.js","Unchanged"]],"note":""}];
+      const NM = null;
+      const list = NM ? NM.map((n) => ({ name: n })) : (v.tabs || []);
+      const a = st.tbCatalogue || 0;
+      v.tabs = list.map((t, i) => Object.assign({}, t, { on: i === a ? 'true' : 'false', line: i === a ? 'var(--fx-primary)' : 'transparent', fg: i === a ? 'var(--fx-primary-text)' : 'var(--fx-text-body)', weight: i === a ? 700 : 500, pick: () => this.setState({ tbCatalogue: i }) }));
+      v.tbCatalogueFirst = a === 0;
+      v.tbCatalogueOther = a > 0;
+      const g = D[a] || D[1];
+      const tone = (x) => x.indexOf('✓') === 0 ? 'var(--fx-success-text)' : (x.indexOf('!') === 0 ? 'var(--fx-warning-text)' : (x.indexOf('✕') === 0 ? 'var(--fx-danger-text)' : 'var(--fx-text-body)'));
+      v.tbCatalogueGen = { title: g.title, lead: g.lead, cols: g.cols, head: g.head, note: g.note, hasNote: !!g.note, rows: g.rows.map((r) => ({ cols: g.cols, cells: r.map((x, j) => ({ t: x, fg: j === 0 ? 'var(--fx-text)' : tone(x), w: j === 0 ? 600 : 400 })) })) };
+    }
+    v.panelOn = !!st.panel;
+    v.panelKey = st.panel || '';
+    v.openPanel = () => this.setState({ panel: 'open' });
+    v.closePanel = () => this.setState({ panel: '' });
+    const M = ["Not designed yet: the target pack panel."];
+    M.forEach((m, i) => { v['say' + i] = () => this.say(m); });
+    v.moreOn = !!(this.state && this.state.more);
+    v.moreStr = v.moreOn ? 'true' : 'false';
+    v.toggleMore = () => this.setState({ more: !(this.state && this.state.more) });
+    [].forEach((h) => { v['m_' + h] = () => { this.setState({ more: false }); if (v[h]) { v[h](); } }; });
+    return v;
+  }
+  renderPage() {
+    const s = this.state;
+    const subs = [['Overview', 'Landing.dc.html'], ['Choose path', 'ChoosePath.dc.html'], ['Component inventory', 'Components.dc.html'], ['Component mapping', 'Mapping.dc.html'], ['Technology catalogue', 'Catalogue.dc.html'], ['Migration planner', 'Migrate.dc.html'], ['Migration workspace', '#'], ['Validation centre', '#'], ['Review and approval', '#'], ['History', '#']];
+    const R = { ready: ['Pack ready', 'var(--fx-success-soft)', 'var(--fx-success-text)', 'var(--fx-success)'], dev: ['Pack in progress', 'var(--fx-warning-soft)', 'var(--fx-warning-text)', 'var(--fx-warning)'], planned: ['Planned', 'var(--fx-info-soft)', 'var(--fx-info-text)', 'var(--fx-info)'] };
+    const T = [
+      { id: 'react', plat: 'web', name: 'React + TypeScript', logo: 'R', logoBg: 'var(--fx-info-soft)', logoFg: 'var(--fx-info-text)', text: 'Widely used, large ecosystem, runs beside JET module by module.', meta: 'Static build served through OHS', ready: 'ready', rules: 8,
+        points: ['Same OBDX REST services, cookie and nonce', 'Strong component libraries and accessibility tooling', 'Suits long banking journeys', 'Easy to hire for'],
+        pack: [['Target pack', '1.2.0'], ['React', '19.x'], ['TypeScript', '5.x'], ['Components', 'Factory UI 2.0'], ['Build', 'Vite']] },
+      { id: 'angular', plat: 'web', name: 'Angular', logo: 'A', logoBg: 'var(--fx-danger-soft)', logoFg: 'var(--fx-danger-text)', text: 'Common in banks; TypeScript and strong forms for OBDX-heavy input screens.', meta: 'Next target pack', ready: 'dev', rules: 5,
+        points: ['Reactive forms fit OBDX validations', 'Opinionated structure for large teams', 'Same OBDX services and security', 'Long-term support releases'],
+        pack: [['Target pack', 'in progress'], ['Angular', '19.x'], ['TypeScript', '5.x'], ['Components', 'Factory UI 2.0'], ['Build', 'Angular CLI']] },
+      { id: 'jet', plat: 'web', name: 'Oracle JET Core Pack (Redwood)', logo: 'J', logoBg: 'var(--fx-danger-soft)', logoFg: '#c2410c', text: "Oracle's own modern JET; runs side by side with today's JET components.", meta: 'Lowest risk; migration is mostly manual', ready: 'planned', rules: 0,
+        points: ['Same vendor and support line', 'Coexists with legacy JET', 'Redwood look out of the box', 'Some JET APIs are gone'],
+        pack: [['Target pack', 'planned'], ['JET', '19.x'], ['Theme', 'Redwood'], ['Components', 'Core Pack'], ['Build', 'ojet CLI']] },
+      { id: 'vue', plat: 'web', name: 'Vue 3 + TypeScript', logo: 'V', logoBg: 'var(--fx-success-soft)', logoFg: 'var(--fx-success-text)', text: 'Technically as easy as React; fewer bank teams use it.', meta: 'More effort', ready: 'planned', rules: 0,
+        points: ['Same OBDX services and security', 'Gentle learning curve', 'Smaller banking ecosystem', 'Fewer ready component libraries'],
+        pack: [['Target pack', 'planned'], ['Vue', '3.x'], ['TypeScript', '5.x'], ['Components', 'Factory UI 2.0'], ['Build', 'Vite']] },
+      { id: 'rn', plat: 'mob', name: 'React Native', logo: 'R', logoBg: 'var(--fx-info-soft)', logoFg: 'var(--fx-info-text)', text: 'One codebase for Android and iOS, with a cookie store and SSL pinning.', meta: 'Android and iOS', ready: 'ready', rules: 8,
+        points: ['Reuses React skills', 'Native cookie store keeps the OBDX session', 'SSL pinning like the OBDX apps', 'Device features through native modules'],
+        pack: [['Target pack', '1.1.0'], ['React Native', '0.76+'], ['TypeScript', '5.x'], ['Components', 'Factory UI Mobile'], ['Build', 'Gradle and Xcode']] },
+      { id: 'flutter', plat: 'mob', name: 'Flutter', logo: 'F', logoBg: 'var(--fx-info-soft)', logoFg: 'var(--fx-info-text)', text: 'Rich mobile UI from one codebase. Mobile only, not web banking.', meta: 'Android and iOS', ready: 'planned', rules: 0,
+        points: ['Fast, consistent rendering', 'Good for app-first banks', 'Dart skills needed', 'Web version not offered'],
+        pack: [['Target pack', 'planned'], ['Flutter', '3.x'], ['Language', 'Dart'], ['Components', 'Factory UI Mobile'], ['Build', 'Flutter CLI']] },
+      { id: 'native', plat: 'mob', name: 'Native Swift and Kotlin', logo: 'N', logoBg: 'var(--fx-surface-3)', logoFg: 'var(--fx-text)', text: 'Strongest security and performance; two codebases and the most work.', meta: 'Or Kotlin Multiplatform', ready: 'planned', rules: 0,
+        points: ['Best platform security controls', 'Best performance', 'Two codebases to keep', 'Highest effort'],
+        pack: [['Target pack', 'planned'], ['iOS', 'Swift 6'], ['Android', 'Kotlin 2'], ['Components', 'Native'], ['Build', 'Xcode and Gradle']] },
+      { id: 'cap', plat: 'mob', name: 'Capacitor', logo: 'C', logoBg: 'var(--fx-info-soft)', logoFg: 'var(--fx-info-text)', text: 'Modern successor to the Cordova shell the OBDX apps use today.', meta: 'Shell only, a stepping stone', ready: 'planned', rules: 0,
+        points: ['Keeps the existing web screens', 'Replaces the Cordova shell', 'Most Cordova plugins still work', 'Does not modernize the screens'],
+        pack: [['Target pack', 'planned'], ['Capacitor', '7.x'], ['Screens', 'existing'], ['Plugins', 'Cordova compatible'], ['Build', 'Gradle and Xcode']] }
+    ];
+    const vis = (t) => (s.plat === 'all' || s.plat === t.plat) && (s.ready === 'all' || s.ready === t.ready);
+    const card = (t) => ({ name: t.name, logo: t.logo, logoBg: t.logoBg, logoFg: t.logoFg, text: t.text, meta: t.meta, ready: R[t.ready][0], rBg: R[t.ready][1], rFg: R[t.ready][2], on: s.pick === t.id ? 'true' : 'false', bg: s.pick === t.id ? 'var(--fx-primary-soft)' : 'var(--fx-surface)', border: s.pick === t.id ? '1.5px solid var(--fx-primary)' : '1px solid var(--fx-border)', pick: () => this.setState({ pick: t.id }) });
+    const chip = (key, id, name, dot) => ({ name: name, dot: dot || 'transparent', on: s[key] === id ? 'true' : 'false', bg: s[key] === id ? 'var(--fx-primary)' : 'var(--fx-surface)', fg: s[key] === id ? '#ffffff' : 'var(--fx-text-body)', border: s[key] === id ? 'var(--fx-primary)' : 'var(--fx-border-strong)', pick: () => this.setState({ [key]: id }) });
+    const cur = T.find((t) => t.id === s.pick) || T[0];
+    const capNames = ['Component conversion', 'OBDX REST calls', 'Session and nonce', '2FA screens', 'Masked tokens', 'Accessibility checks', 'Responsive layouts', 'Build templates'];
+    const web = T.filter((t) => t.plat === 'web' && vis(t));
+    const mob = T.filter((t) => t.plat === 'mob' && vis(t));
+    const ok = 'var(--fx-success-text)', mid = 'var(--fx-warning-text)', no = 'var(--fx-text-muted)';
+    return {
+      sub: subs.map((n, i) => ({ name: n[0], href: n[1], current: i === 4 ? 'page' : 'false', bg: i === 4 ? 'var(--fx-primary)' : 'transparent', fg: i === 4 ? '#ffffff' : '#dcd7ff', weight: i === 4 ? 600 : 400 })),
+      tabs: [['Technologies', true], ['Comparison', false], ['Target packs', false], ['How it connects to OBDX', false]].map((t) => ({ name: t[0], on: t[1] ? 'true' : 'false', line: t[1] ? 'var(--fx-primary)' : 'transparent', fg: t[1] ? 'var(--fx-primary-text)' : 'var(--fx-text-body)', weight: t[1] ? 700 : 500 })),
+      plats: [chip('plat', 'all', 'All'), chip('plat', 'web', 'Web'), chip('plat', 'mob', 'Mobile')],
+      reads: [chip('ready', 'all', 'All'), chip('ready', 'ready', 'Pack ready', 'var(--fx-success)'), chip('ready', 'dev', 'Pack in progress', 'var(--fx-warning)'), chip('ready', 'planned', 'Planned', 'var(--fx-info)')],
+      showWeb: web.length > 0, showMob: mob.length > 0,
+      web: web.map(card), mob: mob.map(card),
+      d: { name: cur.name, logo: cur.logo, logoBg: cur.logoBg, logoFg: cur.logoFg, text: cur.text, ready: R[cur.ready][0], rBg: R[cur.ready][1], rFg: R[cur.ready][2], points: cur.points,
+        pack: cur.pack.map((p) => ({ k: p[0], v: p[1] })),
+        rulesN: cur.rules, rules: [0, 1, 2, 3, 4, 5, 6, 7].map((i) => i < cur.rules ? 'var(--fx-primary)' : 'var(--fx-surface-3)'),
+        rulesText: cur.rules === 8 ? 'Every converted module is checked against all 8 rules' : (cur.rules > 0 ? 'Checks for the remaining rules are being written' : 'Checks come with the target pack'),
+        caps: capNames.map((c, i) => ({ t: c, fg: i < cur.rules ? 'var(--fx-text)' : 'var(--fx-text-faint)', bg: i < cur.rules ? 'var(--fx-surface)' : 'var(--fx-surface-2)' })),
+        btn: cur.ready === 'ready' ? 'Use ' + cur.name + ' →' : 'Not ready to use yet', btnBg: cur.ready === 'ready' ? 'var(--fx-primary)' : 'var(--fx-text-faint)', locked: cur.ready === 'ready' ? 'false' : 'true', useHref: cur.ready === 'ready' ? 'Migrate.dc.html' : '#' },
+      cmpHead: [['React', 'react'], ['Angular', 'angular'], ['JET Core', 'jet'], ['React Native', 'rn'], ['Flutter', 'flutter']].map((h) => ({ name: h[0], bg: s.pick === h[1] ? 'var(--fx-primary-soft)' : 'var(--fx-surface-2)', fg: s.pick === h[1] ? 'var(--fx-primary-text)' : 'var(--fx-text)' })),
+      cmpRows: [
+        { k: 'Used by banks', v: [['High', ok], ['High', ok], ['Medium', mid], ['High', ok], ['Medium', mid]] },
+        { k: 'Fits the OBDX rules', v: [['Yes', ok], ['Yes', ok], ['Yes', ok], ['Yes', ok], ['Yes', ok]] },
+        { k: 'Platform', v: [['Web', no], ['Web', no], ['Web', no], ['Mobile', no], ['Mobile', no]] },
+        { k: 'Target pack', v: [['Ready', ok], ['In progress', mid], ['Planned', no], ['Ready', ok], ['Planned', no]] }
+      ].map((r) => ({ k: r.k, v: r.v.map((x) => ({ t: x[0], fg: x[1] })) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

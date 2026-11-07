@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noUnusedLocals": false },
+  "files": ["gallery/main.ts"],
+  "include": ["src/**/*.ts"]
+}

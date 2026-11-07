@@ -60,6 +60,41 @@ class ScreenModelEditorTest {
     }
 
     @Test
+    void turnsAnImportedDesignIntoAScreenWithTheCodesComponents() {
+        replies.add("""
+                {"name": "Transfer", "sections": [{"title": "Pay", "components": [
+                  {"type": "component", "label": "From", "component": "account-input", "params": {"type": "balance"}}]}]}
+                """);
+        ComponentPalette.Item accountInput = new ComponentPalette.Item("component:account-input", ComponentPalette.FRAMEWORK,
+                "Account input", "component", "account-input", null, List.of("type", "value"), 3, null, null);
+
+        ScreenModel imported = editor.fromDesign(ScreenModels.blank("Transfer"),
+                new DesignImporter.Design("Figma frame \"Pay\"", "frame \"Pay\"\n  text \"Label\": From", null, null), List.of(accountInput));
+
+        assertThat(imported.sections().getFirst().components().getFirst().component()).isEqualTo("account-input");
+        assertThat(prompts.getFirst()).contains("Follow the design", "account-input (params: type, value)",
+                "Design (Figma frame \"Pay\"):\nframe \"Pay\"", "Current screen model:");
+    }
+
+    @Test
+    void tellsTheModelWhichElementTheInstructionIsAbout() {
+        replies.add("{\"name\": \"Transfer\"}");
+
+        editor.apply(ScreenModels.blank("Transfer"), "make it optional", List.of(), "c-remarks");
+
+        assertThat(prompts.getFirst()).contains("about the element with id \"c-remarks\" only");
+    }
+
+    @Test
+    void anImageNeedsAModelThatReadsImages() {
+        DesignImporter.Design image = new DesignImporter.Design("image mock.png", null, new byte[]{1, 2}, "image/png");
+
+        assertThatThrownBy(() -> editor.fromDesign(ScreenModels.blank("Transfer"), image, List.of()))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("reads images on the Models page");
+    }
+
+    @Test
     void givesUpAfterTwoUnusableAnswers() {
         replies.add("nope");
         replies.add("{\"sections\": []}");

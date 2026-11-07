@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -35,10 +36,11 @@ public class PackController {
         this.audit = audit;
     }
 
+    /** The workspace's check rules; with version (22.x or 25.x), the rules its code would meet on that OBDX version. */
     @GetMapping("/api/workspaces/{workspaceId}/checks")
-    public PackService.WorkspaceChecks get(@PathVariable UUID workspaceId) {
+    public PackService.WorkspaceChecks get(@PathVariable UUID workspaceId, @RequestParam(required = false) String version) {
         guard.require(workspaceId, Permission.VIEW);
-        return service.get(workspaceId);
+        return service.get(workspaceId, version);
     }
 
     @PutMapping("/api/workspaces/{workspaceId}/checks/{ruleId}")
@@ -55,6 +57,16 @@ public class PackController {
     public RecipeService.WorkspaceRecipes recipes(@PathVariable UUID workspaceId) {
         guard.require(workspaceId, Permission.VIEW);
         return recipes.get(workspaceId);
+    }
+
+    /** A version pack's own recipes (22.x or 25.x), for anyone who can see a workspace: to compare versions of a recipe. */
+    @GetMapping("/api/version-packs/{version}/recipes")
+    public RecipeService.WorkspaceRecipes packRecipes(@PathVariable String version) {
+        var user = guard.current();
+        if (!user.isAdmin() && guard.visibleWorkspaces().isEmpty()) {
+            throw new AccessDeniedException("You are not a member of any workspace");
+        }
+        return recipes.packRecipes(version);
     }
 
     @PostMapping("/api/workspaces/{workspaceId}/recipes/{recipeId}/parts/{partId}/examples")

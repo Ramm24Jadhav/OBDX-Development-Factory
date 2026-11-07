@@ -1,0 +1,210 @@
+<!-- Review and approval, as on the approved board (docs/design/boards/Review-*.png) -->
+<div class="factory-pg factory-mb factory-mr">
+  <div class="factory-mb-headrow">
+    <div class="factory-mb-pagehead is-sm">
+      <h1>Review and approval</h1>
+      <p><oj-bind-text value="[[lead]]"></oj-bind-text></p>
+    </div>
+    <div class="factory-mb-headtools"><oj-bind-if test="[[run()]]"><span id="mrState" role="status" :class="[[run() ? mzRun(run().state).css : '']]"><oj-bind-text value="[[run() ? mzRun(run().state).text : '']]"></oj-bind-text></span></oj-bind-if></div>
+  </div>
+
+  <nav class="factory-mz-stepbar" aria-label="Steps of this path"><span class="factory-mz-stepbar-name"><b><oj-bind-text value="[[pathName]]"></oj-bind-text></b><small>Step 5 of 5</small></span>
+    <ol><oj-bind-for-each data="[[steps]]" as="s"><template><li :class="[[s.data.css]]" :aria-current="[[s.data.current]]"><span class="factory-mz-dot"><oj-bind-text value="[[s.data.n]]"></oj-bind-text></span>
+      <oj-bind-if test="[[s.data.done]]"><a :href="[[s.data.href]]" on-click="[[s.data.go]]"><oj-bind-text value="[[s.data.label]]"></oj-bind-text></a></oj-bind-if>
+      <oj-bind-if test="[[!s.data.done]]"><span><oj-bind-text value="[[s.data.label]]"></oj-bind-text></span></oj-bind-if></li></template></oj-bind-for-each></ol></nav>
+
+  <oj-bind-if test="[[error()]]"><div class="fx-empty" id="mrError" role="status"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-eye" aria-hidden="true"></span></span><strong>Nothing to review yet</strong><oj-bind-text value="[[error]]"></oj-bind-text>
+    <a class="fx-btn fx-btn--secondary" href="?ojr=modernization-validation">Open Validation</a></div></oj-bind-if>
+  <oj-bind-if test="[[loading() && !detail()]]"><div class="factory-mo-skeleton" role="status" aria-label="Loading the review"><span class="fx-skeleton"></span><span class="fx-skeleton"></span></div></oj-bind-if>
+
+  <oj-bind-if test="[[detail() && change()]]">
+    <div class="factory-mr-summary" role="list" aria-label="Summary"><span role="listitem" class="factory-mr-size"><oj-bind-text value="[[sizeText]]"></oj-bind-text></span>
+      <oj-bind-for-each data="[[summary]]" as="p"><template><span role="listitem" :class="[[p.data.css]]"><oj-bind-text value="[[p.data.text]]"></oj-bind-text></span></template></oj-bind-for-each></div>
+    <oj-bind-if test="[[run().state === 'rejected']]"><div class="fx-alert fx-alert--danger" role="status"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><strong>Rejected.</strong> <oj-bind-text value="[[run().message]]"></oj-bind-text></span></div></oj-bind-if>
+    <oj-bind-if test="[[run().state === 'delivered']]"><div class="fx-alert fx-alert--success" role="status"><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span><span class="fx-alert-text"><strong>Delivered to SVN</strong> <oj-bind-text value="[[run().deliveredRevision ? 'at r' + run().deliveredRevision : '']]"></oj-bind-text>.</span></div></oj-bind-if>
+
+    <div class="factory-tabbar fx-tabs factory-mr-toptabs" role="tablist" aria-label="Review views" on-keydown="[[topKey]]">
+      <oj-bind-for-each data="[[topTabs]]" as="t"><template><button type="button" role="tab" :id="[['mrTop-' + t.data.value]]" :class="[[t.data.css]]" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :tabindex="[[t.data.selected() ? '0' : '-1']]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
+    </div>
+
+    <oj-bind-if test="[[top() === 'changes']]">
+    <div class="factory-mb-wslayout factory-mb-reviewlayout">
+      <aside class="factory-mb-card factory-mb-sidecard factory-mr-tree" aria-labelledby="mrFilesTitle">
+        <div class="fx-card-head"><h2 class="fx-card-title" id="mrFilesTitle"><oj-bind-text value="[['Changed files (' + change().files.length + ')']]"></oj-bind-text></h2>
+          <fx-menu-button id="mrFilesMenu" variant="ghost" size="sm" icon="more" icon-only label="File actions" align="end" items="[[filesMenu]]" on-fx-action="[[filesAction]]"></fx-menu-button></div>
+        <fx-input id="mrSearch" type="search" icon="search" clearable label="Search files" hide-label placeholder="Search files" value="{{query}}"></fx-input>
+        <ul class="factory-mr-treelist"><oj-bind-for-each data="[[tree]]" as="t"><template><li>
+          <oj-bind-if test="[[t.data.folder]]"><button type="button" class="factory-mr-folder" :style="[[t.data.pad]]" :aria-expanded="[[t.data.open]]" on-click="[[t.data.toggle]]"><span class="factory-mr-caret" aria-hidden="true"><oj-bind-text value="[[t.data.caret]]"></oj-bind-text></span><span class="factory-nav-icon factory-ico-folder" aria-hidden="true"></span><oj-bind-text value="[[t.data.name]]"></oj-bind-text></button></oj-bind-if>
+          <oj-bind-if test="[[t.data.file]]"><button type="button" :class="[[t.data.css]]" :style="[[t.data.pad]]" :aria-current="[[t.data.current]]" on-click="[[t.data.pick]]" :title="[[t.data.path + ' · ' + t.data.lines]]">
+            <span :class="[[t.data.markCss]]" role="img" :aria-label="[[t.data.markName]]"><oj-bind-text value="[[t.data.mark]]"></oj-bind-text></span><span class="factory-mw-fname"><oj-bind-text value="[[t.data.name]]"></oj-bind-text></span><span class="factory-mw-fmark" aria-hidden="true"><oj-bind-text value="[[t.data.check]]"></oj-bind-text></span></button></oj-bind-if>
+        </li></template></oj-bind-for-each></ul>
+      </aside>
+
+      <section class="factory-mb-card factory-mb-sidecard factory-mw-code factory-mr-diff" aria-label="Code changes">
+        <div class="factory-mw-codebar"><strong class="factory-mo-mono"><oj-bind-text value="[[file() || 'Pick a file']]"></oj-bind-text></strong>
+          <oj-bind-if test="[[fileState()]]"><span :class="[[fileState().css]]" id="mrFileState"><oj-bind-text value="[[fileState().text]]"></oj-bind-text></span></oj-bind-if>
+          <oj-bind-if test="[[!isNew()]]"><fx-segmented id="mrLayout" label="Diff layout" options="[[layoutOptions]]" value="{{layout}}"></fx-segmented></oj-bind-if></div>
+        <oj-bind-if test="[[split()]]">
+          <div class="factory-mw-panes is-split">
+            <div><div class="factory-mm-side-head"><strong>Before (Oracle JET)</strong></div>
+              <ol class="factory-mr-lines"><oj-bind-for-each data="[[before]]" as="l"><template><li><span class="factory-mr-n"><oj-bind-text value="[[l.data.n]]"></oj-bind-text></span><code><oj-bind-text value="[[l.data.t]]"></oj-bind-text></code></li></template></oj-bind-for-each></ol></div>
+            <div><div class="factory-mm-side-head"><strong><oj-bind-text value="[[afterTitle]]"></oj-bind-text></strong></div>
+              <ol class="factory-mr-lines is-after"><oj-bind-for-each data="[[after]]" as="l"><template><li :class="[[l.data.css]]"><span class="factory-mr-n"><oj-bind-text value="[[l.data.n]]"></oj-bind-text></span><span class="factory-mr-sign" aria-hidden="true"><oj-bind-text value="[[l.data.sign]]"></oj-bind-text></span><code><oj-bind-text value="[[l.data.t]]"></oj-bind-text></code></li></template></oj-bind-for-each></ol></div>
+          </div>
+        </oj-bind-if>
+        <oj-bind-if test="[[isNew()]]">
+          <div class="factory-mw-panes"><div><div class="factory-mm-side-head"><strong><oj-bind-text value="[[afterTitle]]"></oj-bind-text></strong></div>
+            <ol class="factory-mr-lines is-after"><oj-bind-for-each data="[[after]]" as="l"><template><li :class="[[l.data.css]]"><span class="factory-mr-n"><oj-bind-text value="[[l.data.n]]"></oj-bind-text></span><span class="factory-mr-sign" aria-hidden="true"><oj-bind-text value="[[l.data.sign]]"></oj-bind-text></span><code><oj-bind-text value="[[l.data.t]]"></oj-bind-text></code></li></template></oj-bind-for-each></ol></div></div>
+        </oj-bind-if>
+        <oj-bind-if test="[[!isNew() && layout() === 'unified']]">
+          <pre class="factory-code factory-code-light factory-mw-diff"><oj-bind-for-each data="[[unified]]" as="l"><template><span :class="[[l.data.css]]"><oj-bind-text value="[[l.data.t + '\n']]"></oj-bind-text></span></template></oj-bind-for-each></pre>
+        </oj-bind-if>
+        <div class="fx-tabs factory-mw-bottomtabs" role="tablist" aria-label="About this file" on-keydown="[[stripKey]]">
+          <oj-bind-for-each data="[[stripTabs]]" as="t"><template><button type="button" role="tab" :id="[['mrStrip-' + t.data.value]]" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :tabindex="[[t.data.selected() ? '0' : '-1']]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
+        </div>
+        <div role="tabpanel" class="factory-mm-panel">
+          <oj-bind-if test="[[stripTab() === 'what']]"><p class="factory-mr-pre"><oj-bind-text value="[[whatChanged]]"></oj-bind-text></p></oj-bind-if>
+          <oj-bind-if test="[[stripTab() === 'touches']]"><p class="fx-muted"><oj-bind-text value="[[screens().length + ' screens of this run use the change:']]"></oj-bind-text></p>
+            <ul class="factory-mm-screens"><oj-bind-for-each data="[[screens]]" as="s"><template><li><oj-bind-text value="[[s.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul></oj-bind-if>
+          <oj-bind-if test="[[stripTab() === 'deps']]">
+            <oj-bind-if test="[[basedOn().length > 0]]"><p><oj-bind-text value="[['Uses: ' + basedOn().join(', ')]]"></oj-bind-text></p></oj-bind-if>
+            <oj-bind-if test="[[dependencyRows().length > 0]]"><ul class="factory-mm-screens"><oj-bind-for-each data="[[dependencyRows]]" as="d"><template><li><oj-bind-text value="[[d.data.module]]"></oj-bind-text> <span :class="[[d.data.css]]"><oj-bind-text value="[[d.data.state]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul></oj-bind-if>
+            <oj-bind-if test="[[basedOn().length === 0 && dependencyRows().length === 0]]"><p class="fx-muted">No other files or modules this one depends on.</p></oj-bind-if></oj-bind-if>
+          <oj-bind-if test="[[stripTab() === 'tests']]">
+            <oj-bind-if test="[[fileTests().length === 0]]"><p class="fx-muted">No test suite in the last build is named after this file. All the tests are on the Checks tab and in Validation.</p></oj-bind-if>
+            <ul class="factory-mm-screens"><oj-bind-for-each data="[[fileTests]]" as="t"><template><li><span class="factory-mo-mono"><oj-bind-text value="[[t.data.name]]"></oj-bind-text></span> <span :class="[[t.data.css]]"><oj-bind-text value="[[t.data.result]]"></oj-bind-text></span> <span class="fx-muted"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul></oj-bind-if>
+        </div>
+      </section>
+
+      <div class="factory-mb-wsbelow factory-mb-reviewbelow factory-mw-side">
+        <section class="factory-mb-card factory-mb-sidecard" aria-labelledby="mrStepsTitle">
+          <h2 class="fx-card-title" id="mrStepsTitle">Review</h2>
+          <ol class="factory-mr-steps"><oj-bind-for-each data="[[reviewSteps]]" as="s"><template><li :class="[[s.data.css]]"><span class="factory-mz-dot" aria-hidden="true"><oj-bind-text value="[[s.data.mark]]"></oj-bind-text></span>
+            <span class="factory-mr-step-text"><strong><oj-bind-text value="[[s.data.name]]"></oj-bind-text></strong><small class="fx-muted"><oj-bind-text value="[[s.data.who]]"></oj-bind-text></small></span>
+            <span :class="[[s.data.chipCss]]"><oj-bind-text value="[[s.data.chip]]"></oj-bind-text></span></li></template></oj-bind-for-each></ol>
+          <oj-bind-if test="[[!isFinal()]]"><button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" id="mrSecurity" on-click="[[toggleSecurity]]" :disabled="[[!canApprove()]]"
+            :title="[[canApprove() ? null : 'Signing off the security review needs the Approve permission']]"><oj-bind-text value="[[securityDone() ? 'Withdraw the security sign-off' : 'Sign off the security review']]"></oj-bind-text></button></oj-bind-if>
+        </section>
+        <section class="factory-mb-card factory-mb-sidecard" aria-labelledby="mrCommentsTitle">
+          <h2 class="fx-card-title" id="mrCommentsTitle">Comments</h2>
+          <oj-bind-if test="[[commentRows().length === 0]]"><p class="fx-muted">No comments yet.</p></oj-bind-if>
+          <ul class="factory-mr-comments"><oj-bind-for-each data="[[commentRows().slice(-2)]]" as="c"><template><li><strong><oj-bind-text value="[[c.data.author]]"></oj-bind-text></strong> <span class="fx-muted"><oj-bind-text value="[[c.data.when]]"></oj-bind-text></span><p><oj-bind-text value="[[c.data.text]]"></oj-bind-text></p></li></template></oj-bind-for-each></ul>
+          <button type="button" class="fx-btn fx-btn--link fx-btn--sm" id="mrCommentsLink" on-click="[[openComments]]"><oj-bind-text value="[['Comments (' + commentRows().length + ') →']]"></oj-bind-text></button>
+        </section>
+      </div>
+    </div>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[top() === 'checks']]">
+      <section class="fx-card" aria-labelledby="mrChecksTitle">
+        <h2 class="fx-card-title" id="mrChecksTitle">Checks</h2>
+        <p class="fx-muted"><oj-bind-text value="[[checksLead]]"></oj-bind-text></p>
+        <div class="fx-table-wrap"><table class="fx-table" id="mrChecks"><thead><tr><th scope="col">Check</th><th scope="col">Result</th><th scope="col"><span class="fx-visually-hidden">State</span></th></tr></thead>
+          <tbody><oj-bind-for-each data="[[checkRows]]" as="r"><template><tr><th scope="row"><oj-bind-text value="[[r.data.name]]"></oj-bind-text></th><td><oj-bind-text value="[[r.data.text]]"></oj-bind-text></td>
+            <td><span :class="[[r.data.css]]"><oj-bind-text value="[[r.data.result]]"></oj-bind-text></span></td></tr></template></oj-bind-for-each></tbody></table></div>
+        <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[evidence]]">Open Validation for the evidence</button>
+      </section>
+    </oj-bind-if>
+
+    <oj-bind-if test="[[top() === 'comments']]">
+      <section class="fx-card" aria-labelledby="mrAllCommentsTitle">
+        <h2 class="fx-card-title" id="mrAllCommentsTitle">Comments</h2>
+        <p class="fx-muted">Everything said on this change.</p>
+        <oj-bind-if test="[[commentRows().length === 0]]"><p class="fx-muted">No comments yet.</p></oj-bind-if>
+        <ul class="factory-mr-thread"><oj-bind-for-each data="[[commentRows]]" as="c"><template><li><span class="factory-mr-avatar" aria-hidden="true"><oj-bind-text value="[[c.data.initials]]"></oj-bind-text></span>
+          <div><strong><oj-bind-text value="[[c.data.author]]"></oj-bind-text></strong> <span class="fx-muted"><oj-bind-text value="[[c.data.when]]"></oj-bind-text></span>
+            <oj-bind-if test="[[c.data.kind]]"> <span class="fx-badge fx-badge--warning"><oj-bind-text value="[[c.data.kind]]"></oj-bind-text></span></oj-bind-if><p><oj-bind-text value="[[c.data.text]]"></oj-bind-text></p></div></li></template></oj-bind-for-each></ul>
+        <div class="factory-mr-addcomment">
+          <fx-textarea id="mrNewComment" label="Add a comment" placeholder="Say what you found, or what should change" rows="3" value="{{newComment}}" disabled="[[!canComment()]]"
+            help="[[canComment() ? '' : 'Commenting needs the Comment permission.']]"></fx-textarea>
+          <button type="button" class="fx-btn fx-btn--primary" id="mrAddComment" on-click="[[addComment]]" :disabled="[[!canComment()]]">Add comment</button>
+        </div>
+      </section>
+    </oj-bind-if>
+
+    <footer class="factory-mb-footer">
+      <button type="button" class="factory-mb-btn is-plain" id="mrBack" on-click="[[back]]"><span aria-hidden="true">←</span>Validation</button>
+      <span class="factory-mb-muted" id="mrWait" role="status"><oj-bind-text value="[[waitText]]"></oj-bind-text></span>
+      <span class="factory-mb-spacer"></span>
+      <div class="factory-mb-footer-end">
+        <fx-menu-button id="mrMore" variant="secondary" label="More ⋯" align="end" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
+        <button type="button" class="factory-mb-btn is-outline" id="mrRequest" on-click="[[openRequest]]" :disabled="[[isFinal() || !canManage()]]"
+                :title="[[isFinal() ? 'This run is ' + run().state : canManage() ? null : 'Requesting changes needs the Manage code permission']]">Request changes</button>
+        <button type="button" class="factory-mb-btn is-primary" id="mrApprove" on-click="[[openApprove]]" :disabled="[[!canDeliver()]]" :title="[[approveTitle]]"><span aria-hidden="true">✓</span>Approve and deliver to SVN</button>
+      </div>
+    </footer>
+
+    <fx-sheet id="mrRequestSheet" side="center" open="{{requestOpen}}" heading="Request changes" subtitle="[[change().title]]">
+      <div class="factory-mr-form">
+        <fx-textarea id="mrNote" label="What should change?" placeholder="Say what to change, and why" rows="4" value="{{note}}"></fx-textarea>
+        <fx-switch id="mrAllFiles" label="All files in this change" value="{{allFiles}}"></fx-switch>
+        <oj-bind-if test="[[!allFiles()]]"><fx-multiselect id="mrNoteFiles" label="Which files?" placeholder="Pick the files" options="[[fileOptions]]" value="{{noteFiles}}"></fx-multiselect></oj-bind-if>
+        <p class="fx-help">The change goes back to the workspace with your note. The factory writes the files again with it, the review steps start over, and the reviewers see your note in Comments.</p>
+        <div class="factory-mm-sheetfoot"><button type="button" class="fx-btn fx-btn--secondary" on-click="[[closeDialog]]">Cancel</button>
+          <button type="button" class="fx-btn fx-btn--primary" id="mrSendBack" on-click="[[sendBack]]" :disabled="[[working()]]">Send back to the workspace</button></div>
+      </div>
+    </fx-sheet>
+
+    <fx-sheet id="mrRejectSheet" side="center" open="{{rejectOpen}}" heading="Reject this change" subtitle="[[change().title]]">
+      <div class="factory-mr-form">
+        <p><oj-bind-text value="[['Rejecting closes the change. Nothing is delivered to SVN, and ' + run().subject + ' goes back to planned in the ' + (path() === 'migration' ? 'migration plan.' : 'upgrade plan.')]]"></oj-bind-text></p>
+        <fx-textarea id="mrReason" label="Why? (required)" rows="3" value="{{reason}}"></fx-textarea>
+        <div class="factory-mm-sheetfoot"><button type="button" class="fx-btn fx-btn--secondary" on-click="[[closeDialog]]">Cancel</button>
+          <button type="button" class="fx-btn fx-btn--danger" id="mrRejectConfirm" on-click="[[reject]]" :disabled="[[working()]]">Reject the change</button></div>
+      </div>
+    </fx-sheet>
+
+    <fx-sheet id="mrApproveSheet" side="center" open="{{approveOpen}}" heading="[[delivered() ? 'Delivered to SVN' : 'Approve and deliver to SVN']]" subtitle="[[delivered() ? run().subject + ' is in SVN' : change().title]]">
+      <div class="factory-cf-detail-wrap factory-mb factory-mb-approve"><oj-bind-if test="[[!delivered()]]"><div class="factory-mr-form">
+        <h3 class="factory-mb-h3">Review steps</h3>
+        <ol class="factory-mr-steps factory-mb-steprows"><oj-bind-for-each data="[[reviewSteps]]" as="s"><template><li :class="[[s.data.css]]"><span class="factory-mz-dot" aria-hidden="true"><oj-bind-text value="[[s.data.mark]]"></oj-bind-text></span>
+          <span class="factory-mr-step-text"><oj-bind-text value="[[s.data.name]]"></oj-bind-text><span class="fx-visually-hidden"><oj-bind-text value="[[', ' + s.data.chip]]"></oj-bind-text></span></span><span class="factory-mb-steprow-who"><oj-bind-text value="[[s.data.who]]"></oj-bind-text></span></li></template></oj-bind-for-each></ol>
+        <h3 class="factory-mb-h3">What will be delivered</h3>
+        <dl class="factory-mb-kv"><oj-bind-for-each data="[[deliverFacts]]" as="f"><template><div><dt><oj-bind-text value="[[f.data.k]]"></oj-bind-text></dt><dd :class="[[f.data.mono]]"><oj-bind-text value="[[f.data.v]]"></oj-bind-text></dd></div></template></oj-bind-for-each></dl>
+        <label class="factory-mb-checkrow"><input type="checkbox" class="fx-check" id="mrCloseAfter" :checked="[[closeAfter]]" on-change="[[pickCloseAfter]]"/>Close the change once it is delivered</label>
+        <p class="fx-help">Closing removes the delivery branch, so the factory closes it only once SVN shows the branch merged; otherwise it closes on its own after the merge.</p>
+        <oj-bind-if test="[[blockedText()]]"><div class="fx-alert fx-alert--warning" role="status"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[blockedText]]"></oj-bind-text></span></div></oj-bind-if>
+        <oj-bind-if test="[[deliverError()]]"><div class="fx-alert fx-alert--danger" role="alert" id="mrDeliverError"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span>
+          <span class="fx-alert-text"><strong>SVN refused the commit.</strong> <oj-bind-text value="[[deliverError]]"></oj-bind-text> Nothing is marked delivered.</span>
+          <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[deliver]]" :disabled="[[working()]]">Try again</button></div></oj-bind-if>
+        <oj-bind-if test="[[working()]]"><p class="factory-mr-delivering" role="status"><span class="fx-spinner" aria-hidden="true"></span>Delivering to SVN: committing the files to the branch…</p></oj-bind-if>
+        <div class="factory-mm-sheetfoot factory-mb-dialogfoot"><button type="button" class="factory-mb-btn is-outline is-xs" on-click="[[closeDialog]]">Cancel</button>
+          <button type="button" class="factory-mb-btn is-primary is-xs" id="mrDeliver" on-click="[[deliver]]" :disabled="[[!canDeliver() || working()]]" :title="[[approveTitle]]"><span aria-hidden="true">✓</span>Approve and deliver</button></div>
+      </div></oj-bind-if>
+      <oj-bind-if test="[[delivered()]]"><div class="factory-mr-form" role="status">
+        <div class="factory-mr-done factory-mb-donehead"><span class="factory-mz-dot" aria-hidden="true">✓</span><div><strong><oj-bind-text value="[[run().subject + ' is delivered to SVN']]"></oj-bind-text></strong><span class="fx-muted"><oj-bind-text value="[['Revision r' + delivered().revision + ' on its branch']]"></oj-bind-text></span></div></div>
+        <dl class="factory-mb-kv"><div><dt>SVN revision</dt><dd class="factory-mo-mono"><oj-bind-text value="[['r' + delivered().revision]]"></oj-bind-text></dd></div>
+          <div><dt>Branch</dt><dd class="factory-mo-mono"><oj-bind-text value="[[delivered().branch || '']]"></oj-bind-text></dd></div>
+          <div><dt>Approved by</dt><dd><oj-bind-text value="[[delivered().by + ' · ' + delivered().when]]"></oj-bind-text></dd></div>
+          <oj-bind-if test="[[planFact()]]"><div><dt><oj-bind-text value="[[path() === 'migration' ? 'Migration plan' : 'Upgrade plan']]"></oj-bind-text></dt><dd><oj-bind-text value="[[planFact]]"></oj-bind-text></dd></div></oj-bind-if>
+          <div><dt>Told</dt><dd>The reviewers and the team, in Notifications</dd></div></dl>
+        <oj-bind-if test="[[closeNote()]]"><p class="fx-help"><oj-bind-text value="[[closeNote]]"></oj-bind-text></p></oj-bind-if>
+        <h3 class="factory-mb-h3">Next</h3>
+        <div class="factory-mr-next"><button type="button" class="factory-mb-btn is-primary is-xs" id="mrNext" on-click="[[nextModule]]"><oj-bind-text value="[[next() ? next().label : 'Open the plan']]"></oj-bind-text><span aria-hidden="true">→</span></button>
+          <button type="button" class="factory-mb-btn is-outline is-xs" on-click="[[toHistory]]">See it in History</button><button type="button" class="factory-mb-btn is-outline is-xs" on-click="[[toOverview]]">Back to Overview</button></div>
+      </div></oj-bind-if></div>
+    </fx-sheet>
+
+    <fx-sheet id="mrRevisions" side="center" wide open="{{revisionsOpen}}" heading="Compare revisions" subtitle="What changed between two versions of this change.">
+      <div class="factory-mr-form">
+        <oj-bind-if test="[[versions().length < 2]]"><p class="fx-muted">This change has one version only: nothing was written again or edited since it was first written. Versions are kept from each Write again and edit.</p></oj-bind-if>
+        <oj-bind-if test="[[versions().length >= 2]]"><div class="factory-mr-fromto">
+          <fx-select id="mrFrom" label="From" options="[[versionOptions]]" value="{{fromVersion}}"></fx-select>
+          <fx-select id="mrTo" label="To" options="[[versionOptions]]" value="{{toVersion}}"></fx-select></div></oj-bind-if>
+        <oj-bind-if test="[[compareError()]]"><p class="fx-error" role="alert"><oj-bind-text value="[[compareError]]"></oj-bind-text></p></oj-bind-if>
+        <oj-bind-if test="[[comparison()]]">
+          <h3 class="factory-mm-module"><oj-bind-text value="[['Files that changed (' + compareRows().length + ')']]"></oj-bind-text></h3>
+          <oj-bind-if test="[[compareRows().length === 0]]"><p class="fx-muted">No file is different between these versions.</p></oj-bind-if>
+          <ul class="factory-mr-compare"><oj-bind-for-each data="[[compareRows]]" as="f"><template><li><span class="factory-mo-mono" :title="[[f.data.path]]"><oj-bind-text value="[[f.data.name]]"></oj-bind-text></span>
+            <oj-bind-if test="[[f.data.state]]"><span class="fx-badge fx-badge--success"><oj-bind-text value="[[f.data.state]]"></oj-bind-text></span></oj-bind-if>
+            <span class="factory-mr-plus"><oj-bind-text value="[[f.data.added]]"></oj-bind-text></span><span class="factory-mr-minus"><oj-bind-text value="[[f.data.removed]]"></oj-bind-text></span>
+            <button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[f.data.open]]">Open in the diff</button></li></template></oj-bind-for-each></ul>
+          <h3 class="factory-mm-module">Why it changed</h3>
+          <oj-bind-if test="[[whyChanged().length === 0]]"><p class="fx-muted">No note or comment between these versions.</p></oj-bind-if>
+          <ol class="fx-timeline"><oj-bind-for-each data="[[whyChanged]]" as="e"><template><li><span class="fx-timeline-dot"></span><span><oj-bind-text value="[[e.data.text]]"></oj-bind-text></span><span class="fx-timeline-time"><oj-bind-text value="[[e.data.when]]"></oj-bind-text></span></li></template></oj-bind-for-each></ol>
+        </oj-bind-if>
+        <div class="factory-mm-sheetfoot"><button type="button" class="fx-btn fx-btn--primary" on-click="[[closeRevisions]]">Close</button></div>
+      </div>
+    </fx-sheet>
+  </oj-bind-if>
+</div>

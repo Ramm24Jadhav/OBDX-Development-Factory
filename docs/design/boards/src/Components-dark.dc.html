@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Component inventory</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+:root{--fx-bg:#fafafc;--fx-surface:#ffffff;--fx-surface-2:#f8fafc;--fx-surface-3:#f1f5f9;--fx-border:#e5e7eb;--fx-border-strong:#cbd5e1;--fx-text:#0f172a;--fx-text-body:#334155;--fx-text-muted:#64748b;--fx-text-faint:#94a3b8;--fx-primary:#4f46e5;--fx-primary-hover:#4338ca;--fx-primary-soft:#eef2ff;--fx-primary-text:#4338ca;--fx-primary-border:#c7d2fe;--fx-on-primary:#ffffff;--fx-success:#10b981;--fx-success-soft:#ecfdf5;--fx-success-text:#047857;--fx-warning:#f59e0b;--fx-warning-soft:#fffbeb;--fx-warning-text:#b45309;--fx-danger:#ef4444;--fx-danger-soft:#fef2f2;--fx-danger-text:#b91c1c;--fx-info:#0284c7;--fx-info-soft:#f0f9ff;--fx-info-text:#0369a1;--fx-radius-sm:6px;--fx-radius:8px;--fx-radius-lg:12px;--fx-radius-xl:16px;--fx-radius-pill:999px;--fx-shadow-sm:0 1px 2px rgba(15,23,42,.06);--fx-font-mono:"Cascadia Mono","JetBrains Mono",Consolas,monospace}
+.fx-dark{color-scheme:dark;--fx-bg:#0b1120;--fx-surface:#111827;--fx-surface-2:#162032;--fx-surface-3:#1e293b;--fx-border:#263247;--fx-border-strong:#3b4a63;--fx-text:#e5e7eb;--fx-text-body:#cbd5e1;--fx-text-muted:#94a3b8;--fx-text-faint:#64748b;--fx-primary:#4f46e5;--fx-primary-hover:#5b55eb;--fx-primary-soft:rgba(99,102,241,.16);--fx-primary-text:#a5b4fc;--fx-primary-border:rgba(129,140,248,.45);--fx-success-soft:rgba(16,185,129,.14);--fx-success-text:#34d399;--fx-warning-soft:rgba(245,158,11,.14);--fx-warning-text:#fbbf24;--fx-danger-soft:rgba(239,68,68,.14);--fx-danger-text:#f87171;--fx-info-soft:rgba(14,165,233,.14);--fx-info-text:#38bdf8}
+a{color:var(--fx-primary)}a:hover{color:var(--fx-primary-text)}
+
+/* Reflow at laptop sizes, the factory way: side columns drop below, tiles wrap, tables scroll in their box */
+.fx-cols3>*,.fx-cols2>*,.fx-cols3e>*{min-width:0}
+@media (max-width:1500px){.fx-cols3{grid-template-columns:minmax(220px,260px) minmax(0,1fr) !important}.fx-cols3>:nth-child(3){grid-column:1/-1}.fx-cols3.fx-main-first{grid-template-columns:minmax(0,1fr) minmax(260px,300px) !important}}
+@media (max-width:1366px){.fx-cols2{grid-template-columns:minmax(0,1fr) minmax(280px,32%) !important}.fx-cols3e{grid-template-columns:repeat(2,minmax(0,1fr)) !important}.fx-cols3e>:nth-child(3){grid-column:1/-1}}
+@media (max-width:1180px){.fx-cols3,.fx-cols3.fx-main-first,.fx-cols2{grid-template-columns:minmax(0,1fr) !important}.fx-cols3>:nth-child(3){grid-column:auto}}
+@media (max-width:900px){.fx-cols3e{grid-template-columns:minmax(0,1fr) !important}.fx-cols3e>:nth-child(3){grid-column:auto}}
+.fx-scroll{overflow-x:auto}
+
+.fx-cols3eq>*,.fx-leftside>*{min-width:0}
+@media (max-width:1500px){.fx-cols3eq{grid-template-columns:repeat(2,minmax(0,1fr)) !important}.fx-cols3eq>:nth-child(3){grid-column:1/-1}}
+@media (max-width:900px){.fx-cols3eq{grid-template-columns:minmax(0,1fr) !important}}
+@media (max-width:1100px){.fx-leftside{grid-template-columns:minmax(0,1fr) !important}}
+@media (max-width:1500px){.fx-hero-art{display:none}}
+.fx-tile-badge{padding-right:58px !important}
+.mono{font-family:var(--fx-font-mono);font-size:12px}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="position:relative;width:100%;min-height:100vh;display:flex;flex-direction:column;font-family:Inter,'Segoe UI',system-ui,sans-serif;font-size:13px;color:var(--fx-text-body);background:var(--fx-bg);overflow-x:clip">
+
+
+
+  <div style="flex:1;display:flex;min-height:0">
+    <div data-nav-rail style="position:sticky;top:0;height:100vh;flex:none;align-self:flex-start;z-index:4"><dc-import name="Nav" current="inventory" h="100vh" hint-size="244px,1010px"></dc-import></div>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <dc-import name="Topbar" dark="{{darkOn}}" fluid="{{yes}}" hint-size="100%,56px"></dc-import>
+
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <main style="flex:1;min-height:0;padding:14px 22px;display:flex;flex-direction:column;gap:12px">
+      <div data-simple style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px">
+        <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+          <div style="font-size:13px;color:var(--fx-text-muted)"><a href="Landing.dc.html" style="text-decoration:none">Modernization</a> <span aria-hidden="true">›</span> Component inventory</div>
+          <h1 style="margin:0;font-size:28px;line-height:34px;font-weight:700;color:var(--fx-text)">Component inventory</h1>
+          <p style="margin:0;color:var(--fx-text-body)">Every Oracle JET component in the code and its premium replacement.</p>
+        </div>
+      </div>
+      <div data-steps-row style="margin-top:-2px;width:100%"><dc-import name="Steps" path="ui" step="2" dark="{{darkOn}}" hint-size="100%,48px"></dc-import></div>
+
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><sc-for list="{{kpis}}" as="k" hint-placeholder-count="6"><button type="button" onClick="{{k.pick}}" aria-pressed="{{k.on}}" style="height:30px;padding:0 12px;border-radius:var(--fx-radius-pill);background:var(--fx-surface);display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;border:{{k.border}};font:inherit;font-size:13px;cursor:pointer"><b style="color:{{k.iconFg}};font-variant-numeric:tabular-nums">{{k.value}}</b><span style="color:var(--fx-text-muted)">{{k.label}}</span></button></sc-for></div>
+
+      <div role="tablist" aria-label="Inventory views" style="display:flex;gap:26px;border-bottom:1px solid var(--fx-border)">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+          <button type="button" onClick="{{t.pick}}" role="tab" aria-selected="{{t.on}}" style="font:inherit;cursor:pointer;background:transparent;border:0;border-bottom:2px solid {{t.line}};height:40px;padding:0 4px;color:{{t.fg}};font-weight:{{t.weight}};font-size:14px">{{t.name}}</button>
+        </sc-for>
+      </div>
+<sc-if value="{{tbComponentsFirst}}" hint-placeholder-val="{{true}}">
+
+      <div class="fx-leftside" style="flex:1;min-height:0;display:grid;grid-template-columns:232px minmax(0,1fr);gap:14px">
+        <section aria-labelledby="fTitle" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:12px 14px;display:flex;flex-direction:column;gap:8px;overflow-x:auto;overflow-y:hidden">
+          <div style="display:flex;align-items:center"><h2 id="fTitle" style="margin:0;flex:1;font-size:15px;font-weight:700;color:var(--fx-text)">Filters</h2><button type="button" onClick="{{reset}}" style="font:inherit;font-size:12px;font-weight:600;color:var(--fx-primary);background:transparent;border:0;cursor:pointer;text-decoration:underline">Reset all</button></div>
+          <b style="color:var(--fx-text);margin-top:4px">Category</b>
+          <sc-for list="{{cats}}" as="c" hint-placeholder-count="7">
+            <label style="display:flex;align-items:center;gap:8px;padding:3px 6px;border-radius:7px;background:{{c.bg}}"><input type="checkbox" checked="{{c.on}}" style="accent-color:var(--fx-primary);margin:0"><span style="flex:1">{{c.name}}</span><span style="color:var(--fx-text-muted);font-variant-numeric:tabular-nums">{{c.n}}</span></label>
+          </sc-for>
+          <b style="color:var(--fx-text);margin-top:8px">Compatibility</b>
+          <sc-for list="{{compat}}" as="c" hint-placeholder-count="4">
+            <button type="button" onClick="{{c.pick}}" aria-pressed="{{c.on}}" style="font:inherit;color:inherit;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:7px;border:0;background:{{c.bg}}"><span style="width:9px;height:9px;border-radius:50%;background:{{c.dot}}" aria-hidden="true"></span><span style="flex:1">{{c.name}}</span><span style="color:var(--fx-text-muted);font-variant-numeric:tabular-nums">{{c.n}}</span></button>
+          </sc-for>
+          <div style="border-top:1px solid var(--fx-border);margin-top:6px;padding-top:8px;display:flex;justify-content:space-between;font-weight:700;color:var(--fx-text)">Module <span aria-hidden="true">⌄</span></div>
+          <div style="border-top:1px solid var(--fx-border);padding-top:8px;display:flex;justify-content:space-between;font-weight:700;color:var(--fx-text)">Usage <span aria-hidden="true">⌄</span></div>
+        </section>
+
+        <section aria-label="Components" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);display:flex;flex-direction:column;min-height:0;overflow-x:auto;overflow-y:hidden">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px">
+            <label style="flex:1;max-width:460px;height:36px;border:1px solid var(--fx-border-strong);border-radius:var(--fx-radius);display:flex;align-items:center;gap:8px;padding:0 12px;color:var(--fx-text-muted)"><span aria-hidden="true">⌕</span><span style="position:absolute;left:-9999px">Search components</span><input type="search" placeholder="Search, e.g. oj-input-text, oj-table" style="flex:1;border:0;outline:0;font:inherit;background:transparent"></label>
+            <span style="margin-left:auto;color:var(--fx-text-muted)">View</span>
+            <span style="height:36px;padding:0 12px;border-radius:var(--fx-radius);border:1px solid var(--fx-border-strong);display:inline-flex;align-items:center;gap:18px;min-width:150px">{{viewName}}<span style="margin-left:auto;color:var(--fx-text-muted)">⌄</span></span>
+          </div>
+          <div role="row" style="min-width:900px;display:grid;grid-template-columns:36px 1.25fr .95fr .6fr 1.35fr 1.05fr .95fr .7fr 64px;gap:8px;align-items:center;padding:9px 14px;background:var(--fx-surface-2);font-size:12px;font-weight:700;color:var(--fx-text);border-top:1px solid var(--fx-border);border-bottom:1px solid var(--fx-border)">
+            <span></span><span>JET component ↕</span><span>Category</span><span style="text-align:right">Screens</span><span>Modules</span><span>Factory replacement</span><span>Compatibility</span><span>Effort</span><span style="text-align:right">Actions</span>
+          </div>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+            <div role="row" style="min-width:900px;display:grid;grid-template-columns:36px 1.25fr .95fr .6fr 1.35fr 1.05fr .95fr .7fr 64px;gap:8px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--fx-border);background:{{r.bg}}">
+              <input type="checkbox" checked="{{r.sel}}" onChange="{{r.toggle}}" aria-label="Select {{r.jet}}" style="accent-color:var(--fx-primary);width:16px;height:16px;margin:0">
+              <span class="mono" style="color:var(--fx-text)">{{r.jet}}</span>
+              <span style="display:flex;align-items:center;gap:7px"><span style="color:var(--fx-primary)" aria-hidden="true">{{r.cicon}}</span>{{r.cat}}</span>
+              <b style="text-align:right;font-variant-numeric:tabular-nums;color:var(--fx-text)">{{r.screens}}</b>
+              <span>{{r.mods}} <span style="color:var(--fx-text-muted)">{{r.more}}</span></span>
+              <span class="mono" style="color:var(--fx-text);font-weight:600">{{r.fx}}</span>
+              <span><span style="height:24px;padding:0 9px;border-radius:var(--fx-radius-pill);font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px;background:{{r.cBg}};color:{{r.cFg}}">{{r.cIcon}} {{r.comp}}</span></span>
+              <span style="font-weight:600;color:{{r.effFg}}">{{r.eff}}</span>
+              <span style="display:flex;justify-content:flex-end;gap:2px"><a href="Mapping.dc.html" aria-label="Preview {{r.jet}}" style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:var(--fx-text-muted)">◉</a><button type="button" aria-label="More for {{r.jet}}" style="width:28px;height:28px;border:0;background:transparent;color:var(--fx-text-muted);cursor:pointer;font-size:16px">⋮</button></span>
+            </div>
+          </sc-for>
+          <div style="margin-top:auto;display:flex;align-items:center;gap:12px;padding:10px 14px;color:var(--fx-text-muted)">
+            <span>Showing 1–{{shown}} of 31 component types · 1,386 uses</span>
+            <span style="margin-left:auto">Rows per page</span>
+            <span style="height:32px;padding:0 10px;border-radius:8px;border:1px solid var(--fx-border-strong);display:inline-flex;align-items:center;gap:10px">10 <span aria-hidden="true">⌄</span></span>
+            <nav aria-label="Pages" style="display:flex;gap:4px">
+              <span style="width:32px;height:32px;border-radius:8px;background:var(--fx-primary);color:#ffffff;display:inline-flex;align-items:center;justify-content:center;font-weight:700" aria-current="page">1</span>
+              <a href="#" style="width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:var(--fx-text)">2</a>
+              <a href="#" style="width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:var(--fx-text)">3</a>
+              <a href="#" aria-label="Next page" style="width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:var(--fx-text)">›</a>
+            </nav>
+          </div>
+        </section>
+      </div></sc-if>
+<sc-if value="{{tbComponentsOther}}" hint-placeholder-val="{{false}}"><section style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);overflow-x:auto;overflow-y:hidden;display:flex;flex-direction:column;min-height:0;flex:1"><div style="padding:12px 14px;display:flex;flex-direction:column;gap:2px;border-bottom:1px solid var(--fx-border)"><h2 style="margin:0;font-size:15px;font-weight:700;color:var(--fx-text)">{{tbComponentsGen.title}}</h2><span style="color:var(--fx-text-muted)">{{tbComponentsGen.lead}}</span></div><div style="min-width:720px;display:grid;grid-template-columns:{{tbComponentsGen.cols}};gap:10px;padding:8px 14px;background:var(--fx-surface-2);font-size:12px;font-weight:700;color:var(--fx-text)"><sc-for list="{{tbComponentsGen.head}}" as="h" hint-placeholder-count="4"><span>{{h}}</span></sc-for></div><sc-for list="{{tbComponentsGen.rows}}" as="r" hint-placeholder-count="5"><div style="min-width:720px;display:grid;grid-template-columns:{{r.cols}};gap:10px;padding:8px 14px;border-top:1px solid var(--fx-border)"><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="4"><span style="color:{{c.fg}};font-weight:{{c.w}}">{{c.t}}</span></sc-for></div></sc-for><sc-if value="{{tbComponentsGen.hasNote}}" hint-placeholder-val="{{false}}"><p style="margin:0;padding:10px 14px;font-size:12px;color:var(--fx-text-muted);border-top:1px solid var(--fx-border)">{{tbComponentsGen.note}}</p></sc-if></section></sc-if>
+
+    </main>
+
+    <footer style="flex:none;position:sticky;bottom:0;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 22px;border-top:1px solid var(--fx-border);background:var(--fx-surface)"><a href="ChoosePath.dc.html" style="height:40px;padding:0 16px;border-radius:var(--fx-radius);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13.5px;border:1px solid var(--fx-border-strong);color:var(--fx-text);background:var(--fx-surface)">← Choose a path</a><span style="flex:1;min-width:12px"><span style="color:var(--fx-text-muted)"><b style="color:var(--fx-primary-text)">{{selCount}}</b> selected · {{selScreens}} screens · {{selMods}} modules</span></span><div style="position:relative"><button type="button" onClick="{{toggleMore}}" aria-haspopup="menu" aria-expanded="{{moreStr}}" aria-label="More actions" title="More actions" style="height:40px;padding:0 16px;border-radius:var(--fx-radius);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13.5px;padding:0 12px;border:1px solid var(--fx-border-strong);color:var(--fx-text);background:var(--fx-surface);font:inherit;font-weight:600;cursor:pointer">More ⋯</button><sc-if value="{{moreOn}}" hint-placeholder-val="{{false}}"><div role="menu" aria-label="More actions" style="position:absolute;right:0;bottom:48px;min-width:250px;background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);box-shadow:0 12px 32px rgba(15,23,42,.18);padding:6px;display:flex;flex-direction:column;gap:2px;z-index:8"><a role="menuitem" href="Mapping.dc.html" style="padding:9px 12px;border-radius:6px;text-decoration:none;color:var(--fx-text);font-size:13px">Compare and preview</a><a role="menuitem" href="Mapping.dc.html" style="padding:9px 12px;border-radius:6px;text-decoration:none;color:var(--fx-text);font-size:13px">View the screens</a><button type="button" role="menuitem" onClick="{{m_say0}}" style="text-align:left;padding:9px 12px;border-radius:6px;border:0;background:transparent;color:var(--fx-text);font:inherit;font-size:13px;cursor:pointer">Choose columns</button><button type="button" role="menuitem" onClick="{{m_say1}}" style="text-align:left;padding:9px 12px;border-radius:6px;border:0;background:transparent;color:var(--fx-text);font:inherit;font-size:13px;cursor:pointer">Export as CSV</button></div></sc-if></div><a href="UpgradePlan.dc.html" style="height:40px;padding:0 16px;border-radius:var(--fx-radius);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13.5px;padding:0 22px;background:var(--fx-primary);color:#ffffff">Add to the upgrade plan →</a></footer>
+    </div>
+    </div>
+  </div>
+<sc-if value="{{toastOn}}" hint-placeholder-val="{{false}}"><div role="status" style="position:fixed;right:28px;bottom:84px;max-width:420px;padding:12px 16px;border-radius:var(--fx-radius-lg);background:#0f172a;color:#ffffff;font-size:13px;box-shadow:0 8px 24px rgba(15,23,42,.25);display:flex;gap:10px;align-items:center"><span aria-hidden="true">ⓘ</span>{{toastText}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { compat: 'all', sel: { 'oj-input-text': true, 'oj-button': true } }; }
+  say(m) { this.setState({ toast: m }); clearTimeout(this.toastTimer); this.toastTimer = setTimeout(() => this.setState({ toast: '' }), 3500); }
+  renderVals() {
+    const v = this.renderPage();
+    v.yes = true;
+    v.themeClass = this.props.dark ? 'fx-dark' : '';
+    v.kpis = (v.kpis || []).map((k) => Object.assign({}, k, { badgeClass: k.hasPct ? 'fx-tile-badge' : '' }));
+    v.darkOn = !!this.props.dark;
+    const st = this.state || {};
+    v.toastOn = !!st.toast;
+    v.toastText = st.toast || '';
+    {
+      const D = [null,{"title":"Compatibility matrix","lead":"How each JET component maps to its factory component, part by part.","cols":"1.3fr .9fr .9fr .9fr .9fr 1fr","head":["Component","Properties","Events","Slots","Styling","Result"],"rows":[["oj-input-text","✓ 9 of 9","✓ 3 of 3","✓ none","✓ tokens","✓ Drop-in"],["oj-button","✓ 6 of 6","✓ 1 of 1","✓ 2 of 2","✓ tokens","✓ Drop-in"],["oj-select-single","! 7 of 8","✓ 2 of 2","✓ 1 of 1","✓ tokens","! Needs mapping"],["oj-input-date","✓ 8 of 8","✓ 2 of 2","✓ none","✓ tokens","✓ Drop-in"],["oj-table","! 11 of 14","! 3 of 5","✓ 2 of 2","! custom cells","! Needs mapping"],["oj-chart","✕ 0 of 22","✕ 0 of 4","✕","✕","✕ Not in the pack"]],"note":"A part maps when the factory component takes it with the same meaning; a renamed part counts as mapped."},{"title":"Usage by module","lead":"Where the JET components are used, and how much of each module the pack covers.","cols":"1.4fr .7fr .9fr 1.6fr 1fr","head":["Module","Screens","Component uses","Most used","Covered by the pack"],"rows":[["Payments","38","286","oj-input-text, oj-button","✓ 94%"],["Accounts","24","182","oj-table, oj-button","! 81%"],["Payee management","20","164","oj-input-text, oj-select-single","✓ 96%"],["Service requests","18","126","oj-input-text, oj-input-date","✓ 92%"],["Cards","16","132","oj-button, oj-dialog","✓ 90%"],["Dashboard","12","86","oj-chart, oj-navigation-list","! 62%"]],"note":""},{"title":"Findings (12)","lead":"Things to fix or decide before the upgrade.","cols":"2fr 1.3fr .8fr 2fr","head":["Finding","Where","How bad","What to do"],"rows":[["oj-chart has no premium version","Dashboard, Accounts (12 screens)","! Medium","Keep JET charts, or wait for a chart component"],["Custom cell templates in oj-table","Accounts, Reports (6 screens)","! Medium","Map each template to an bx-data-grid column"],["Inline styles override JET classes","Payments (9 screens)","Low","Remove; the theme tokens replace them"],["oj-select-single with a custom renderer","Transfers (3 screens)","! Medium","Use the option template of bx-select"],["Deprecated oj-input-date options","Deposits (2 screens)","Low","Drop the option; bx-date does it by default"]],"note":"Showing 5 of 12."}];
+      const NM = null;
+      const list = NM ? NM.map((n) => ({ name: n })) : (v.tabs || []);
+      const a = st.tbComponents || 0;
+      v.tabs = list.map((t, i) => Object.assign({}, t, { on: i === a ? 'true' : 'false', line: i === a ? 'var(--fx-primary)' : 'transparent', fg: i === a ? 'var(--fx-primary-text)' : 'var(--fx-text-body)', weight: i === a ? 700 : 500, pick: () => this.setState({ tbComponents: i }) }));
+      v.tbComponentsFirst = a === 0;
+      v.tbComponentsOther = a > 0;
+      const g = D[a] || D[1];
+      const tone = (x) => x.indexOf('✓') === 0 ? 'var(--fx-success-text)' : (x.indexOf('!') === 0 ? 'var(--fx-warning-text)' : (x.indexOf('✕') === 0 ? 'var(--fx-danger-text)' : 'var(--fx-text-body)'));
+      v.tbComponentsGen = { title: g.title, lead: g.lead, cols: g.cols, head: g.head, note: g.note, hasNote: !!g.note, rows: g.rows.map((r) => ({ cols: g.cols, cells: r.map((x, j) => ({ t: x, fg: j === 0 ? 'var(--fx-text)' : tone(x), w: j === 0 ? 600 : 400 })) })) };
+    }
+    const M = ["Opens a menu with a tick for each column.","Downloading component-inventory.csv","Not designed yet: the plan screen for the UI path."];
+    M.forEach((m, i) => { v['say' + i] = () => this.say(m); });
+    v.moreOn = !!(this.state && this.state.more);
+    v.moreStr = v.moreOn ? 'true' : 'false';
+    v.toggleMore = () => this.setState({ more: !(this.state && this.state.more) });
+    ["say0","say1"].forEach((h) => { v['m_' + h] = () => { this.setState({ more: false }); if (v[h]) { v[h](); } }; });
+    return v;
+  }
+  renderPage() {
+    const s = this.state;
+    const subs = [['Overview', 'Landing.dc.html'], ['Choose path', 'ChoosePath.dc.html'], ['Component inventory', 'Components.dc.html'], ['Component mapping', '#'], ['Technology catalogue', '#'], ['Migration planner', 'Migrate.dc.html'], ['Migration workspace', '#'], ['Validation centre', '#'], ['Review and approval', '#'], ['History', '#']];
+    const C = { direct: ['Direct replacement', 'var(--fx-success-soft)', 'var(--fx-success-text)', '✓'], map: ['Mapping required', 'var(--fx-warning-soft)', 'var(--fx-warning-text)', '⟳'], custom: ['Transformation or manual', 'var(--fx-danger-soft)', 'var(--fx-danger-text)', '!'] };
+    const E = { Low: 'var(--fx-success-text)', Medium: 'var(--fx-warning-text)', High: 'var(--fx-danger-text)' };
+    const D = [
+      ['oj-input-text', 'Input', 'T', 142, 'Accounts, Payments', '(+6)', 'bx-text-field', 'direct', 'Low', 16],
+      ['oj-button', 'Button', '▭', 98, 'Accounts, Cards', '(+4)', 'bx-button', 'direct', 'Low', 12],
+      ['oj-select-single', 'Dropdown', '⌄', 64, 'Payments, Transfers', '(+3)', 'bx-select', 'map', 'Medium', 9],
+      ['oj-input-date', 'Date picker', '▦', 38, 'Payments, Accounts', '(+2)', 'bx-date', 'direct', 'Low', 6],
+      ['oj-table', 'Data table', '▤', 21, 'Accounts, Reports', '(+2)', 'bx-data-grid', 'map', 'High', 6],
+      ['oj-dialog', 'Dialog', '▢', 18, 'Payments, Cards', '', 'bx-dialog', 'direct', 'Low', 2],
+      ['oj-navigation-list', 'Navigation', '☰', 16, 'Dashboard, Settings', '', 'bx-side-nav', 'direct', 'Medium', 2],
+      ['oj-chart', 'Chart', '▥', 12, 'Dashboard, Accounts', '', 'Not in the pack yet', 'custom', 'High', 2]
+    ];
+    const rows = D.filter((d) => s.compat === 'all' || d[7] === s.compat).map((d, i) => {
+      const on = !!s.sel[d[0]];
+      return { jet: d[0], cat: d[1], cicon: d[2], screens: d[3], mods: d[4], more: d[5], fx: d[6], comp: C[d[7]][0], cBg: C[d[7]][1], cFg: C[d[7]][2], cIcon: C[d[7]][3], eff: d[8], effFg: E[d[8]], sel: on, bg: on ? 'var(--fx-primary-soft)' : 'var(--fx-surface)',
+        toggle: () => { const n = Object.assign({}, s.sel); if (n[d[0]]) { delete n[d[0]]; } else { n[d[0]] = true; } this.setState({ sel: n }); } };
+    });
+    const picked = D.filter((d) => s.sel[d[0]]);
+    const comp = (id, name, n, dot) => ({ name: name, n: n, dot: dot, on: s.compat === id ? 'true' : 'false', bg: s.compat === id ? 'var(--fx-primary-soft)' : 'transparent', pick: () => this.setState({ compat: id }) });
+    const kpi = (id, icon, value, label, iconBg, iconFg, pct, pctBg, pctFg) => ({ icon: icon, value: value, label: label, iconBg: iconBg, iconFg: iconFg, hasPct: !!pct, pct: pct || '', pctBg: pctBg || '', pctFg: pctFg || '', on: s.compat === id ? 'true' : 'false', border: s.compat === id && id !== 'none' ? '1.5px solid var(--fx-primary)' : '1px solid var(--fx-border)', pick: () => this.setState({ compat: id === 'none' ? s.compat : id }) });
+    return {
+      sub: subs.map((n, i) => ({ name: n[0], href: n[1], current: i === 2 ? 'page' : 'false', bg: i === 2 ? 'var(--fx-primary)' : 'transparent', fg: i === 2 ? '#ffffff' : '#dcd7ff', weight: i === 2 ? 600 : 400 })),
+      kpis: [
+        kpi('all', '◈', '1,386', 'Component uses', 'var(--fx-primary-soft)', 'var(--fx-primary)'),
+        kpi('direct', '✓', '1,048', 'Direct replacements', 'var(--fx-success-soft)', 'var(--fx-success-text)', '76%', 'var(--fx-success-soft)', 'var(--fx-success-text)'),
+        kpi('map', '⇄', '236', 'Property or event mapping', 'var(--fx-primary-soft)', 'var(--fx-primary)', '17%', 'var(--fx-warning-soft)', 'var(--fx-warning-text)'),
+        kpi('custom', '!', '102', 'Transformation, manual or unsupported', 'var(--fx-danger-soft)', 'var(--fx-danger-text)', '7%', 'var(--fx-danger-soft)', 'var(--fx-danger-text)'),
+        kpi('none', '▭', '214', 'Screens affected', 'var(--fx-primary-soft)', 'var(--fx-primary)')
+      ],
+      tabs: [['Inventory', true], ['Compatibility matrix', false], ['Usage by module', false], ['Findings (12)', false]].map((t) => ({ name: t[0], on: t[1] ? 'true' : 'false', line: t[1] ? 'var(--fx-primary)' : 'transparent', fg: t[1] ? 'var(--fx-primary-text)' : 'var(--fx-text-body)', weight: t[1] ? 700 : 500 })),
+      cats: [['All categories', '1,386', true], ['Input and form', '412', false], ['Navigation', '138', false], ['Data display', '296', false], ['Layout and container', '184', false], ['Popup and overlay', '96', false], ['Other', '260', false]].map((c) => ({ name: c[0], n: c[1], on: c[2], bg: c[2] ? 'var(--fx-primary-soft)' : 'transparent' })),
+      compat: [comp('all', 'All', '1,386', 'var(--fx-primary)'), comp('direct', 'Direct replacement', '1,048', 'var(--fx-success)'), comp('map', 'Property or event mapping', '236', 'var(--fx-warning)'), comp('custom', 'Transformation, manual or unsupported', '102', 'var(--fx-danger-text)')],
+      viewName: s.compat === 'all' ? 'All components' : (s.compat === 'direct' ? 'Direct replacements' : (s.compat === 'map' ? 'Property or event mapping' : 'Transformation, manual or unsupported')),
+      reset: () => this.setState({ compat: 'all', sel: {} }),
+      rows: rows,
+      shown: rows.length,
+      selCount: picked.length === 1 ? '1 component' : picked.length + ' components',
+      selScreens: picked.reduce((a, d) => a + d[3], 0),
+      selMods: picked.reduce((a, d) => Math.max(a, d[9]), 0)
+    };
+  }
+}
+</script>
+</body>
+</html>

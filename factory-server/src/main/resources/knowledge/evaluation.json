@@ -1,0 +1,1579 @@
+[
+ {
+  "id": "q001",
+  "version": "25.2",
+  "question": "Explain the architecture of the OBDX user interface layer",
+  "kind": "architecture",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Architecture of GUI Tier"
+   },
+   {
+    "document": "User Interface Guide",
+    "heading": ""
+   }
+  ]
+ },
+ {
+  "id": "q002",
+  "version": "25.2",
+  "question": "What does the OBDX service tier architecture look like?",
+  "kind": "architecture",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Architecture of Service Tier"
+   }
+  ]
+ },
+ {
+  "id": "q003",
+  "version": "25.2",
+  "question": "How do I add custom logic before or after an OBDX service runs without changing product code?",
+  "kind": "extensibility",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Service Extensions"
+   }
+  ]
+ },
+ {
+  "id": "q004",
+  "version": "25.2",
+  "question": "Where can a bank add its own validation to an existing REST service?",
+  "kind": "extensibility",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Service Extensions"
+   },
+   {
+    "document": "Extensibility Guide",
+    "heading": "REST Tier"
+   },
+   {
+    "document": "Taxonomy Configuration Guide",
+    "heading": ""
+   }
+  ]
+ },
+ {
+  "id": "q005",
+  "version": "25.2",
+  "question": "How do I add new fields to an existing OBDX domain object?",
+  "kind": "extensibility",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Dictionary"
+   },
+   {
+    "document": "Extensibility Guide",
+    "heading": "Domain Extensions"
+   }
+  ]
+ },
+ {
+  "id": "q006",
+  "version": "25.2",
+  "question": "How do I create a completely new domain in OBDX?",
+  "kind": "extensibility",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Domain Extensions"
+   }
+  ]
+ },
+ {
+  "id": "q007",
+  "version": "25.2",
+  "question": "How can I add a new error message or map a host error code to an OBDX error?",
+  "kind": "extensibility",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Error Messages"
+   }
+  ]
+ },
+ {
+  "id": "q008",
+  "version": "25.2",
+  "question": "How do I call an outbound web service from an OBDX extension?",
+  "kind": "integration",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Outbound web service extensions"
+   }
+  ]
+ },
+ {
+  "id": "q009",
+  "version": "25.2",
+  "question": "How do I load custom authorization entries for new services?",
+  "kind": "security",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Security Customizations"
+   }
+  ]
+ },
+ {
+  "id": "q010",
+  "version": "25.2",
+  "question": "Can the OBDX login be extended with a custom authentication step?",
+  "kind": "security",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Authentication Extensibility"
+   },
+   {
+    "document": "Security Guide",
+    "heading": "custom 2FA"
+   }
+  ]
+ },
+ {
+  "id": "q011",
+  "version": "25.2",
+  "question": "How do I add a new rule criteria to approvals?",
+  "kind": "extensibility",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Adding New Rule Criteria"
+   },
+   {
+    "document": "Extensibility Guide",
+    "heading": "Extensible Points in Approval"
+   }
+  ]
+ },
+ {
+  "id": "q012",
+  "version": "25.2",
+  "question": "How do I change the theme and brand colours of the OBDX screens?",
+  "kind": "ui",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Theme and Brand"
+   }
+  ]
+ },
+ {
+  "id": "q013",
+  "version": "25.2",
+  "question": "How does a custom UI component call my own REST service?",
+  "kind": "ui",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Calling custom REST service"
+   }
+  ]
+ },
+ {
+  "id": "q014",
+  "version": "25.2",
+  "question": "Which libraries make up OBDX and what does each contain?",
+  "kind": "architecture",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Libraries"
+   }
+  ]
+ },
+ {
+  "id": "q015",
+  "version": "25.2",
+  "question": "How do I write and schedule a batch job in OBDX?",
+  "kind": "extensibility",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Scheduler"
+   }
+  ]
+ },
+ {
+  "id": "q016",
+  "version": "25.2",
+  "question": "How do I add pagination to a service response?",
+  "kind": "extensibility",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "IPaginable"
+   },
+   {
+    "document": "Extensibility Guide",
+    "heading": "pagination"
+   }
+  ]
+ },
+ {
+  "id": "q017",
+  "version": "25.2",
+  "question": "How do I package my customised jars and wars for deployment?",
+  "kind": "deployment",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "packaging"
+   }
+  ]
+ },
+ {
+  "id": "q018",
+  "version": "25.2",
+  "question": "How does OBDX consume events from an external Kafka topic?",
+  "kind": "integration",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Kafka"
+   }
+  ]
+ },
+ {
+  "id": "q019",
+  "version": "25.2",
+  "question": "How is JMS used for events in OBDX?",
+  "kind": "integration",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "JMS"
+   },
+   {
+    "document": "JMS Configuration Multi Entity Guide",
+    "heading": ""
+   }
+  ]
+ },
+ {
+  "id": "q020",
+  "version": "25.2",
+  "question": "How do I extend an existing UI component or override it with my own?",
+  "kind": "ui",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Extensible Points in GUI Tier"
+   },
+   {
+    "document": "OBDX UI Extensions Configurations Guide",
+    "heading": "Component Extension"
+   }
+  ]
+ },
+ {
+  "id": "q021",
+  "version": "25.2",
+  "question": "How do I build a new screen with the UI workbench?",
+  "kind": "ui",
+  "expect": [
+   {
+    "document": "UX Extensibility Toolkit",
+    "heading": "User Interface Workbench"
+   },
+   {
+    "document": "UX Extensibility Toolkit",
+    "heading": "Design Component"
+   }
+  ]
+ },
+ {
+  "id": "q022",
+  "version": "25.2",
+  "question": "How do I install the UI workbench?",
+  "kind": "deployment",
+  "expect": [
+   {
+    "document": "UX Extensibility Toolkit",
+    "heading": "Workbench Installation"
+   }
+  ]
+ },
+ {
+  "id": "q023",
+  "version": "25.2",
+  "question": "In the UI workbench, how do I connect a screen to a REST API?",
+  "kind": "ui",
+  "expect": [
+   {
+    "document": "UX Extensibility Toolkit",
+    "heading": "REST API Selection"
+   },
+   {
+    "document": "UX Extensibility Toolkit",
+    "heading": "REST API Configuration"
+   }
+  ]
+ },
+ {
+  "id": "q024",
+  "version": "25.2",
+  "question": "Can the UI workbench call two REST APIs one after the other?",
+  "kind": "ui",
+  "expect": [
+   {
+    "document": "UX Extensibility Toolkit",
+    "heading": "Chain REST APIs"
+   }
+  ]
+ },
+ {
+  "id": "q025",
+  "version": "25.2",
+  "question": "Which components can I use when designing a screen in the workbench?",
+  "kind": "ui",
+  "expect": [
+   {
+    "document": "UX Extensibility Toolkit",
+    "heading": "Available Components"
+   }
+  ]
+ },
+ {
+  "id": "q026",
+  "version": "25.2",
+  "question": "How do I create a new REST service with the Extensibility API toolkit?",
+  "kind": "api",
+  "expect": [
+   {
+    "document": "Extensibility API Toolkit Guide",
+    "heading": "Write your First Service"
+   }
+  ]
+ },
+ {
+  "id": "q027",
+  "version": "25.2",
+  "question": "What do I need installed before using the API toolkit?",
+  "kind": "api",
+  "expect": [
+   {
+    "document": "Extensibility API Toolkit Guide",
+    "heading": "Pre-requisites"
+   },
+   {
+    "document": "Extensibility API Toolkit Guide",
+    "heading": "Technology Stack"
+   }
+  ]
+ },
+ {
+  "id": "q028",
+  "version": "25.2",
+  "question": "How do I generate a service from a Swagger file?",
+  "kind": "api",
+  "expect": [
+   {
+    "document": "Extensibility API Toolkit Guide",
+    "heading": "Swagger"
+   }
+  ]
+ },
+ {
+  "id": "q029",
+  "version": "25.2",
+  "question": "How do I configure SSL for OBDX?",
+  "kind": "security",
+  "expect": [
+   {
+    "document": "Security Guide",
+    "heading": "Configuring SSL"
+   }
+  ]
+ },
+ {
+  "id": "q030",
+  "version": "25.2",
+  "question": "Which HTTP security headers should be set for OBDX?",
+  "kind": "security",
+  "expect": [
+   {
+    "document": "Security Guide",
+    "heading": "HTTP Response Header"
+   }
+  ]
+ },
+ {
+  "id": "q031",
+  "version": "25.2",
+  "question": "How do I set up two factor authentication for login?",
+  "kind": "security",
+  "expect": [
+   {
+    "document": "Security Guide",
+    "heading": "2FA for login"
+   },
+   {
+    "document": "Security Guide",
+    "heading": "2FA Attributes"
+   }
+  ]
+ },
+ {
+  "id": "q032",
+  "version": "25.2",
+  "question": "How do I plug in my own OTP or 2FA provider?",
+  "kind": "security",
+  "expect": [
+   {
+    "document": "Security Guide",
+    "heading": "custom 2FA"
+   }
+  ]
+ },
+ {
+  "id": "q033",
+  "version": "25.2",
+  "question": "How do I use my own encryption provider instead of the default one?",
+  "kind": "security",
+  "expect": [
+   {
+    "document": "Security Guide",
+    "heading": "Cryptography Provider"
+   }
+  ]
+ },
+ {
+  "id": "q034",
+  "version": "25.2",
+  "question": "How do I generate the JWT and API keys OBDX needs?",
+  "kind": "security",
+  "expect": [
+   {
+    "document": "Security Guide",
+    "heading": "Security Keys"
+   }
+  ]
+ },
+ {
+  "id": "q035",
+  "version": "25.2",
+  "question": "What does Oracle recommend for API rate limiting?",
+  "kind": "security",
+  "expect": [
+   {
+    "document": "Security Guide",
+    "heading": "Rate Limiting"
+   }
+  ]
+ },
+ {
+  "id": "q036",
+  "version": "25.2",
+  "question": "How do I configure SSL pinning in the mobile app?",
+  "kind": "security",
+  "expect": [
+   {
+    "document": "Security Guide",
+    "heading": "SSL Pinning"
+   }
+  ]
+ },
+ {
+  "id": "q037",
+  "version": "25.2",
+  "question": "How do I set up single sign-on with SAML and IDCS?",
+  "kind": "security",
+  "expect": [
+   {
+    "document": "Single Sign on Configuration SAML",
+    "heading": ""
+   }
+  ]
+ },
+ {
+  "id": "q038",
+  "version": "25.2",
+  "question": "What OHS settings are needed for SAML SSO?",
+  "kind": "security",
+  "expect": [
+   {
+    "document": "Single Sign on Configuration SAML",
+    "heading": "OHS Configuration"
+   }
+  ]
+ },
+ {
+  "id": "q039",
+  "version": "25.2",
+  "question": "How is logout handled when SSO is used?",
+  "kind": "security",
+  "expect": [
+   {
+    "document": "Single Sign on Configuration SAML",
+    "heading": "Logout"
+   }
+  ]
+ },
+ {
+  "id": "q040",
+  "version": "25.2",
+  "question": "How do I set up caching with Coherence in OBDX?",
+  "kind": "configuration",
+  "expect": [
+   {
+    "document": "OBDX Caching Configuration Guide",
+    "heading": ""
+   }
+  ]
+ },
+ {
+  "id": "q041",
+  "version": "25.2",
+  "question": "Can OBDX cache in the database instead of Coherence?",
+  "kind": "configuration",
+  "expect": [
+   {
+    "document": "OBDX Caching Configuration Guide",
+    "heading": "Database"
+   },
+   {
+    "document": "OBDX Caching Configuration Guide",
+    "heading": "other than Coherence"
+   }
+  ]
+ },
+ {
+  "id": "q042",
+  "version": "25.2",
+  "question": "How are push notification and alert events processed?",
+  "kind": "configuration",
+  "expect": [
+   {
+    "document": "Event Management Guide",
+    "heading": ""
+   }
+  ]
+ },
+ {
+  "id": "q043",
+  "version": "25.2",
+  "question": "How do I send OBDX alerts on WhatsApp?",
+  "kind": "configuration",
+  "expect": [
+   {
+    "document": "Event Management Guide",
+    "heading": "WhatsApp"
+   }
+  ]
+ },
+ {
+  "id": "q044",
+  "version": "25.2",
+  "question": "How does taxonomy validation of fields work?",
+  "kind": "configuration",
+  "expect": [
+   {
+    "document": "Taxonomy Configuration Guide",
+    "heading": ""
+   }
+  ]
+ },
+ {
+  "id": "q045",
+  "version": "25.2",
+  "question": "How do I write a new field validator for taxonomy?",
+  "kind": "configuration",
+  "expect": [
+   {
+    "document": "Taxonomy Configuration Guide",
+    "heading": "Validators"
+   },
+   {
+    "document": "Extensibility Guide",
+    "heading": "Taxonomy Validations"
+   }
+  ]
+ },
+ {
+  "id": "q046",
+  "version": "25.2",
+  "question": "How do I configure taxonomy validations in the UI?",
+  "kind": "configuration",
+  "expect": [
+   {
+    "document": "Taxonomy Configuration Guide",
+    "heading": "Taxonomy Validation in UI"
+   }
+  ]
+ },
+ {
+  "id": "q047",
+  "version": "25.2",
+  "question": "How does OBDX connect to FLEXCUBE Universal Banking?",
+  "kind": "integration",
+  "expect": [
+   {
+    "document": "Host Integration Guide",
+    "heading": "FCUBS"
+   },
+   {
+    "document": "Host Integration Guide",
+    "heading": "Integration Model"
+   }
+  ]
+ },
+ {
+  "id": "q048",
+  "version": "25.2",
+  "question": "How do I implement an adapter for an inquiry on the host?",
+  "kind": "integration",
+  "expect": [
+   {
+    "document": "Host Integration Guide",
+    "heading": "Inquiry Operation"
+   },
+   {
+    "document": "Host Integration Guide",
+    "heading": "Adapter"
+   }
+  ]
+ },
+ {
+  "id": "q049",
+  "version": "25.2",
+  "question": "How is a transaction posted to FCUBS through SOAP?",
+  "kind": "integration",
+  "expect": [
+   {
+    "document": "Host Integration Guide",
+    "heading": "Transactional Operation"
+   },
+   {
+    "document": "Host Integration Guide",
+    "heading": "SOAP Client"
+   }
+  ]
+ },
+ {
+  "id": "q050",
+  "version": "25.2",
+  "question": "How do I configure OBDX to talk to OBRH?",
+  "kind": "integration",
+  "expect": [
+   {
+    "document": "Host Integration Guide",
+    "heading": "OBRH"
+   }
+  ]
+ },
+ {
+  "id": "q051",
+  "version": "25.2",
+  "question": "How do I change a configuration value without changing the product code?",
+  "kind": "configuration",
+  "expect": [
+   {
+    "document": "Configuration Override Functionality Guide",
+    "heading": ""
+   }
+  ]
+ },
+ {
+  "id": "q052",
+  "version": "25.2",
+  "question": "How do I set up a new entity in a multi-entity OBDX?",
+  "kind": "configuration",
+  "expect": [
+   {
+    "document": "User Manual System Configuration",
+    "heading": "Entity"
+   }
+  ]
+ },
+ {
+  "id": "q053",
+  "version": "25.2",
+  "question": "Where are the global system settings maintained?",
+  "kind": "configuration",
+  "expect": [
+   {
+    "document": "User Manual System Configuration",
+    "heading": "Global Settings"
+   },
+   {
+    "document": "User Manual System Configuration",
+    "heading": "System Configurations"
+   }
+  ]
+ },
+ {
+  "id": "q054",
+  "version": "25.2",
+  "question": "Which tables does the OBDX data model have?",
+  "kind": "architecture",
+  "expect": [
+   {
+    "document": "Data Model",
+    "heading": ""
+   }
+  ]
+ },
+ {
+  "id": "q055",
+  "version": "25.2",
+  "question": "How do I install OBDX?",
+  "kind": "deployment",
+  "expect": [
+   {
+    "document": "Installation Guide",
+    "heading": ""
+   },
+   {
+    "document": "Installer Pre Requisite Setup Guide",
+    "heading": ""
+   }
+  ]
+ },
+ {
+  "id": "q056",
+  "version": "25.2",
+  "question": "How do I deploy the OBDX UI on Oracle HTTP Server?",
+  "kind": "deployment",
+  "expect": [
+   {
+    "document": "User Interface Guide",
+    "heading": "HTTP Server"
+   },
+   {
+    "document": "User Interface Guide",
+    "heading": "deployment"
+   }
+  ]
+ },
+ {
+  "id": "q057",
+  "version": "25.2",
+  "question": "How do I add a new language to OBDX?",
+  "kind": "ui",
+  "expect": [
+   {
+    "document": "User Interface Guide",
+    "heading": "Language"
+   }
+  ]
+ },
+ {
+  "id": "q058",
+  "version": "25.2",
+  "question": "How do I purge old data?",
+  "kind": "administration",
+  "expect": [
+   {
+    "document": "Purge Guide",
+    "heading": ""
+   }
+  ]
+ },
+ {
+  "id": "q059",
+  "version": "25.2",
+  "question": "Give me steps for onboarding a new customer in OBDX as a retail user",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "User Management - Create"
+   }
+  ]
+ },
+ {
+  "id": "q060",
+  "version": "25.2",
+  "question": "How do I unlock a retail user?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "User Management - Search and View"
+   },
+   {
+    "document": "User Manual Core",
+    "heading": "User Management - Edit"
+   }
+  ]
+ },
+ {
+  "id": "q061",
+  "version": "25.2",
+  "question": "How does an administrator reset a user password?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Reset Password"
+   }
+  ]
+ },
+ {
+  "id": "q062",
+  "version": "25.2",
+  "question": "How do I set transaction limits for a customer?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Limits Definition"
+   },
+   {
+    "document": "User Manual Core",
+    "heading": "Limit Package Management"
+   },
+   {
+    "document": "User Manual Core",
+    "heading": "User Limits"
+   }
+  ]
+ },
+ {
+  "id": "q063",
+  "version": "25.2",
+  "question": "How do I create a limit package and assign it?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Limit Package Management"
+   }
+  ]
+ },
+ {
+  "id": "q064",
+  "version": "25.2",
+  "question": "How do I change the limits of one particular user?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "User Limits"
+   }
+  ]
+ },
+ {
+  "id": "q065",
+  "version": "25.2",
+  "question": "How is maker-checker approval configured?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Approval Rules"
+   },
+   {
+    "document": "User Manual Core",
+    "heading": "Workflow Management"
+   }
+  ]
+ },
+ {
+  "id": "q066",
+  "version": "25.2",
+  "question": "How do I create an approval workflow with several levels?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Workflow Management"
+   }
+  ]
+ },
+ {
+  "id": "q067",
+  "version": "25.2",
+  "question": "How do I give a user access to only some of the accounts of the party?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "User Account Access"
+   },
+   {
+    "document": "User Manual Core",
+    "heading": "Party Account Access"
+   }
+  ]
+ },
+ {
+  "id": "q068",
+  "version": "25.2",
+  "question": "How do I restrict which transactions a user can perform?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "User Resource Access"
+   },
+   {
+    "document": "User Manual Core",
+    "heading": "Party Resource Access"
+   }
+  ]
+ },
+ {
+  "id": "q069",
+  "version": "25.2",
+  "question": "How do I onboard a corporate customer with its users?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Group Corporate Onboarding"
+   }
+  ]
+ },
+ {
+  "id": "q070",
+  "version": "25.2",
+  "question": "How are party preferences such as limits and approval flow set for a corporate?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Party Preferences"
+   }
+  ]
+ },
+ {
+  "id": "q071",
+  "version": "25.2",
+  "question": "How do I onboard a biller?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Biller Onboarding"
+   }
+  ]
+ },
+ {
+  "id": "q072",
+  "version": "25.2",
+  "question": "How do I set up a merchant?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Merchant Management"
+   }
+  ]
+ },
+ {
+  "id": "q073",
+  "version": "25.2",
+  "question": "How do I group transactions for limits?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Transaction Group Maintenance"
+   }
+  ]
+ },
+ {
+  "id": "q074",
+  "version": "25.2",
+  "question": "How do I create a quick form service request?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Quick Form"
+   }
+  ]
+ },
+ {
+  "id": "q075",
+  "version": "25.2",
+  "question": "How do I change the text labels shown on screens?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Resource Bundle Maintenance"
+   }
+  ]
+ },
+ {
+  "id": "q076",
+  "version": "25.2",
+  "question": "How do I edit the templates used for alerts and messages?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Template"
+   }
+  ]
+ },
+ {
+  "id": "q077",
+  "version": "25.2",
+  "question": "How do I enable SMS banking and missed call banking?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "SMS Banking"
+   },
+   {
+    "document": "User Manual Core",
+    "heading": "Missed Call Banking"
+   }
+  ]
+ },
+ {
+  "id": "q078",
+  "version": "25.2",
+  "question": "How do I add a payee as a retail user?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Retail Payments",
+    "heading": "Payee"
+   }
+  ]
+ },
+ {
+  "id": "q079",
+  "version": "25.2",
+  "question": "How does a retail user transfer money to a payee?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Retail Payments",
+    "heading": "Make Payment"
+   }
+  ]
+ },
+ {
+  "id": "q080",
+  "version": "25.2",
+  "question": "Can a retail user make several payments at once?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Retail Payments",
+    "heading": "Multiple Payments"
+   }
+  ]
+ },
+ {
+  "id": "q081",
+  "version": "25.2",
+  "question": "How do I set up a recurring payment?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Retail Payments",
+    "heading": "Recurring Payments"
+   },
+   {
+    "document": "User Manual Retail Payments",
+    "heading": "Make Payment"
+   }
+  ]
+ },
+ {
+  "id": "q082",
+  "version": "25.2",
+  "question": "How do I issue a demand draft?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Retail Payments",
+    "heading": "Demand Draft"
+   }
+  ]
+ },
+ {
+  "id": "q083",
+  "version": "25.2",
+  "question": "What is positive pay and how is it added?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Retail Payments",
+    "heading": "Positive Pay"
+   }
+  ]
+ },
+ {
+  "id": "q084",
+  "version": "25.2",
+  "question": "How does a retail user request money from a debtor?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Retail Payments",
+    "heading": "Request Money"
+   },
+   {
+    "document": "User Manual Retail Payments",
+    "heading": "Debtors"
+   }
+  ]
+ },
+ {
+  "id": "q085",
+  "version": "25.2",
+  "question": "What changed for cross-border payments with the MT to MX migration?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Retail Payments",
+    "heading": "MT to MX"
+   },
+   {
+    "document": "User Manual Retail Payments",
+    "heading": "Cross-Border"
+   }
+  ]
+ },
+ {
+  "id": "q086",
+  "version": "25.2",
+  "question": "How does a customer block a debit card?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Retail Accounts",
+    "heading": "Block Card"
+   }
+  ]
+ },
+ {
+  "id": "q087",
+  "version": "25.2",
+  "question": "How does a customer change the daily limits of a debit card?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Retail Accounts",
+    "heading": "Limits"
+   }
+  ]
+ },
+ {
+  "id": "q088",
+  "version": "25.2",
+  "question": "How does a customer request a cheque book?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Retail Accounts",
+    "heading": "Cheque Book Request"
+   }
+  ]
+ },
+ {
+  "id": "q089",
+  "version": "25.2",
+  "question": "How do I stop a cheque?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Retail Accounts",
+    "heading": "Stop / Unblock Cheque"
+   }
+  ]
+ },
+ {
+  "id": "q090",
+  "version": "25.2",
+  "question": "How does a customer download an account statement?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Retail Accounts",
+    "heading": "Statement"
+   }
+  ]
+ },
+ {
+  "id": "q091",
+  "version": "25.2",
+  "question": "How does sweep-in work for a savings account?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Retail Accounts",
+    "heading": "Sweep"
+   }
+  ]
+ },
+ {
+  "id": "q092",
+  "version": "22.2",
+  "question": "How do I add custom logic before or after an OBDX service runs?",
+  "kind": "extensibility",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Service Extension"
+   }
+  ]
+ },
+ {
+  "id": "q093",
+  "version": "22.2",
+  "question": "How do I add a new business policy?",
+  "kind": "extensibility",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "business policy"
+   }
+  ]
+ },
+ {
+  "id": "q094",
+  "version": "22.2",
+  "question": "How do I add a custom adapter for the host?",
+  "kind": "integration",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "custom adapter"
+   },
+   {
+    "document": "Extensibility Guide",
+    "heading": "Adapter Tier"
+   }
+  ]
+ },
+ {
+  "id": "q095",
+  "version": "22.2",
+  "question": "How do I map a host error code to an OBDX error code?",
+  "kind": "extensibility",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Mapping Host Error Code"
+   },
+   {
+    "document": "Extensibility Guide",
+    "heading": "Error Message"
+   }
+  ]
+ },
+ {
+  "id": "q096",
+  "version": "22.2",
+  "question": "How do I add or change validations on a screen?",
+  "kind": "ui",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Validations"
+   },
+   {
+    "document": "OBDX UI Extensions Configurations Guide",
+    "heading": "Validation Extension"
+   }
+  ]
+ },
+ {
+  "id": "q097",
+  "version": "22.2",
+  "question": "How do I add a field to the fund transfer screen?",
+  "kind": "ui",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Component Extensibility"
+   },
+   {
+    "document": "OBDX UI Extensions Configurations Guide",
+    "heading": "Component Extension"
+   },
+   {
+    "document": "UX Extensibility Toolkit",
+    "heading": ""
+   }
+  ]
+ },
+ {
+  "id": "q098",
+  "version": "22.2",
+  "question": "How do I configure CSRF protection?",
+  "kind": "security",
+  "expect": [
+   {
+    "document": "Security Guide",
+    "heading": "CSRF"
+   }
+  ]
+ },
+ {
+  "id": "q099",
+  "version": "22.2",
+  "question": "What are the cookie attribute recommendations?",
+  "kind": "security",
+  "expect": [
+   {
+    "document": "Security Guide",
+    "heading": "Cookie"
+   }
+  ]
+ },
+ {
+  "id": "q100",
+  "version": "22.2",
+  "question": "How do I configure the data source for FCUBS integration?",
+  "kind": "integration",
+  "expect": [
+   {
+    "document": "Host Integration Guide",
+    "heading": "Data source"
+   },
+   {
+    "document": "Host Integration Guide",
+    "heading": "Configuration/ Installation"
+   }
+  ]
+ },
+ {
+  "id": "q101",
+  "version": "22.2",
+  "question": "Which configuration tables control the host adapters?",
+  "kind": "integration",
+  "expect": [
+   {
+    "document": "Host Integration Guide",
+    "heading": "DIGX_FW_CONFIG"
+   },
+   {
+    "document": "Host Integration Guide",
+    "heading": "OBRH"
+   }
+  ]
+ },
+ {
+  "id": "q102",
+  "version": "22.2",
+  "question": "Give me steps for onboarding a new customer in OBDX as a retail user",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "User Management - Create"
+   }
+  ]
+ },
+ {
+  "id": "q103",
+  "version": "22.2",
+  "question": "How do I unlock a retail user?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "User Management"
+   }
+  ]
+ },
+ {
+  "id": "q104",
+  "version": "22.2",
+  "question": "How is maker-checker approval configured?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Approval Rules"
+   },
+   {
+    "document": "User Manual Core",
+    "heading": "Workflow Management"
+   }
+  ]
+ },
+ {
+  "id": "q105",
+  "version": "22.2",
+  "question": "How do I restrict payees a customer can add?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Payee Restriction"
+   }
+  ]
+ },
+ {
+  "id": "q106",
+  "version": "22.2",
+  "question": "How do I set the password policy?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Password Policy"
+   }
+  ]
+ },
+ {
+  "id": "q107",
+  "version": "22.2",
+  "question": "How do I define a transaction blackout period?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Transaction Blackout"
+   }
+  ]
+ },
+ {
+  "id": "q108",
+  "version": "22.2",
+  "question": "How do I set working hours for transactions?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Working Window"
+   }
+  ]
+ },
+ {
+  "id": "q109",
+  "version": "22.2",
+  "question": "How does a retail user add a beneficiary?",
+  "kind": "procedure",
+  "expect": [
+   {
+    "document": "User Manual Retail Payments",
+    "heading": "Payee"
+   }
+  ]
+ },
+ {
+  "id": "q110",
+  "version": "25.2",
+  "question": "Explain service extensions in OBDX",
+  "kind": "follow-up",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Service Extensions"
+   }
+  ],
+  "thread": "f1"
+ },
+ {
+  "id": "q111",
+  "version": "25.2",
+  "question": "How is it configured?",
+  "kind": "follow-up",
+  "expect": [
+   {
+    "document": "Extensibility Guide",
+    "heading": "Service Extension"
+   }
+  ],
+  "thread": "f1",
+  "followUp": true
+ },
+ {
+  "id": "q112",
+  "version": "25.2",
+  "question": "How do I create a limit package?",
+  "kind": "follow-up",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Limit Package Management"
+   }
+  ],
+  "thread": "f2"
+ },
+ {
+  "id": "q113",
+  "version": "25.2",
+  "question": "And how do I clone one?",
+  "kind": "follow-up",
+  "expect": [
+   {
+    "document": "User Manual Core",
+    "heading": "Limit Package Management - Clone"
+   }
+  ],
+  "thread": "f2",
+  "followUp": true
+ },
+ {
+  "id": "q114",
+  "version": "25.2",
+  "question": "How does a customer block a debit card?",
+  "kind": "follow-up",
+  "expect": [
+   {
+    "document": "User Manual Retail Accounts",
+    "heading": "Block Card"
+   }
+  ],
+  "thread": "f3"
+ },
+ {
+  "id": "q115",
+  "version": "25.2",
+  "question": "How do they unblock it again?",
+  "kind": "follow-up",
+  "expect": [
+   {
+    "document": "User Manual Retail Accounts",
+    "heading": "Unblock Card"
+   }
+  ],
+  "thread": "f3",
+  "followUp": true
+ },
+ {
+  "id": "q116",
+  "version": "25.2",
+  "question": "What is the source code of the OBDX login servlet?",
+  "kind": "unsupported",
+  "expect": [],
+  "unsupported": true
+ },
+ {
+  "id": "q117",
+  "version": "25.2",
+  "question": "Which Java garbage collector settings does Oracle use in its own OBDX cloud?",
+  "kind": "unsupported",
+  "expect": [],
+  "unsupported": true
+ },
+ {
+  "id": "q118",
+  "version": "25.2",
+  "question": "How many banks use OBDX worldwide?",
+  "kind": "unsupported",
+  "expect": [],
+  "unsupported": true
+ },
+ {
+  "id": "q119",
+  "version": "25.2",
+  "question": "What is the internal class that computes interest on loans in OBDX?",
+  "kind": "unsupported",
+  "expect": [],
+  "unsupported": true
+ }
+]

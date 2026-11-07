@@ -1,13 +1,19 @@
 # Builds and tests the factory on every push, and produces the downloads (Actions run page, "Artifacts"):
 #   obdx-factory-windows-x64: unzip and double-click start.bat; Java is included
 #   obdx-factory: the same without Java, for Linux or a machine that has Java 21
-# Each push also replaces the "latest" release (releases/download/latest/): the jar and version.json that installed
+# Each push to the integration branch (claude/ollama-models-setup-test-05b4a5) also replaces the "latest" release (releases/download/latest/): the jar and version.json that installed
 # factories update from ("Update now"), and both downloads.
 name: Build
 
 on:
   push:
   workflow_dispatch:
+
+# A newer push on a side branch replaces its older run (the gates take about two hours); every integration push runs
+# to the end, since each one publishes the release
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/claude/ollama-models-setup-test-05b4a5' }}
 
 permissions:
   contents: write
@@ -34,6 +40,12 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # The React, Angular and React Native galleries, which the Component factory page frames one component at a time
+      - name: Build the component previews
+        run: target-packs/components/previews/build.sh
       - name: Install Subversion (used by the import tests)
         run: sudo apt-get update -q && sudo apt-get install -y -q subversion
       - name: Build and test
@@ -52,7 +64,8 @@ jobs:
           # GitHub zips each artifact itself, so the Windows one is uploaded unpacked (one zip to download, not two).
           unzip -q dist/obdx-factory-windows-x64.zip -d dist/windows
       - name: Publish the latest build
-        if: github.event_name == 'push'
+        # Only the integration branch publishes what installed factories update to; other branches just build and test
+        if: github.event_name == 'push' && github.ref == 'refs/heads/claude/ollama-models-setup-test-05b4a5'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -80,3 +93,219 @@ jobs:
         with:
           name: test-reports
           path: factory-server/target/*-reports/
+
+  # The premium component packs (target-packs/components): each pack's own typecheck and tests, and the generated tokens
+  # are up to date. Separate from the factory build so a pack's tooling never slows or breaks the downloads.
+  component-packs:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pack: [react, react-native, angular]
+    defaults:
+      run:
+        working-directory: target-packs/components/${{ matrix.pack }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: target-packs/components/${{ matrix.pack }}/package-lock.json
+      - name: Tokens are up to date
+        run: node ../tools/build-tokens.js --check
+      - run: npm ci --no-audit --no-fund
+      - name: Typecheck and test
+        run: npm run check
+
+  # The Flutter target pack: its starter and a screen the factory writes from a Screen Model (Fund Transfer, with every
+  # field type) must pass flutter analyze and flutter test. Flutter comes from Google's release storage, checked by hash.
+  flutter-pack:
+    runs-on: ubuntu-latest
+    env:
+      FLUTTER_ARCHIVE: stable/linux/flutter_linux_3.47.9-stable.tar.xz
+      FLUTTER_SHA256: 25ed8c3c29d51a7353f2a944310b478af8214920639524b19c50a19e6c044c5a
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Install Flutter
+        run: |
+          curl -sSfLo /tmp/flutter.tar.xz "https://storage.googleapis.com/flutter_infra_release/releases/$FLUTTER_ARCHIVE"
+          echo "$FLUTTER_SHA256  /tmp/flutter.tar.xz" | sha256sum -c -
+          tar -xJf /tmp/flutter.tar.xz -C "$HOME"
+          echo "$HOME/flutter/bin" >> "$GITHUB_PATH"
+      - name: Write a screen with the scaffolder
+        run: mvn -B -pl factory-server -am test -Dtest=ScreenScaffolderTest -Dsurefire.failIfNoSpecifiedTests=false -Dscaffold.out=/tmp/scaffold
+      - name: Analyze and test the app with the screen
+        run: |
+          cp -r target-packs/flutter/starter /tmp/app && cp -r /tmp/scaffold/flutter/. /tmp/app/
+          cd /tmp/app
+          flutter --disable-analytics
+          flutter pub get
+          flutter analyze
+          flutter test
+
+  # The JET Core Pack target pack: a screen the factory writes (Fund Transfer) in the starter must typecheck against the
+  # Core Pack's element types, pass its Jest tests (the JET preset) and build with ojet build.
+  jet-core-pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Write a screen with the scaffolder
+        run: mvn -B -pl factory-server -am test -Dtest=ScreenScaffolderTest -Dsurefire.failIfNoSpecifiedTests=false -Dscaffold.out=/tmp/scaffold
+      - name: Typecheck, test and build the app with the screen
+        run: |
+          cp -r target-packs/jet-core-pack/starter /tmp/app && cp -r /tmp/scaffold/jet-core-pack/. /tmp/app/
+          cd /tmp/app
+          npm install --no-audit --no-fund
+          npm run typecheck
+          npm test
+          npx ojet build
+
+  # The Vue and Capacitor target packs: each starter must typecheck and pass its Vitest tests.
+  vue-starter:
+    runs-on: ubuntu-latest
+    defaults: {run: {working-directory: target-packs/vue/starter}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+
+  # Capacitor wraps the React starter and the Angular pack's app (wrap-angular.mjs) in the same shell
+  capacitor-starter:
+    runs-on: ubuntu-latest
+    defaults: {run: {working-directory: target-packs/capacitor/starter}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      - name: Wrap the Angular app, build it and add the Android app from the build
+        working-directory: ${{ github.workspace }}
+        run: |
+          cp -r target-packs/angular/starter /tmp/angular-app
+          node target-packs/capacitor/wrap-angular.mjs /tmp/angular-app
+          cd /tmp/angular-app
+          npm install --no-audit --no-fund
+          npx tsc -p tsconfig.app.json --noEmit
+          npx ng build
+          npx cap add android
+
+  # The Swift and Kotlin target pack: the Android app's Compose tests (the iOS tests need a macOS runner and run there by hand).
+  native-android:
+    runs-on: ubuntu-latest
+    defaults: {run: {working-directory: target-packs/native/starter/android}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '17'}
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew test
+
+  # The React Native pack in the browser (react-native-web): screenshots, both themes and contrast. Linux is the reference.
+  react-native-gates:
+    runs-on: ubuntu-latest
+    defaults: {run: {working-directory: target-packs/components/react-native/gates}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm ci --prefix .. --no-audit --no-fund && npm install --no-audit --no-fund
+      # Parity with the JET elements: both JET releases, served from target-packs/components/gates
+      - run: for d in jet6 jet21; do (cd ../../gates/$d && npm ci --no-audit --no-fund); done
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --update-snapshots=missing
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: react-native-gates
+          path: |
+            target-packs/components/react-native/gates/snapshots/
+            target-packs/components/react-native/gates/results/
+          retention-days: 14
+
+  # The browser gates of the web packs (target-packs/components/gates): React, Angular and the premium JET pack on
+  # JET 6.2 and the current release, in Chromium: accessibility with contrast, themes, phone to laptop, screenshots and
+  # parity with the JET elements. Screenshots missing for Linux are written and uploaded (commit them from the artifact).
+  component-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install the packs, the gates and both JET releases
+        run: |
+          for d in react angular gates gates/jet6 gates/jet21; do (cd target-packs/components/$d && npm ci --no-audit --no-fund); done
+      - name: Install Chromium
+        working-directory: target-packs/components/gates
+        run: npx playwright install --with-deps chromium
+      - name: Run the gates
+        working-directory: target-packs/components/gates
+        run: npx playwright test --update-snapshots=missing
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: component-gates
+          path: |
+            target-packs/components/gates/results/
+            target-packs/components/gates/snapshots/linux/
+            target-packs/components/gates/test-results/
+          retention-days: 14
+
+  # The design gates: every component of every pack under each of the nine designs, light and dark (axe with contrast,
+  # nothing running past its section) and each built variant alone, one job per design. Screenshots per component are
+  # in the artifact to look at. Specs: gates/specs/designs.spec.ts and react-native/gates/specs/designs.spec.ts.
+  design-gates:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        design: [elevated, soft, glass, outline, vivid, pill, brutal, redwood, liquid]
+    env:
+      GATES_DESIGN: ${{ matrix.design }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Install the packs, the gates and JET 21
+        run: |
+          for d in react angular gates gates/jet21 react-native; do (cd target-packs/components/$d && npm ci --no-audit --no-fund); done
+          (cd target-packs/components/react-native/gates && npm install --no-audit --no-fund)
+      - name: Install Chromium
+        working-directory: target-packs/components/gates
+        run: npx playwright install --with-deps chromium
+      - name: The web packs under ${{ matrix.design }}
+        working-directory: target-packs/components/gates
+        run: npx playwright test specs/designs.spec.ts
+      - name: React Native under ${{ matrix.design }}
+        if: always()
+        working-directory: target-packs/components/react-native/gates
+        run: npx playwright test specs/designs.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: design-gates-${{ matrix.design }}
+          path: |
+            target-packs/components/gates/results/
+            target-packs/components/gates/test-results/
+            target-packs/components/react-native/gates/results/
+            target-packs/components/react-native/gates/test-results/
+          retention-days: 14

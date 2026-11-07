@@ -1,0 +1,454 @@
+{
+  "rows": [
+    {
+      "id": "P0",
+      "track": "Set up",
+      "task": "Board reference images, side-by-side check, plan",
+      "session": "Main",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "Plan and handoff template",
+          "done": true
+        },
+        {
+          "name": "Progress dashboard",
+          "done": true
+        },
+        {
+          "name": "Board reference images",
+          "done": true
+        },
+        {
+          "name": "Side-by-side check tool",
+          "done": true
+        },
+        {
+          "name": "Catalogue sessions started",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "SCR",
+      "track": "Screens",
+      "task": "Screens built and working (all 14)",
+      "session": "Earlier",
+      "unit": "screens",
+      "note": "Work; being brought to the boards one by one",
+      "items": [
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        },
+        {
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "S0",
+      "track": "Screens",
+      "task": "S0 Shared parts: steps bar, chips, charts, cards, states",
+      "session": "Main",
+      "unit": "parts",
+      "items": [
+        {
+          "name": "Path steps bar",
+          "done": true
+        },
+        {
+          "name": "Count chips",
+          "done": true
+        },
+        {
+          "name": "Ring chart and legend",
+          "done": true
+        },
+        {
+          "name": "Stacked bars",
+          "done": true
+        },
+        {
+          "name": "Timeline",
+          "done": true
+        },
+        {
+          "name": "Dependency diagram",
+          "done": true
+        },
+        {
+          "name": "Path card",
+          "done": true
+        },
+        {
+          "name": "Activity list",
+          "done": true
+        },
+        {
+          "name": "Screen states",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "S1",
+      "track": "Screens",
+      "task": "S1 Overview, Choose a path, Technology settings",
+      "session": "Main",
+      "unit": "screens",
+      "note": "Overview differences found",
+      "items": [
+        {
+          "name": "Overview",
+          "done": true
+        },
+        {
+          "name": "Choose a path",
+          "done": true
+        },
+        {
+          "name": "Technology settings",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "track": "Screens",
+      "task": "S2 Inventory, Mapping, Upgrade plan, Technology catalogue",
+      "session": "Main",
+      "unit": "screens",
+      "items": [
+        {
+          "name": "Component inventory",
+          "done": true
+        },
+        {
+          "name": "Component mapping",
+          "done": true
+        },
+        {
+          "name": "Upgrade plan",
+          "done": true
+        },
+        {
+          "name": "Technology catalogue",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "track": "Screens",
+      "task": "S3 Migration planner, Workspace, Validation",
+      "session": "Main",
+      "unit": "screens",
+      "items": [
+        {
+          "name": "Migration planner",
+          "done": true
+        },
+        {
+          "name": "Migration workspace",
+          "done": true
+        },
+        {
+          "name": "Validation",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "S4",
+      "track": "Screens",
+      "task": "S4 Review, Decisions, History, Component factory",
+      "session": "Main",
+      "unit": "screens",
+      "items": [
+        {
+          "name": "Review and approval",
+          "done": true
+        },
+        {
+          "name": "Review decisions",
+          "done": true
+        },
+        {
+          "name": "History",
+          "done": true
+        },
+        {
+          "name": "Component factory",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "SHIP",
+      "track": "Ship",
+      "task": "Full build, push, CI green, 8081 updated for your review",
+      "session": "Main",
+      "unit": "phases",
+      "note": "Released from the integration branch after the second release candidate passed every GitHub job (run 42330393407)",
+      "items": [
+        {
+          "name": "Screens",
+          "done": true
+        },
+        {
+          "name": "Catalogue and packs",
+          "done": true
+        },
+        {
+          "name": "Gates",
+          "done": true
+        },
+        {
+          "name": "Final",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "LG0",
+      "track": "Liquid glass",
+      "task": "LG0 Glisse research and the glass spec",
+      "session": "Catalogue (web)",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "Glisse source read",
+          "done": true
+        },
+        {
+          "name": "Glass spec in the component style",
+          "done": true
+        },
+        {
+          "name": "Glisse in the React pack with its licence",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "LG1",
+      "track": "Liquid glass",
+      "task": "LG1 Liquid glass in React (Glisse)",
+      "session": "Catalogue (web)",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "Glisse components mapped",
+          "done": true
+        },
+        {
+          "name": "Glass surface on the rest",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "LG2",
+      "track": "Liquid glass",
+      "task": "LG2 Liquid glass in JET and Angular (CSS and SVG)",
+      "session": "Catalogue (web)",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "JET 6 and JET 21",
+          "done": true
+        },
+        {
+          "name": "Angular",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "LG3",
+      "track": "Liquid glass",
+      "task": "LG3 Liquid glass in React Native",
+      "session": "Catalogue (phone)",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "Blur view glass",
+          "done": true
+        },
+        {
+          "name": "iOS 26 glass where available",
+          "done": false
+        }
+      ],
+      "note": "The iOS 26 system glass needs Xcode (left out on purpose); expo-blur draws the frost on devices"
+    },
+    {
+      "id": "LG4",
+      "track": "Liquid glass",
+      "task": "LG4 Liquid glass in the other technologies",
+      "session": "Main",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "Vue 3 and Capacitor",
+          "done": true
+        },
+        {
+          "name": "JET Core Pack",
+          "done": true
+        },
+        {
+          "name": "Flutter",
+          "done": true
+        }
+      ],
+      "note": "The factory does not write the bank's style into the starters yet"
+    },
+    {
+      "id": "LG5",
+      "track": "Liquid glass",
+      "task": "LG5 Liquid glass gates",
+      "session": "Main",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "Contrast on glass",
+          "done": true
+        },
+        {
+          "name": "Reduced transparency and forced colours",
+          "done": true
+        },
+        {
+          "name": "Screenshots per browser",
+          "done": true
+        },
+        {
+          "name": "Frame rate",
+          "done": true
+        }
+      ],
+      "note": "gates/specs/liquid.spec.ts: React, Angular and JET 21 in Chromium; contrast in both themes, reduced transparency and forced colours drop the frost, a screenshot per theme, no frame loop while still"
+    },
+    {
+      "id": "AC",
+      "track": "Decisions of 7 Nov",
+      "task": "Angular pack: the 34 missing components",
+      "session": "Angular components",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "Built with gallery sections and unit tests",
+          "done": true
+        },
+        {
+          "name": "Full build passed",
+          "done": true
+        },
+        {
+          "name": "Browser gates passed",
+          "done": true
+        },
+        {
+          "name": "Merged",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "CA",
+      "track": "Decisions of 7 Nov",
+      "task": "Capacitor wraps the Angular app too",
+      "session": "Capacitor for Angular",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "Wrap script and rules",
+          "done": true
+        },
+        {
+          "name": "Angular screens for a wrapped Angular app",
+          "done": true
+        },
+        {
+          "name": "Full build passed",
+          "done": true
+        },
+        {
+          "name": "Merged",
+          "done": true
+        },
+        {
+          "name": "GitHub build of the wrapped app",
+          "done": true
+        }
+      ]
+    },
+    {
+      "id": "NX",
+      "track": "Decisions of 7 Nov",
+      "task": "Native starters: pinning, XcodeGen, ViewInspector, device run",
+      "session": "Native extras",
+      "unit": "steps",
+      "items": [
+        {
+          "name": "Certificate pinning",
+          "done": true
+        },
+        {
+          "name": "XcodeGen and ViewInspector tests",
+          "done": true
+        },
+        {
+          "name": "Device-run harness (Android emulator run)",
+          "done": true
+        },
+        {
+          "name": "Gradle wrapper and release pin guard",
+          "done": true
+        },
+        {
+          "name": "iOS built on a Mac",
+          "done": false
+        }
+      ],
+      "note": "iOS is written but not built: it needs a Mac or a macOS job (left out on purpose)"
+    }
+  ]
+}

@@ -25,6 +25,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * Requirement workflow against a real PostgreSQL: draft from text, answer questions, update the spec with the
@@ -33,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "FACTORY_TEST_DB_URL", matches = ".+")
+@org.junit.jupiter.api.extension.ExtendWith(com.obdx.factory.common.ForgetSecrets.class)
 class RequirementFlowIntegrationTest {
 
     @TempDir
@@ -53,7 +55,7 @@ class RequirementFlowIntegrationTest {
                "fields": [{"name": "remarks", "label": "Remarks", "type": "text"}]}],
              "openQuestions": [
                {"question": "What is the maximum length of remarks?", "reason": "Needed for validation"},
-               {"question": "Is remarks mandatory?"}]}
+               {"question": "Is remarks mandatory?", "options": ["Yes", "No"], "suggestedAnswer": "No"}]}
             """;
 
     static final String REFINED = """
@@ -137,6 +139,9 @@ class RequirementFlowIntegrationTest {
                 List.of(new RequirementService.Answer(0, "35 characters")));
         assertThat(answered.currentVersion()).isEqualTo(2);
         assertThat(answered.spec().openQuestions().getFirst().answer()).isEqualTo("35 characters");
+        assertThat(answered.spec().openQuestions().get(1).options()).as("options are kept with the answers")
+                .containsExactly("Yes", "No");
+        assertThat(answered.spec().openQuestions().get(1).suggestedAnswer()).isEqualTo("No");
 
         requirements.refine(created.id());
         RequirementService.RequirementDetail refined = waitUntilReady(created.id());
@@ -161,6 +166,13 @@ class RequirementFlowIntegrationTest {
         assertThat(approved.approvedAt()).isNotNull();
         assertThat(approved.approvedBy()).isEqualTo("Lead");
         assertThatThrownBy(() -> requirements.updateSpec(created.id(), edited)).hasMessageContaining("is approved");
+
+        // The revision history: every version, newest first, with how it was made
+        assertThat(requirements.versions(created.id())).extracting(RequirementSpecRepository.Version::version,
+                        RequirementSpecRepository.Version::origin)
+                .containsExactly(tuple(4, RequirementSpecRepository.Origin.EDITED), tuple(3, RequirementSpecRepository.Origin.REFINED),
+                        tuple(2, RequirementSpecRepository.Origin.ANSWERED), tuple(1, RequirementSpecRepository.Origin.DRAFTED));
+        assertThat(requirements.versions(created.id())).allSatisfy(v -> assertThat(v.createdAt()).isNotNull());
     }
 
     private RequirementService.RequirementDetail waitUntilReady(UUID id) throws InterruptedException {

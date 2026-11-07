@@ -1,0 +1,15 @@
+{
+  "name": "obdx-component-gates",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The browser gates of the premium component packs: accessibility with contrast, light and dark themes, phone to laptop, visual snapshots and parity with the JET elements, in Chromium.",
+  "scripts": {
+    "gates": "playwright test",
+    "gates:update": "playwright test --update-snapshots"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "axe-core": "^4.14.0"
+  }
+}

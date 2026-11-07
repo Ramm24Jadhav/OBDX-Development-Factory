@@ -1,0 +1,13 @@
+/* The gallery page around the components (not part of the pack). */
+html, body { margin: 0; }
+.gallery { min-height: 100vh; box-sizing: border-box; padding: 24px 16px 48px; background: var(--bx-surface-2); color: var(--bx-text); font-family: var(--bx-font); }
+.gallery h1 { margin: 0 0 16px; font-size: 20px; }
+.gate { max-width: 760px; margin: 0 auto 16px; padding: 16px; border-radius: 12px; background: var(--bx-surface); border: 1px solid var(--bx-border); box-sizing: border-box; }
+.gate > h2 { margin: 0 0 12px; font-size: 13px; font-weight: 700; color: var(--bx-text-body); text-transform: uppercase; letter-spacing: 0.04em; }
+.gate-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.gate-row .bx-card { flex: 1 1 220px; }
+.gate p { margin: 0; color: var(--bx-text-body); }
+/* The open dialog drawn inside its section instead of over the page */
+.gate-dialog { position: relative; min-height: 300px; border-radius: 10px; overflow: hidden; }
+.gate-dialog .bx-dialog-backdrop, .gate-dialog .bx-dialog { position: absolute; }
+.gate-dialog .bx-dialog { animation: none; }

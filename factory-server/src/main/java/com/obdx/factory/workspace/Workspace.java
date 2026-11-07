@@ -39,7 +39,7 @@ public class Workspace {
     @Column(name = "indexed_revision")
     private Long indexedRevision;
 
-    /** Target pack id: "jet" (the bank's OBDX UI), "react-native" or "react". */
+    /** Target pack id: "jet" (the bank's OBDX UI) or a target pack: react-native, react, angular, flutter, jet-core-pack, vue, capacitor, native. */
     @Column(nullable = false, length = 40)
     private String target = "jet";
 

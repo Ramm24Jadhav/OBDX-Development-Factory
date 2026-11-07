@@ -1,0 +1,157 @@
+# Angular target pack: a new web app (Angular, standalone components, TypeScript) on the bank's OBDX REST services.
+id: angular
+title: Angular (web)
+description: A new web app built with Angular (standalone components, signals) that calls the bank's OBDX REST services.
+preview: angular
+defaultAppFolder: web-angular
+# Screens are Angular components (a class and its template), not JSX
+syntax: angular
+
+# Where files go, relative to the app folder. {module} is a lowercase module folder (for example payments),
+# {Screen} the screen name in PascalCase (FundTransfer), {screenKey} the same in camelCase (fundTransfer).
+structure:
+  screen: src/app/screens/{module}/{Screen}Page.ts
+  test: src/app/screens/{module}/{Screen}Page.spec.ts
+  api: src/app/api/{module}Api.ts
+  texts: src/app/i18n/en.json
+  navigation: src/app/app.routes.ts
+
+# Screen Model component type -> starter component (src/app/components): the class to import and its element.
+# value: string, list (string[]), boolean or number.
+components:
+  text: {component: TextField, tag: bx-text-field, value: string}
+  textarea: {component: TextArea, tag: bx-text-area, value: string}
+  number: {component: TextField, tag: bx-text-field, value: string, props: 'inputMode="numeric"'}
+  amount: {component: AmountInput, tag: bx-amount, value: number}
+  date: {component: DatePicker, tag: bx-date, value: string}
+  select: {component: Dropdown, tag: bx-select, value: string, options: true}
+  account: {component: Dropdown, tag: bx-select, value: string, options: true}
+  radio: {component: RadioGroup, tag: bx-choice-group, value: string, options: true}
+  checkbox: {component: CheckboxGroup, tag: bx-checkbox-group, value: list, options: true}
+  switch: {component: Toggle, tag: bx-switch, value: boolean}
+  display: {component: ReadOnlyField, tag: obdx-read-only, value: string}
+  # No table or OBDX JET components in this app yet: shown read-only until the screen is completed
+  table: {component: ReadOnlyField, tag: obdx-read-only, value: string}
+  component: {component: ReadOnlyField, tag: obdx-read-only, value: string}
+
+templates:
+  screen: templates/screen.ts
+  test: templates/screen.spec.ts
+
+guidance: |
+  - This is an Angular web app (standalone components, signals, TypeScript) in its own folder; it calls the bank's
+    OBDX REST services. Do not change the OBDX JET UI for it.
+  - Build pages only from the components in src/app/components: the premium components (bx-text-field, bx-amount,
+    bx-select, bx-checkbox-group, bx-choice-group, bx-date, bx-button, bx-icon-button, bx-dialog, bx-toast, bx-card,
+    bx-tabs, bx-data-grid, bx-text-area, bx-password, bx-number-input, bx-currency-picker, bx-multi-select, bx-switch,
+    bx-date-range, bx-search, bx-autocomplete, bx-document-upload) and the starter's obdx-screen, obdx-section, obdx-read-only.
+    They take testID, label, [(value)], error, required, readOnly, helpText and placeholder (and options). Style with
+    the skin's classes (bx.css) and its CSS variables, not inline colors.
+  - Every field and action of the approved Screen Model keeps its Screen Model id as testID (rendered as data-testid).
+  - Keep form state and validation in createForm (src/app/forms/form.ts): rules for required and maxLength, check for
+    the spec's other validations. Values are signals: [(value)]="form.values.name".
+  - All visible texts come from src/app/i18n/en.json through t('screenKey.name'); add the page's texts there.
+  - Call OBDX services only through src/app/api (api.get/post from client.ts) in a <module>Api.ts file with typed
+    request and response types; the client adds the session cookie and the nonce.
+  - Pages do not navigate themselves: they emit (action) with an action id and (done), which app.routes.ts wires up.
+  - Write tests with the Angular test runner (vitest) and TestBed.
+  - The app's design comes from the factory's component style in src/app/component-style.json (look, motion, mode,
+    brand): app.ts puts its bx-look-* classes on the root and bx.css draws the nine designs, Liquid glass included.
+
+rules:
+  - id: angular-no-react
+    title: No React in the Angular app
+    severity: error
+    files: ["**/*.ts"]
+    forbid: 'from\s+[''"](react|react-dom|react-native)[''"]'
+    message: This is the Angular app; use the components in src/app/components, not React.
+  - id: angular-no-inner-html
+    title: No raw HTML
+    severity: error
+    files: ["**/*.ts", "**/*.html"]
+    forbid: '\[innerHTML\]|bypassSecurityTrust'
+    message: Do not insert raw HTML or bypass Angular's sanitising (it opens the app to script injection); render texts and components.
+  - id: app-no-jet
+    title: No Oracle JET in the new app
+    severity: error
+    files: ["**/*.ts"]
+    forbid: '''ojs/|\bknockout\b|<oj-'
+    message: This is the new app; do not use Oracle JET or Knockout here.
+  - id: app-api-through-client
+    title: Services through src/app/api
+    severity: error
+    files: ["**/*.ts"]
+    exclude: ["**/src/app/api/**", "**/*.spec.ts"]
+    forbid: '(?<![.\w])fetch\s*\(|\bXMLHttpRequest\b|\bHttpClient\b'
+    message: Call OBDX services through src/app/api (api.get/post in a <module>Api.ts file), not directly.
+  - id: app-texts-from-i18n
+    title: Texts from i18n
+    severity: warning
+    files: ["**/src/app/screens/**/*.ts"]
+    exclude: ["**/*.spec.ts"]
+    forbid: '\b(label|title|placeholder|helpText)="[^"]*[A-Za-z]'
+    message: Take visible texts from src/app/i18n/en.json with t('screenKey.name') so they can be translated.
+  - id: app-theme-colors
+    title: Colors from the theme
+    severity: warning
+    files: ["**/src/app/screens/**/*.ts"]
+    forbid: '[''"]#[0-9a-fA-F]{3,8}[''"]'
+    message: Use the skin's classes and CSS variables (bx.css), not literal color codes, so the design system applies.
+  - id: app-no-console
+    title: No console logging
+    severity: warning
+    files: ["**/*.ts"]
+    exclude: ["**/*.spec.ts"]
+    forbid: '\bconsole\.(log|debug|info)\s*\('
+    message: Remove console logging from app code.
+  - id: app-no-any
+    title: Typed code
+    severity: warning
+    files: ["**/*.ts"]
+    forbid: ':\s*any\b|\bas\s+any\b'
+    message: Use specific types (for example the request and response types of the API file) instead of any.
+
+recipes:
+  - id: app-screen
+    title: Page in the Angular app
+    when: A screen of the requirement is built (or changed) in the Angular web app.
+    guidance: |
+      - Start from the generated starting point: it already maps every field and action of the approved Screen Model to
+        the components, with testIDs, texts, required and length rules.
+      - Load data (for example the customer's accounts) and send the form through the module's API file.
+      - On success emit done; on an ApiError show its message (error state shown above the actions).
+    parts:
+      - id: screen
+        name: Screen
+        files: ["**/src/app/screens/**/*Page.ts"]
+        examples: {files: ["**/src/app/screens/**/*Page.ts"], contains: 'createForm|obdx-screen'}
+      - id: test
+        name: Screen test
+        files: ["**/src/app/screens/**/*Page.spec.ts"]
+        examples: {files: ["**/src/app/**/*.spec.ts"]}
+  - id: app-api
+    title: API file for a module
+    when: Screens of a module call OBDX REST services.
+    guidance: |
+      - One file per module in src/app/api, exporting typed functions (for example transfer(request): Promise<TransferResult>)
+        that call api.get/post with the OBDX service path.
+      - Declare request and response types with the field names the OBDX service uses.
+    parts:
+      - id: api
+        name: API file
+        files: ["**/src/app/api/*Api.ts"]
+        template: templates/api.ts
+        examples: {files: ["**/src/app/api/*Api.ts"]}
+  - id: app-texts
+    title: Texts and navigation
+    when: A screen is added or changed.
+    guidance: |
+      - en.json: keep all existing texts; add or change only the screen's own block (the generated starting point has it).
+      - app.routes.ts: add one route for the page; wire (action) and (done) to the router in the page's host.
+    parts:
+      - id: texts
+        name: Texts (en.json)
+        files: ["**/src/app/i18n/*.json"]
+      - id: navigation
+        name: Navigation
+        files: ["**/src/app/app.routes.ts"]

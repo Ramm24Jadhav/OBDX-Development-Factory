@@ -1,0 +1,42 @@
+<!-- Technology settings, as on the approved board (docs/design/boards/TechConfig-*.png) -->
+<div class="factory-pg factory-mb factory-ms">
+  <div class="factory-mb-headrow">
+    <div class="factory-mb-pagehead is-sm">
+      <h1>Technology settings</h1>
+      <p>What the factory uses when it moves a module to each technology. Administrators can change them for this workspace.</p>
+    </div>
+    <oj-bind-if test="[[!editing()]]"><button type="button" class="factory-mb-btn is-primary" id="msEdit" on-click="[[startEdit]]" :disabled="[[!canManage() || !data()]]" :title="[[savedText]]">Edit settings</button></oj-bind-if>
+  </div>
+
+  <oj-bind-if test="[[error()]]"><div class="fx-alert fx-alert--danger" id="msError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><oj-bind-text value="[[error]]"></oj-bind-text></span></div></oj-bind-if>
+  <oj-bind-if test="[[data()]]">
+    <div class="factory-mb-techchips" role="tablist" aria-label="Technology"><oj-bind-for-each data="[[techs]]" as="t"><template>
+      <button type="button" role="tab" :aria-selected="[[t.data.checked]]" :class="[[t.data.css]]" on-click="[[t.data.pick]]" :id="[['msTech-' + t.data.id]]">
+        <span class="factory-mb-techlogo" aria-hidden="true"><oj-bind-text value="[[t.data.logo]]"></oj-bind-text></span><oj-bind-text value="[[t.data.name]]"></oj-bind-text><span :class="[[t.data.stateCss]]"><oj-bind-text value="[[t.data.state]]"></oj-bind-text></span></button>
+    </template></oj-bind-for-each></div>
+    <oj-bind-if test="[[preview()]]"><div class="factory-mb-banner is-warning" role="status">The <oj-bind-text value="[[data().name]]"></oj-bind-text> target pack is still being built. These settings are a preview and can't be used for a migration yet.</div></oj-bind-if>
+
+    <div class="factory-mb-setgroups">
+      <oj-bind-for-each data="[[groups]]" as="g"><template>
+        <section class="factory-mb-card factory-mb-setgroup" :aria-labelledby="[['msGroup-' + g.data.id]]">
+          <div class="factory-mb-sethead"><span class="factory-mb-seticon" aria-hidden="true"><oj-bind-text value="[[groupGlyph(g.data.id)]]"></oj-bind-text></span>
+            <span><h2 :id="[['msGroup-' + g.data.id]]"><oj-bind-text value="[[g.data.title]]"></oj-bind-text></h2><span><oj-bind-text value="[[g.data.lead]]"></oj-bind-text></span></span></div>
+          <dl class="factory-mb-setrows"><oj-bind-for-each data="[[g.data.rows]]" as="r"><template><div>
+            <dt><oj-bind-text value="[[r.data.label]]"></oj-bind-text></dt>
+            <dd :title="[[r.data.locked ? 'Fixed: this keeps OBDX working as it is' : r.data.source]]">
+              <oj-bind-if test="[[editing() && r.data.editable]]"><fx-input label="[[r.data.label]]" hide-label value="{{r.data.draft}}"></fx-input></oj-bind-if>
+              <oj-bind-if test="[[!(editing() && r.data.editable)]]">
+                <oj-bind-if test="[[r.data.locked]]"><span class="factory-mb-fixed">Fixed</span></oj-bind-if><span :class="[[r.data.css]]"><oj-bind-text value="[[r.data.value]]"></oj-bind-text></span></oj-bind-if>
+            </dd></div></template></oj-bind-for-each></dl>
+        </section>
+      </template></oj-bind-for-each>
+    </div>
+    <p class="factory-mb-footnote">The Look rows come from the component style saved in the <a href="?ojr=components" on-click="[[openFactory]]">Component factory</a>; change them there. Locked settings are the OBDX rules: changing them would break the bank's session, security or services, so they are fixed for every technology.</p>
+
+    <oj-bind-if test="[[editing()]]">
+      <footer class="factory-mb-footer"><span class="factory-mb-muted">Changes apply to new migrations in this workspace. Running ones keep their settings.</span>
+        <span class="factory-mb-spacer"></span>
+        <button type="button" class="factory-mb-btn is-plain" id="msCancel" on-click="[[cancel]]">Cancel</button><button type="button" class="factory-mb-btn is-primary" id="msSave" on-click="[[save]]">Save settings</button></footer>
+    </oj-bind-if>
+  </oj-bind-if>
+</div>

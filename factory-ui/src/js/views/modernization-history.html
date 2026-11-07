@@ -1,0 +1,126 @@
+<!-- History, as on the approved board (docs/design/boards/History-*.png) -->
+<div class="factory-pg factory-mb factory-mh">
+  <div class="factory-mb-headrow">
+    <div class="factory-mb-pagehead is-sm">
+      <h1>History</h1>
+      <p>Every modernization run in this workspace.</p>
+    </div>
+    <div class="factory-mb-headtools">
+      <fx-select id="mhRange" label="Period" hide-label options="[[rangeOptions]]" value="{{range}}"></fx-select>
+      <button type="button" class="factory-mb-btn is-primary" id="mhNew" on-click="[[newRun]]" :disabled="[[!canManage()]]" :title="[[canManage() ? null : 'Starting a modernization needs the Manage code permission']]"><span aria-hidden="true">+</span>New modernization</button>
+    </div>
+  </div>
+
+  <oj-bind-if test="[[error()]]"><div class="fx-alert fx-alert--danger" id="mhError" role="alert"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><strong>The history did not load.</strong> <oj-bind-text value="[[error]]"></oj-bind-text></span>
+    <button type="button" class="fx-btn fx-btn--secondary fx-btn--sm" on-click="[[tryAgain]]">Try again</button></div></oj-bind-if>
+  <oj-bind-if test="[[loading() && rowsAll().length === 0]]"><div class="factory-mo-skeleton" role="status" aria-label="Loading the history"><span class="fx-skeleton"></span></div></oj-bind-if>
+  <oj-bind-if test="[[!loading() && rowsAll().length === 0 && !error()]]">
+    <div class="fx-empty" id="mhEmpty"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-clock" aria-hidden="true"></span></span><strong>No runs yet</strong>Start a wave on the Upgrade plan or a module on the Migration planner; each run shows here.
+      <button type="button" class="fx-btn fx-btn--primary" on-click="[[newRun]]" :disabled="[[!canManage()]]">New modernization</button></div>
+  </oj-bind-if>
+
+  <oj-bind-if test="[[rowsAll().length > 0]]">
+    <ul class="factory-mb-chips" id="mhKpis" aria-label="The runs"><oj-bind-for-each data="[[kpis]]" as="k"><template><li :class="[[k.data.css]]"><b><oj-bind-text value="[[k.data.v]]"></oj-bind-text></b><span><oj-bind-text value="[[k.data.k]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+
+    <div class="factory-mh-top">
+      <section class="factory-mb-card factory-mh-weeks" aria-labelledby="mhWeeksTitle">
+        <div class="factory-mh-weekshead"><h2 class="factory-mb-h2" id="mhWeeksTitle">Runs per week</h2>
+          <ul class="factory-mh-key" aria-hidden="true"><oj-bind-for-each data="[[barKey]]" as="s"><template><li><i :class="[[s.data.css]]"></i><oj-bind-text value="[[s.data.label]]"></oj-bind-text></li></template></oj-bind-for-each></ul></div>
+        <div class="factory-mh-chart" id="mhBars" role="img" :aria-label="[[barSummary]]">
+          <ol class="factory-mh-ticks" aria-hidden="true"><oj-bind-for-each data="[[weekBars().ticks]]" as="t"><template><li><oj-bind-text value="[[t.data]]"></oj-bind-text></li></template></oj-bind-for-each></ol>
+          <ol class="factory-mh-cols" aria-hidden="true"><oj-bind-for-each data="[[weekBars().cols]]" as="c"><template><li :title="[[c.data.title]]">
+            <span class="factory-mh-stack"><oj-bind-for-each data="[[c.data.parts]]" as="p"><template><i :class="[[p.data.css]]" :style="[[p.data.style]]"></i></template></oj-bind-for-each></span>
+            <small><oj-bind-text value="[[c.data.label]]"></oj-bind-text></small></li></template></oj-bind-for-each></ol>
+        </div>
+      </section>
+      <section class="factory-mb-card factory-mb-ring-card factory-mh-by" aria-labelledby="mhByTitle">
+        <h2 class="factory-mb-h2" id="mhByTitle">By result</h2>
+        <div class="factory-mb-ringrow">
+          <span class="factory-mb-ring" :style="[[donut]]" role="img" :aria-label="[['Runs by result: ' + donutLabel()]]"><span><b><oj-bind-text value="[[total]]"></oj-bind-text></b><small>runs</small></span></span>
+          <ul class="factory-mb-legend factory-mh-legend"><oj-bind-for-each data="[[byResult]]" as="b"><template><li><button type="button" :class="[[b.data.css]]" :aria-pressed="[[b.data.pressed]]" on-click="[[b.data.pick]]">
+            <i :style="[[b.data.dot]]" aria-hidden="true"></i><span><oj-bind-text value="[[b.data.label]]"></oj-bind-text></span><b><oj-bind-text value="[[b.data.n]]"></oj-bind-text></b><small><oj-bind-text value="[[b.data.pct]]"></oj-bind-text></small></button></li></template></oj-bind-for-each></ul>
+        </div>
+      </section>
+    </div>
+
+    <div class="factory-mh-tabrow">
+      <div class="factory-mb-tabs" role="tablist" aria-label="History views" on-keydown="[[tabKey]]">
+        <oj-bind-for-each data="[[tabs]]" as="t"><template><button type="button" role="tab" :id="[['mhTab-' + t.data.value]]" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :tabindex="[[t.data.selected() ? '0' : '-1']]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
+      </div>
+      <oj-bind-if test="[[tab() === 'runs']]">
+        <fx-input id="mhSearch" class="factory-mc-search factory-mh-search" type="search" icon="search" clearable label="Search runs" hide-label placeholder="Search by change, module or branch" value="{{query}}"></fx-input>
+        <fx-menu-button id="mhFilter" class="factory-mh-filter" variant="secondary" size="sm" label="[[filterName]]" align="end" items="[[filterItems]]" on-fx-action="[[filterAction]]"></fx-menu-button>
+      </oj-bind-if>
+    </div>
+
+    <section class="factory-mb-card factory-mb-tablecard factory-mh-card" aria-label="Runs">
+      <oj-bind-if test="[[tab() === 'runs']]"><div role="tabpanel" aria-labelledby="mhTab-runs" class="factory-mh-runs">
+        <div class="factory-mh-tablewrap"><table class="factory-mb-table factory-mh-table" id="mhTable"><caption class="fx-visually-hidden">Modernization runs</caption>
+          <colgroup><col class="factory-mh-c-check"/><col class="factory-mh-c-change"/><col class="factory-mh-c-module"/><col class="factory-mh-c-path"/><col class="factory-mh-c-tech"/><col class="factory-mh-c-branch"/><col class="factory-mh-c-started"/><col class="factory-mh-c-took"/><col class="factory-mh-c-result"/><col class="factory-mh-c-outcome"/><col class="factory-mh-c-actions"/></colgroup>
+          <thead><tr><th scope="col"><span class="fx-visually-hidden">Pick</span></th><th scope="col">Change</th><th scope="col">Module</th><th scope="col">Path</th><th scope="col">Technology</th><th scope="col">SVN branch</th><th scope="col">Started</th><th scope="col">Took</th><th scope="col">Result</th><th scope="col">Outcome</th><th scope="col"><span class="fx-visually-hidden">Actions</span></th></tr></thead>
+          <tbody><oj-bind-for-each data="[[rows]]" as="r"><template><tr>
+            <td><input type="checkbox" class="fx-check" :aria-label="[['Pick ' + r.data.module]]" :checked="[[r.data.checked]]" on-click="[[r.data.toggle]]"/></td>
+            <td><oj-bind-if test="[[r.data.hasChange]]"><a href="#" class="factory-mh-change" on-click="[[r.data.openChange]]"><oj-bind-text value="[[r.data.change]]"></oj-bind-text></a></oj-bind-if><oj-bind-if test="[[!r.data.hasChange]]"><span class="factory-mb-muted">—</span></oj-bind-if></td>
+            <th scope="row"><oj-bind-text value="[[r.data.module]]"></oj-bind-text></th>
+            <td><span class="factory-mb-pill is-sm is-primary factory-mh-path"><oj-bind-text value="[[r.data.path]]"></oj-bind-text></span></td><td><oj-bind-text value="[[r.data.technology]]"></oj-bind-text></td>
+            <td class="factory-mb-mono factory-mh-branch"><oj-bind-text value="[[r.data.branch]]"></oj-bind-text></td>
+            <td :title="[[r.data.by]]"><oj-bind-text value="[[r.data.when]]"></oj-bind-text></td><td><oj-bind-text value="[[r.data.took]]"></oj-bind-text></td>
+            <td><span :class="[[r.data.css]]"><oj-bind-text value="[[r.data.state]]"></oj-bind-text></span></td><td class="factory-mh-outcome"><oj-bind-text value="[[r.data.outcome]]"></oj-bind-text></td>
+            <td class="factory-mh-actions"><button type="button" class="factory-mh-eye" :aria-label="[['Open the details of ' + r.data.module]]" on-click="[[r.data.open]]"><span class="factory-nav-icon factory-ico-eye" aria-hidden="true"></span></button>
+              <fx-menu-button variant="ghost" size="sm" icon="more" icon-only label="[[r.data.module + ' actions']]" align="end" items="[[r.data.menu]]" on-fx-action="[[r.data.menuAction]]"></fx-menu-button></td></tr></template></oj-bind-for-each></tbody></table></div>
+        <oj-bind-if test="[[rows().length === 0]]"><p class="factory-mb-muted factory-mc-none">No run matches. <button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[clearFilter]]">Show every result</button></p></oj-bind-if>
+        <div class="factory-mh-foot">
+          <span class="factory-mb-muted"><oj-bind-text value="[[pager.text() + ' runs']]"></oj-bind-text></span>
+          <div class="factory-mh-pages"><oj-bind-for-each data="[[pager.numbers]]" as="n"><template><oj-bind-if test="[[n.data.gap]]"><span>…</span></oj-bind-if><oj-bind-if test="[[!n.data.gap]]"><button type="button" :class="[[n.data.current ? 'is-on' : '']]" :aria-current="[[n.data.current ? 'page' : null]]" :aria-label="[['Page ' + n.data.label]]" on-click="[[n.data.go]]"><oj-bind-text value="[[n.data.label]]"></oj-bind-text></button></oj-bind-if></template></oj-bind-for-each></div>
+          <span class="factory-mb-spacer"></span>
+          <a class="factory-mb-btn is-outline is-sm" id="mhCsv" :href="[[csvHref]]">Download report</a>
+          <a class="factory-mb-btn is-outline is-sm" id="mhLogs" :href="[[logsHref]]"><oj-bind-text value="[[logsLabel]]"></oj-bind-text></a></div>
+      </div></oj-bind-if>
+
+      <oj-bind-if test="[[tab() === 'details']]"><div role="tabpanel" aria-labelledby="mhTab-details" class="factory-mm-panel">
+        <fx-select id="mhRun" label="Run" options="[[runOptions]]" value="{{currentId}}"></fx-select>
+        <oj-bind-if test="[[detailOf()]]">
+          <div class="factory-mh-detail">
+            <section><h3 class="factory-mm-module">Steps</h3>
+              <oj-bind-if test="[[detailOf().steps.length === 0]]"><p class="fx-muted">No steps yet.</p></oj-bind-if>
+              <ol class="fx-timeline"><oj-bind-for-each data="[[detailOf().steps]]" as="e"><template><li><span class="fx-timeline-dot"></span><span><oj-bind-text value="[[e.data.text]]"></oj-bind-text><span class="fx-muted"><oj-bind-text value="[[e.data.by]]"></oj-bind-text></span></span>
+                <span class="fx-timeline-time"><oj-bind-text value="[[e.data.when]]"></oj-bind-text><oj-bind-if test="[[e.data.took]]"><small class="factory-mh-took"><oj-bind-text value="[[e.data.took]]"></oj-bind-text></small></oj-bind-if></span></li></template></oj-bind-for-each></ol></section>
+            <section><h3 class="factory-mm-module">What it produced</h3><dl class="factory-mp-facts"><oj-bind-for-each data="[[detailOf().produced]]" as="f"><template><div><dt><oj-bind-text value="[[f.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[f.data.v]]"></oj-bind-text></dd></div></template></oj-bind-for-each></dl>
+              <h3 class="factory-mm-module">Results</h3><dl class="factory-mp-facts"><oj-bind-for-each data="[[detailOf().results]]" as="f"><template><div><dt><oj-bind-text value="[[f.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[f.data.v]]"></oj-bind-text></dd></div></template></oj-bind-for-each></dl>
+              <h3 class="factory-mm-module">Delivery</h3><dl class="factory-mp-facts"><oj-bind-for-each data="[[detailOf().delivery]]" as="f"><template><div><dt><oj-bind-text value="[[f.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[f.data.v]]"></oj-bind-text></dd></div></template></oj-bind-for-each></dl>
+              <div class="factory-mr-next"><button type="button" class="fx-btn fx-btn--secondary" on-click="[[runLog]]">Download the log</button><button type="button" class="fx-btn fx-btn--primary" on-click="[[toReview]]">Open in Review</button></div></section>
+          </div>
+        </oj-bind-if>
+      </div></oj-bind-if>
+
+      <oj-bind-if test="[[tab() === 'files']]"><div role="tabpanel" aria-labelledby="mhTab-files" class="factory-mm-panel">
+        <fx-input id="mhFileSearch" class="factory-mc-search" type="search" icon="search" clearable label="Search files" hide-label placeholder="Search files" value="{{fileQuery}}"></fx-input>
+        <oj-bind-if test="[[fileRows().length === 0]]"><p class="fx-muted">No files in the runs shown.</p></oj-bind-if>
+        <div class="fx-table-wrap"><table class="fx-table" id="mhFiles"><thead><tr><th scope="col">File</th><th scope="col">Run</th><th scope="col">New or changed</th><th scope="col">Check</th></tr></thead>
+          <tbody><oj-bind-for-each data="[[fileRows]]" as="f"><template><tr><th scope="row" class="factory-mo-mono"><oj-bind-text value="[[f.data.path]]"></oj-bind-text></th><td><oj-bind-text value="[[f.data.run]]"></oj-bind-text></td>
+            <td><oj-bind-text value="[[f.data.action]]"></oj-bind-text></td><td><span :class="[[f.data.css]]"><oj-bind-text value="[[f.data.check]]"></oj-bind-text></span></td></tr></template></oj-bind-for-each></tbody></table></div>
+      </div></oj-bind-if>
+
+      <oj-bind-if test="[[tab() === 'delivery']]"><div role="tabpanel" aria-labelledby="mhTab-delivery" class="factory-mm-panel">
+        <oj-bind-if test="[[deliveries().length === 0]]"><p class="fx-muted">Nothing delivered or rejected yet.</p></oj-bind-if>
+        <div class="fx-table-wrap"><table class="fx-table" id="mhDeliveries"><thead><tr><th scope="col">When</th><th scope="col">Run</th><th scope="col">SVN branch</th><th scope="col">Revision</th><th scope="col">Result</th><th scope="col">Started by</th></tr></thead>
+          <tbody><oj-bind-for-each data="[[deliveries]]" as="d"><template><tr><td><oj-bind-text value="[[d.data.when]]"></oj-bind-text></td><th scope="row"><oj-bind-text value="[[d.data.run]]"></oj-bind-text></th>
+            <td class="factory-mo-mono"><oj-bind-text value="[[d.data.branch]]"></oj-bind-text></td><td class="factory-mo-mono"><oj-bind-text value="[[d.data.revision]]"></oj-bind-text></td>
+            <td><span :class="[[d.data.css]]"><oj-bind-text value="[[d.data.result]]"></oj-bind-text></span></td><td><oj-bind-text value="[[d.data.by]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table></div>
+      </div></oj-bind-if>
+    </section>
+
+    <fx-sheet id="mhPanel" open="{{panelOpen}}" heading="[[panel() ? 'Run ' + panel().title : '']]" subtitle="Steps, output, results and delivery of this run">
+      <div class="factory-cf-detail-wrap"><oj-bind-if test="[[panel()]]"><div class="factory-mr-form">
+        <span :class="[[panel().css]]"><oj-bind-text value="[[panel().state]]"></oj-bind-text></span>
+        <h3 class="factory-mm-module">Steps</h3>
+        <ol class="fx-timeline"><oj-bind-for-each data="[[panel().steps]]" as="e"><template><li><span class="fx-timeline-dot"></span><span><oj-bind-text value="[[e.data.text]]"></oj-bind-text></span>
+          <span class="fx-timeline-time"><oj-bind-text value="[[e.data.took || e.data.when]]"></oj-bind-text></span></li></template></oj-bind-for-each></ol>
+        <h3 class="factory-mm-module">What it produced</h3><dl class="factory-mp-facts"><oj-bind-for-each data="[[panel().produced]]" as="f"><template><div><dt><oj-bind-text value="[[f.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[f.data.v]]"></oj-bind-text></dd></div></template></oj-bind-for-each></dl>
+        <h3 class="factory-mm-module">Results</h3><dl class="factory-mp-facts"><oj-bind-for-each data="[[panel().results]]" as="f"><template><div><dt><oj-bind-text value="[[f.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[f.data.v]]"></oj-bind-text></dd></div></template></oj-bind-for-each></dl>
+        <h3 class="factory-mm-module">Delivery</h3><dl class="factory-mp-facts"><oj-bind-for-each data="[[panel().delivery]]" as="f"><template><div><dt><oj-bind-text value="[[f.data.k]]"></oj-bind-text></dt><dd><oj-bind-text value="[[f.data.v]]"></oj-bind-text></dd></div></template></oj-bind-for-each></dl>
+        <div class="factory-mm-sheetfoot"><button type="button" class="fx-btn fx-btn--secondary" on-click="[[runLog]]">Download the log</button><button type="button" class="fx-btn fx-btn--primary" on-click="[[toReview]]">Open in Review</button></div>
+      </div></oj-bind-if></div>
+    </fx-sheet>
+  </oj-bind-if>
+</div>

@@ -12,11 +12,19 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.obdx.factory.auth.WorkspaceRole.Permission;
+import com.obdx.factory.svn.SvnException;
+
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -83,6 +91,36 @@ class WorkspaceControllerTest {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value("A workspace named 'bank-a' already exists"));
+    }
+
+    @Test
+    void recordsEachSvnTestResultForTheIntegrationsPage() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(service.testSvnConnection(id)).thenReturn(new WorkspaceService.SvnConnectionResponse("https://svn.bank-a.local/obdx/trunk", "https://svn.bank-a.local/obdx", 42));
+
+        mvc.perform(post("/api/workspaces/" + id + "/svn/test").with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.headRevision").value(42));
+        verify(audit).record("SVN_TEST_PASSED", id, "https://svn.bank-a.local/obdx/trunk", "revision 42");
+
+        when(service.testSvnConnection(id)).thenThrow(new SvnException("svn: E170013: Unable to connect"));
+        mvc.perform(post("/api/workspaces/" + id + "/svn/test").with(csrf()))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.detail").value("svn: E170013: Unable to connect"));
+        verify(audit).record("SVN_TEST_FAILED", id, null, "svn: E170013: Unable to connect");
+    }
+
+    @Test
+    void listsTheWorkspacesConnectionActivity() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(audit.recent(eq(id), anyCollection(), anyInt())).thenReturn(List.of(
+                new AuditLog.Event(7, OffsetDateTime.now(), "admin", "SVN_TEST_PASSED", id, "https://svn.bank-a.local/obdx/trunk", "revision 42")));
+
+        mvc.perform(get("/api/workspaces/" + id + "/integrations/activity"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].action").value("SVN_TEST_PASSED"));
+        verify(guard).require(id, Permission.VIEW);
+        verify(audit).recent(id, WorkspaceController.INTEGRATION_ACTIONS, 50);
     }
 
     @Test

@@ -1,5 +1,7 @@
 package com.obdx.factory.importing;
 
+import com.obdx.factory.auth.AuditLog;
+import com.obdx.factory.common.NotFoundException;
 import com.obdx.factory.model.ModelGateway;
 import com.obdx.factory.profile.ProjectProfileService;
 import com.obdx.factory.search.CodeSearchService;
@@ -31,6 +33,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
@@ -40,6 +43,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "FACTORY_TEST_DB_URL", matches = ".+")
+@org.junit.jupiter.api.extension.ExtendWith(com.obdx.factory.common.ForgetSecrets.class)
 class ImportAndSearchIntegrationTest {
 
     @TempDir
@@ -102,6 +106,12 @@ class ImportAndSearchIntegrationTest {
 
     @Autowired
     private ProjectProfileService profiles;
+
+    @Autowired
+    private AuditLog audit;
+
+    @Autowired
+    private CodeFiles codeFiles;
 
     private UUID workspaceId;
 
@@ -177,6 +187,13 @@ class ImportAndSearchIntegrationTest {
         assertThat(fact(profile, "backend.javaVersion").value()).isEqualTo("Java 8");
         assertThat(fact(profile, "ui.moduleSystem").status()).isEqualTo("confirmed");
 
+        // The profile's correction history reads only its own entries of the audit log
+        audit.recordAs("alice", "PROFILE_FACT_SET", workspaceId, "backend.javaVersion", "Java 8");
+        audit.recordAs("alice", "WORKSPACE_UPDATED", workspaceId, "bank-a", null);
+        audit.recordAs("alice", "PROFILE_FACT_RESET", workspaceId, "backend.javaVersion", null);
+        assertThat(audit.recent(workspaceId, List.of("PROFILE_FACT_SET", "PROFILE_FACT_RESET"), 10))
+                .extracting(AuditLog.Event::action).containsExactly("PROFILE_FACT_RESET", "PROFILE_FACT_SET");
+
         repo.commit(Map.of("ui/js/viewModels/beneficiary.js", "define([], function () { function BeneficiaryViewModel() {} });"),
                 List.of("ui/js/viewModels/account-summary.js"));
 
@@ -193,6 +210,15 @@ class ImportAndSearchIntegrationTest {
         assertThat(status.filesByLanguage()).containsEntry("java", 1L).containsEntry("javascript", 1L);
         assertThat(search.search(workspaceId, "AccountSummaryViewModel", 5).results())
                 .noneMatch(result -> result.path().contains("account-summary"));
+
+        List<CodeFiles.FileEntry> listed = codeFiles.list(workspaceId, "", 100);
+        assertThat(listed).hasSize(2).extracting(CodeFiles.FileEntry::path).contains("backend/src/com/bank/payments/FundTransferService.java");
+        assertThat(codeFiles.list(workspaceId, "fundtransfer", 100)).hasSize(1);
+        CodeFiles.FileContent content = codeFiles.content(workspaceId, "backend/src/com/bank/payments/FundTransferService.java");
+        assertThat(content.content()).contains("public class FundTransferService");
+        assertThat(content.lines()).isGreaterThan(3);
+        assertThat(content.truncated()).isFalse();
+        assertThatThrownBy(() -> codeFiles.content(workspaceId, "../../secret.key")).isInstanceOf(NotFoundException.class);
 
         ProjectProfileService.ProfileResponse updated = profiles.get(workspaceId);
         assertThat(updated.revision()).isEqualTo(2);

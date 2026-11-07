@@ -1,0 +1,2475 @@
+{
+  "$comment": "The motion spec: what each component does on enter, hover, press, a value change, open and close, an error and while loading, the same in every pack. 'style' follows the component style saved in the Component factory (bx-motion-hover-lift|glow|shine, bx-motion-click-press|ripple|bounce, bx-motion-scroll-fadeup|scale|slide|blur); the other names are in effects. Durations and easing are the --bx-dur-* and --bx-ease-* tokens. Under reduced motion every component shows its end state. packs says where the motion is built.",
+  "version": 1,
+  "effects": {
+    "style": "Follows the component style (hover, click or scroll effect chosen in the Component factory)",
+    "border": "The border takes the brand colour on hover",
+    "tint": "A row or item takes a light tint on hover",
+    "shake": "The field shakes once when its error appears",
+    "shimmer": "A light sweeps across while it loads",
+    "spin": "Turns while it waits",
+    "roll": "A changed number rolls up into place",
+    "pop": "A chosen mark, chip or code slot pops",
+    "spring": "Opens and closes on a spring; the switch knob springs across",
+    "slide": "The chosen tab, step or segment slides into place",
+    "settle": "New rows and files settle in from above",
+    "grow": "Bars and meters grow to their value",
+    "drop": "A list or menu drops down from its field",
+    "fade": "Fades in",
+    "rise": "Rises and fades in",
+    "slide-down": "Slides down into place",
+    "effect": "The component is the effect itself (text, motion, backdrop and micro interaction categories)"
+  },
+  "components": {
+    "button": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "icon-button": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "text-field": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "text-area": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "password": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "number-input": {
+      "enter": "style",
+      "hover": "border",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "amount": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "currency-picker": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "select": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "multi-select": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": "pop",
+      "open": "drop",
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "autocomplete": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": "pop",
+      "open": "drop",
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "search": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "checkbox-group": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "pop",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "choice-group": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "pop",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "switch": {
+      "enter": null,
+      "hover": null,
+      "press": "style",
+      "change": "spring",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "date": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "date-range": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "document-upload": {
+      "enter": "style",
+      "hover": "border",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "card": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "tabs": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "data-grid": {
+      "enter": "style",
+      "hover": "tint",
+      "press": null,
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "toast": {
+      "enter": "slide-down",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "dialog": {
+      "enter": "fade",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": "spring",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "secondary-button": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "danger-button": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "savings-slider": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "segmented": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "filter-chips": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "pop",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "action-menu": {
+      "enter": null,
+      "hover": "tint",
+      "press": "style",
+      "change": null,
+      "open": "drop",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "accordion": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": null,
+      "open": "spring",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "stepper": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "breadcrumb": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "side-nav": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "sheet": {
+      "enter": "fade",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": "spring",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "grid": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "divider": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "avatar": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "pagination": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "status-badge": {
+      "enter": null,
+      "hover": null,
+      "press": null,
+      "change": "pop",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "timeline": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "spinner": {
+      "enter": null,
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": "spin",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "skeleton": {
+      "enter": null,
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "empty-state": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "tooltip": {
+      "enter": null,
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": "fade",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "alert-banner": {
+      "enter": "slide-down",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "error-message": {
+      "enter": "slide-down",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "success-message": {
+      "enter": "slide-down",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "notification-panel": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "account-picker": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "account-summary": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "balance-card": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "account-card": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "account-details": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "iban": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "quick-actions": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "payee-list": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "beneficiary-card": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "payment-form": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "transfer-summary": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "payment-status": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "transaction-list": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "transaction-filter": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "pop",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "transaction-details": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "repeat": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "receipt": {
+      "enter": "rise",
+      "hover": null,
+      "press": "style",
+      "change": "pop",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "upcoming-bills": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "td-summary": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "new-td": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "maturity-instructions": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "pop",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "td-topup": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "td-redemption": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "loan-summary": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "loan-repayment": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "loan-schedule": {
+      "enter": "style",
+      "hover": "tint",
+      "press": null,
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "promise-to-pay": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "disbursement": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "card-tile": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "card-list": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "activate-card": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": "pop",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "convert-emi": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "redeem-points": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "spend-limit": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "card-controls": {
+      "enter": null,
+      "hover": null,
+      "press": "style",
+      "change": "spring",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "block-card": {
+      "enter": null,
+      "hover": null,
+      "press": "style",
+      "change": "spring",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "reset-pin": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": "pop",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "raise-dispute": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "add-on-card": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "card-statements": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "otp": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": "pop",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "biometric": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "session-timeout": {
+      "enter": "fade",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": "spring",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "secure-confirmation": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "sensitive": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "kyc-steps": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "fraud-alert": {
+      "enter": "slide-down",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "spending-chart": {
+      "enter": "style",
+      "hover": "tint",
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "budget-progress": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "savings-goal": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "spend-categories": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "pop",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "approval-queue": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "approval-detail": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "approval-journey": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "reroute": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "modification-requested": {
+      "enter": "slide-down",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "pending-release": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "structure-type": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "account-structure": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": null,
+      "open": "spring",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "structure-simulation": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "intercompany-limits": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "sweep-monitor": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "profile": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "sign-in-options": {
+      "enter": null,
+      "hover": null,
+      "press": "style",
+      "change": "spring",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "otp-delivery": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "devices": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "appearance": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "language": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "alerts-subscription": {
+      "enter": null,
+      "hover": null,
+      "press": "style",
+      "change": "spring",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "do-not-disturb": {
+      "enter": null,
+      "hover": null,
+      "press": "style",
+      "change": "spring",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "consents": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "transaction-limits": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "session-summary": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "raise-request": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "track-requests": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "mailbox": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "compose-mail": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "e-receipts": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "certificates": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "statement-request": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "statement-format": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "self-register": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "fatca-crs": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "product-showcase": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "application-tracker": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "terms-consent": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "pop",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "loan-calculator": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "eligibility-calculator": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "td-calculator": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "currency-converter": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "goal-calculator": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "locator": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "live-chat": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "feedback": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "pop",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "nominations": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "faq": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": null,
+      "open": "spring",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "overview": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "quick-insights": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "recent-transactions": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "bills-widget": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "spend-analysis": {
+      "enter": "style",
+      "hover": "tint",
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "goals": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "budgets": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "calculators": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "credit-score": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "rewards": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "financial-advisor": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "special-offers": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "credit-cards-overview": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "loans-overview": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "delinquency-notice": {
+      "enter": "slide-down",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": false, "react-native": true }
+    },
+    "financial-overview": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "position-by-currency": {
+      "enter": "style",
+      "hover": "tint",
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "credit-line-usage": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "bills-receivable-payable": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "trade-instruments": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "reports": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "accounts-corp": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "corporate-limits": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "transactions-widget": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "last-5-payments": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "bulk-file-upload": {
+      "enter": "style",
+      "hover": "border",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "quick-links-corp": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "work-snapshot": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "notifications-widget": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "pending-for-action": {
+      "enter": "style",
+      "hover": "tint",
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "my-limits": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": false }
+    },
+    "pending-approvals": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": "settle",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "rolling-digits": {
+      "enter": "effect",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "count-up": {
+      "enter": "effect",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "split-flap-board": {
+      "enter": "effect",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "reveal-digits": {
+      "enter": "effect",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "blur-in-text": {
+      "enter": "effect",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "text-reveal": {
+      "enter": "effect",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "rotating-text": {
+      "enter": "effect",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "shimmer-text": {
+      "enter": "effect",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "gradient-text": {
+      "enter": "effect",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "typed-text": {
+      "enter": "effect",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "focus-word": {
+      "enter": "effect",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "scroll-float-text": {
+      "enter": "effect",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "fade-in-content": {
+      "enter": "effect",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "scroll-reveal": {
+      "enter": "effect",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "scroll-expand": {
+      "enter": "effect",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "edge-blur": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "glare-hover": {
+      "enter": null,
+      "hover": "effect",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "magnetic-button": {
+      "enter": null,
+      "hover": "effect",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "highlight-border": {
+      "enter": null,
+      "hover": "effect",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "click-burst": {
+      "enter": null,
+      "hover": null,
+      "press": "effect",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "marquee": {
+      "enter": "effect",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "animated-list": {
+      "enter": "effect",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "spotlight-card": {
+      "enter": null,
+      "hover": "effect",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "tilt-card": {
+      "enter": null,
+      "hover": "effect",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "flip-card": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": null,
+      "open": "spring",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "card-stack": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "glow-border-card": {
+      "enter": null,
+      "hover": "effect",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "bento-grid": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "carousel": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "elastic-slider": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": "roll",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "option-wheel": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "pill-nav": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": "slide",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "dock-nav": {
+      "enter": null,
+      "hover": "effect",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "card-nav": {
+      "enter": null,
+      "hover": "effect",
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "staggered-menu": {
+      "enter": null,
+      "hover": "tint",
+      "press": "style",
+      "change": null,
+      "open": "drop",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "document-folder": {
+      "enter": "style",
+      "hover": "tint",
+      "press": "style",
+      "change": null,
+      "open": "spring",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "scroll-stack": {
+      "enter": "effect",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "profile-card": {
+      "enter": "style",
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "glass-panel": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "gradient-backdrop": {
+      "enter": "fade",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "soft-aurora": {
+      "enter": "fade",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "silk-backdrop": {
+      "enter": "fade",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "dot-grid": {
+      "enter": "fade",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "line-waves": {
+      "enter": "fade",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "light-beams": {
+      "enter": "fade",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "topography": {
+      "enter": "fade",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "particle-backdrop": {
+      "enter": "fade",
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "slide-to-confirm": {
+      "enter": null,
+      "hover": "style",
+      "press": "effect",
+      "change": "effect",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "hold-to-confirm": {
+      "enter": null,
+      "hover": "style",
+      "press": "effect",
+      "change": "effect",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "otp-slots": {
+      "enter": "style",
+      "hover": "border",
+      "press": null,
+      "change": "pop",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "receipt-tear": {
+      "enter": "rise",
+      "hover": null,
+      "press": "style",
+      "change": "pop",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "success-check": {
+      "enter": "rise",
+      "hover": null,
+      "press": "style",
+      "change": "pop",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "swipe-row": {
+      "enter": null,
+      "hover": "style",
+      "press": "effect",
+      "change": "effect",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "swipe-toast": {
+      "enter": "slide-down",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "bell-toggle": {
+      "enter": null,
+      "hover": "style",
+      "press": "effect",
+      "change": "effect",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "squish-switch": {
+      "enter": null,
+      "hover": "style",
+      "press": "effect",
+      "change": "effect",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "jelly-radio": {
+      "enter": null,
+      "hover": "style",
+      "press": "effect",
+      "change": "effect",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "glide-select": {
+      "enter": null,
+      "hover": "style",
+      "press": "effect",
+      "change": "effect",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "rubber-segment": {
+      "enter": null,
+      "hover": "style",
+      "press": "effect",
+      "change": "effect",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "scrub-field": {
+      "enter": null,
+      "hover": "style",
+      "press": "effect",
+      "change": "effect",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "budget-gauge": {
+      "enter": "style",
+      "hover": null,
+      "press": null,
+      "change": "grow",
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "status-mark": {
+      "enter": null,
+      "hover": null,
+      "press": null,
+      "change": "pop",
+      "open": null,
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "favourite-heart": {
+      "enter": null,
+      "hover": "style",
+      "press": "effect",
+      "change": "effect",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "peek-rating": {
+      "enter": null,
+      "hover": "style",
+      "press": "effect",
+      "change": "effect",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "warm-tooltip": {
+      "enter": null,
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": "fade",
+      "error": null,
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "prompt-bar": {
+      "enter": "style",
+      "hover": null,
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": "shake",
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "voice-pill": {
+      "enter": null,
+      "hover": "style",
+      "press": "effect",
+      "change": "effect",
+      "open": null,
+      "error": "shake",
+      "loading": null,
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "call-chip": {
+      "enter": null,
+      "hover": "style",
+      "press": "style",
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": "shimmer",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    },
+    "lattice-loader": {
+      "enter": null,
+      "hover": null,
+      "press": null,
+      "change": null,
+      "open": null,
+      "error": null,
+      "loading": "spin",
+      "packs": { "jet-premium": true, "react": true, "angular": true, "react-native": true }
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "name": "obdx-angular",
+  "version": "1.0.0",
+  "description": "The premium Angular components for a bank's OBDX UI: the foundation set, standalone components on the Angular CDK, themed from the bank tokens.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "tsc --noEmit && ngc -p tsconfig.aot.json && vitest run",
+    "aot": "ngc -p tsconfig.aot.json"
+  },
+  "peerDependencies": {
+    "@angular/cdk": ">=20",
+    "@angular/core": ">=20",
+    "@angular/forms": ">=20"
+  },
+  "devDependencies": {
+    "@analogjs/vite-plugin-angular": "^2.9.6",
+    "@angular/build": "~22.2.4",
+    "@angular/cdk": "~22.2.0",
+    "@angular/common": "~22.2.4",
+    "@angular/compiler": "~22.2.4",
+    "@angular/compiler-cli": "~22.2.4",
+    "@angular/core": "~22.2.4",
+    "@angular/forms": "~22.2.4",
+    "@angular/platform-browser": "~22.2.4",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/user-event": "^14.6.8",
+    "@types/node": "^22.0.0",
+    "axe-core": "^4.14.0",
+    "jsdom": "^26.1.0",
+    "rxjs": "^7.8.2",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
+  }
+}

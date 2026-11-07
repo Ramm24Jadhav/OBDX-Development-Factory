@@ -145,7 +145,7 @@ The factory does not assume a fixed technology stack for the OBDX code it genera
 - Integration: host systems and adapter patterns in use.
 - Bank conventions: package names, folder layout for customizations, naming, logging, error handling, code style.
 
-The profile is stored with the workspace, shown in the UI for a developer to confirm or correct, and refreshed when the codebase changes. Where the profile and the version pack disagree, the profile wins, because it reflects what the bank actually runs.
+The profile is stored with the workspace, shown in the UI (the Code page's Codebase facts tab) for a developer to confirm or correct, and refreshed when the codebase changes. Where the profile and the version pack disagree, the profile wins, because it reflects what the bank actually runs.
 
 Implementation: rule-based detectors scan the working copy after each import, so results are repeatable, need no model, and every fact lists the files it came from with a confidence level. Developers' confirmed or corrected values are stored separately and survive re-scans. A warning is shown when the detected OBDX version disagrees with the workspace's version.
 
@@ -226,6 +226,12 @@ BRD / FSD  ->  Screen Model (JSON)  <->  Live preview + designer  ->  Customer a
 
 **Implemented (first version):** designs are generated from approved requirement specs (or started blank) with form components (text, multi-line text, number, amount, date, dropdown, account selector, radio, checkboxes, switch, read-only text) and action buttons. The designer supports drag-and-drop ordering, a properties panel, plain-language changes through the model, versions, comments and review links with customer comments and approval. Not yet: tables/grids as components, the bank's own JET version and theme in the preview, starting enhancements from the existing screen's layout in the code, and side-by-side version comparison.
 
+**One page in the UI.** The Screen Designer is the **Design Studio**'s Edit mode (route `studio`; the old `designer`
+route redirects). The Studio takes a BRD from upload to approved screens (stages, the flow of each functional
+requirement, coverage of the acceptance criteria, Review with the BRD's values only), and Edit draws the designer for
+the selected screen in the same page, also previewing the BRD's values only. Approvals go through one service that asks
+before every approve and reopen. See `docs/DESIGN-STUDIO.md`.
+
 ### 5.8 Target Packs
 
 A **Target Pack** teaches the factory how to turn a target-neutral Screen Model into code for one UI technology. Each pack contains:
@@ -247,6 +253,60 @@ A **Target Pack** teaches the factory how to turn a target-neutral Screen Model 
 Version packs (5.3) describe OBDX release differences; target packs describe UI technologies. A workspace uses one version pack and one target pack at a time.
 
 *Implemented:* JET, React Native (Expo, TypeScript) and React (Vite, TypeScript) target packs in `target-packs/`, each with component mapping, file structure, guidance, quick-check rules, recipes, templates and a starter project whose form components are also what the designer's preview renders (React Native Web for React Native). A workspace chooses its target and the app folder; generated screens start from a deterministic scaffold of the approved Screen Model, and parity (every field and action as a testID) is checked and tested. Not yet: device previews with Expo inside the factory, and the modernization steps of section 6 beyond building screens (inventory, reverse-engineering, waves).
+
+### 5.9 Knowledge Base (OBDX Library)
+
+The factory's own knowledge of OBDX, separate from the bank's code: Oracle's manuals per OBDX version, the bank's own
+documents (scoped to its workspace), and **notes**. It is retrieval-augmented: documents are split into sections with
+their pages and embedded once; each question or generation step retrieves the few most relevant sections (keywords and
+meaning, merged by reciprocal rank fusion, limited to the workspace's OBDX version) and sends only those to the model,
+which cites them. Notes are how the knowledge matures: users write them, the model drafts them from the manuals, and
+the factory suggests one after each delivered change; an approver makes them trusted. Code generation and analysis use
+the manuals and trusted notes only; the AI chat may also use suggested notes and says so. Feedback on answers is kept.
+The knowledge is internal to the bank: it is sent only to model servers on the bank's network (this computer, private
+addresses, or hosts the administrator lists), whatever models are configured; with models outside it, the factory
+works without the knowledge and says why. It keeps itself current: Oracle's manuals of the versions an administrator
+follows come straight from Oracle's documentation site, checked weekly with conditional requests and a safety check
+on every file, imported folders are watched, a changed file
+becomes a newer revision of its document (the older one is kept as history), and notes whose cited sections changed go
+back to review. The bank's own and patchset-specific documents (PDF, Word, text, Markdown, HTML) belong to its
+workspace, rank above Oracle's generic manuals, and win where they differ.
+
+Follow-up questions are understood from the conversation, and an evaluation set of 119 questions measures the
+retrieval and the answers (docs/KNOWLEDGE-AUDIT.md: findings, root causes, results, limitations).
+
+Every question is read before it is searched, without a model (typos corrected from the manuals' own words,
+abbreviations written out, technical identifiers searched exactly and never changed, a question with several parts
+searched part by part), and **Improve My Question** rewrites a short or loose question precisely, or asks what to
+clarify, for the user to edit and approve. Answers come in three levels of detail, laid out for the kind of question,
+and every answer is checked against its sources before it is shown: citations to sources that do not exist are
+removed, identifiers, menu paths and code the sources do not have are marked, other vendors' products and other OBDX
+versions are caught, and the answer is labelled *Verified*, *Partly verified* or *Not enough in the manuals*; when the
+check finds what the model can fix, it writes the answer once more. The checks are deterministic: they catch
+unsupported details, they do not prove an answer right.
+
+*Not yet:* a 22.x/25.x difference view.
+
+### 5.10 Issue Analyzer
+
+Support for errors banks report in their running OBDX application: wrong or missing configuration, unreachable
+dependencies, certificates, access rights, data, or a product defect. Evidence is found without a model in logs and in
+text the chat model reads from screenshots; the workspace's code index then finds the bank's own code and
+configuration for it, so advice names files that exist. The chat model diagnoses the evidence; the factory checks the
+answer (known categories, cited evidence and files that were given, "probable" only with evidence). Fixes are
+guided: the factory never changes the bank's systems. Resolutions become knowledge for the workspace and, when a lead
+shares them without bank data, for every workspace. Product defects get an Oracle SR draft to copy into My Oracle
+Support (no MOS integration: it has no open API).
+
+Phase 2 adds Oracle support notes, bug texts and patch readmes as a kind of Library document, found for an issue's
+errors and cited with their version; links that let bank administrators report and follow an issue without an
+account, seeing only what an engineer released and the steps meant for them; fix checks that compare new logs with
+the original error without a model; questions about an issue; and groups of the same error reported within a day.
+Library text reaches the chat model only when it runs on the bank's network (the Library's own rule).
+
+Phase 3 hides customer data in screenshots when the model runs on the factory's machine (the blurred copy replaces
+the original), tells the filer and leads about issue events in the bell menu, and lets engineers check, read-only,
+whether hosts the issue mentions resolve, accept connections and present a valid, trusted certificate.
 
 ---
 

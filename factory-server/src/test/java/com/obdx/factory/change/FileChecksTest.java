@@ -24,7 +24,7 @@ class FileChecksTest {
     }
 
     @Test
-    void basicChecksForJavaScriptAndHtmlOnlyWarn() {
+    void javaScriptMustBeBalancedAndHtmlOnlyWarns() {
         String js = """
                 define(['knockout'], function (ko) {
                   // a comment with a stray ) bracket
@@ -35,8 +35,8 @@ class FileChecksTest {
                 """;
         assertThat(FileChecks.check("vm.js", js).status()).isEqualTo(FileChecks.Status.PASSED);
         FileChecks.Result missing = FileChecks.check("vm.js", "define([], function () {\n  return 1;\n");
-        assertThat(missing.status()).isEqualTo(FileChecks.Status.WARNING);
-        assertThat(missing.message()).contains("not closed");
+        assertThat(missing.status()).isEqualTo(FileChecks.Status.FAILED);
+        assertThat(missing.message()).contains("JavaScript does not parse", "not closed");
 
         assertThat(FileChecks.check("v.html", "<div><oj-input-text value='{{x}}'></oj-input-text><oj-button/></div>").status())
                 .isEqualTo(FileChecks.Status.PASSED);

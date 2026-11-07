@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Component mapping and preview</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+:root{--fx-bg:#fafafc;--fx-surface:#ffffff;--fx-surface-2:#f8fafc;--fx-surface-3:#f1f5f9;--fx-border:#e5e7eb;--fx-border-strong:#cbd5e1;--fx-text:#0f172a;--fx-text-body:#334155;--fx-text-muted:#64748b;--fx-text-faint:#94a3b8;--fx-primary:#4f46e5;--fx-primary-hover:#4338ca;--fx-primary-soft:#eef2ff;--fx-primary-text:#4338ca;--fx-primary-border:#c7d2fe;--fx-on-primary:#ffffff;--fx-success:#10b981;--fx-success-soft:#ecfdf5;--fx-success-text:#047857;--fx-warning:#f59e0b;--fx-warning-soft:#fffbeb;--fx-warning-text:#b45309;--fx-danger:#ef4444;--fx-danger-soft:#fef2f2;--fx-danger-text:#b91c1c;--fx-info:#0284c7;--fx-info-soft:#f0f9ff;--fx-info-text:#0369a1;--fx-radius-sm:6px;--fx-radius:8px;--fx-radius-lg:12px;--fx-radius-xl:16px;--fx-radius-pill:999px;--fx-shadow-sm:0 1px 2px rgba(15,23,42,.06);--fx-font-mono:"Cascadia Mono","JetBrains Mono",Consolas,monospace}
+.fx-dark{color-scheme:dark;--fx-bg:#0b1120;--fx-surface:#111827;--fx-surface-2:#162032;--fx-surface-3:#1e293b;--fx-border:#263247;--fx-border-strong:#3b4a63;--fx-text:#e5e7eb;--fx-text-body:#cbd5e1;--fx-text-muted:#94a3b8;--fx-text-faint:#64748b;--fx-primary:#4f46e5;--fx-primary-hover:#5b55eb;--fx-primary-soft:rgba(99,102,241,.16);--fx-primary-text:#a5b4fc;--fx-primary-border:rgba(129,140,248,.45);--fx-success-soft:rgba(16,185,129,.14);--fx-success-text:#34d399;--fx-warning-soft:rgba(245,158,11,.14);--fx-warning-text:#fbbf24;--fx-danger-soft:rgba(239,68,68,.14);--fx-danger-text:#f87171;--fx-info-soft:rgba(14,165,233,.14);--fx-info-text:#38bdf8}
+a{color:var(--fx-primary)}a:hover{color:var(--fx-primary-text)}
+
+/* Reflow at laptop sizes, the factory way: side columns drop below, tiles wrap, tables scroll in their box */
+.fx-cols3>*,.fx-cols2>*,.fx-cols3e>*{min-width:0}
+@media (max-width:1500px){.fx-cols3{grid-template-columns:minmax(220px,260px) minmax(0,1fr) !important}.fx-cols3>:nth-child(3){grid-column:1/-1}.fx-cols3.fx-main-first{grid-template-columns:minmax(0,1fr) minmax(260px,300px) !important}}
+@media (max-width:1366px){.fx-cols2{grid-template-columns:minmax(0,1fr) minmax(280px,32%) !important}.fx-cols3e{grid-template-columns:repeat(2,minmax(0,1fr)) !important}.fx-cols3e>:nth-child(3){grid-column:1/-1}}
+@media (max-width:1180px){.fx-cols3,.fx-cols3.fx-main-first,.fx-cols2{grid-template-columns:minmax(0,1fr) !important}.fx-cols3>:nth-child(3){grid-column:auto}}
+@media (max-width:900px){.fx-cols3e{grid-template-columns:minmax(0,1fr) !important}.fx-cols3e>:nth-child(3){grid-column:auto}}
+.fx-scroll{overflow-x:auto}
+.mono{font-family:var(--fx-font-mono);font-size:12px}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="position:relative;width:100%;min-height:100vh;display:flex;flex-direction:column;font-family:Inter,'Segoe UI',system-ui,sans-serif;font-size:13px;color:var(--fx-text-body);background:var(--fx-bg);overflow-x:clip">
+
+
+
+  <div style="flex:1;display:flex;min-height:0">
+    <div data-nav-rail style="position:sticky;top:0;height:100vh;flex:none;align-self:flex-start;z-index:4"><dc-import name="Nav" current="mapping" h="100vh" hint-size="244px,1010px"></dc-import></div>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <dc-import name="Topbar" dark="{{darkOn}}" fluid="{{yes}}" hint-size="100%,56px"></dc-import>
+
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <main style="flex:1;min-height:0;padding:14px 22px;display:flex;flex-direction:column;gap:12px">
+      <div data-simple style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px">
+        <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+          <div style="font-size:13px;color:var(--fx-text-muted)"><a href="Landing.dc.html" style="text-decoration:none">Modernization</a> <span aria-hidden="true">›</span> <a href="Components.dc.html" style="text-decoration:none">Component inventory</a> <span aria-hidden="true">›</span> Component mapping</div>
+          <h1 style="margin:0;font-size:28px;line-height:34px;font-weight:700;color:var(--fx-text)">Component mapping</h1>
+          <p style="margin:0;color:var(--fx-text-body)">How oj-input-text maps to bx-text-field, and what it touches.</p>
+        </div>
+      </div>
+      <div data-steps-row style="margin-top:-2px;width:100%"><dc-import name="Steps" path="ui" step="2" dark="{{darkOn}}" hint-size="100%,48px"></dc-import></div>
+
+      <section aria-label="Component pair" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:10px 14px;display:flex;align-items:center;gap:16px">
+        <span style="width:44px;height:44px;border-radius:11px;background:var(--fx-surface-3);display:inline-flex;align-items:center;justify-content:center" aria-hidden="true"><span style="width:24px;height:14px;border:2px solid var(--fx-primary);border-radius:3px"></span></span>
+        <span style="display:flex;flex-direction:column"><b class="mono" style="font-size:18px;color:var(--fx-text)">oj-input-text</b><span style="color:var(--fx-text-muted)">Oracle JET component</span></span>
+        <span aria-hidden="true" style="font-size:20px;color:var(--fx-text-muted)">→</span>
+        <span style="width:44px;height:44px;border-radius:11px;background:var(--fx-primary-soft);display:inline-flex;align-items:center;justify-content:center" aria-hidden="true"><span style="width:24px;height:14px;border:2px solid var(--fx-primary);border-radius:6px"></span></span>
+        <span style="display:flex;flex-direction:column"><b class="mono" style="font-size:18px;color:var(--fx-text)">bx-text-field</b><span style="color:var(--fx-text-muted)">Factory component</span></span>
+        <span style="padding:6px 12px;border-radius:var(--fx-radius);background:var(--fx-success-soft);color:var(--fx-success-text);display:flex;flex-direction:column"><b>✓ Direct replacement</b><span style="font-size:12px">All 7 properties map</span></span>
+        <span style="display:flex;gap:18px;margin-left:6px">
+          <span style="display:flex;flex-direction:column"><b style="font-size:16px;color:var(--fx-text)">142</b><span style="font-size:12px;color:var(--fx-text-muted)">Screens</span></span>
+          <span style="display:flex;flex-direction:column"><b style="font-size:16px;color:var(--fx-text)">10</b><span style="font-size:12px;color:var(--fx-text-muted)">Modules</span></span>
+          <span style="display:flex;flex-direction:column"><b style="font-size:16px;color:var(--fx-success-text)">Low</b><span style="font-size:12px;color:var(--fx-text-muted)">Effort</span></span>
+        </span>
+        <a href="Components.dc.html" style="margin-left:auto;height:34px;padding:0 12px;border-radius:var(--fx-radius);border:1.5px solid var(--fx-primary);color:var(--fx-primary-text);font-weight:600;text-decoration:none;display:inline-flex;align-items:center">← In the inventory</a>
+        <span style="display:flex;align-items:center;gap:8px;color:var(--fx-text-muted)"><button type="button" aria-label="Previous component" style="width:28px;height:28px;border:0;background:transparent;cursor:pointer;font-size:16px">‹</button>1 of 31<button type="button" aria-label="Next component" style="width:28px;height:28px;border:0;background:transparent;cursor:pointer;font-size:16px">›</button></span>
+      </section>
+
+      <div class="fx-cols2" style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+            <section aria-label="Current JET look" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;gap:8px"><b style="font-size:15px;color:var(--fx-text)">Today (Oracle JET)</b><span style="height:22px;padding:0 8px;border-radius:7px;background:var(--fx-danger-soft);color:var(--fx-danger-text);font-size:11px;font-weight:700;display:inline-flex;align-items:center">JET</span></div>
+              <div style="align-self:center;width:{{pvW}};max-width:100%;display:flex;flex-direction:column;gap:6px;padding:8px 0">
+                <span style="font-weight:600;color:var(--fx-text)">Beneficiary name <span style="color:var(--fx-danger-text)">*</span></span>
+                <span style="height:34px;border:1px solid {{jetBorder}};border-radius:3px;background:{{jetBg}};display:flex;align-items:center;padding:0 10px;color:var(--fx-text-faint)">{{jetText}}</span>
+                <span style="font-size:12px;color:{{hintFg}}">{{hint}}</span>
+              </div>
+            </section>
+            <section aria-label="Factory look" style="background:var(--fx-primary-soft);border:1.5px solid var(--fx-primary);border-radius:var(--fx-radius-lg);padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;gap:8px"><b style="font-size:15px;color:var(--fx-text);flex:1">Premium (factory)</b><span style="height:24px;padding:0 10px;border-radius:var(--fx-radius-pill);background:var(--fx-primary-soft);color:var(--fx-primary-text);font-size:11px;font-weight:700;display:inline-flex;align-items:center">◈ Factory pack 1.0</span></div>
+              <div style="align-self:center;width:{{pvW}};max-width:100%;display:flex;flex-direction:column;gap:6px;padding:8px 0">
+                <span style="font-weight:600;color:var(--fx-text)">Beneficiary name <span style="color:var(--fx-danger-text)">*</span></span>
+                <span style="height:42px;border:{{fxBorder}};border-radius:11px;background:{{fxBg}};box-shadow:{{fxShadow}};display:flex;align-items:center;gap:10px;padding:0 12px;color:var(--fx-text-faint)"><span aria-hidden="true" style="color:var(--fx-primary)">◯</span>{{fxText}}</span>
+                <span style="font-size:12px;color:{{hintFg}}">{{hint}}</span>
+              </div>
+            </section>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px">
+            <div role="group" aria-label="Screen size" style="display:flex;gap:4px;background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius);padding:3px">
+              <sc-for list="{{devices}}" as="d" hint-placeholder-count="3"><button type="button" aria-pressed="{{d.on}}" onClick="{{d.pick}}" style="font:inherit;cursor:pointer;height:32px;padding:0 14px;border-radius:8px;border:0;background:{{d.bg}};color:{{d.fg}};font-weight:600">{{d.name}}</button></sc-for>
+            </div>
+            <div role="group" aria-label="State" style="display:flex;gap:4px;background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius);padding:3px">
+              <sc-for list="{{states}}" as="d" hint-placeholder-count="4"><button type="button" aria-pressed="{{d.on}}" onClick="{{d.pick}}" style="font:inherit;cursor:pointer;height:32px;padding:0 14px;border-radius:8px;border:0;background:{{d.bg}};color:{{d.fg}};font-weight:600">{{d.name}}</button></sc-for>
+            </div>
+            <button type="button" aria-pressed="{{codeOn}}" onClick="{{toggleCode}}" style="margin-left:auto;font:inherit;cursor:pointer;display:flex;align-items:center;gap:8px;background:transparent;border:0;color:var(--fx-text);font-weight:600"><span style="width:34px;height:20px;border-radius:var(--fx-radius-pill);background:{{swBg}};position:relative;display:inline-block" aria-hidden="true"><span style="position:absolute;top:2px;left:{{swX}};width:16px;height:16px;border-radius:50%;background:var(--fx-surface)"></span></span>Show code</button>
+          </div>
+
+          <div role="tablist" aria-label="Mapping details" style="display:flex;gap:22px;border-bottom:1px solid var(--fx-border)">
+            <sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+              <button type="button" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="font:inherit;cursor:pointer;background:transparent;border:0;border-bottom:2px solid {{t.line}};height:38px;padding:0 2px;color:{{t.fg}};font-weight:{{t.weight}};font-size:14px">{{t.name}}</button>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{showProps}}" hint-placeholder-val="{{true}}">
+            <section aria-label="Property mapping" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);overflow-x:auto;overflow-y:hidden">
+              <div style="min-width:720px;display:grid;grid-template-columns:1.1fr 1.1fr .8fr 1fr 2fr;gap:10px;padding:9px 16px;background:var(--fx-surface-2);font-size:12px;font-weight:700;color:var(--fx-text)"><span>JET property</span><span>Factory property</span><span>Mapping</span><span>Result</span><span>Notes</span></div>
+              <sc-for list="{{props}}" as="p" hint-placeholder-count="7">
+                <div style="min-width:720px;display:grid;grid-template-columns:1.1fr 1.1fr .8fr 1fr 2fr;gap:10px;align-items:center;padding:7px 16px;border-top:1px solid var(--fx-border)">
+                  <span class="mono" style="color:var(--fx-text)">{{p.jet}}</span><span class="mono" style="color:var(--fx-text)">{{p.fx}}</span>
+                  <span><span style="height:22px;padding:0 9px;border-radius:7px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;background:{{p.tBg}};color:{{p.tFg}}">{{p.type}}</span></span>
+                  <span style="color:var(--fx-success-text);font-weight:600">✓ Works the same</span><span style="color:var(--fx-text-body)">{{p.note}}</span>
+                </div>
+              </sc-for>
+            </section>
+          </sc-if>
+          <sc-if value="{{showCode}}" hint-placeholder-val="{{false}}">
+            <section aria-label="Code comparison" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+              <pre class="mono" style="margin:0;background:#0f172a;color:#e2e8f0;border-radius:12px;padding:14px;line-height:19px;white-space:pre-wrap">{{codeJet}}</pre>
+              <pre class="mono" style="margin:0;background:#0f172a;color:#e2e8f0;border-radius:12px;padding:14px;line-height:19px;white-space:pre-wrap">{{codeFx}}</pre>
+            </section>
+          </sc-if>
+          <sc-if value="{{showOther}}" hint-placeholder-val="{{false}}">
+            <section style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:16px;color:var(--fx-text-muted)">{{otherText}}</section>
+          </sc-if>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px;min-height:0">
+          <section aria-labelledby="impTitle" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:12px 16px;display:flex;flex-direction:column;gap:7px">
+            <h2 id="impTitle" style="margin:0 0 2px;font-size:16px;font-weight:700;color:var(--fx-text)">What it touches</h2>
+            <sc-for list="{{impact}}" as="i" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:10px;padding:3px 0"><b style="min-width:30px;color:var(--fx-text);font-variant-numeric:tabular-nums">{{i.n}}</b><span style="flex:1;display:flex;flex-direction:column">{{i.k}}<span style="font-size:11px;color:var(--fx-text-muted)">{{i.sub}}</span></span><button type="button" onClick="{{i.pick}}" style="border:0;background:transparent;cursor:pointer;font:inherit;font-weight:600;font-size:12px;color:var(--fx-primary)">{{i.link}}</button></div>
+            </sc-for>
+          </section>
+
+          <section aria-labelledby="anTitle" style="background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);padding:12px 16px;display:flex;flex-direction:column;gap:7px">
+            <div style="display:flex;align-items:center;gap:8px"><h2 id="anTitle" style="margin:0;flex:1;font-size:16px;font-weight:700;color:var(--fx-text)">What the checks found</h2><span style="height:22px;padding:0 9px;border-radius:var(--fx-radius-pill);background:var(--fx-success-soft);color:var(--fx-success-text);font-size:11px;font-weight:700;display:inline-flex;align-items:center">All passed</span></div>
+            <sc-for list="{{checks}}" as="c" hint-placeholder-count="4"><span style="display:flex;gap:9px;line-height:18px"><span style="width:18px;height:18px;flex:none;border-radius:50%;background:var(--fx-success-soft);color:var(--fx-success-text);display:inline-flex;align-items:center;justify-content:center;font-size:11px" aria-hidden="true">✓</span>{{c}}</span></sc-for>
+          </section>
+
+          
+        </div>
+      </div>
+    </main>
+
+    <footer style="flex:none;position:sticky;bottom:0;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 22px;border-top:1px solid var(--fx-border);background:var(--fx-surface)"><a href="Components.dc.html" style="height:40px;padding:0 16px;border-radius:var(--fx-radius);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13.5px;border:1px solid var(--fx-border-strong);color:var(--fx-text);background:var(--fx-surface)">← Inventory</a><span style="flex:1;min-width:12px"></span><div style="position:relative"><button type="button" onClick="{{toggleMore}}" aria-haspopup="menu" aria-expanded="{{moreStr}}" aria-label="More actions" title="More actions" style="height:40px;padding:0 16px;border-radius:var(--fx-radius);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13.5px;padding:0 12px;border:1px solid var(--fx-border-strong);color:var(--fx-text);background:var(--fx-surface);font:inherit;font-weight:600;cursor:pointer">More ⋯</button><sc-if value="{{moreOn}}" hint-placeholder-val="{{false}}"><div role="menu" aria-label="More actions" style="position:absolute;right:0;bottom:48px;min-width:250px;background:var(--fx-surface);border:1px solid var(--fx-border);border-radius:var(--fx-radius-lg);box-shadow:0 12px 32px rgba(15,23,42,.18);padding:6px;display:flex;flex-direction:column;gap:2px;z-index:8"><button type="button" role="menuitem" onClick="{{m_say1}}" style="text-align:left;padding:9px 12px;border-radius:6px;border:0;background:transparent;color:var(--fx-text);font:inherit;font-size:13px;cursor:pointer">Next component</button><a role="menuitem" href="Workspace.dc.html" style="padding:9px 12px;border-radius:6px;text-decoration:none;color:var(--fx-text);font-size:13px">Make the change now</a></div></sc-if></div><a href="UpgradePlan.dc.html" style="height:40px;padding:0 16px;border-radius:var(--fx-radius);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13.5px;padding:0 22px;background:var(--fx-primary);color:#ffffff">Add to the upgrade plan →</a></footer>
+    </div>
+    </div>
+  </div>
+<sc-if value="{{panelOn}}" hint-placeholder-val="{{false}}"><div style="position:fixed;inset:0;background:rgba(15,23,42,.35);display:flex;justify-content:flex-end;z-index:5"><section role="dialog" aria-modal="true" aria-label="Where oj-input-text is used" style="width:480px;height:100%;background:var(--fx-surface);box-shadow:-12px 0 32px rgba(15,23,42,.18);display:flex;flex-direction:column"><div style="display:flex;align-items:flex-start;gap:10px;padding:18px 20px;border-bottom:1px solid var(--fx-border)"><div style="flex:1;display:flex;flex-direction:column;gap:3px"><h2 style="margin:0;font-size:18px;font-weight:700;color:var(--fx-text)">Where oj-input-text is used</h2><span style="color:var(--fx-text-muted)">142 screens in 10 modules, and 3 customer journeys.</span></div><button type="button" onClick="{{closePanel}}" aria-label="Close" style="width:32px;height:32px;border-radius:var(--fx-radius);border:0;background:var(--fx-surface-3);cursor:pointer;font-size:15px">✕</button></div><div style="flex:1;min-height:0;overflow:auto;padding:14px 20px;display:flex;flex-direction:column;gap:6px"><b style="color:var(--fx-text);margin-top:6px">Journeys</b><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Add beneficiary</span><span style="color:var(--fx-text);text-align:right">6 screens</span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Fund transfer</span><span style="color:var(--fx-text);text-align:right">9 screens</span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Bulk transfer</span><span style="color:var(--fx-text);text-align:right">5 screens</span></span><b style="color:var(--fx-text);margin-top:6px">Screens by module</b><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Payments</span><span style="color:var(--fx-text);text-align:right">38 screens</span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Accounts</span><span style="color:var(--fx-text);text-align:right">27 screens</span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Transfers</span><span style="color:var(--fx-text);text-align:right">18 screens</span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Cards</span><span style="color:var(--fx-text);text-align:right">14 screens</span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Service requests</span><span style="color:var(--fx-text);text-align:right">12 screens</span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Loans</span><span style="color:var(--fx-text);text-align:right">10 screens</span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Deposits</span><span style="color:var(--fx-text);text-align:right">8 screens</span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Settings</span><span style="color:var(--fx-text);text-align:right">7 screens</span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Dashboard</span><span style="color:var(--fx-text);text-align:right">5 screens</span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">Reports</span><span style="color:var(--fx-text);text-align:right">3 screens</span></span><b style="color:var(--fx-text);margin-top:6px">Test files that use it</b><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)"><span class="mono">tests/payments/make-payment.spec.js</span></span><span style="color:var(--fx-text);text-align:right">4 tests</span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)"><span class="mono">tests/accounts/details.spec.js</span></span><span style="color:var(--fx-text);text-align:right">3 tests</span></span><span style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--fx-border)"><span style="color:var(--fx-text-muted)">10 more files</span><span style="color:var(--fx-text);text-align:right"></span></span></div><div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid var(--fx-border)"><button type="button" onClick="{{closePanel}}" style="height:36px;padding:0 14px;border-radius:var(--fx-radius);font:inherit;font-weight:600;cursor:pointer;border:1px solid var(--fx-border-strong);background:var(--fx-surface);color:var(--fx-text)">Export the list</button><button type="button" onClick="{{closePanel}}" style="height:36px;padding:0 14px;border-radius:var(--fx-radius);font:inherit;font-weight:600;cursor:pointer;border:0;background:var(--fx-primary);color:#ffffff">Close</button></div></section></div></sc-if>
+<sc-if value="{{toastOn}}" hint-placeholder-val="{{false}}"><div role="status" style="position:fixed;right:28px;bottom:84px;max-width:420px;padding:12px 16px;border-radius:var(--fx-radius-lg);background:#0f172a;color:#ffffff;font-size:13px;box-shadow:0 8px 24px rgba(15,23,42,.25);display:flex;gap:10px;align-items:center"><span aria-hidden="true">ⓘ</span>{{toastText}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { device: 'desktop', st: 'default', tab: 'props', code: false }; }
+  say(m) { this.setState({ toast: m }); clearTimeout(this.toastTimer); this.toastTimer = setTimeout(() => this.setState({ toast: '' }), 3500); }
+  renderVals() {
+    const v = this.renderPage();
+    v.yes = true;
+    v.themeClass = this.props.dark ? 'fx-dark' : '';
+    v.darkOn = !!this.props.dark;
+    const st = this.state || {};
+    v.toastOn = !!st.toast;
+    v.toastText = st.toast || '';
+    v.panelOn = !!st.panel;
+    v.panelKey = st.panel || '';
+    v.openPanel = () => this.setState({ panel: 'open' });
+    v.closePanel = () => this.setState({ panel: '' });
+    const M = ["Not designed yet: the plan screen for the UI path.","Showing oj-button, 2 of 31."];
+    M.forEach((m, i) => { v['say' + i] = () => this.say(m); });
+    v.moreOn = !!(this.state && this.state.more);
+    v.moreStr = v.moreOn ? 'true' : 'false';
+    v.toggleMore = () => this.setState({ more: !(this.state && this.state.more) });
+    ["say1"].forEach((h) => { v['m_' + h] = () => { this.setState({ more: false }); if (v[h]) { v[h](); } }; });
+    return v;
+  }
+  renderPage() {
+    const s = this.state;
+    const NL = String.fromCharCode(10), LB = String.fromCharCode(123, 123), RB = String.fromCharCode(125, 125);
+    const subs = [['Overview', 'Landing.dc.html'], ['Choose path', 'ChoosePath.dc.html'], ['Component inventory', 'Components.dc.html'], ['Component mapping', 'Mapping.dc.html'], ['Technology catalogue', '#'], ['Migration planner', 'Migrate.dc.html'], ['Migration workspace', '#'], ['Validation centre', '#'], ['Review and approval', '#'], ['History', '#']];
+    const seg = (key, id, name) => ({ name: name, on: s[key] === id ? 'true' : 'false', bg: s[key] === id ? 'var(--fx-primary-soft)' : 'transparent', fg: s[key] === id ? 'var(--fx-primary-text)' : 'var(--fx-text-body)', pick: () => this.setState({ [key]: id }) });
+    const st = s.st;
+    const tabList = [['props', 'Property mapping'], ['events', 'Events and bindings'], ['a11y', 'Accessibility'], ['screens', 'Affected screens (142)'], ['code', 'Code comparison']];
+    const other = { events: 'Events: on-value-changed and on-raw-value-changed map to the same names. Knockout bindings stay as they are.', a11y: 'The label is tied to the field, errors are announced, focus ring meets contrast, and the field is 44 px tall for touch.', screens: '142 screens in 10 modules use oj-input-text. Open one to see it before and after.' };
+    const showCode = s.tab === 'code' || s.code;
+    const typ = (t) => t === 'Direct' ? ['var(--fx-success-soft)', 'var(--fx-success-text)'] : ['var(--fx-warning-soft)', 'var(--fx-warning-text)'];
+    const P = [['value', 'value', 'Direct', 'Two-way binding kept'], ['placeholder', 'placeholder', 'Direct', 'Same text and translations'], ['required', 'required', 'Direct', 'Required check kept'], ['maxlength', 'maxlength', 'Direct', 'Same limit'], ['disabled', 'disabled', 'Direct', 'No change'], ['label-hint', 'label-hint', 'Direct', 'Shown as a floating label'], ['messages-custom', 'messages-custom', 'Direct', 'Custom messages kept']];
+    return {
+      sub: subs.map((n, i) => ({ name: n[0], href: n[1], current: i === 3 ? 'page' : 'false', bg: i === 3 ? 'var(--fx-primary)' : 'transparent', fg: i === 3 ? '#ffffff' : '#dcd7ff', weight: i === 3 ? 600 : 400 })),
+      devices: [seg('device', 'desktop', 'Desktop'), seg('device', 'tablet', 'Tablet'), seg('device', 'mobile', 'Mobile')],
+      states: [seg('st', 'default', 'Default'), seg('st', 'focus', 'Focus'), seg('st', 'error', 'Error'), seg('st', 'disabled', 'Disabled')],
+      pvW: s.device === 'desktop' ? '100%' : (s.device === 'tablet' ? '78%' : '56%'),
+      jetBorder: st === 'error' ? 'var(--fx-danger-text)' : (st === 'focus' ? '#2563eb' : '#9ca3af'),
+      jetBg: st === 'disabled' ? '#f3f4f6' : 'var(--fx-surface)',
+      jetText: 'Enter beneficiary name',
+      fxBorder: st === 'error' ? '1.5px solid var(--fx-danger-text)' : (st === 'focus' ? '2px solid var(--fx-primary)' : '1px solid var(--fx-primary-border)'),
+      fxBg: st === 'disabled' ? 'var(--fx-surface-3)' : 'var(--fx-surface)',
+      fxShadow: st === 'focus' ? '0 0 0 4px var(--fx-primary-soft)' : (st === 'error' ? '0 0 0 4px var(--fx-danger-soft)' : 'none'),
+      fxText: 'Enter beneficiary name',
+      hint: st === 'error' ? 'Enter the name as it is on the account.' : 'As on the bank records, up to 35 characters.',
+      hintFg: st === 'error' ? 'var(--fx-danger-text)' : 'var(--fx-text-muted)',
+      codeOn: s.code ? 'true' : 'false', swBg: s.code ? 'var(--fx-primary)' : 'var(--fx-border-strong)', swX: s.code ? '16px' : '2px',
+      toggleCode: () => this.setState({ code: !s.code }),
+      tabs: tabList.map((t) => ({ name: t[1], on: s.tab === t[0] ? 'true' : 'false', line: s.tab === t[0] ? 'var(--fx-primary)' : 'transparent', fg: s.tab === t[0] ? 'var(--fx-primary-text)' : 'var(--fx-text-body)', weight: s.tab === t[0] ? 700 : 500, pick: () => this.setState({ tab: t[0] }) })),
+      showProps: s.tab === 'props' && !s.code,
+      showCode: showCode,
+      showOther: !!other[s.tab] && !s.code,
+      otherText: other[s.tab] || '',
+      props: P.map((p) => ({ jet: p[0], fx: p[1], type: p[2], note: p[3], tBg: typ(p[2])[0], tFg: typ(p[2])[1] })),
+      codeJet: ['<oj-input-text id="beneficiaryName"', '  value="' + LB + 'beneficiaryName' + RB + '"', '  label-hint="Beneficiary name"', '  required="true" maxlength="35"', '  messages-custom="[[nameMessages]]">', '</oj-input-text>'].join(NL),
+      codeFx: ['<bx-text-field id="beneficiaryName"', '  value="' + LB + 'beneficiaryName' + RB + '"', '  label-hint="Beneficiary name"', '  required="true" maxlength="35"', '  messages-custom="[[nameMessages]]">', '</bx-text-field>'].join(NL),
+      impact: [
+        { n: '142', k: 'Screens', sub: '', link: 'View all', pick: () => this.setState({ panel: 'open' }) },
+        { n: '10', k: 'Modules', sub: '', link: 'View', pick: () => this.setState({ panel: 'open' }) },
+        { n: '3', k: 'Journeys', sub: 'Add beneficiary, fund transfer, bulk transfer', link: 'View', pick: () => this.setState({ panel: 'open' }) },
+        { n: '12', k: 'Test files that use it', sub: 'Found in the code', link: 'View', pick: () => this.setState({ panel: 'open' }) },
+        { n: 'Low', k: 'Effort', sub: 'Every property maps', link: '', pick: () => this.setState({ panel: 'open' }) }
+      ],
+      checks: ['Same behaviour; no business logic changes', 'Every property and event maps', 'Meets WCAG 2.2 AA and works at phone width', 'Safe to upgrade on every screen'],
+      legend: [{ k: 'Same name', v: '7', c: 'var(--fx-success)', b: '0' }, { k: 'Renamed', v: '0', c: 'var(--fx-warning)', b: '0' }, { k: 'Needs a hand edit', v: '0', c: '#ffffff', b: '1.5px solid #9ca3af' }, { k: 'Not supported', v: '0', c: 'var(--fx-danger-text)', b: '0' }]
+    };
+  }
+}
+</script>
+</body>
+</html>

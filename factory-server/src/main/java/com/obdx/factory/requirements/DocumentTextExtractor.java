@@ -30,6 +30,17 @@ import java.util.regex.Pattern;
 @Component
 public class DocumentTextExtractor {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DocumentTextExtractor.class);
+
+    static {
+        // A small Word file can unpack to gigabytes (a zip bomb): refuse entries that unpack more than 100 times their
+        // size or past 100 MB, text past 10 million characters, and records past 100 MB in older Word files
+        org.apache.poi.openxml4j.util.ZipSecureFile.setMinInflateRatio(0.01);
+        org.apache.poi.openxml4j.util.ZipSecureFile.setMaxEntrySize(100L * 1024 * 1024);
+        org.apache.poi.openxml4j.util.ZipSecureFile.setMaxTextSize(10L * 1024 * 1024);
+        org.apache.poi.util.IOUtils.setByteArrayMaxOverride(100 * 1024 * 1024);
+    }
+
     private static final Pattern HEADING_STYLE = Pattern.compile("(?i)heading\\s*(\\d)|^(\\d)$|title");
 
     public String extract(String fileName, byte[] bytes) {
@@ -44,8 +55,10 @@ public class DocumentTextExtractor {
                 text = pdf(bytes);
             } else if (lower.endsWith(".txt") || lower.endsWith(".md")) {
                 text = new String(bytes, StandardCharsets.UTF_8);
+            } else if (lower.endsWith(".html") || lower.endsWith(".htm")) {
+                text = html(new String(bytes, StandardCharsets.UTF_8));
             } else {
-                throw new BadRequestException("Unsupported file type. Upload a Word (.docx, .doc), PDF, .txt or .md file.");
+                throw new BadRequestException("Unsupported file type. Upload a Word (.docx, .doc), PDF, HTML, .txt or .md file.");
             }
             text = text.replace("\r\n", "\n").replaceAll("[ \\t]+\n", "\n").replaceAll("\n{3,}", "\n\n").trim();
             if (text.isEmpty()) {
@@ -57,7 +70,10 @@ public class DocumentTextExtractor {
             if (e instanceof BadRequestException badRequest) {
                 throw badRequest;
             }
-            throw new BadRequestException("Could not read " + fileName + ": " + e.getMessage());
+            // The library's message names internals, not what to do: it goes to the log
+            log.warn("Could not read {}", fileName, e);
+            throw new BadRequestException("Could not read " + fileName + ". Check that it opens in Word or a PDF reader and is not "
+                    + "password-protected, or save it again (as .docx or PDF) and upload that.");
         }
     }
 
@@ -121,8 +137,34 @@ public class DocumentTextExtractor {
         }
     }
 
+    private static final Pattern HTML_DROP = Pattern.compile("(?is)<(script|style|head|nav)\\b.*?</\\1>|<!--.*?-->");
+    private static final Pattern HTML_HEADING = Pattern.compile("(?is)<h([1-4])\\b[^>]*>(.*?)</h\\1>");
+    private static final Pattern HTML_CELL = Pattern.compile("(?i)</t[dh]>\\s*");
+
+    /**
+     * An HTML page (an exported wiki or Confluence page, Oracle's HTML documentation) as text: headings become "#"
+     * lines, paragraphs, list items and table rows become lines, table cells are separated by "|".
+     */
+    static String html(String html) {
+        String text = HTML_DROP.matcher(html).replaceAll(" ");
+        Matcher h = HTML_HEADING.matcher(text);
+        StringBuilder out = new StringBuilder();
+        while (h.find()) {
+            String heading = h.group(2).replaceAll("<[^>]+>", " ").replaceAll("\\s+", " ").strip();
+            h.appendReplacement(out, Matcher.quoteReplacement("\n\n" + "#".repeat(Integer.parseInt(h.group(1))) + " " + heading + "\n\n"));
+        }
+        h.appendTail(out);
+        text = HTML_CELL.matcher(out).replaceAll(" | ");
+        text = text.replaceAll("(?i)<br\\s*/?>|</(p|div|li|tr|table|ul|ol|section|article|pre)>", "\n").replaceAll("(?i)<li\\b[^>]*>", "- ");
+        text = text.replaceAll("<[^>]+>", " ");
+        text = text.replace("&nbsp;", " ").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&#39;", "'")
+                .replace("&amp;", "&");
+        return text.replaceAll("[ \\t]+", " ").replaceAll(" *\n *", "\n");
+    }
+
     private static String pdf(byte[] bytes) throws IOException {
-        try (PDDocument document = Loader.loadPDF(bytes)) {
+        // Objects the parser keeps go to a temporary file, not memory
+        try (PDDocument document = Loader.loadPDF(bytes, "", null, null, org.apache.pdfbox.io.IOUtils.createTempFileOnlyStreamCache())) {
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setSortByPosition(true);
             return stripper.getText(document);

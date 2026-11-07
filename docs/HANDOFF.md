@@ -20,7 +20,84 @@ changes; React Native and React target packs; modernization inventory; publishin
 Compose stack; the download zip with a built-in trial database; demo SVN repositories added automatically; new
 workspace from an SVN URL or a local folder with bank and OBDX version detected from the code (OBDX's
 `channel/framework/json/about.json` first); self-update from GitHub ("Update now") and start with Windows; Models page
-that finds model servers on this computer or another server and switches models without a restart.
+that finds model servers on this computer or another server and switches models without a restart. The UI was
+redesigned to the 23 screens in `design/design and implementation plan.docx` (sidebar shell, Home, every work and setup
+page, plus Impact Analysis, External Review, Integrations, Prompt Library, Notifications, Account and About); pages use
+real data only and leave out what the factory does not record.
+Page cleanup (branch `page-cleanup`): Agent Runs and Version Packs are gone (`?ojr=agents` opens Home, `?ojr=packs`
+Code › Quick checks). Quick checks now shows each rule's source and file, a Source filter, who turned a rule off and
+when, and its findings in the workspace's changes; Code › Settings shows every UI target's reusable components. The
+Design System and AI Prompt Library are out of the sidebar and palette but open by address; Administration links to
+both. The notification category "Agent Runs" reads "AI work" (stored key `agent` kept).
+The OBDX Library (knowledge base, `knowledge` package, V17): Oracle's 22.2 and 25.2 manuals imported per version (the
+key PDFs are downloaded to `oracle-docs/` in the main checkout, not in Git), the bank's own documents per workspace,
+cited answers in the Library and the AI Assistant panels, notes that users and agents suggest and approvers trust, and
+the manuals and approved notes in impact analysis, code generation and requirement drafting. See DEVELOPMENT.md.
+The Library page was redesigned (branch `library-redesign`): a plain header with Add documents (a side sheet), one
+problem bar for the whole library, then Ask (conversation and Sources rail, composer with the answer-length menu and an
+expanded editor), Documents (Sources strip, one table grouped by version, row menus) and Notes (a review queue in one
+column with Approve and next). `scripts/check-library.js` checks it.
+Its Ask tab was modernised after that (branch `ask-modern`, mock-up `AskModern.dc.html`): a centred question with
+example cards when empty; then a thread (question bubble, one folded line on how the answer was found, numbered
+citation pills, icon actions) with compact source cards and **Ask next**: the answer's `followUps`, which the model
+writes after a marker line in the same answer (`knowledge/FollowUps`, taken off the stream and the stored text).
+The **Code** page took in the Knowledge Explorer (branch `code-combined`): one header with the index pill, Check for
+new commits and Reindex, one problem bar, and seven tabs (Explore, Search, Map, Business rules, Quick checks, Index,
+Settings; Codebase facts came later); one viewer, one search, one AI panel (Ask about the code). The `knowledge` route redirects to Code › Explore;
+`scripts/check-code.js` checks the whole page (check-knowledge.js is gone).
+The Project Profile page is now Code's **Codebase facts** tab, between Index and Settings (branch `code-facts`): the
+same facts, edits, history and reference examples; its warnings feed Code's problem bar; the `profile` route, G P and
+the links from Home, Workspaces, Modernization and the Prompt Library open the tab (check-profile.js is
+gone, its checks are in check-code.js).
+**Models & AI** and **Integrations** were redesigned (branch `admin-redesign`, mock-ups in `.admredesign/project/`):
+Models & AI opens on the Writing and Search slots read from the server's settings (one answer to what is in use),
+provider rows with a side panel (address, key, Use for writing / Use for search), then Routing & limits, Privacy and
+Try a prompt; Usage & Cost and the capability table are gone. Integrations groups everything it connects to (Source
+control, Builds with a Set up row per workspace, AI model servers with the same test record as Models & AI, Sign-in,
+Updates) with filter chips and a detail of Connection, History and Used by. `services/modelServers.js` is shared.
+**Home** and **Workspaces** were redesigned (branch `redesign-home`): Home leads with Needs you (kind chips), then Work in progress by stage with the recorded figures, one Recent card and workspace cards; Workspaces has filter chips, rows with SVN and Jenkins health (`services/connectionHealth.js`, shared with Integrations), a sectioned side sheet and a one-step-per-screen wizard.
+**Requirements** was redesigned (branch `redesign-requirements`): stage boxes with counts lead, then chips, compact rows with a ⋯ menu and a New requirement side panel (upload or drop, or describe); the requirement has one header with the stage pill and one next action, a four-stage stepper, one problem bar, six tabs at most (History and the source document moved to a Source and history side panel, Roles into Overview, acceptance and non-functional into Requirements, APIs and hosts into Rules and APIs).
+**Changes** and **Impact Analysis** were redesigned (branch `redesign-changes`): Changes leads with state chips and compact rows; a change opens with one header (status pill, one primary action, the rest in a menu), five stages, one problem bar, state chips over the file tree, four side tabs (History moved to a Change details sheet); Impact Analysis leads with Size, Modules, Risks and Tests cards, then three tabs (Files with a By layer view, Risks and tests, Review with the revisions), the requirement in a side panel.
+**Build, Test & Review** and **External Review** were redesigned (branch `redesign-build`): Build leads with one header (pickers, verdict pill, one primary action, the rest in a menu), one problem bar and five gate cards (integration tests one line), then three tabs (Findings as compact rows with the finding beside, Runs and logs, Checks and coverage); Delivery and approvals and the assistant moved to side panels. External Review leads with four boxes that filter (open comments, waiting, active links, approved), compact screen rows with a ⋯ menu, two tabs (Screens, Comments as rows), History in a side panel.
+**Modernization** was redesigned (branch `redesign-modernization`): one header with Start a conversion, one problem bar, four boxes that count and filter the modules converted, in progress, failed and not started (from the changes that write into the new app's folder) beside the target card, then three tabs (Modules as compact rows with the module beside, Findings as rows with chips, Plan); Start a conversion is a side panel (the new app and folder, the starter, a module whose requirement opens filled in on Requirements), the last analysis a side panel.
+**Administration**, **Notifications**, **Account** and **About** were redesigned (branch `redesign-admin`): Administration leads with four now cards (people, not signed in yet, sign-in, the factory's build and update), one problem bar and four tabs (Users as compact rows with chips and a ⋯ menu, Workspace access, Roles & security, Audit log as rows with chips by kind; Invitations became a chip, Security Settings joined the matrix, Recent activity is the audit); add user, reset password and effective access are side panels. Notifications has kind chips with counts and rows by day with the notification beside; Account a profile card and grouped preference rows with the password in a side panel; About four cards and compact sections.
+The **Design Studio** (route `studio`) is the one page for screens: the UI Design Studio and the Visual Designer were
+merged (`docs/DESIGN-STUDIO-MERGE-PLAN.md`, done on branch `design-studio-merge`). The selected screen has Review and
+Edit; Edit is the designer inside the page. The `designer` route redirects, `pageRequests.design(id)` opens a screen in
+Edit, and `?ojr=studio&requirement=<id>&screen=<id>` is a real link. Every approve, group approve and reopen asks first
+(`services/designActions`). `scripts/check-studio.js` and `scripts/check-designer.js` (which now opens the designer
+through the Studio) check it.
+
+The **Issue Analyzer** (route `issues`, branch `claude/chatgpt-conversation-review-6b861b`, plan and decisions in
+`docs/ISSUE-ANALYZER-PLAN.md`): a bank's error report, logs and screenshots become evidence (found without a model),
+the bank's matching code from the index, similar solved issues and a checked diagnosis with fix steps; outcomes, an
+Oracle SR draft, and resolutions leads share across workspaces. Screenshots are read by the chat model (the image path
+the Design Studio uses), so it needs a chat model that reads images. Phase 2 (`docs/ISSUE-ANALYZER-PHASE-2.md`): Oracle
+support notes in the Library (kind ORACLE_NOTE) cited in diagnoses, links for bank administrators to report and follow
+issues (route `report`, embedded, no sign-in; diagnosis shown after "Release to the bank"), fix checks, questions, and
+groups of the same error within a day. Phase 3 (`docs/ISSUE-ANALYZER-PHASE-3.md`): screenshots blurred by a local model,
+issue notifications in the bell menu, read-only live checks of hosts the issue mentions. Tried on the 8081 test
+factory with Groq on 2026-11-07: diagnosis, live check, question, fix check, SR draft, bank link, release, follow
+page, "still fails" check and notifications all worked; Library text is not sent to Groq (KnowledgePolicy).
+
+**Modernization, released 2026-11-07** (plan and progress: `docs/MODERNIZATION-PARALLEL-PLAN.md`, dashboard rows from
+`tools/progress/build.mjs`; 32 of 34 rows done, the two left are iOS-only and need a Mac or a macOS CI job):
+- Every screen matches its approved board. The **Component factory** previews every component in every pack: JET from
+  the gates' JET gallery (`gates/jet-gallery.html` + `jet-samples.js`, served at `/packs/samples/`), React, Angular and
+  React Native from their galleries built by `target-packs/components/previews/build.sh` (the build job runs it; served
+  at `/packs/previews/`), framed one component at a time with `?only=<id>` in the card's design, theme and brand.
+- All four packs carry all 245 catalogue components (React Native 227: the corporate widgets are web only); browser
+  gates, parity on all 47 JET element replacements (JET 6.2 and 21), React Native gates for every component, and the
+  Liquid glass gates (`gates/specs/liquid.spec.ts`) pass on GitHub. JET, React and Angular: 245 Available; React
+  Native: 180 (its 47 element replacements have no parity spec).
+- **Liquid glass** is the ninth design (`liquid`, opt-in): `.bx-look-liquid` in the four identical `bx.css` copies,
+  Glisse's lens in React (loaded only for that design), expo-blur (optional) in React Native. Vue, Capacitor, JET Core
+  Pack and Flutter starters take the bank's component style from one JSON file, which the workspace starter download
+  (`/api/workspaces/{id}/targets/{target}/starter.zip`) and changes fill in.
+- **Capacitor** wraps the Angular app too (`target-packs/capacitor/wrap-angular.mjs`); a wrapped Angular app gets Angular
+  screens. The **native** starters have certificate pinning (release builds refuse empty pins), XcodeGen, ViewInspector
+  tests, a Gradle wrapper and `scripts/run-on-device.sh`; Android is checked on an emulator, iOS is not built.
+- Only the integration branch publishes the `latest` release (build.yml); other branches build and test only.
 
 ## The user's installation
 
@@ -41,7 +118,7 @@ that finds model servers on this computer or another server and switches models 
 2. Open `http://localhost:8080/` in the built-in browser and check the Models page: Ollama should be listed under
    "On this computer"; choose the chat model (a coder model) and `nomic-embed-text`, "Use these models", then
    "Try a prompt". If Ollama is not found: is it running (`ollama list`, `http://localhost:11434/v1/models`)?
-3. Retry the user's requirement ("Draft again from document") and walk them through spec approval, the designer,
+3. Retry the user's requirement ("Draft again from document") and walk them through spec approval, the Design Studio,
    the change plan and generated code. Note what is slow or unclear for them.
 
 ## Not yet verified on Windows (tested on Linux only)
@@ -54,5 +131,8 @@ stand-in on Windows. The trial database itself runs on the user's laptop.
 
 - Exact format of `about.json` in releases other than 22.2 (the detector reads the first `NN.N` release number in it).
 - Sign-ins end when the factory restarts (sessions are in memory).
+- Issue Analyzer, later (only on request): drawing or moving blur boxes by hand, email notifications, grouping across
+  workspaces. Not yet tried: blurring with a real local model (the laptop is slow for vision models), file uploads
+  from the browser (the in-app browser cannot pick files; the database tests cover them), real bank OBDX logs.
 - Remaining roadmap (only on request): reverse-engineering JET screens into Screen Models, wave planning on the
   inventory, Jenkins Android/iOS builds.

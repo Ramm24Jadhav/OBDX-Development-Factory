@@ -2,6 +2,7 @@ package com.obdx.factory.target;
 
 import com.obdx.factory.common.BadRequestException;
 import com.obdx.factory.common.NotFoundException;
+import com.obdx.factory.componentpack.ComponentStyleStore;
 import com.obdx.factory.design.ScreenModel;
 import com.obdx.factory.importing.StorageProperties;
 import com.obdx.factory.workspace.Workspace;
@@ -16,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -23,7 +25,7 @@ import java.util.zip.ZipOutputStream;
 
 /**
  * Which UI technology a workspace generates screens for, and where its new app lives. With the jet target (default)
- * the factory enhances the bank's OBDX UI; with react-native or react it builds screens of a new app in the app folder,
+ * the factory enhances the bank's OBDX UI; with react-native, react or angular it builds screens of a new app in the app folder,
  * on the same OBDX services.
  */
 @Service
@@ -52,11 +54,13 @@ public class TargetService {
     private final TargetPacks packs;
     private final WorkspaceRepository workspaces;
     private final StorageProperties storage;
+    private final ComponentStyleStore styles;
 
-    public TargetService(TargetPacks packs, WorkspaceRepository workspaces, StorageProperties storage) {
+    public TargetService(TargetPacks packs, WorkspaceRepository workspaces, StorageProperties storage, ComponentStyleStore styles) {
         this.packs = packs;
         this.workspaces = workspaces;
         this.storage = storage;
+        this.styles = styles;
     }
 
     public List<PackSummary> list() {
@@ -72,7 +76,7 @@ public class TargetService {
     public WorkspaceTarget get(UUID workspaceId) {
         Workspace workspace = workspace(workspaceId);
         TargetPack pack = packs.find(workspace.getTarget()).orElse(packs.jet());
-        return new WorkspaceTarget(pack.id(), pack.title(), pack.preview(), workspace.getAppFolder(), appExists(workspace));
+        return new WorkspaceTarget(pack.id(), pack.title(), screens(workspace).orElse(pack).preview(), workspace.getAppFolder(), appExists(workspace));
     }
 
     @Transactional
@@ -92,15 +96,36 @@ public class TargetService {
         return get(workspaceId);
     }
 
-    /** The starter project of a pack as a zip, to commit as the app folder. */
+    /** The starter project of a pack as a zip, to commit as the app folder (with the default component style). */
     public byte[] starterZip(String targetId) {
         TargetPack pack = pack(targetId);
-        if (pack.starter().isEmpty()) {
+        return zip(pack, pack.starter());
+    }
+
+    /** The starter project of a pack as a zip with the workspace's saved component style in its style file. */
+    @Transactional(readOnly = true)
+    public byte[] starterZip(String targetId, UUID workspaceId) {
+        workspace(workspaceId);
+        TargetPack pack = pack(targetId);
+        return zip(pack, StarterStyle.apply(pack, styles.get(workspaceId).style().defaults()));
+    }
+
+    /**
+     * The content of a starter's style file with the workspace's saved component style, when the path (relative to the
+     * app folder) is that pack's style file; a change writes it as it is.
+     */
+    @Transactional(readOnly = true)
+    public Optional<String> styleFile(UUID workspaceId, TargetPack pack, String relativePath) {
+        return StarterStyle.path(pack).filter(relativePath::equals).map(path -> StarterStyle.json(styles.get(workspaceId).style().defaults()));
+    }
+
+    private static byte[] zip(TargetPack pack, Map<String, String> files) {
+        if (files.isEmpty()) {
             throw new BadRequestException("The " + pack.title() + " target has no starter project");
         }
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         try (ZipOutputStream zip = new ZipOutputStream(bytes)) {
-            for (Map.Entry<String, String> file : pack.starter().entrySet()) {
+            for (Map.Entry<String, String> file : files.entrySet()) {
                 zip.putNextEntry(new ZipEntry(file.getKey()));
                 zip.write(file.getValue().getBytes(StandardCharsets.UTF_8));
                 zip.closeEntry();
@@ -112,20 +137,20 @@ public class TargetService {
     }
 
     /**
-     * The starting points generated from one Screen Model for the workspace's React Native or React app: screen, test
+     * The starting points generated from one Screen Model for the workspace's app (React Native, React or Angular): screen, test
      * and texts. The designer shows them; code generation starts from the same files.
      */
     @Transactional(readOnly = true)
     public List<CodeFile> code(UUID workspaceId, ScreenModel model, String module) {
         Workspace workspace = workspace(workspaceId);
-        TargetPack pack = packs.find(workspace.getTarget()).orElse(packs.jet());
+        TargetPack pack = screens(workspace).orElse(packs.jet());
         if (pack.isJet() || workspace.getAppFolder() == null) {
-            throw new BadRequestException("Code previews are for React Native and React targets; this workspace enhances the OBDX JET UI");
+            throw new BadRequestException("Code previews are for app targets (React Native, React or Angular); this workspace enhances the OBDX JET UI");
         }
         String folder = module == null || module.isBlank() ? "app" : module.toLowerCase().replaceAll("[^a-z0-9_-]", "");
         String app = workspace.getAppFolder() + "/";
         String screenPath = ScreenScaffolder.screenPath(pack, model, folder);
-        String testPath = pack.structure().get("test").replace("{module}", folder).replace("{Screen}", ScreenScaffolder.pascal(model.name()));
+        String testPath = ScreenScaffolder.path(pack.structure().get("test"), model, folder);
         String textsPath = pack.structure().get("texts");
         return List.of(
                 new CodeFile(app + screenPath, "screen", ScreenScaffolder.screen(pack, model, folder).content()),
@@ -148,14 +173,24 @@ public class TargetService {
         if (!appExists(workspace)) {
             guide.append("The app folder has no starter project yet; plan the screen files anyway (the starter project is committed separately).\n");
         }
+        TargetPack screens = screens(workspace).orElse(pack);
+        if (screens != pack) {
+            guide.append("The app wraps the bank's Angular app (angular.json in the app folder): write its screens as Angular pages, not React.\n");
+        }
         guide.append("For each approved screen design plan these files (layer ui), with {module} a lowercase module folder:\n");
         for (String kind : List.of("screen", "test", "api", "texts", "navigation")) {
-            guide.append("- ").append(kind).append(": ").append(app).append(pack.structure().get(kind))
+            guide.append("- ").append(kind).append(": ").append(app).append(screens.structure().get(kind))
                     .append(kind.equals("texts") || kind.equals("navigation") ? " (modify; create only if it does not exist)" : "").append('\n');
         }
-        guide.append("{Screen} is the design's name in PascalCase (for example \"Fund Transfer\" gives FundTransfer).\n");
+        guide.append("{Screen} is the design's name in PascalCase (for example \"Fund Transfer\" gives FundTransfer); {screen_file} the same in snake_case (fund_transfer).\n");
         guide.append("Change OBDX backend services only when the requirement needs new service behavior; the app calls the existing OBDX REST services.\n");
         return guide.toString();
+    }
+
+    /** The pack the workspace's screens are written with (Angular for a Capacitor app wrapping the Angular app). */
+    java.util.Optional<TargetPack> screens(Workspace workspace) {
+        return packs.screens(workspace.getTarget(), workspace.getAppFolder(),
+                path -> Files.isRegularFile(storage.workingCopy(workspace.getId()).resolve(path)));
     }
 
     /** Whether the app's package.json is in the imported code. */

@@ -39,6 +39,12 @@ public class JenkinsClient {
         this.baseUrl = baseUrl.replaceAll("/+$", "");
         this.authorization = username == null || username.isBlank() ? null
                 : "Basic " + Base64.getEncoder().encodeToString((username + ":" + (token == null ? "" : token)).getBytes(StandardCharsets.UTF_8));
+        // a server's error or the build's console can echo the token (or the header it came in): masked wherever messages
+        // are built. A client is made only for a workspace's stored settings, after its permission checks
+        com.obdx.factory.common.KnownSecrets.used(token);
+        if (authorization != null && token != null && !token.isBlank()) {
+            com.obdx.factory.common.KnownSecrets.used(authorization.substring("Basic ".length()));
+        }
         this.properties = properties;
         this.http = HttpClient.newBuilder().cookieHandler(new CookieManager()).connectTimeout(properties.requestTimeout())
                 .followRedirects(HttpClient.Redirect.NORMAL).build();
@@ -129,7 +135,7 @@ public class JenkinsClient {
         if (response.statusCode() != 200) {
             return "";
         }
-        String text = response.body();
+        String text = com.obdx.factory.common.KnownSecrets.masked(response.body());
         int max = (int) properties.maxLogSize().toBytes();
         return text.length() <= max ? text : text.substring(text.length() - max);
     }
@@ -152,6 +158,86 @@ public class JenkinsClient {
             }
         }
         return failures;
+    }
+
+    /** One test case of a JUnit report: its suite and class, name, PASSED / FAILED / SKIPPED, seconds and the first line of its error. */
+    public record TestCase(String suite, String className, String name, String status, double seconds, String error) {
+    }
+
+    /** A build's JUnit report: every case (empty when the job publishes none). */
+    public record TestReport(boolean published, List<TestCase> cases) {
+    }
+
+    /** The whole JUnit report of a build, when the job publishes one. */
+    public TestReport testReport(BuildRef build) {
+        HttpResponse<String> response = send(request(build.url().replaceAll("/+$", "")
+                + "/testReport/api/json?tree=suites[name,cases[className,name,status,duration,errorDetails,skipped]]").GET().build());
+        if (response.statusCode() != 200) {
+            return new TestReport(false, List.of());
+        }
+        List<TestCase> cases = new ArrayList<>();
+        for (JsonNode suite : JSON.readTree(response.body()).path("suites")) {
+            String suiteName = suite.path("name").asString("");
+            for (JsonNode test : suite.path("cases")) {
+                String status = test.path("status").asString("");
+                String normal = "FAILED".equals(status) || "REGRESSION".equals(status) ? "FAILED"
+                        : "SKIPPED".equals(status) || test.path("skipped").asBoolean(false) ? "SKIPPED" : "PASSED";
+                cases.add(new TestCase(suiteName.isBlank() ? test.path("className").asString("") : suiteName, test.path("className").asString(""),
+                        test.path("name").asString(""), normal, test.path("duration").asDouble(0), firstLine(test.path("errorDetails").asString(""))));
+            }
+        }
+        return new TestReport(true, cases);
+    }
+
+    /**
+     * Line coverage of a build in percent, from the JaCoCo plugin or the Coverage plugin, or null when the job publishes
+     * neither.
+     */
+    public Double lineCoverage(BuildRef build) {
+        String base = build.url().replaceAll("/+$", "");
+        HttpResponse<String> jacoco = send(request(base + "/jacoco/api/json?tree=lineCoverage[percentageFloat]").GET().build());
+        if (jacoco.statusCode() == 200) {
+            JsonNode line = JSON.readTree(jacoco.body()).path("lineCoverage");
+            if (line.has("percentageFloat")) {
+                return line.path("percentageFloat").asDouble();
+            }
+        }
+        HttpResponse<String> coverage = send(request(base + "/coverage/api/json?tree=projectStatistics[line]").GET().build());
+        if (coverage.statusCode() == 200) {
+            String line = JSON.readTree(coverage.body()).path("projectStatistics").path("line").asString("");
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("([0-9]+(?:\\.[0-9]+)?)%").matcher(line);
+            if (m.find()) {
+                return Double.valueOf(m.group(1));
+            }
+        }
+        return null;
+    }
+
+    /** The build's archived images (screenshots of the journey and visual tests), as paths relative to the build. */
+    public List<String> imageArtifacts(BuildRef build) {
+        HttpResponse<String> response = send(request(build.url().replaceAll("/+$", "") + "/api/json?tree=artifacts[relativePath]").GET().build());
+        if (response.statusCode() != 200) {
+            return List.of();
+        }
+        List<String> out = new ArrayList<>();
+        for (JsonNode a : JSON.readTree(response.body()).path("artifacts")) {
+            String path = a.path("relativePath").asString("");
+            if (path.matches("(?i).+\\.(png|jpe?g|webp)$")) {
+                out.add(path);
+            }
+        }
+        return out.size() > 200 ? out.subList(0, 200) : out;
+    }
+
+    /** One archived file of a build (an image shown as test evidence). */
+    public byte[] artifact(String buildUrl, String relativePath) {
+        HttpResponse<byte[]> response = sendBytes(request(buildUrl.replaceAll("/+$", "") + "/artifact/"
+                + java.util.Arrays.stream(relativePath.split("/")).map(p -> URLEncoder.encode(p, StandardCharsets.UTF_8).replace("+", "%20"))
+                .collect(Collectors.joining("/"))).GET().build());
+        if (response.statusCode() != 200) {
+            throw new JenkinsException("Jenkins has no file " + relativePath + " for this build (HTTP " + response.statusCode() + ")");
+        }
+        return response.body();
     }
 
     // --- HTTP ---
@@ -208,6 +294,17 @@ public class JenkinsClient {
     private HttpResponse<String> send(HttpRequest request) {
         try {
             return http.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new JenkinsException("Could not reach Jenkins at " + baseUrl + ": " + e.getMessage(), e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new JenkinsException("Interrupted while talking to Jenkins", e);
+        }
+    }
+
+    private HttpResponse<byte[]> sendBytes(HttpRequest request) {
+        try {
+            return http.send(request, HttpResponse.BodyHandlers.ofByteArray());
         } catch (IOException e) {
             throw new JenkinsException("Could not reach Jenkins at " + baseUrl + ": " + e.getMessage(), e);
         } catch (InterruptedException e) {

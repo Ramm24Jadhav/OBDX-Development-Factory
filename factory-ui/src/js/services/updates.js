@@ -64,6 +64,23 @@ define(['knockout', './api'], function (ko, api) {
     error: error,
     refresh: refresh,
     install: install,
+    /**
+     * The download's progress for the banner's bar while an update downloads or installs, else null. percent is null
+     * while installing (the bar then only moves).
+     */
+    progress: ko.pureComputed(function () {
+      const s = status();
+      if (!s || !s.enabled || (s.state !== 'DOWNLOADING' && s.state !== 'RESTARTING')) {
+        return null;
+      }
+      const percent = s.state === 'DOWNLOADING' ? Math.max(0, Math.min(100, s.progress || 0)) : null;
+      return {
+        percent: percent,
+        label: percent === null ? 'Installing' : percent + '%',
+        css: 'factory-update-bar' + (percent === null ? ' is-indeterminate' : ' is-running'),
+        style: { width: (percent === null ? 100 : percent) + '%' }
+      };
+    }),
     /** Text for the banner, or '' when there is nothing to say. */
     banner: ko.pureComputed(function () {
       const s = status();
@@ -72,7 +89,7 @@ define(['knockout', './api'], function (ko, api) {
       }
       switch (s.state) {
         case 'AVAILABLE': return 'A new version of the factory is available (build ' + s.latestBuild + '; this is build ' + s.build + ').';
-        case 'DOWNLOADING': return 'Downloading the new version: ' + s.progress + '%';
+        case 'DOWNLOADING': return 'Downloading build ' + s.latestBuild + ' of the factory. It restarts by itself when the download is complete.';
         case 'RESTARTING': return 'Installing the new version; the factory restarts and this page reloads in about a minute. Then sign in again.';
         default: return '';
       }

@@ -1,0 +1,168 @@
+# Oracle JET Core Pack target pack: a new web app in Oracle's own modern JET (VDOM, Preact, TypeScript) with the
+# Core Pack components (oj-c-*, Redwood), on the bank's OBDX REST services.
+id: jet-core-pack
+title: Oracle JET Core Pack (web)
+description: A new web app in Oracle JET with the Core Pack components (VDOM, Redwood, TypeScript) that calls the bank's OBDX REST services.
+# The Design Studio shows the screen in its React preview (the same layout); the Core Pack needs a JET build to run
+preview: react
+defaultAppFolder: web-jet
+# Screens are JSX (Preact), with the starter's components wrapping the oj-c elements
+syntax: jsx
+
+# Where files go, relative to the app folder. {module} is a lowercase module folder (for example payments),
+# {Screen} the screen name in PascalCase (FundTransfer), {screenKey} the same in camelCase (fundTransfer).
+structure:
+  screen: src/screens/{module}/{Screen}Page.tsx
+  test: src/screens/{module}/__tests__/{Screen}Page.spec.tsx
+  api: src/api/{module}Api.ts
+  texts: src/i18n/en.json
+  navigation: src/navigation/routes.tsx
+
+# Screen Model component type -> starter component (src/components, on the Core Pack elements).
+# value: string, list (string[]), boolean or number.
+components:
+  text: {component: TextField, value: string}
+  textarea: {component: TextArea, value: string}
+  number: {component: NumberField, value: number}
+  amount: {component: AmountField, value: number}
+  date: {component: DateField, value: string}
+  select: {component: SelectField, value: string, options: true}
+  account: {component: AccountField, value: string, options: true}
+  radio: {component: RadioGroup, value: string, options: true}
+  checkbox: {component: CheckboxGroup, value: list, options: true}
+  switch: {component: SwitchField, value: boolean}
+  display: {component: ReadOnlyField, value: string}
+  # No table or OBDX JET components in this app yet: shown read-only until the screen is completed
+  table: {component: ReadOnlyField, value: string}
+  component: {component: ReadOnlyField, value: string}
+
+templates:
+  screen: templates/screen.tsx
+  test: templates/screen.spec.tsx
+
+guidance: |
+  - This is a new Oracle JET web app (VDOM: Preact and TypeScript, built with ojet build) in its own folder, with the
+    JET Core Pack components and the Redwood theme; it calls the bank's OBDX REST services. Do not change the bank's
+    existing OBDX JET UI for it.
+  - Build pages only from the components in src/components (TextField, TextArea, NumberField, AmountField, DateField,
+    SelectField, AccountField, RadioGroup, CheckboxGroup, SwitchField, ReadOnlyField, Button, Section, Screen). They
+    wrap the Core Pack elements (oj-c-input-text, oj-c-select-single ...) and take testID, label, value, onChange,
+    error, required, readOnly, helpText, placeholder, maxLength (and options). When a page needs another Core Pack
+    element, import it (import 'oj-c/<name>') and use it as JSX; never the legacy oj-* elements or Knockout.
+  - Import a folder through its index file (from '../../components/index'): the app runs on RequireJS, which does
+    not resolve a folder to its index.js the way TypeScript and Jest do.
+  - Every field and action of the approved Screen Model keeps its Screen Model id as testID (rendered as data-testid).
+  - Keep form state and validation in useForm (src/forms/useForm): rules for required and maxLength, check() for the
+    spec's other validations.
+  - All visible texts come from src/i18n/en.json through t('screenKey.name'); add the page's texts there.
+  - Call OBDX services only through src/api (api.get/post from client.ts) in a <module>Api.ts file with typed request
+    and response types; the client adds the session cookie and the nonce.
+  - Pages do not navigate themselves: they call onAction(actionId) and onDone(), which routes.tsx wires up.
+  - Write tests with Jest (the JET preset, npm test) and @testing-library/preact.
+  - The app's design comes from the factory's component style in src/component-style.json (look, motion, mode, brand;
+    style.ts puts obdx-look-* on <html>, styles/looks.css draws the nine designs over Redwood through the Core
+    Pack's --oj-c-* variables, Liquid glass included). Do not style a page for one design: use the components, and every design applies.
+
+rules:
+  - id: jetcp-no-legacy-jet
+    title: Core Pack, not legacy JET
+    severity: error
+    files: ["**/*.ts", "**/*.tsx"]
+    forbid: '\bknockout\b|''ojs/oj(inputtext|inputnumber|select-single|selectcombobox|radioset|checkboxset|button|formlayout|datetimepicker|switch)''|<oj-(?!c-)'
+    message: Use the Core Pack elements (oj-c-*) through src/components, not the legacy oj-* components or Knockout.
+  - id: jetcp-index-imports
+    title: Folders imported through index
+    severity: error
+    files: ["**/*.ts", "**/*.tsx"]
+    forbid: 'from\s+[''"]\.[^''"]*/(components|i18n|navigation)[''"]'
+    message: Import the folder's index file (for example '../../components/index'); RequireJS does not resolve a folder.
+  - id: jetcp-no-react
+    title: Preact, not React
+    severity: error
+    files: ["**/*.ts", "**/*.tsx"]
+    forbid: 'from\s+[''"](react|react-dom|react-native)[''"]'
+    message: JET VDOM apps use Preact (preact, preact/hooks), not React.
+  - id: jetcp-no-inner-html
+    title: No raw HTML
+    severity: error
+    files: ["**/*.tsx"]
+    forbid: '\bdangerouslySetInnerHTML\b'
+    message: Do not insert raw HTML (it opens the app to script injection); render texts and components instead.
+  - id: app-api-through-client
+    title: Services through src/api
+    severity: error
+    files: ["**/*.ts", "**/*.tsx"]
+    exclude: ["**/src/api/**", "**/__tests__/**"]
+    forbid: '(?<![.\w])fetch\s*\(|\bXMLHttpRequest\b|\baxios\b|ojs/ojrestdataprovider'
+    message: Call OBDX services through src/api (api.get/post in a <module>Api.ts file), not directly.
+  - id: app-texts-from-i18n
+    title: Texts from i18n
+    severity: warning
+    files: ["**/src/screens/**/*.tsx"]
+    exclude: ["**/__tests__/**"]
+    forbid: '>\s*[A-Za-z][^<>{}]*[A-Za-z]\s*</|\b(label|labelHint|title|placeholder|helpText)="[^"]*[A-Za-z]'
+    message: Take visible texts from src/i18n/en.json with t('screenKey.name') so they can be translated.
+  - id: app-theme-colors
+    title: Colors from the theme
+    severity: warning
+    files: ["**/src/screens/**/*.tsx"]
+    forbid: '[''"]#[0-9a-fA-F]{3,8}[''"]'
+    message: Use Redwood's classes and CSS variables (--oj-core-*), not literal color codes.
+  - id: app-no-console
+    title: No console logging
+    severity: warning
+    files: ["**/*.ts", "**/*.tsx"]
+    exclude: ["**/__tests__/**"]
+    forbid: '\bconsole\.(log|debug|info)\s*\('
+    message: Remove console logging from app code.
+  - id: app-no-any
+    title: Typed code
+    severity: warning
+    files: ["**/*.ts", "**/*.tsx"]
+    forbid: ':\s*any\b|\bas\s+any\b'
+    message: Use specific types (for example the request and response types of the API file) instead of any.
+
+recipes:
+  - id: app-screen
+    title: Page in the JET Core Pack app
+    when: A screen of the requirement is built (or changed) in the JET Core Pack web app.
+    guidance: |
+      - Start from the generated starting point: it already maps every field and action of the approved Screen Model to
+        the components, with testIDs, texts, required and length rules.
+      - Load data (for example the customer's accounts) and send the form through the module's API file.
+      - On success call onDone(); on an ApiError show its message (error state shown above the actions).
+    parts:
+      - id: screen
+        name: Screen
+        files: ["**/src/screens/**/*Page.tsx"]
+        examples: {files: ["**/src/screens/**/*Page.tsx"], exclude: ["**/__tests__/**"], contains: 'useForm|<Screen'}
+      - id: test
+        name: Screen test
+        files: ["**/src/screens/**/__tests__/*.spec.tsx"]
+        examples: {files: ["**/src/**/__tests__/*.spec.tsx"]}
+  - id: app-api
+    title: API file for a module
+    when: Screens of a module call OBDX REST services.
+    guidance: |
+      - One file per module in src/api, exporting typed functions (for example transfer(request): Promise<TransferResult>)
+        that call api.get/post with the OBDX service path.
+      - Declare request and response types with the field names the OBDX service uses.
+    parts:
+      - id: api
+        name: API file
+        files: ["**/src/api/*Api.ts"]
+        template: templates/api.ts
+        examples: {files: ["**/src/api/*Api.ts"]}
+  - id: app-texts
+    title: Texts and navigation
+    when: A screen is added or changed.
+    guidance: |
+      - en.json: keep all existing texts; add or change only the screen's own block (the generated starting point has it).
+      - routes.tsx: add one route for the page (its path after #), with onAction and onDone changing window.location.hash.
+    parts:
+      - id: texts
+        name: Texts (en.json)
+        files: ["**/src/i18n/*.json"]
+      - id: navigation
+        name: Navigation
+        files: ["**/src/navigation/*.tsx"]

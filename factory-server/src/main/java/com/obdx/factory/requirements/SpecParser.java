@@ -47,7 +47,40 @@ public final class SpecParser {
         } catch (JacksonException e) {
             throw new InvalidSpecException("The response is not valid JSON: " + e.getOriginalMessage(), e);
         }
-        return fromJson(root, fallbackTitle);
+        return fromJson(specObject(root), fallbackTitle);
+    }
+
+    /** The fields a spec has; an object with none of them is not a spec. */
+    static final java.util.Set<String> FIELDS = java.util.Set.of("title", "summary", "screens", "businessRules", "roles", "apis",
+            "hostInteractions", "messages", "openQuestions", "decisions", "scope", "outOfScope", "assumptions", "requirements",
+            "acceptanceCriteria", "nonFunctional");
+
+    /**
+     * The spec in the JSON: the object itself, or the object under "spec" when it was wrapped ({"spec": {...}}). Refused
+     * when it has none of a spec's fields, so a wrong body never saves an empty spec.
+     */
+    static JsonNode specObject(JsonNode root) {
+        // {} is a section with nothing in it (the model leaves empty what a section does not say); not a wrong body
+        if (hasSpecField(root) || (root.isObject() && root.isEmpty())) {
+            return root;
+        }
+        JsonNode wrapped = root.path("spec");
+        if (wrapped.isObject() && hasSpecField(wrapped)) {
+            return wrapped;
+        }
+        throw new InvalidSpecException("The spec has none of its fields (title, requirements, screens…). Send the spec itself.", null);
+    }
+
+    private static boolean hasSpecField(JsonNode node) {
+        if (!node.isObject()) {
+            return false;
+        }
+        for (String name : node.propertyNames()) {
+            if (FIELDS.contains(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static RequirementSpec fromJson(JsonNode root, String fallbackTitle) {
@@ -64,8 +97,18 @@ public final class SpecParser {
                 list(root, "messages", node -> new RequirementSpec.Message(text(node, "code"), textOrSelf(node, "text"),
                         oneOf(text(node, "type"), MESSAGE_TYPES, "info"))),
                 list(root, "openQuestions", node -> new RequirementSpec.OpenQuestion(textOrSelf(node, "question"),
-                        text(node, "reason"), text(node, "reference"), text(node, "answer"))),
-                list(root, "decisions", node -> new RequirementSpec.Decision(text(node, "question"), text(node, "answer"))));
+                        text(node, "reason"), text(node, "reference"), strings(node, "options"),
+                        text(node, "suggestedAnswer"), text(node, "answer"))),
+                list(root, "decisions", node -> new RequirementSpec.Decision(text(node, "question"), text(node, "answer"))),
+                texts(root, "scope"),
+                texts(root, "outOfScope"),
+                texts(root, "assumptions"),
+                list(root, "requirements", node -> new RequirementSpec.FunctionalRequirement(text(node, "id"), text(node, "title"),
+                        textOrSelf(node, "description"), text(node, "priority"), strings(node, "screens"))),
+                list(root, "acceptanceCriteria", node -> new RequirementSpec.AcceptanceCriterion(text(node, "id"),
+                        textOrSelf(node, "description"), strings(node, "requirements"))),
+                list(root, "nonFunctional", node -> new RequirementSpec.NonFunctional(text(node, "id"), text(node, "category"),
+                        textOrSelf(node, "description"))));
     }
 
     private static RequirementSpec.Screen screen(JsonNode node) {
@@ -109,6 +152,9 @@ public final class SpecParser {
             case RequirementSpec.Message m -> blank(m.text());
             case RequirementSpec.OpenQuestion q -> blank(q.question());
             case RequirementSpec.Decision d -> blank(d.question());
+            case RequirementSpec.FunctionalRequirement r -> blank(r.description()) && blank(r.title()) && blank(r.id());
+            case RequirementSpec.AcceptanceCriterion c -> blank(c.description());
+            case RequirementSpec.NonFunctional n -> blank(n.description());
             default -> false;
         };
     }
@@ -147,6 +193,17 @@ public final class SpecParser {
         for (JsonNode item : value.isArray() ? value : List.of(value)) {
             if (item.isValueNode() && !item.isNull() && !item.asString().isBlank()) {
                 result.add(item.asString().trim());
+            }
+        }
+        return result;
+    }
+
+    /** A list of texts the model may also write as objects ({"description": "..."}) or as one text. */
+    private static List<String> texts(JsonNode node, String name) {
+        List<String> result = new ArrayList<>();
+        for (String item : list(node, name, item -> textOrSelf(item, "description") != null ? textOrSelf(item, "description") : text(item, "text"))) {
+            if (item != null && !item.isBlank()) {
+                result.add(item);
             }
         }
         return result;

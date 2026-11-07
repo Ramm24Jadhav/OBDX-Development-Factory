@@ -1,5 +1,5 @@
 /*
- * Builds the React Native and React screen previews into web/ after the JET build. Each preview bundles a target
+ * Builds the React Native, React and premium (Angular) screen previews into web/ after the JET build. Each preview bundles a target
  * pack's starter components (../target-packs) with React (and React Native Web), so the designer shows screens with
  * the components the generated app uses. Everything is bundled: the previews work without internet access.
  */
@@ -28,7 +28,9 @@ const page = (title, script, css) => `<!DOCTYPE html>
 
 esbuild.build({
   entryPoints: { 'react-native-preview': path.join(root, 'previews', 'rn-preview.tsx'),
-                 'react-preview': path.join(root, 'previews', 'react-preview.tsx') },
+                 'react-preview': path.join(root, 'previews', 'react-preview.tsx'),
+                 // Angular screens: the premium components' markup and skin, the same in the React and Angular packs
+                 'bx-preview': path.join(root, 'previews', 'bx-preview.tsx') },
   bundle: true,
   minify: true,
   format: 'iife',
@@ -46,5 +48,6 @@ esbuild.build({
 }).then(() => {
   fs.writeFileSync(path.join(root, 'web', 'preview-react-native.html'), page('React Native preview', 'react-native-preview.js'));
   fs.writeFileSync(path.join(root, 'web', 'preview-react.html'), page('React preview', 'react-preview.js', 'react-preview.css'));
+  fs.writeFileSync(path.join(root, 'web', 'preview-angular.html'), page('Angular preview', 'bx-preview.js', 'bx-preview.css'));
   console.log('Previews built in web/previews');
 }).catch(() => process.exit(1));

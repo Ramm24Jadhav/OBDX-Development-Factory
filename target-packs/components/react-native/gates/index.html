@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>obdx-react-native gallery</title>
+    <style>
+      html, body, #root { margin: 0; min-height: 100%; }
+      .gallery { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+      .gate { border-radius: 12px; padding: 12px; }
+      .gate h2 { margin: 0 0 8px; font: 600 14px system-ui, sans-serif; }
+      .light { background: #f6f8fa; color: #1f2933; }
+      .dark { background: #0d1520; color: #e8edf2; }
+    </style>
+    <script>
+      // ?only=<component id>: the factory's Component factory page shows this one section in a frame, sized to it
+      (function () {
+        var q = new URLSearchParams(location.search), only = q.get('only'), brand = q.get('brand'), variant = q.get('variant');
+        if (!only) { return; }
+        var sel = '[data-component="' + CSS.escape(only) + '"]';
+        var v = variant && variant !== 'default' && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(variant) ? '[data-variant="' + variant + '"]' : '';
+        var css = document.createElement('style');
+        // Transparent only inside the factory's frame; opened on its own (the gates) the page keeps the theme's background
+        var framed = window.parent !== window;
+        css.textContent = (framed ? 'html,body{margin:0;background:transparent!important}.gallery{padding:16px!important;gap:0!important;min-height:0!important;background:transparent!important}' : '.gallery>h1{display:none}')
+          + '.gallery>h1,[data-component]:not(' + sel + '){display:none!important}' + sel + '>h2{display:none!important}' + sel + '{padding:0!important;margin:0!important;background:transparent!important;border:0!important;box-shadow:none!important}'
+          // one instance, as each card on the board shows it: the first (the default variant), or the element marked data-variant=<id> (variants.json)
+          + (v ? sel + ' .gate-body *:not(' + v + '):not(:has(' + v + ')):not(' + v + ' *){display:none!important}'
+            : sel + ' .gate-body>:not(:first-child),' + sel + ' .gate-body>.gate-row>:not(:first-child){display:none!important}')
+          + (brand && /^#[0-9a-f]{6}$/i.test(brand) ? '.gallery{--bx-brand:' + brand + ';--bx-brand-2:' + brand + '}' : '');
+        document.head.appendChild(css);
+        var post = function () {
+          var el = document.querySelector(sel);
+          // a sheet, dialog or menu drawn over the page (fixed) needs room of its own
+          var over = Array.prototype.some.call(document.querySelectorAll('body *'), function (n) { var s = getComputedStyle(n); var r = n.getBoundingClientRect(); return s.position === 'fixed' && r.width > 100 && r.height > 100; });
+          var h = el ? Math.ceil(el.getBoundingClientRect().height) + 32 : 0;
+          parent.postMessage({ preview: only, height: over ? Math.max(h, 420) : h }, '*');
+        };
+        new ResizeObserver(post).observe(document.documentElement);
+        addEventListener('load', post);
+        // a slow first render (Angular's compiler in the browser) may not resize the page: say the height again as it loads
+        [600, 1500, 3000, 6000].forEach(function (t) { setTimeout(post, t); });
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/gallery.tsx"></script>
+  </body>
+</html>

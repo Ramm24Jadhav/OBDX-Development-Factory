@@ -26,7 +26,9 @@ public final class ComponentCatalog {
             new ComponentType("radio", "Radio buttons", "oj-radioset", true),
             new ComponentType("checkbox", "Checkboxes", "oj-checkboxset", true),
             new ComponentType("switch", "Switch (on/off)", "oj-switch", false),
-            new ComponentType("display", "Read-only text", "oj-bind-text", false));
+            new ComponentType("display", "Read-only text", "oj-bind-text", false),
+            new ComponentType("table", "Table (options are its columns)", "oj-table", true),
+            new ComponentType("component", "Component from the bank's code", "the component named in the design", false));
 
     /** Requirement spec field types and common synonyms, mapped to catalog types. */
     private static final Map<String, String> ALIASES = Map.ofEntries(
@@ -35,7 +37,7 @@ public final class ComponentCatalog {
             Map.entry("decimal", "number"), Map.entry("integer", "number"), Map.entry("datepicker", "date"),
             Map.entry("toggle", "switch"), Map.entry("boolean", "switch"), Map.entry("label", "display"),
             Map.entry("readonly", "display"), Map.entry("textbox", "text"), Map.entry("string", "text"),
-            Map.entry("other", "text"));
+            Map.entry("grid", "table"), Map.entry("other", "text"));
 
     private ComponentCatalog() {
     }

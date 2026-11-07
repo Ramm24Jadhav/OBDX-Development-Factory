@@ -9,14 +9,21 @@ import java.util.Map;
  * opens; the backend REST services; the services the UI calls; roles; and the user flows between screens.
  */
 public record Inventory(Long revision, OffsetDateTime scannedAt, Summary summary, List<Module> modules, List<Screen> screens,
-                        List<Endpoint> endpoints, List<ServiceCall> calls, List<Role> roles, List<Flow> flows, List<String> notes) {
+                        List<Endpoint> endpoints, List<ServiceCall> calls, List<Role> roles, List<Flow> flows, List<String> notes,
+                        Map<String, List<String>> elementTests) {
 
-    /** complexity: number of screens per size (S, M, L). */
+    /** elementTests: for each oj-* element, the test files that mention it (null in an analysis stored before). */
+
+    /**
+     * complexity: number of screens per size (S, M, L). components: the Oracle JET (oj-*) elements in the screens' views;
+     * componentTypes: how many different ones. Both are null in an analysis stored before they were counted.
+     */
     public record Summary(int screens, int modules, int fields, int endpoints, int calledServices, int callsWithoutBackend,
-                          int roles, int flows, Map<String, Integer> complexity) {
+                          int roles, int flows, Map<String, Integer> complexity, Integer components, Integer componentTypes) {
     }
 
-    public record Module(String name, int screens, int fields, Map<String, Integer> complexity) {
+    /** elements: each oj-* element in the module's screens with how many times it is used. */
+    public record Module(String name, int screens, int fields, Map<String, Integer> complexity, Map<String, Integer> elements) {
     }
 
     /**
@@ -30,9 +37,14 @@ public record Inventory(Long revision, OffsetDateTime scannedAt, Summary summary
      * @param opens      ids of screens it navigates to
      * @param score      the number behind the complexity: fields + 2 x actions + 3 x services + 2 x screens opened + lines / 50
      * @param complexity S, M or L
+     * @param elements   each Oracle JET element in the view (oj-input-text, oj-button ...) with how many times it is used;
+     *                   binding helpers (oj-bind-*, oj-module, oj-defer) are not counted. Null in an older analysis.
+     * @param markers    what makes an upgrade harder, counted on the oj-* elements: inline-style (a style attribute),
+     *                   renderer (a renderer function attribute) and template (a template slot). Null in an older analysis.
      */
     public record Screen(String id, String name, String module, String kind, List<String> files, int lines, List<Field> fields,
-                         int actions, List<String> calls, List<String> opens, int score, String complexity) {
+                         int actions, List<String> calls, List<String> opens, int score, String complexity,
+                         Map<String, Integer> elements, Map<String, Integer> markers) {
     }
 
     /** A field of a screen: Screen Model type, label (often a resource bundle binding) and the bound value. */

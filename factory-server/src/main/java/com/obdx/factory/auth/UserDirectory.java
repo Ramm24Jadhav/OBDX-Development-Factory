@@ -57,7 +57,9 @@ public class UserDirectory {
         admin.setEnabled(true);
         users.save(admin);
         if (generated) {
-            log.warn("Created the first administrator. Username: admin  Password: {}  (shown once; change it after signing in)", password);
+            // (the log hides what looks like a password; this one line is meant to show it)
+            log.warn(com.obdx.factory.common.RedactedLog.SHOWN_ONCE,
+                    "Created the first administrator. Username: admin  Password: {}  (shown once; change it after signing in)", password);
         } else {
             log.warn("Created the first administrator \"admin\" with the password from FACTORY_ADMIN_PASSWORD.");
         }

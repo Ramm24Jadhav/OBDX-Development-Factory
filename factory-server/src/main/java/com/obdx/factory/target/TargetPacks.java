@@ -27,14 +27,14 @@ import java.util.TreeMap;
 import java.util.stream.Stream;
 
 /**
- * The target packs: built in (target-packs/ on the classpath: jet, react-native, react) and, optionally, the team's
+ * The target packs: built in (target-packs/ on the classpath: jet, react-native, react, angular) and, optionally, the team's
  * own in factory.packs.dir/targets/&lt;id&gt;/. A team target.yml adds to or replaces parts of a built-in pack (or
  * defines a new pack); team templates and starter files win over built-in ones. Read at startup; a mistake stops it.
  */
 @Component
 public class TargetPacks {
 
-    public static final List<String> BUILT_IN = List.of("jet", "react-native", "react");
+    public static final List<String> BUILT_IN = List.of("jet", "react-native", "react", "angular", "flutter", "jet-core-pack", "vue", "capacitor", "native");
     private static final Logger log = LoggerFactory.getLogger(TargetPacks.class);
     private static final String BASE = "target-packs";
 
@@ -68,6 +68,20 @@ public class TargetPacks {
         return Optional.ofNullable(id == null ? null : packs.get(id));
     }
 
+    /**
+     * The pack the app's screens are written with: the workspace's target, except that a Capacitor app wrapping the
+     * Angular app (angular.json in the app folder, see target-packs/capacitor/wrap-angular.mjs) gets Angular screens;
+     * a Capacitor app on the React starter (vite.config.ts) keeps the React ones.
+     *
+     * @param fileExists whether a repository path is a file of the workspace's code
+     */
+    public Optional<TargetPack> screens(String target, String appFolder, java.util.function.Predicate<String> fileExists) {
+        if ("capacitor".equals(target) && appFolder != null && fileExists.test(appFolder + "/angular.json")) {
+            return find(TargetPack.ANGULAR);
+        }
+        return find(target);
+    }
+
     public TargetPack jet() {
         return packs.get(TargetPack.JET);
     }
@@ -83,7 +97,7 @@ public class TargetPacks {
         Map<String, Object> file = new LinkedHashMap<>(builtIn ? builtInFile(id, source) : read(teamDir.resolve("target.yml")));
         if (builtIn && teamDir != null && Files.isRegularFile(teamDir.resolve("target.yml"))) {
             Map<String, Object> team = read(teamDir.resolve("target.yml"));
-            for (String key : List.of("title", "description", "preview", "defaultAppFolder", "guidance")) {
+            for (String key : List.of("title", "description", "preview", "syntax", "defaultAppFolder", "guidance")) {
                 if (team.get(key) != null) {
                     file.put(key, team.get(key));
                 }
@@ -119,10 +133,11 @@ public class TargetPacks {
                     throw new IllegalStateException(where + "component mapping for " + type + " needs a 'component'");
                 }
                 String valueType = m.get("value") == null ? "string" : m.get("value").toString();
-                if (!List.of("string", "list", "boolean").contains(valueType)) {
-                    throw new IllegalStateException(where + "value of " + type + " must be string, list or boolean");
+                if (!List.of("string", "list", "boolean", "number").contains(valueType)) {
+                    throw new IllegalStateException(where + "value of " + type + " must be string, list, boolean or number");
                 }
-                components.put(type.toString(), new TargetPack.ComponentMapping(m.get("component").toString(), valueType,
+                components.put(type.toString(), new TargetPack.ComponentMapping(m.get("component").toString(),
+                        m.get("tag") == null ? null : m.get("tag").toString(), valueType,
                         Boolean.TRUE.equals(m.get("options")), m.get("props") == null ? null : m.get("props").toString()));
             });
         }
@@ -152,7 +167,30 @@ public class TargetPacks {
                 }
             }
         }
-        return new TargetPack(id, string(file, "title", id), string(file, "description", ""), string(file, "preview", id),
+        String syntax = string(file, "syntax", TargetPack.JSX);
+        if (!List.of(TargetPack.JSX, TargetPack.ANGULAR, TargetPack.DART, TargetPack.VUE, TargetPack.NATIVE).contains(syntax)) {
+            throw new IllegalStateException(where + "syntax must be jsx, angular, dart, vue or native");
+        }
+        if (TargetPack.NATIVE.equals(syntax)) {
+            for (String kind : List.of("screenIos", "testIos", "apiIos", "navigationIos")) {
+                if (!structure.containsKey(kind)) {
+                    throw new IllegalStateException(where + "structure." + kind + " is missing (a native pack writes each screen for iOS too)");
+                }
+            }
+            for (String name : List.of("screenIos", "testIos")) {
+                if (!templates.containsKey(name)) {
+                    throw new IllegalStateException(where + "templates." + name + " is missing");
+                }
+            }
+        }
+        if (TargetPack.ANGULAR.equals(syntax)) {
+            components.forEach((type, m) -> {
+                if (m.tag() == null) {
+                    throw new IllegalStateException(where + "component mapping for " + type + " needs a 'tag' (its element in the template)");
+                }
+            });
+        }
+        return new TargetPack(id, string(file, "title", id), string(file, "description", ""), string(file, "preview", id), syntax,
                 string(file, "defaultAppFolder", null), structure, components, templates, string(file, "guidance", "").strip(),
                 List.copyOf(rules.values()), List.copyOf(recipes.values()), starter);
     }
@@ -165,7 +203,8 @@ public class TargetPacks {
             for (Resource resource : new PathMatchingResourcePatternResolver().getResources("classpath*:" + prefix + "**/*")) {
                 String url = resource.getURL().toString();
                 int at = url.lastIndexOf(prefix);
-                if (at < 0 || url.endsWith("/") || !resource.isReadable()) {
+                // Starter files are text; a binary one (the Gradle wrapper's jar) would be corrupted, so it stays in the repository
+                if (at < 0 || url.endsWith("/") || url.endsWith(".jar") || !resource.isReadable()) {
                     continue;
                 }
                 try (InputStream in = resource.getInputStream()) {
@@ -175,7 +214,7 @@ public class TargetPacks {
             Path teamStarter = teamDir == null ? null : teamDir.resolve("starter");
             if (teamStarter != null && Files.isDirectory(teamStarter)) {
                 try (Stream<Path> walk = Files.walk(teamStarter)) {
-                    for (Path file : walk.filter(Files::isRegularFile).toList()) {
+                    for (Path file : walk.filter(f -> Files.isRegularFile(f) && !f.toString().endsWith(".jar")).toList()) {
                         files.put(teamStarter.relativize(file).toString().replace('\\', '/'), Files.readString(file, StandardCharsets.UTF_8));
                     }
                 }

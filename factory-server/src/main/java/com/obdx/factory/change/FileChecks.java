@@ -42,6 +42,10 @@ public final class FileChecks {
     private static final Pattern HTML_TAG = Pattern.compile("<(/?)((?:oj-[a-z-]+)|div|template|table|tr|td|ul|li|form|span|section)(?=[\\s>/])[^>]*?(/?)>",
             Pattern.CASE_INSENSITIVE);
 
+    /** Markup after return, => or ( (return <footer>, () => (<View>), a closing tag, or an import of React */
+    private static final Pattern JSX = Pattern.compile("(?:\\breturn|=>|\\()\\s*+(?:\\(\\s*+)?<[A-Za-z][\\w.-]*+[\\s>/]|</[A-Za-z][\\w.-]*+>"
+            + "|\\bfrom\\s+['\"]react['\"]");
+
     private FileChecks() {
     }
 
@@ -63,6 +67,9 @@ public final class FileChecks {
         }
         if (lower.endsWith(".xml")) {
             return xml(content);
+        }
+        if (lower.endsWith(".js") && !looksLikeJsx(content)) {
+            return JavaScriptCheck.check(content);
         }
         if (lower.endsWith(".js") || lower.endsWith(".ts")) {
             return brackets(content);
@@ -110,6 +117,11 @@ public final class FileChecks {
         } catch (Exception e) {
             return new Result(Status.FAILED, "Invalid XML: " + e.getMessage());
         }
+    }
+
+    /** React code in a .js file: its markup has text with quotes that are not strings, so only the basic check applies. */
+    static boolean looksLikeJsx(String content) {
+        return JSX.matcher(content).find();
     }
 
     /** Brackets must balance outside strings and comments. */

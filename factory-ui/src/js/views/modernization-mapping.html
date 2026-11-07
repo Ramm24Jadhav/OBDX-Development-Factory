@@ -1,0 +1,191 @@
+<!-- Component mapping, as on the approved board (docs/design/boards/Mapping-*.png) -->
+<div class="factory-pg factory-mb factory-mm">
+  <div class="factory-mb-pagehead is-sm">
+    <h1>Component mapping</h1>
+    <p><oj-bind-text value="[[title]]"></oj-bind-text></p>
+  </div>
+
+  <nav class="factory-mz-stepbar" aria-label="Steps of this path"><span class="factory-mz-stepbar-name"><b><oj-bind-text value="[[pathName]]"></oj-bind-text></b><small>Step 2 of 5</small></span>
+    <ol><oj-bind-for-each data="[[steps]]" as="s"><template><li :class="[[s.data.css]]" :aria-current="[[s.data.current]]"><span class="factory-mz-dot"><oj-bind-text value="[[s.data.n]]"></oj-bind-text></span>
+      <oj-bind-if test="[[s.data.done]]"><a :href="[[s.data.href]]" on-click="[[s.data.go]]"><oj-bind-text value="[[s.data.label]]"></oj-bind-text></a></oj-bind-if>
+      <oj-bind-if test="[[!s.data.done]]"><span><oj-bind-text value="[[s.data.label]]"></oj-bind-text></span></oj-bind-if></li></template></oj-bind-for-each></ol></nav>
+
+  <oj-bind-if test="[[error()]]"><div class="fx-empty" id="mmError" role="alert"><span class="fx-empty-icon"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span></span><strong>Nothing to map yet</strong><oj-bind-text value="[[error]]"></oj-bind-text>
+    <div class="factory-mr-next"><button type="button" class="fx-btn fx-btn--primary" on-click="[[toInventory]]">Open the component inventory</button>
+      <oj-bind-if test="[[packMissing()]]"><a class="fx-btn fx-btn--secondary" href="?ojr=about">Update the factory</a></oj-bind-if></div></div></oj-bind-if>
+  <oj-bind-if test="[[loading() && !data()]]"><div class="factory-mo-skeleton" role="status" aria-label="Loading the mapping"><span class="fx-skeleton"></span><span class="fx-skeleton"></span></div></oj-bind-if>
+
+  <oj-bind-if test="[[data()]]">
+    <section class="fx-card factory-mm-summary" aria-label="Summary">
+      <div class="factory-mm-pair">
+        <span class="factory-mm-el"><code id="mmFrom"><oj-bind-text value="[[data().element]]"></oj-bind-text></code><small>Oracle JET component</small></span>
+        <span class="factory-mm-arrow" aria-hidden="true">→</span>
+        <span class="factory-mm-el is-premium"><code id="mmTo"><oj-bind-text value="[[data().premium]]"></oj-bind-text></code><small>Premium component<oj-bind-if test="[[packVersion()]]"> <span class="fx-badge fx-badge--primary" id="mmPackVersion"><oj-bind-text value="[['Pack ' + packVersion()]]"></oj-bind-text></span></oj-bind-if></small></span>
+      </div>
+      <span class="factory-mm-status"><span :class="[[statusPill().css]]"><oj-bind-text value="[[statusPill().text]]"></oj-bind-text></span><small class="fx-muted"><oj-bind-text value="[[statusDetail]]"></oj-bind-text></small></span>
+      <dl class="factory-mm-nums"><div><dt>Screens</dt><dd><oj-bind-text value="[[data().screens]]"></oj-bind-text></dd></div><div><dt>Modules</dt><dd><oj-bind-text value="[[data().modules.length]]"></oj-bind-text></dd></div>
+        <div><dt>Effort</dt><dd><span :class="[[effortCss]]"><oj-bind-text value="[[data().effort]]"></oj-bind-text></span></dd></div></dl>
+      <span class="factory-mb-spacer"></span>
+      <button type="button" class="factory-mb-btn is-outline is-xs" id="mmBackTop" on-click="[[back]]"><span aria-hidden="true">←</span>In the inventory</button>
+      <span class="factory-mm-pos" role="group" aria-label="Component">
+        <button type="button" class="fx-btn fx-btn--ghost fx-btn--icon fx-btn--sm" id="mmPrev" aria-label="Previous component" on-click="[[previous]]" :disabled="[[!hasPrevious()]]">‹</button>
+        <span id="mmPosition"><oj-bind-text value="[[positionText]]"></oj-bind-text></span>
+        <button type="button" class="fx-btn fx-btn--ghost fx-btn--icon fx-btn--sm" id="mmNext" aria-label="Next component" on-click="[[next]]" :disabled="[[!hasNext()]]">›</button>
+      </span>
+    </section>
+
+    <div class="factory-mb-mapgrid">
+      <div class="factory-mb-mapsides">
+          <div class="factory-mm-sides">
+            <oj-bind-for-each data="[[sides]]" as="side">
+              <template>
+                <div :class="[['factory-mm-side is-' + side.data.key]]">
+                  <div class="factory-mm-side-head"><strong><oj-bind-text value="[[side.data.title]]"></oj-bind-text></strong><span class="fx-badge fx-badge--neutral"><oj-bind-text value="[[side.data.badge]]"></oj-bind-text></span></div>
+                  <oj-bind-if test="[[side.data.key === 'premium' && useReal()]]">
+                    <div :class="[[previewCss() + ' ' + premiumCss()]]">
+                      <oj-bind-if test="[[kind() === 'field']]"><bx-text-field label-hint="[[label]]" value="{{pvValue}}" required="true" disabled="[[disabled]]" messages-custom="[[pvMessages]]" help.instruction="[[hint]]"></bx-text-field></oj-bind-if>
+                      <oj-bind-if test="[[kind() === 'date']]"><bx-date label-hint="[[label]]" value="{{pvDate}}" required="true" disabled="[[disabled]]" messages-custom="[[pvMessages]]"></bx-date></oj-bind-if>
+                      <oj-bind-if test="[[kind() === 'select']]"><bx-select label-hint="[[label]]" options="[[pvOptions]]" value="{{pvChoice}}" required="true" disabled="[[disabled]]" messages-custom="[[pvMessages]]"></bx-select></oj-bind-if>
+                      <oj-bind-if test="[[kind() === 'button']]"><div class="pv-row"><bx-button label="Continue" disabled="[[disabled]]"></bx-button><bx-button label="Cancel" chroming="outlined" disabled="[[disabled]]"></bx-button></div></oj-bind-if>
+                      <oj-bind-if test="[[kind() === 'check']]"><bx-checkbox-group label-hint="[[label]]" options="[[pvCheckOptions]]" value="{{pvChecks}}" disabled="[[disabled]]" messages-custom="[[pvMessages]]"></bx-checkbox-group></oj-bind-if>
+                      <oj-bind-if test="[[kind() === 'radio']]"><bx-choice-group label-hint="[[label]]" options="[[pvOptions]]" value="{{pvChoice}}" disabled="[[disabled]]" messages-custom="[[pvMessages]]"></bx-choice-group></oj-bind-if>
+                      <oj-bind-if test="[[kind() === 'tabs']]"><bx-tabs label="Accounts" options="[[pvTabs]]" selection="{{pvTab}}"></bx-tabs></oj-bind-if>
+                      <oj-bind-if test="[[kind() === 'table']]"><bx-data-grid caption="Recent transactions" data="[[pvRows]]" columns="[[pvColumns]]" key-attributes="id"></bx-data-grid></oj-bind-if>
+                      <oj-bind-if test="[[kind() === 'dialog']]"><bx-card heading="[[label]]" subheading="Transfer 1,240.00 to A. Sharma?"><div slot="actions"><bx-button label="Cancel" chroming="outlined"></bx-button><bx-button label="Confirm"></bx-button></div></bx-card></oj-bind-if>
+                    </div>
+                  </oj-bind-if>
+                  <oj-bind-if test="[[side.data.key === 'jet' || !useReal()]]">
+                  <div :class="[[previewCss]]" aria-hidden="true">
+                    <oj-bind-if test="[[kind() === 'field' || kind() === 'date' || kind() === 'select']]">
+                      <div class="pv-field"><span class="pv-label"><oj-bind-text value="[[label]]"></oj-bind-text> *</span>
+                        <span class="pv-box"><span class="pv-value"><oj-bind-text value="[[kind() === 'date' ? '12 Nov 2026' : kind() === 'select' ? 'Savings •••• 4521' : 'Enter beneficiary name']]"></oj-bind-text></span>
+                          <oj-bind-if test="[[kind() !== 'field']]"><span class="pv-end"><oj-bind-text value="[[kind() === 'date' ? '▦' : '⌄']]"></oj-bind-text></span></oj-bind-if></span>
+                        <span class="pv-hint"><oj-bind-text value="[[hint]]"></oj-bind-text></span></div>
+                    </oj-bind-if>
+                    <oj-bind-if test="[[kind() === 'button']]"><div class="pv-row"><span class="pv-btn is-primary">Continue</span><span class="pv-btn">Cancel</span></div></oj-bind-if>
+                    <oj-bind-if test="[[kind() === 'segmented']]"><div class="pv-seg"><span class="is-on">Once</span><span>Weekly</span><span>Monthly</span></div></oj-bind-if>
+                    <oj-bind-if test="[[kind() === 'check' || kind() === 'radio']]">
+                      <div class="pv-field"><span class="pv-label"><oj-bind-text value="[[label]]"></oj-bind-text></span>
+                        <span :class="[['pv-opt is-on ' + (kind() === 'radio' ? 'is-radio' : '')]]"><i></i><oj-bind-text value="[[kind() === 'radio' ? 'Within the bank' : 'Email']]"></oj-bind-text></span>
+                        <span :class="[['pv-opt ' + (kind() === 'radio' ? 'is-radio' : '')]]"><i></i><oj-bind-text value="[[kind() === 'radio' ? 'Another bank' : 'SMS']]"></oj-bind-text></span></div>
+                    </oj-bind-if>
+                    <oj-bind-if test="[[kind() === 'switch']]"><div class="pv-row"><span class="pv-switch is-on"><i></i></span><span class="pv-label"><oj-bind-text value="[[label]]"></oj-bind-text></span></div></oj-bind-if>
+                    <oj-bind-if test="[[kind() === 'tabs']]"><div class="pv-tabs"><span class="is-on">Current</span><span>Savings</span><span>Deposits</span></div></oj-bind-if>
+                    <oj-bind-if test="[[kind() === 'train']]"><div class="pv-train"><span class="is-done">1</span><i></i><span class="is-on">2</span><i></i><span>3</span><i></i><span>4</span></div></oj-bind-if>
+                    <oj-bind-if test="[[kind() === 'table']]"><div class="pv-table"><span class="pv-th">Date</span><span class="pv-th">Description</span><span class="pv-th pv-num">Amount</span>
+                      <span>12 Nov</span><span>Electricity bill</span><span class="pv-num">-1,240.00</span><span>11 Nov</span><span>Salary</span><span class="pv-num">85,000.00</span><span>09 Nov</span><span>Card payment</span><span class="pv-num">-3,499.00</span></div></oj-bind-if>
+                    <oj-bind-if test="[[kind() === 'dialog']]"><div class="pv-dialog"><strong><oj-bind-text value="[[label]]"></oj-bind-text></strong><span>Transfer 1,240.00 to A. Sharma?</span><div class="pv-row"><span class="pv-btn">Cancel</span><span class="pv-btn is-primary">Confirm</span></div></div></oj-bind-if>
+                    <oj-bind-if test="[[kind() === 'progress']]"><div class="pv-field"><span class="pv-label"><oj-bind-text value="[[label]]"></oj-bind-text></span><span class="pv-bar"><i></i></span><span class="pv-hint">62% used</span></div></oj-bind-if>
+                    <oj-bind-if test="[[kind() === 'generic']]"><div class="pv-generic"><code><oj-bind-text value="[[side.data.key === 'jet' ? data().element : data().premium]]"></oj-bind-text></code></div></oj-bind-if>
+                  </div>
+                  </oj-bind-if>
+                </div>
+              </template>
+            </oj-bind-for-each>
+          </div>
+      </div>
+      <aside class="factory-mb-maptouch">
+        <section class="factory-mb-card factory-mb-sidecard" aria-labelledby="mmTouchTitle">
+          <h2 class="fx-card-title" id="mmTouchTitle">What it touches</h2>
+          <ul class="factory-mm-impact"><oj-bind-for-each data="[[impact]]" as="i"><template><li><strong><oj-bind-text value="[[i.data.n]]"></oj-bind-text></strong>
+            <span><oj-bind-text value="[[i.data.k]]"></oj-bind-text><small class="fx-muted"><oj-bind-text value="[[i.data.sub]]"></oj-bind-text></small></span>
+            <oj-bind-if test="[[i.data.link]]"><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[i.data.open]]" aria-controls="mmWhere">View</button></oj-bind-if></li></template></oj-bind-for-each></ul>
+        </section>
+      </aside>
+      <div class="factory-mb-mapbar">
+      <div class="factory-mm-previewbar">
+        <h2 class="fx-visually-hidden" id="mmPreviewTitle">Preview</h2>
+        <fx-segmented id="mmDevice" label="Screen size" options="[[deviceOptions]]" value="{{device}}"></fx-segmented>
+        <fx-segmented id="mmState" label="State" options="[[stateOptions]]" value="{{state}}"></fx-segmented>
+        <span class="factory-mm-codeswitch"><fx-switch id="mmShowCode" label="Show code" value="{{showCode}}"></fx-switch></span>
+      </div>
+      </div>
+      <div class="factory-mb-mapmain">
+      <oj-bind-if test="[[showCode()]]">
+        <section class="fx-card factory-mm-details" aria-label="Code" id="mmCodeCard">
+          <div class="factory-mm-code">
+            <div><div class="factory-mm-side-head"><strong>Oracle JET</strong><span class="fx-muted factory-mo-mono"><oj-bind-text value="[[codeFrom]]"></oj-bind-text></span></div><pre class="factory-code factory-code-light"><oj-bind-text value="[[codeJet]]"></oj-bind-text></pre></div>
+            <div><div class="factory-mm-side-head"><strong>Premium</strong></div><pre class="factory-code factory-code-light"><oj-bind-text value="[[codePremium]]"></oj-bind-text></pre></div>
+          </div>
+        </section>
+      </oj-bind-if>
+      <oj-bind-if test="[[!showCode()]]">
+      <section class="fx-card factory-mm-details" aria-label="Mapping details">
+        <div class="factory-tabbar fx-tabs" role="tablist" aria-label="Mapping" on-keydown="[[tabKey]]">
+          <oj-bind-for-each data="[[tabs]]" as="t"><template><button type="button" role="tab" :id="[['mmTab-' + t.data.value]]" :class="[[t.data.css]]" :aria-selected="[[t.data.selected() ? 'true' : 'false']]" :tabindex="[[t.data.selected() ? '0' : '-1']]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.text]]"></oj-bind-text></button></template></oj-bind-for-each>
+        </div>
+        <div role="tabpanel" :aria-labelledby="[['mmTab-' + tab()]]" class="factory-mm-panel">
+          <oj-bind-if test="[[tab() === 'props']]">
+            <div class="fx-table-wrap"><table class="fx-table" id="mmProps"><thead><tr><th scope="col">JET property</th><th scope="col">Premium property</th><th scope="col">Mapping</th><th scope="col">Result</th><th scope="col">Notes</th></tr></thead>
+              <tbody><oj-bind-for-each data="[[props]]" as="p"><template><tr><th scope="row" class="factory-mc-el"><oj-bind-text value="[[p.data.from]]"></oj-bind-text></th><td class="factory-mc-el"><oj-bind-text value="[[p.data.to]]"></oj-bind-text></td>
+                <td><span :class="[[p.data.css]]"><oj-bind-text value="[[p.data.kind]]"></oj-bind-text></span></td><td :class="[[p.data.resultCss]]"><oj-bind-text value="[[p.data.result]]"></oj-bind-text></td><td class="fx-muted"><oj-bind-text value="[[p.data.note]]"></oj-bind-text></td></tr></template></oj-bind-for-each></tbody></table></div>
+            <oj-bind-if test="[[props().length === 0]]"><p class="fx-muted">No properties are listed for this element.</p></oj-bind-if>
+            <ul class="factory-mm-legend"><oj-bind-for-each data="[[legend]]" as="l"><template><li><i :style="[[l.data.style]]" aria-hidden="true"></i><oj-bind-text value="[[l.data.label]]"></oj-bind-text> <strong><oj-bind-text value="[[l.data.n]]"></oj-bind-text></strong></li></template></oj-bind-for-each></ul>
+          </oj-bind-if>
+          <oj-bind-if test="[[tab() === 'events']]">
+            <div class="fx-table-wrap"><table class="fx-table"><thead><tr><th scope="col">JET event</th><th scope="col">Premium event</th><th scope="col">Mapping</th></tr></thead>
+              <tbody><oj-bind-for-each data="[[events]]" as="p"><template><tr><th scope="row" class="factory-mc-el"><oj-bind-text value="[[p.data.from]]"></oj-bind-text></th><td class="factory-mc-el"><oj-bind-text value="[[p.data.to]]"></oj-bind-text></td><td><span :class="[[p.data.css]]"><oj-bind-text value="[[p.data.kind]]"></oj-bind-text></span></td></tr></template></oj-bind-for-each></tbody></table></div>
+            <p><strong>Bindings.</strong> <oj-bind-text value="[[data().binding || 'Kept as they are.']]"></oj-bind-text></p>
+            <p><strong>Slots.</strong> <span class="factory-mc-el"><oj-bind-text value="[[slots]]"></oj-bind-text></span></p>
+          </oj-bind-if>
+          <oj-bind-if test="[[tab() === 'a11y']]">
+            <p><oj-bind-text value="[[data().accessibility || 'Keyboard and screen reader behaviour as the JET element.']]"></oj-bind-text></p>
+            <p class="fx-muted"><oj-bind-text value="[[data().styling || '']]"></oj-bind-text></p>
+          </oj-bind-if>
+          <oj-bind-if test="[[tab() === 'screens']]">
+            <oj-bind-for-each data="[[moduleList]]" as="m"><template>
+              <h3 class="factory-mm-module"><oj-bind-text value="[[m.data.module]]"></oj-bind-text> <span class="fx-muted"><oj-bind-text value="[[m.data.count + ' screens, ' + m.data.uses + ' uses']]"></oj-bind-text></span></h3>
+              <ul class="factory-mm-screens"><oj-bind-for-each data="[[m.data.screens]]" as="s"><template><li><oj-bind-text value="[[s.data.name]]"></oj-bind-text> <span class="fx-muted factory-mo-mono"><oj-bind-text value="[[s.data.id]]"></oj-bind-text></span> <span class="fx-badge fx-badge--neutral"><oj-bind-text value="[[s.data.uses]]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+            </template></oj-bind-for-each>
+          </oj-bind-if>
+          <oj-bind-if test="[[tab() === 'code']]">
+            <div class="factory-mm-code">
+              <div><div class="factory-mm-side-head"><strong>Oracle JET</strong><span class="fx-muted factory-mo-mono"><oj-bind-text value="[[codeFrom]]"></oj-bind-text></span></div><pre class="factory-code factory-code-light"><oj-bind-text value="[[codeJet]]"></oj-bind-text></pre></div>
+              <div><div class="factory-mm-side-head"><strong>Premium</strong></div><pre class="factory-code factory-code-light"><oj-bind-text value="[[codePremium]]"></oj-bind-text></pre></div>
+            </div>
+          </oj-bind-if>
+          <oj-bind-if test="[[manual().length > 0]]"><div class="fx-alert fx-alert--warning factory-mm-manual" role="note"><span class="factory-nav-icon factory-ico-alert" aria-hidden="true"></span><span class="fx-alert-text"><strong>A person finishes:</strong>
+            <oj-bind-for-each data="[[manual]]" as="x"><template> <oj-bind-text value="[[x.data]]"></oj-bind-text></template></oj-bind-for-each></span></div></oj-bind-if>
+          <p class="fx-help"><oj-bind-text value="[[(data().evidence || '') + (data().confidence ? ' Confidence: ' + data().confidence + '.' : '')]]"></oj-bind-text></p>
+        </div>
+      </section>
+      </oj-bind-if>
+
+      </div>
+      <aside class="factory-mb-mapchecks">
+        <section class="factory-mb-card factory-mb-sidecard" aria-labelledby="mmChecksTitle">
+          <div class="factory-mv-cardhead"><h2 class="fx-card-title" id="mmChecksTitle">What the checks found</h2>
+            <oj-bind-if test="[[allPassed()]]"><span class="fx-badge fx-badge--success" id="mmAllPassed">All passed</span></oj-bind-if></div>
+          <ul class="factory-mp-points"><oj-bind-for-each data="[[checks]]" as="c"><template><li><span class="factory-nav-icon factory-ico-check" aria-hidden="true"></span><oj-bind-text value="[[c.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+          <button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[viewAllChecks]]">View all</button>
+        </section>
+      </aside>
+    </div>
+
+
+    <footer class="factory-mb-footer">
+      <button type="button" class="factory-mb-btn is-plain" id="mmBack" on-click="[[back]]"><span aria-hidden="true">←</span>Inventory</button>
+      <span class="factory-mb-spacer"></span>
+      <div class="factory-mb-footer-end">
+        <fx-menu-button id="mmMore" variant="secondary" label="More ⋯" align="end" items="[[moreItems]]" on-fx-action="[[moreAction]]"></fx-menu-button>
+        <button type="button" class="factory-mb-btn is-primary" id="mmAddToPlan" on-click="[[addToPlan]]" :disabled="[[!canManage()]]">Add to the upgrade plan<span aria-hidden="true">→</span></button>
+      </div>
+    </footer>
+
+    <fx-sheet id="mmWhere" open="{{panelOpen}}" heading="[['Where ' + data().element + ' is used']]" subtitle="Journeys, screens by module and test files">
+      <div class="factory-cf-detail-wrap">
+        <p class="fx-muted"><oj-bind-text value="[[data().screens + ' screens in ' + data().modules.length + ' modules, and ' + journeys().length + ' customer journeys.']]"></oj-bind-text></p>
+        <h3 class="factory-mm-module">Journeys</h3>
+        <oj-bind-if test="[[journeys().length === 0]]"><p class="fx-muted">No flow through these screens was found.</p></oj-bind-if>
+        <ul class="factory-mm-screens"><oj-bind-for-each data="[[journeys]]" as="j"><template><li><oj-bind-text value="[[j.data.name]]"></oj-bind-text> <span class="fx-muted"><oj-bind-text value="[[j.data.screens + ' screens']]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+        <h3 class="factory-mm-module">Screens by module</h3>
+        <ul class="factory-mm-screens"><oj-bind-for-each data="[[moduleList]]" as="m"><template><li><oj-bind-text value="[[m.data.module]]"></oj-bind-text> <span class="fx-muted"><oj-bind-text value="[[m.data.count + ' screens']]"></oj-bind-text></span></li></template></oj-bind-for-each></ul>
+        <h3 class="factory-mm-module">Test files that use it</h3>
+        <oj-bind-if test="[[tests().length === 0]]"><p class="fx-muted">No test file mentions it.</p></oj-bind-if>
+        <ul class="factory-mm-screens"><oj-bind-for-each data="[[testsList]]" as="t"><template><li class="factory-mo-mono"><oj-bind-text value="[[t.data]]"></oj-bind-text></li></template></oj-bind-for-each></ul>
+        <oj-bind-if test="[[testsMore() && !allTests()]]"><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[showAllTests]]"><oj-bind-text value="[[testsMore]]"></oj-bind-text></button></oj-bind-if>
+        <div class="factory-mm-sheetfoot"><button type="button" class="fx-btn fx-btn--secondary" on-click="[[exportList]]">Export the list</button><button type="button" class="fx-btn fx-btn--primary" on-click="[[closePanel]]">Close</button></div>
+      </div>
+    </fx-sheet>
+  </oj-bind-if>
+</div>

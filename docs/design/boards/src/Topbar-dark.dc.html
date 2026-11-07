@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Factory top bar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<header role="banner" style="width:{{barW}};height:56px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 20px;background:{{bar}};border-bottom:1px solid {{line}};font-family:Inter,'Segoe UI',system-ui,sans-serif;font-size:13px;color:{{ink}}">
+  <span style="color:#64748b;font-size:12px">Workspace</span>
+  <button type="button" aria-label="Workspace: bank-b-25" style="height:34px;min-width:210px;padding:0 10px;border-radius:8px;border:1px solid {{line2}};background:{{field}};color:{{ink2}};font:inherit;display:flex;align-items:center;gap:8px;cursor:pointer">bank-b-25 · OBDX 25.1<span style="margin-left:auto;color:#64748b" aria-hidden="true">⌄</span></button>
+  <button type="button" aria-label="Search pages, actions, requirements, changes and code (Ctrl K)" style="flex:1;max-width:420px;height:34px;padding:0 12px;border-radius:8px;border:1px solid {{line}};background:{{field2}};color:{{muted}};font:inherit;display:flex;align-items:center;gap:8px;cursor:pointer"><span aria-hidden="true">⌕</span>Search or jump to…<span style="margin-left:auto;font-size:11px;border:1px solid #cbd5e1;border-radius:5px;padding:1px 6px">Ctrl K</span></button>
+  <span style="margin-left:auto;display:flex;align-items:center;gap:6px">
+    <button type="button" aria-label="Switch to dark theme" style="width:34px;height:34px;border-radius:8px;border:0;background:transparent;color:{{ink}};cursor:pointer;font-size:15px">◐</button>
+    <a href="#" aria-label="2 things need your attention" style="position:relative;width:34px;height:34px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:{{ink}};text-decoration:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"></path></svg><span style="position:absolute;top:4px;right:4px;min-width:15px;height:15px;border-radius:999px;background:#ef4444;color:#ffffff;font-size:9.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">2</span></a>
+    <a href="#" aria-label="Help" style="width:34px;height:34px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:{{ink}};text-decoration:none;font-weight:700">?</a>
+    <button type="button" aria-label="Account menu" style="height:34px;padding:0 8px 0 4px;border-radius:999px;border:0;background:transparent;display:flex;align-items:center;gap:6px;cursor:pointer;font:inherit;color:{{ink2}}"><span style="width:28px;height:28px;border-radius:50%;background:#4f46e5;color:#ffffff;font-weight:700;font-size:11.5px;display:inline-flex;align-items:center;justify-content:center">AB</span>⌄</button>
+  </span>
+</header>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"fluid":{"editor":"boolean","default":false},"$preview":{"width":1196,"height":56}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const d = !!this.props.dark;
+    return { barW: this.props.fluid ? '100%' : '1196px', bar: d ? 'rgba(17,24,39,.94)' : 'rgba(255,255,255,.94)', line: d ? '#263247' : '#e5e7eb', line2: d ? '#3b4a63' : '#cbd5e1', field: d ? '#111827' : '#ffffff', field2: d ? '#162032' : '#f8fafc', ink: d ? '#cbd5e1' : '#334155', ink2: d ? '#e5e7eb' : '#0f172a', muted: d ? '#94a3b8' : '#64748b' };
+  }
+}
+</script>
+</body>
+</html>

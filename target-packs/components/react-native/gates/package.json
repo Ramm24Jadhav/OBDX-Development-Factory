@@ -1,0 +1,21 @@
+{
+  "name": "obdx-react-native-gates",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Screenshots, themes and accessibility of the React Native pack in a browser (react-native-web), in Chromium.",
+  "scripts": {
+    "gallery": "vite --port 5184",
+    "gates": "playwright test",
+    "gates:update": "playwright test --update-snapshots"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@vitejs/plugin-react": "^6.1.2",
+    "axe-core": "^4.14.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-native-web": "^0.21.2",
+    "vite": "^8.3.5"
+  }
+}

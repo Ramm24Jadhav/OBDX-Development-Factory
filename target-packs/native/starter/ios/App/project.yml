@@ -1,0 +1,57 @@
+# XcodeGen spec of the iOS app (https://github.com/yonaskolb/XcodeGen): `cd ios/App && xcodegen generate` writes
+# ObdxMobile.xcodeproj and Info.plist next to this file; neither is checked in, change this file instead.
+# The app's code and tests are the Swift package at the app folder's root (Package.swift).
+name: ObdxMobile
+options:
+  bundleIdPrefix: com.bank.obdx
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  ObdxApp:
+    path: ../..
+targets:
+  ObdxMobile:
+    type: application
+    platform: iOS
+    sources:
+      - path: ObdxApp.swift
+    dependencies:
+      - package: ObdxApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.bank.obdx
+        MARKETING_VERSION: 0.1.0
+        CURRENT_PROJECT_VERSION: 1
+        SWIFT_VERSION: "6.0"
+        # The bank's OBDX address (https), per configuration
+        OBDX_BASE_URL: https://obdx.bank.local
+        # Certificate pinning (Api/CertificatePins.swift, see the README): sha256/... pins of the bank's server keys,
+        # comma separated, the current one and the next one; the day (yyyy-mm-dd) after which they are not enforced.
+        # Empty pins turn pinning off: set them for every build that talks to a real bank.
+        OBDX_PINS: ""
+        OBDX_PINS_EXPIRE: ""
+        # YES builds a Release without pins on purpose (a test server); otherwise a Release with empty pins fails
+        OBDX_ALLOW_NO_PINS: "NO"
+    preBuildScripts:
+      - name: Certificate pins for release
+        basedOnDependencyAnalysis: false
+        script: |
+          if [ "$CONFIGURATION" = "Release" ] && [ -z "$OBDX_PINS" ] && [ "$OBDX_ALLOW_NO_PINS" != "YES" ]; then
+            echo "error: A release build needs the bank's certificate pins. Set OBDX_PINS and OBDX_PINS_EXPIRE in ios/App/project.yml (see the README), or OBDX_ALLOW_NO_PINS: YES to build a release without pinning on purpose."
+            exit 1
+          fi
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: Online banking
+        UILaunchScreen: {}
+        ObdxBaseUrl: $(OBDX_BASE_URL)
+        ObdxPins: $(OBDX_PINS)
+        ObdxPinsExpire: $(OBDX_PINS_EXPIRE)
+schemes:
+  ObdxMobile:
+    build:
+      targets:
+        ObdxMobile: all
+    run:
+      config: Debug

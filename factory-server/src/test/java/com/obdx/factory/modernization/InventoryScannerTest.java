@@ -198,6 +198,33 @@ class InventoryScannerTest {
         assertThat(inventory.summary().screens()).isEqualTo(7);
         assertThat(inventory.summary().callsWithoutBackend()).isZero();
         assertThat(inventory.modules()).extracting(Inventory.Module::name, Inventory.Module::screens).contains(tuple("payments", 3));
+
+        // Each JET element in a view is counted (not the one in a comment), and summed per module and in all
+        Inventory.Screen funds = inventory.screens().stream().filter(s -> s.name().equals("Transfer funds")).findFirst().orElseThrow();
+        assertThat(funds.elements()).containsEntry("oj-button", 2).containsEntry("oj-input-text", 1).containsEntry("oj-select-single", 1)
+                .containsEntry("oj-input-number", 1).containsEntry("oj-switch", 1);
+        assertThat(funds.markers()).isEmpty();
+        assertThat(inventory.modules().stream().filter(m -> m.name().equals("payments")).findFirst().orElseThrow().elements())
+                .containsEntry("oj-button", funds.elements().get("oj-button") + inventory.screens().stream()
+                        .filter(s -> s.module().equals("payments") && !s.name().equals("Transfer funds"))
+                        .mapToInt(s -> s.elements().getOrDefault("oj-button", 0)).sum());
+        assertThat(inventory.summary().components()).isEqualTo(inventory.screens().stream().mapToInt(s -> s.elements().values().stream().mapToInt(Integer::intValue).sum()).sum());
+        assertThat(inventory.elementTests()).isNotNull();
+    }
+
+    @Test
+    void countsJetElementsAndWhatMakesThemHarder() {
+        String view = """
+                <oj-bind-if test="[[ready]]">
+                  <oj-table data="[[rows]]" style="height:200px" row-renderer="[[render]]">
+                    <template slot="cellTemplate"><oj-bind-text value="[[$current.data]]"></oj-bind-text></template>
+                  </oj-table>
+                  <oj-input-text value="{{name}}"></oj-input-text>
+                </oj-bind-if>
+                <!-- <oj-chart></oj-chart> -->
+                """;
+        assertThat(InventoryScanner.elements(view)).containsExactly(Map.entry("oj-input-text", 1), Map.entry("oj-table", 1));
+        assertThat(InventoryScanner.markers(view)).containsEntry("inline-style", 1).containsEntry("renderer", 1).containsEntry("template", 1);
     }
 
     @Test

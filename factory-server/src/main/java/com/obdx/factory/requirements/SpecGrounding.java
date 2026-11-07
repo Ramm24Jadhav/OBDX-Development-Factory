@@ -1,0 +1,166 @@
+package com.obdx.factory.requirements;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeSet;
+
+/**
+ * Keeps a drafted spec to what the document says, without a model: APIs the document never names are dropped (a BRD
+ * that prescribes no API gets none invented), screens with the same words in another order are one screen ("Review
+ * Transfer" and "Transfer Review"), and a screen a functional requirement needs is added when the document names it
+ * ("Transfer History"), so every requirement has a screen to design.
+ */
+final class SpecGrounding {
+
+    private SpecGrounding() {
+    }
+
+    static RequirementSpec apply(RequirementSpec spec, String documentText) {
+        return apply(spec, documentText, true);
+    }
+
+    /**
+     * @param addNamedApis add the APIs the document names that the spec lacks: when drafting, not when updating with
+     *                     answers (an API the analyst removed must not come back)
+     */
+    static RequirementSpec apply(RequirementSpec spec, String documentText, boolean addNamedApis) {
+        String doc = words(documentText == null ? "" : documentText);
+        if (doc.isBlank()) {
+            return spec;
+        }
+        // APIs: only those the document names (the analyst's decisions count as the document)
+        StringBuilder decided = new StringBuilder(doc);
+        spec.decisions().forEach(d -> decided.append(' ').append(words(d.answer())));
+        String known = decided.toString();
+        List<RequirementSpec.Api> apis = new ArrayList<>(spec.apis().stream().filter(a -> known.contains(words(a.name())) || pathNamed(a, known))
+                .toList());
+        // And every "METHOD /path" the document names that the draft left out (a model drops some)
+        java.util.Set<String> have = new java.util.HashSet<>();
+        apis.forEach(a -> have.add(SpecMerger.normalize(SpecMerger.apiKey(a))));
+        for (RequirementSpec.Api named : addNamedApis ? namedApis(documentText) : List.<RequirementSpec.Api>of()) {
+            if (have.add(SpecMerger.normalize(SpecMerger.apiKey(named)))) {
+                apis.add(named);
+            }
+        }
+
+        // Screens: one per set of words, the first name kept, their fields and actions together
+        Map<String, RequirementSpec.Screen> screens = new LinkedHashMap<>();
+        for (RequirementSpec.Screen s : spec.screens()) {
+            screens.merge(screenKey(s.name()), s, SpecMerger::mergeScreens);
+        }
+        // A screen a requirement needs and the document names, which the draft left out. Only for a requirement the draft
+        // gave no screen at all: one that has its screen merely mentions others it passes through (an existing "Review
+        // Transfer" in a change to the initiate screen), which are not designed again
+        for (RequirementSpec.FunctionalRequirement r : spec.requirements()) {
+            if (r.screens().stream().anyMatch(n -> screens.containsKey(screenKey(n)))) {
+                continue;
+            }
+            for (String name : r.screens()) {
+                String key = screenKey(name);
+                if (!key.isEmpty() && !screens.containsKey(key) && doc.contains(words(name))) {
+                    screens.put(key, new RequirementSpec.Screen(name, "unknown", r.description() != null ? r.description() : r.title(),
+                            r.id(), List.of(), List.of(), List.of()));
+                }
+            }
+        }
+        // Requirements name the screens as the spec does
+        Map<String, String> names = new LinkedHashMap<>();
+        screens.forEach((key, s) -> names.put(key, s.name()));
+        List<RequirementSpec.FunctionalRequirement> requirements = spec.requirements().stream()
+                .map(r -> new RequirementSpec.FunctionalRequirement(r.id(), r.title(), r.description(), r.priority(),
+                        r.screens().stream().map(n -> names.getOrDefault(screenKey(n), n)).distinct().toList()))
+                .toList();
+        if (apis.equals(spec.apis()) && screens.size() == spec.screens().size() && requirements.equals(spec.requirements())) {
+            return spec;
+        }
+        return new RequirementSpec(spec.title(), spec.summary(), new ArrayList<>(screens.values()), spec.businessRules(), spec.roles(), apis,
+                spec.hostInteractions(), spec.messages(), spec.openQuestions(), spec.decisions(), spec.scope(), spec.outOfScope(),
+                spec.assumptions(), requirements, spec.acceptanceCriteria(), spec.nonFunctional());
+    }
+
+    private static final java.util.regex.Pattern PATH = java.util.regex.Pattern.compile("(?<![\\w/])/[\\w{}.-]+(?:/[\\w{}.-]+)*");
+    private static final java.util.regex.Pattern METHOD = java.util.regex.Pattern.compile("(?i)\\b(GET|POST|PUT|PATCH|DELETE)\\b");
+
+    /**
+     * Whether the document names an API by its method and path, though not as one piece of text: "POST, GET, GET
+     * /{instructionId}, DELETE on /payments/standingInstructions" names GET /payments/standingInstructions/{instructionId}.
+     * Every fixed segment of the path, and the method, must be words of the document.
+     */
+    static boolean pathNamed(RequirementSpec.Api api, String known) {
+        String text = (api.name() == null ? "" : api.name()) + " " + (api.description() == null ? "" : api.description());
+        // An API name is short; a long text is cut so that the repeated path group cannot overflow the stack
+        java.util.regex.Matcher path = PATH.matcher(text.length() > 300 ? text.substring(0, 300) : text);
+        if (!path.find()) {
+            return false;
+        }
+        List<String> fixed = new ArrayList<>();
+        for (String segment : path.group().split("/")) {
+            if (!segment.isEmpty() && !segment.startsWith("{") && !segment.matches("v\\d+")) {
+                fixed.add(words(segment));
+            }
+        }
+        if (fixed.isEmpty() || !fixed.stream().allMatch(known::contains)) {
+            return false;
+        }
+        java.util.regex.Matcher method = METHOD.matcher(api.method() == null ? text : api.method());
+        return !method.find() || known.contains(" " + method.group(1).toLowerCase(Locale.ROOT) + " ");
+    }
+
+    private static final java.util.regex.Pattern NAMED_API = java.util.regex.Pattern.compile(
+            "\\b(GET|POST|PUT|PATCH|DELETE)\\s+(/[A-Za-z][\\w{}.-]*(?:/[\\w{}.-]+){0,12})");
+    private static final java.util.regex.Pattern REQUIREMENT_ID = java.util.regex.Pattern.compile("\\b((?:FR|REQ|NFR|BR)-\\d{1,4})\\b");
+
+    /** The most APIs read from a document (each is checked against every planned file). */
+    static final int MAX_NAMED_APIS = 100;
+
+    /**
+     * The APIs the document names as "METHOD /path" ("POST /payments/beneficiaries/validation" in FR-001), each with the
+     * requirement ID of its line (or the last one before it) in its description; at most {@link #MAX_NAMED_APIS}.
+     */
+    static List<RequirementSpec.Api> namedApis(String documentText) {
+        List<RequirementSpec.Api> apis = new ArrayList<>();
+        String requirement = null;
+        boolean skipped = false;
+        for (String line : (documentText == null ? "" : documentText).split("\n")) {
+            String part = line.length() > 2000 ? line.substring(0, 2000) : line;
+            String lower = part.toLowerCase(Locale.ROOT);
+            if (part.startsWith("#")) {
+                // What is out of scope, assumed or only an example names no API of this change
+                skipped = lower.matches(".*\\b(out of scope|not in scope|exclusions?|assumptions?|examples?|appendix)\\b.*");
+                continue;
+            }
+            if (skipped || lower.matches(".*(\\be\\.g\\.|\\bfor example\\b|\\bexisting\\b|\\bout of scope\\b|\\bnot in scope\\b).*")) {
+                continue;
+            }
+            java.util.regex.Matcher id = REQUIREMENT_ID.matcher(part);
+            if (id.find()) {
+                requirement = id.group(1);
+            }
+            java.util.regex.Matcher m = NAMED_API.matcher(part);
+            while (m.find() && apis.size() < MAX_NAMED_APIS) {
+                String path = m.group(2).replaceAll("[.,;:]+$", "");
+                apis.add(new RequirementSpec.Api(m.group(1) + " " + path, m.group(1),
+                        "Named in the document" + (requirement == null ? "" : " (" + requirement + ")")));
+            }
+        }
+        return apis;
+    }
+
+    /** "Transfer Review screen" and "Review Transfer" are the same screen. */
+    static String screenKey(String name) {
+        TreeSet<String> words = new TreeSet<>();
+        for (String w : (name == null ? "" : name).toLowerCase(Locale.ROOT).split("[^a-z0-9]+")) {
+            if (!w.isEmpty() && !w.equals("screen") && !w.equals("page")) {
+                words.add(w);
+            }
+        }
+        return String.join(" ", words);
+    }
+
+    private static String words(String text) {
+        return " " + (text == null ? "" : text).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", " ").strip() + " ";
+    }
+}

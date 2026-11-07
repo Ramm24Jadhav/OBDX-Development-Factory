@@ -123,7 +123,7 @@ public final class InventoryScanner {
             files.addAll(f.code);
             files.addAll(f.resources);
             screens.add(new Inventory.Screen(f.id, humanize(f.base), f.module, f.kind, files, lines, fields, actions, callList,
-                    List.copyOf(opens), score, score < 12 ? "S" : score < 30 ? "M" : "L"));
+                    List.copyOf(opens), score, score < 12 ? "S" : score < 30 ? "M" : "L", elements(view), markers(view)));
         }
         if (screens.isEmpty()) {
             notes.add("No Oracle JET screens were found (views with view models, component folders, composite or VDOM components).");
@@ -176,19 +176,97 @@ public final class InventoryScanner {
         Map<String, List<Inventory.Screen>> byModule = new TreeMap<>();
         screens.forEach(s -> byModule.computeIfAbsent(s.module(), k -> new ArrayList<>()).add(s));
         List<Inventory.Module> modules = byModule.entrySet().stream().map(e -> new Inventory.Module(e.getKey(), e.getValue().size(),
-                e.getValue().stream().mapToInt(s -> s.fields().size()).sum(), complexity(e.getValue()))).toList();
+                e.getValue().stream().mapToInt(s -> s.fields().size()).sum(), complexity(e.getValue()), totals(e.getValue()))).toList();
         screens.sort(Comparator.comparing(Inventory.Screen::module).thenComparing(Inventory.Screen::name));
         int withoutBackend = (int) serviceCalls.stream().filter(c -> c.endpoint() == null).count();
         if (withoutBackend > 0) {
             notes.add(withoutBackend + " service(s) the UI calls are not in this codebase; they are usually Oracle OBDX product services, "
                     + "which the new app calls as they are.");
         }
+        Map<String, Integer> allElements = totals(screens);
         Inventory.Summary summary = new Inventory.Summary(screens.size(), modules.size(), screens.stream().mapToInt(s -> s.fields().size()).sum(),
-                endpoints.size(), serviceCalls.size(), withoutBackend, roles.size(), flows.size(), complexity(screens));
-        return new Inventory(revision, OffsetDateTime.now(), summary, modules, screens, endpoints, serviceCalls, roles, flows, notes);
+                endpoints.size(), serviceCalls.size(), withoutBackend, roles.size(), flows.size(), complexity(screens),
+                allElements.values().stream().mapToInt(Integer::intValue).sum(), allElements.size());
+        return new Inventory(revision, OffsetDateTime.now(), summary, modules, screens, endpoints, serviceCalls, roles, flows, notes,
+                elementTests(tree, in, allElements.keySet()));
     }
 
     // --- screens ---
+
+    /** Oracle JET elements that are binding or loading helpers, not components a screen shows. */
+    private static final Set<String> NOT_COMPONENTS = Set.of("oj-bind-text", "oj-bind-if", "oj-bind-for-each", "oj-bind-slot",
+            "oj-bind-template-slot", "oj-bind-dom", "oj-module", "oj-defer");
+
+    /** Each oj-* element in a view with how many times it is used, by name. */
+    static Map<String, Integer> elements(String view) {
+        Map<String, Integer> counts = new TreeMap<>();
+        Matcher tag = TAG.matcher(view.replaceAll("(?s)<!--.*?-->", ""));
+        while (tag.find()) {
+            String name = tag.group(1).toLowerCase(Locale.ROOT);
+            if (name.startsWith("oj-") && !NOT_COMPONENTS.contains(name)) {
+                counts.merge(name, 1, Integer::sum);
+            }
+        }
+        return counts;
+    }
+
+    /** For each element used in the screens, the test files (specs and tests) that mention it, at most 50 each. */
+    private static Map<String, List<String>> elementTests(SourceTree tree, Predicate in, Set<String> elements) {
+        Map<String, List<String>> tests = new TreeMap<>();
+        if (elements.isEmpty()) {
+            return tests;
+        }
+        for (String path : tree.paths(p -> isTest(p) && (p.endsWith(".js") || p.endsWith(".ts") || p.endsWith(".html") || p.endsWith(".java")))) {
+            if (!in.test(path)) {
+                continue;
+            }
+            String content = tree.read(path);
+            for (String element : elements) {
+                if (content.contains(element)) {
+                    List<String> files = tests.computeIfAbsent(element, k -> new ArrayList<>());
+                    if (files.size() < 50) {
+                        files.add(path);
+                    }
+                }
+            }
+        }
+        return tests;
+    }
+
+    private static final Pattern STYLE_ATTRIBUTE = Pattern.compile("\\sstyle\\s*=");
+    private static final Pattern RENDERER_ATTRIBUTE = Pattern.compile("\\s[\\w.-]*renderer\\s*=", Pattern.CASE_INSENSITIVE);
+    private static final Pattern TEMPLATE_SLOT = Pattern.compile("<template\\b[^>]*\\bslot\\s*=", Pattern.CASE_INSENSITIVE);
+
+    /** What makes an upgrade of a view's oj-* elements harder: inline styles, renderer functions and template slots. */
+    static Map<String, Integer> markers(String view) {
+        String text = view.replaceAll("(?s)<!--.*?-->", "");
+        Map<String, Integer> out = new TreeMap<>();
+        Matcher tag = TAG.matcher(text);
+        while (tag.find()) {
+            String name = tag.group(1).toLowerCase(Locale.ROOT);
+            if (!name.startsWith("oj-") || NOT_COMPONENTS.contains(name)) {
+                continue;
+            }
+            if (STYLE_ATTRIBUTE.matcher(tag.group(2)).find()) {
+                out.merge("inline-style", 1, Integer::sum);
+            }
+            if (RENDERER_ATTRIBUTE.matcher(tag.group(2)).find()) {
+                out.merge("renderer", 1, Integer::sum);
+            }
+        }
+        int templates = count(TEMPLATE_SLOT, text);
+        if (templates > 0) {
+            out.put("template", templates);
+        }
+        return out;
+    }
+
+    /** The elements of several screens added up. */
+    private static Map<String, Integer> totals(List<Inventory.Screen> screens) {
+        Map<String, Integer> sum = new TreeMap<>();
+        screens.forEach(s -> (s.elements() == null ? Map.<String, Integer>of() : s.elements()).forEach((k, v) -> sum.merge(k, v, Integer::sum)));
+        return sum;
+    }
 
     private interface Predicate {
         boolean test(String path);

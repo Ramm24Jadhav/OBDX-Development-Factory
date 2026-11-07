@@ -8,6 +8,7 @@ A web-based tool that turns requirements (prompts, BRDs, FSDs) into code for a b
 - Target-neutral Screen Models, generated as Oracle JET screens or as screens of a new React Native (iOS/Android) or React web app on the same OBDX services, previewed with that app's own components
 - Built with the OBDX team's own stack: Oracle JET, Java/Spring Boot, PostgreSQL, Maven, Jenkins, SVN
 - Human review of spec, screen design, plan and code; output as an SVN branch or a patch that applies with TortoiseSVN
+- Issue Analyzer: from a bank's error report, logs and screenshots to the likely cause in its own code and configuration, fix steps, and an Oracle SR draft
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the architecture, requirements and roadmap.
 

@@ -1,0 +1,23 @@
+{
+  "target": "react",
+  "packVersion": "0.1.0",
+  "entries": [
+    {
+      "source": "oj-input-number",
+      "target": "amount-input",
+      "status": "property-mapping",
+      "properties": [
+        { "from": "value", "to": "value", "conversion": "number observable to string state; the screen parses it" },
+        { "from": "label-hint", "to": "label" },
+        { "from": "required", "to": "required" },
+        { "from": "converter", "to": "currency", "conversion": "decimals and grouping from the currency code" }
+      ],
+      "events": [{ "from": "on-raw-value-changed", "to": "onChange" }],
+      "binding": "value=\"{{amount}}\" becomes value={form.amount} onChange={set('amount')} with useForm",
+      "unsupported": ["step", "virtual-keyboard"],
+      "manual": ["Custom converters other than currency need a person."],
+      "confidence": "medium",
+      "evidence": "Example only: API compared by hand, no parity test yet, so this is not a confirmed mapping."
+    }
+  ]
+}

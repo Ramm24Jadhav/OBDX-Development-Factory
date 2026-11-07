@@ -1,0 +1,7 @@
+.bx-swipe-row { position: relative; overflow: hidden; border-bottom: var(--bx-bw) solid var(--bx-rule); }
+.bx-swipe-actions { position: absolute; right: 0; top: 0; bottom: 0; display: flex; }
+.bx-swipe-action { min-width: 84px; border: 0; background: var(--bx-surface-3); color: var(--bx-text); font: inherit; font-weight: 650; cursor: pointer; }
+.bx-swipe-action.is-danger { background: var(--bx-danger); color: #fff; }
+.bx-swipe-action:focus-visible { outline: none; box-shadow: inset var(--bx-focus); }
+.bx-swipe-face { position: relative; background: var(--bx-surface); border-top: 0; padding: 8px 12px; transition: transform var(--bx-dur-base) var(--bx-ease-spring); touch-action: pan-y; }
+.bx-swipe-row.is-open .bx-swipe-face, .bx-swipe-row:focus-within .bx-swipe-face { transform: translateX(-168px); }

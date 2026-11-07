@@ -36,6 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {"factory.auth.initial-admin-password=Admin-Password-1", "factory.auth.max-failed-logins=3"})
 @AutoConfigureMockMvc
 @EnabledIfEnvironmentVariable(named = "FACTORY_TEST_DB_URL", matches = ".+")
+@org.junit.jupiter.api.extension.ExtendWith(com.obdx.factory.common.ForgetSecrets.class)
 class SecurityIntegrationTest {
 
     @TempDir
@@ -70,7 +71,8 @@ class SecurityIntegrationTest {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
 
         // Public: sign-in configuration, health and review links. Everything else needs a session.
-        mvc.perform(get("/api/auth/config")).andExpect(status().isOk()).andExpect(jsonPath("$.mode").value("local"));
+        mvc.perform(get("/api/auth/config")).andExpect(status().isOk()).andExpect(jsonPath("$.mode").value("local"))
+                .andExpect(jsonPath("$.version").hasJsonPath()).andExpect(jsonPath("$.environment").doesNotExist());
         mvc.perform(get("/actuator/health")).andExpect(status().isOk());
         mvc.perform(get("/api/review/not-a-token")).andExpect(status().isNotFound());
         mvc.perform(get("/api/workspaces")).andExpect(status().isUnauthorized())
@@ -143,6 +145,111 @@ class SecurityIntegrationTest {
 
         mvc.perform(delete("/api/workspaces/" + bankA).session(admin).with(csrf())).andExpect(status().isNoContent());
         mvc.perform(delete("/api/workspaces/" + bankB).session(admin).with(csrf())).andExpect(status().isNoContent());
+    }
+
+    /**
+     * Review links over HTTP: the link opens without a session and shows nothing of the workspace but the screen; managing
+     * links, resolving comments and the review history need the workspace's permissions; revoking ends the link at once;
+     * the audit log records the link without its address.
+     */
+    @Test
+    void reviewLinksShowOnlyTheirScreenAndAreManagedWithWorkspacePermissions() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        MockHttpSession admin = login("admin", "Admin-Password-1");
+        UUID bankA = UUID.fromString(create(admin, "/api/workspaces",
+                "{\"name\": \"ra-" + suffix + "\", \"bankName\": \"Bank A\", \"obdxVersion\": \"22.x\"}").get("id").asString());
+        UUID bankB = UUID.fromString(create(admin, "/api/workspaces",
+                "{\"name\": \"rb-" + suffix + "\", \"bankName\": \"Bank B\", \"obdxVersion\": \"22.x\"}").get("id").asString());
+        UUID outsider = UUID.fromString(create(admin, "/api/admin/users",
+                "{\"username\": \"outsider-" + suffix + "\", \"password\": \"Outsider-Password-1\"}").get("id").asString());
+        setRole(admin, bankB, outsider, "LEAD");
+
+        String designId = create(admin, "/api/workspaces/" + bankA + "/designs", "{\"name\": \"Transfer\"}").get("id").asString();
+        mvc.perform(post("/api/designs/" + designId + "/comments").session(admin).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"text\": \"Internal note for the team\"}")).andExpect(status().isOk());
+        String token = json.readTree(mvc.perform(post("/api/designs/" + designId + "/review-link").session(admin).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"days\": 3}")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString()).get("reviewToken").asString();
+
+        // Without a session: the screen and nothing else
+        String review = mvc.perform(get("/api/review/" + token)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Transfer")).andExpect(jsonPath("$.comments.length()").value(0))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(review).doesNotContain(bankA.toString(), designId, "reviewToken", "Internal note", "Administrator", "workspaceId");
+        mvc.perform(get("/api/workspaces/" + bankA + "/review-history")).andExpect(status().isUnauthorized());
+
+        // A member of another workspace can do nothing with this one's links
+        MockHttpSession other = login("outsider-" + suffix, "Outsider-Password-1");
+        mvc.perform(get("/api/workspaces/" + bankA + "/review-history").session(other)).andExpect(status().isForbidden());
+        mvc.perform(delete("/api/designs/" + designId + "/review-link").session(other).with(csrf())).andExpect(status().isForbidden());
+        mvc.perform(post("/api/designs/" + designId + "/review-link").session(other).with(csrf())).andExpect(status().isForbidden());
+        String commentId = json.readTree(mvc.perform(get("/api/designs/" + designId).session(admin)).andReturn().getResponse().getContentAsString())
+                .get("comments").get(0).get("id").asString();
+        mvc.perform(put("/api/designs/" + designId + "/comments/" + commentId + "/resolved").session(other).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"resolved\": true}")).andExpect(status().isForbidden());
+        mvc.perform(put("/api/designs/" + designId + "/comments/" + commentId + "/resolved").session(admin).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"resolved\": true}")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.comments[0].resolvedBy").isNotEmpty());
+
+        // Revoked: gone at once, and recorded without the address
+        mvc.perform(delete("/api/designs/" + designId + "/review-link").session(admin).with(csrf())).andExpect(status().isOk());
+        mvc.perform(get("/api/review/" + token)).andExpect(status().isNotFound());
+        String history = mvc.perform(get("/api/workspaces/" + bankA + "/review-history").session(admin)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(history).contains("REVIEW_LINK_CREATED", "REVIEW_LINK_CLOSED", "REVIEW_COMMENT_RESOLVED").doesNotContain(token);
+
+        mvc.perform(delete("/api/workspaces/" + bankA).session(admin).with(csrf())).andExpect(status().isNoContent());
+        mvc.perform(delete("/api/workspaces/" + bankB).session(admin).with(csrf())).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void showsEffectiveAccessAndRecordsPrivilegeChangesForAdministratorsOnly() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        MockHttpSession admin = login("admin", "Admin-Password-1");
+        UUID bank = UUID.fromString(create(admin, "/api/workspaces",
+                "{\"name\": \"p-" + suffix + "\", \"bankName\": \"Bank P\", \"obdxVersion\": \"22.x\"}").get("id").asString());
+        UUID priya = UUID.fromString(create(admin, "/api/admin/users",
+                "{\"username\": \"priya-" + suffix + "\", \"password\": \"Priya-Password-1\"}").get("id").asString());
+        setRole(admin, bank, priya, "ANALYST");
+        setRole(admin, bank, priya, "LEAD");
+
+        // The matrix comes from the role definitions: an analyst may not manage code, a lead may approve
+        JsonNode matrix = json.readTree(mvc.perform(get("/api/admin/permissions").session(admin)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        assertThat(matrix.toString()).contains("\"permission\":\"MANAGE_CODE\"");
+        for (JsonNode row : matrix) {
+            if (row.get("permission").asString().equals("MANAGE_CODE")) {
+                assertThat(row.get("allowed").get("ANALYST").asBoolean()).isFalse();
+                assertThat(row.get("allowed").get("ADMIN").asBoolean()).isTrue();
+            }
+            if (row.get("permission").asString().equals("APPROVE")) {
+                assertThat(row.get("allowed").get("LEAD").asBoolean()).isTrue();
+            }
+        }
+
+        // Effective access per workspace, and the history of the role changes with what they were
+        JsonNode access = json.readTree(mvc.perform(get("/api/admin/users/" + priya + "/access").session(admin)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        assertThat(access.get("workspaces").get(0).get("role").asString()).isEqualTo("LEAD");
+        assertThat(access.get("workspaces").get(0).get("denied").size()).isZero();
+        assertThat(access.toString()).contains("LEAD (was ANALYST)", "ANALYST (new member)").doesNotContain("passwordHash", "Priya-Password-1");
+
+        mvc.perform(put("/api/admin/users/" + priya).session(admin).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"admin\": true}")).andExpect(status().isOk());
+        String history = mvc.perform(get("/api/admin/users/" + priya + "/access").session(admin)).andReturn().getResponse().getContentAsString();
+        assertThat(history).contains("ADMIN_GRANTED", "false -> true");
+
+        // Nobody else reads them
+        mvc.perform(put("/api/admin/users/" + priya).session(admin).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"admin\": false}")).andExpect(status().isOk());
+        MockHttpSession other = login("priya-" + suffix, "Priya-Password-1");
+        mvc.perform(get("/api/admin/permissions").session(other)).andExpect(status().isForbidden());
+        mvc.perform(get("/api/admin/users/" + priya + "/access").session(other)).andExpect(status().isForbidden());
+        mvc.perform(get("/api/admin/security").session(other)).andExpect(status().isForbidden());
+        mvc.perform(get("/api/admin/security").session(admin)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.maxFailedLogins").value(3)).andExpect(jsonPath("$.minPasswordLength").value(12));
+
+        mvc.perform(delete("/api/workspaces/" + bank).session(admin).with(csrf())).andExpect(status().isNoContent());
     }
 
     private MockHttpSession login(String username, String password) throws Exception {

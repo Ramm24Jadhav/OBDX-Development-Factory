@@ -19,6 +19,7 @@
       function init() {
         // Bind your ViewModel for the content of the whole page body.
         ko.applyBindings(app, document.getElementById('globalBody'));
+        app.markReady();
       }
       // If running in a hybrid (e.g. Cordova) environment, we need to wait for the deviceready
       // event before executing any code that might interact with Cordova APIs or plugins.

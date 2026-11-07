@@ -54,6 +54,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "FACTORY_TEST_DB_URL", matches = ".+")
+@org.junit.jupiter.api.extension.ExtendWith(com.obdx.factory.common.ForgetSecrets.class)
 class ChangeFlowIntegrationTest {
 
     @TempDir
@@ -73,7 +74,12 @@ class ChangeFlowIntegrationTest {
     static final String SERVICE = """
             package com.bank.payments;
 
+            import com.bank.host.HostClient;
+            import com.bank.host.TransferRequest;
+
             public class FundTransferService {
+                private final HostClient host = new HostClient();
+
                 public void transfer(TransferRequest request) {
                     host.book(request);
                 }
@@ -190,7 +196,19 @@ class ChangeFlowIntegrationTest {
     private WorkspaceService workspaces;
 
     @Autowired
+    private PlanReviewStore planReviewStore;
+
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private tools.jackson.databind.ObjectMapper json;
+
+    @Autowired
     private ImportService imports;
+
+    @Autowired
+    private ChangeBuildStore buildStore;
 
     @Autowired
     private RequirementService requirements;
@@ -313,7 +331,51 @@ class ChangeFlowIntegrationTest {
                 .hasMessageContaining("No file backend/Missing.java");
         assertThat(planned.plan().risks()).containsExactly("Host narrative length is assumed to be 35");
 
+        // The plan is revision 1; a request for changes is recorded but leaves it unapproved, and code is not written
+        assertThat(changes.planReview(changeId).revisions()).extracting(PlanReviewStore.Revision::revision, PlanReviewStore.Revision::origin)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(1, PlanReviewStore.Origin.ANALYZED));
+        changes.commentOnPlan(changeId, PlanReviewStore.Kind.COMMENT, "Check the remarks length", "dev1");
+        changes.commentOnPlan(changeId, PlanReviewStore.Kind.CHANGES_REQUESTED, "Add a test for the remarks", "Lead");
+        assertThat(changes.get(changeId).status()).isEqualTo(ChangeRequest.Status.PLAN_READY);
+        assertThat(changes.get(changeId).planApprovedAt()).isNull();
+        assertThatThrownBy(() -> changes.continueGeneration(changeId)).isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> changes.commentOnPlan(changeId, PlanReviewStore.Kind.CHANGES_REQUESTED, " ", "Lead"))
+                .hasMessageContaining("Say what has to change");
+        assertThatThrownBy(() -> changes.commentOnPlan(changeId, PlanReviewStore.Kind.APPROVED, "ok", "Lead"))
+                .hasMessageContaining("Approve Plan");
+        // The request holds the plan; saving it unchanged (same JSON, same revision) answers nothing
+        assertThatThrownBy(() -> changes.approvePlan(changeId, "Lead")).hasMessageStartingWith("Changes were requested on this revision");
+        changes.updatePlan(changeId, json.writeValueAsString(changes.get(changeId).plan()), "dev1");
+        assertThat(changes.planReview(changeId).revisions()).hasSize(1);
+        assertThat(planReviewStore.changesRequested(changeId, 1)).isTrue();
+        assertThatThrownBy(() -> changes.approvePlan(changeId, "Lead")).hasMessageStartingWith("Changes were requested on this revision");
+        // a new analysis answers it, also one that gives the same plan, and says who and at which revision
+        assertThat(planReviewStore.answerRequestsByAnalysis(changeId, 1, "Impact analysis")).isEqualTo(1);
+        assertThat(planReviewStore.changesRequested(changeId, 1)).isFalse();
+        assertThat(jdbcTemplate.queryForList("SELECT answered_by || ' at ' || answered_revision FROM change_plan_comment WHERE change_id = ? "
+                + "AND kind = 'CHANGES_REQUESTED'", String.class, changeId)).containsExactly("Impact analysis at 1");
+        changes.commentOnPlan(changeId, PlanReviewStore.Kind.CHANGES_REQUESTED, "Add a test for the remarks", "Lead");
+        assertThat(planReviewStore.changesRequested(changeId, 1)).isTrue();
+        // An edit is the next revision; saving the same plan again adds none
+        String edited = json.writeValueAsString(new ChangePlan("Edited: " + planned.plan().summary(), planned.plan().items(), planned.plan().risks()));
+        changes.updatePlan(changeId, edited, "dev1");
+        changes.updatePlan(changeId, edited, "dev1");
+        assertThat(changes.planReview(changeId).revisions()).extracting(PlanReviewStore.Revision::revision, PlanReviewStore.Revision::origin, PlanReviewStore.Revision::createdBy)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(1, PlanReviewStore.Origin.ANALYZED, "Impact analysis"),
+                        org.assertj.core.groups.Tuple.tuple(2, PlanReviewStore.Origin.EDITED, "dev1"));
+
         changes.approvePlan(changeId, "Lead");
+        assertThat(changes.planReview(changeId).comments()).extracting(PlanReviewStore.Comment::kind, PlanReviewStore.Comment::author, PlanReviewStore.Comment::revision)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(PlanReviewStore.Kind.COMMENT, "dev1", 1),
+                        org.assertj.core.groups.Tuple.tuple(PlanReviewStore.Kind.CHANGES_REQUESTED, "Lead", 1),
+                        org.assertj.core.groups.Tuple.tuple(PlanReviewStore.Kind.CHANGES_REQUESTED, "Lead", 1),
+                        org.assertj.core.groups.Tuple.tuple(PlanReviewStore.Kind.APPROVED, "Lead", 2));
+        // A request made before any revision was recorded (revision null) is answered by a new analysis only, never by a Save
+        PlanReviewStore.Comment early = planReviewStore.comment(changeId, null, PlanReviewStore.Kind.CHANGES_REQUESTED, "Lead", "Before revisions");
+        assertThat(planReviewStore.answerRequestsByEdit(changeId, "{\"summary\": \"other\"}", 2, "dev1")).isZero();
+        assertThat(planReviewStore.answerRequestsByAnalysis(changeId, 2, "Impact analysis")).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("SELECT answered_by FROM change_plan_comment WHERE id = ?", String.class, early.id()))
+                .isEqualTo("Impact analysis");
         waitFor(() -> changes.get(changeId).status() == ChangeRequest.Status.GENERATED, "generation");
         ChangeService.ChangeDetail generated = changes.get(changeId);
         assertThat(generated.planApprovedBy()).isEqualTo("Lead");
@@ -395,8 +457,9 @@ class ChangeFlowIntegrationTest {
             stub.parameters.add("PATCH");
             stub.script("obdx/backend build", new StubJenkins.Outcome("FAILURE",
                     "[ERROR] /var/jenkins/workspace/obdx/backend/src/com/bank/Legacy.java:[1,1] class, interface, or enum expected", List.of()));
+            // A new server (another port): the stored token does not go to it, so it is entered again
             jenkinsSettings.save(workspaceId, new JenkinsSettingsService.SettingsRequest(stub.url(), "obdx/backend build",
-                    JenkinsSettings.Mode.PATCH, null, null, "PATCH", "factory", null));
+                    JenkinsSettings.Mode.PATCH, null, null, "PATCH", "factory", "api-token"));
 
             changeBuilds.start(changeId);
             waitFor(() -> !"BUILDING".equals(changes.get(changeId).buildStatus()), "patch build");
@@ -421,7 +484,7 @@ class ChangeFlowIntegrationTest {
             stub.parameters.add("PATCH");
             stub.script("obdx/backend build", StubJenkins.Outcome.success());
             jenkinsSettings.save(workspaceId, new JenkinsSettingsService.SettingsRequest(stub.url(), "obdx/backend build",
-                    JenkinsSettings.Mode.PATCH, null, null, "PATCH", "factory", null));
+                    JenkinsSettings.Mode.PATCH, null, null, "PATCH", "factory", "api-token"));
 
             changeBuilds.start(changeId);
             waitFor(() -> !"BUILDING".equals(changes.get(changeId).buildStatus()), "build after quick checks");
@@ -459,6 +522,16 @@ class ChangeFlowIntegrationTest {
         assertThat(svn.exists(repo.trunkUrl().replace("/trunk", "/branches/factory"), SvnCredentials.NONE)).isTrue();
         assertThatThrownBy(() -> changeBranches.close(changeId, ChangeRequest.CloseReason.ABANDONED, false, "Lead"))
                 .hasMessageContaining("is closed");
+
+        // A round that never got a result (Jenkins could not be reached, or the server restarted) is closed as not built
+        UUID stuck = buildStore.start(changeId, 9, "unreachable job");
+        assertThat(buildStore.closeUnfinished(changeId, "Could not reach Jenkins")).isEqualTo(1);
+        assertThat(buildStore.list(changeId)).filteredOn(b -> b.id().equals(stuck)).singleElement().satisfies(b -> {
+            assertThat(b.result()).isEqualTo("NOT_BUILT");
+            assertThat(b.errors()).containsExactly("Could not reach Jenkins");
+            assertThat(b.finishedAt()).isNotNull();
+        });
+        assertThat(buildStore.closeUnfinished(changeId, "again")).isZero();
         changes.delete(changeId);
     }
 

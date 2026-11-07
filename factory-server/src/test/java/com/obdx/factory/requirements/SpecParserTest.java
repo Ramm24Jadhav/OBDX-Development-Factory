@@ -55,6 +55,21 @@ class SpecParserTest {
     }
 
     @Test
+    void readsQuestionOptionsAndSuggestedAnswer() {
+        RequirementSpec spec = SpecParser.parse("""
+                {"openQuestions": [
+                  {"question": "Which order types can a customer place?", "options": ["Market only", "Market and limit"],
+                   "suggestedAnswer": "Market and limit"},
+                  {"question": "Is a reason mandatory?", "options": "Yes"}
+                ]}""", "x");
+
+        assertThat(spec.openQuestions().get(0).options()).containsExactly("Market only", "Market and limit");
+        assertThat(spec.openQuestions().get(0).suggestedAnswer()).isEqualTo("Market and limit");
+        assertThat(spec.openQuestions().get(1).options()).containsExactly("Yes");
+        assertThat(spec.openQuestions().get(1).suggestedAnswer()).isNull();
+    }
+
+    @Test
     void usesFallbackTitleAndRejectsNonJson() {
         assertThat(SpecParser.parse("{}", "From file name").title()).isEqualTo("From file name");
         assertThatThrownBy(() -> SpecParser.parse("I cannot help with that.", "x"))
