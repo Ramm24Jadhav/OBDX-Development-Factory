@@ -53,7 +53,7 @@ export interface Theme {
 export function makeTheme(style: ComponentStyle = {}, brand?: string, reduceTransparency = false): Theme {
   const look = style.look ?? 'elevated';
   const color: Colors = { ...lightTokens.color, ...(style.mode === 'dark' ? darkColors : {}) } as Colors;
-  if (look === 'redwood') { color.primary = '#c74634'; color.primaryText = '#a33b2b'; }
+  if (look === 'redwood') { color.primary = '#ad3c2c'; color.primaryText = '#8f3224'; }
   if (brand) { color.primary = brand; }
   const c = color;
   const radius = look === 'pill' ? { control: 999, card: 22, small: 6, overlay: 28 } : look === 'brutal' ? { control: 4, card: 6, small: 2, overlay: 8 }
