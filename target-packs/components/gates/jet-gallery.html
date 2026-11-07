@@ -52,9 +52,9 @@
     </div></div></section>
     <section class="gate" data-component="toast" aria-labelledby="ts-h"><h2 id="ts-h">Toast</h2><div class="gate-body">
       <bx-toast display="general" messages="[[messages]]"></bx-toast>
-      <div data-variant="snackbar"><bx-toast variant="snackbar" display="general" messages="[[messages]]"></bx-toast></div>
-      <div data-variant="stacked"><bx-toast variant="stacked" display="general" messages="[[messages]]"></bx-toast></div>
-      <div data-variant="pill"><bx-toast variant="pill" display="general" messages="[[messages]]"></bx-toast></div>
+      <oj-bind-if test="[[variantAsked === 'snackbar']]"><div data-variant="snackbar"><bx-toast variant="snackbar" display="general" messages="[[messages]]"></bx-toast></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'stacked']]"><div data-variant="stacked"><bx-toast variant="stacked" display="general" messages="[[messages]]"></bx-toast></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'pill']]"><div data-variant="pill"><bx-toast variant="pill" display="general" messages="[[messages]]"></bx-toast></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="card" aria-labelledby="cd-h"><h2 id="cd-h">Card</h2><div class="gate-body"><div class="gate-row">
       <bx-card heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</bx-card>
@@ -126,9 +126,9 @@
     </div></section>
     <section class="gate" data-component="stepper" aria-labelledby="w1-7-h"><h2 id="w1-7-h">Stepper</h2><div class="gate-body">
       <bx-stepper steps='["Details", "Review", "Done"]' selected-step="Review"></bx-stepper>
-      <div data-variant="material"><bx-stepper variant="material" steps='["Details", "Review", "Done"]' selected-step="Review"></bx-stepper></div>
-      <div data-variant="vertical"><bx-stepper variant="vertical" steps='["Details", "Review", "Done"]' selected-step="Review"></bx-stepper></div>
-      <div data-variant="segmented"><bx-stepper variant="segmented" steps='["Details", "Review", "Done"]' selected-step="Review"></bx-stepper></div>
+      <oj-bind-if test="[[variantAsked === 'material']]"><div data-variant="material"><bx-stepper variant="material" steps='["Details", "Review", "Done"]' selected-step="Review"></bx-stepper></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'vertical']]"><div data-variant="vertical"><bx-stepper variant="vertical" steps='["Details", "Review", "Done"]' selected-step="Review"></bx-stepper></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'segmented']]"><div data-variant="segmented"><bx-stepper variant="segmented" steps='["Details", "Review", "Done"]' selected-step="Review"></bx-stepper></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="breadcrumb" aria-labelledby="w1-8-h"><h2 id="w1-8-h">Breadcrumb</h2><div class="gate-body">
       <bx-breadcrumb items="[[crumbs]]"></bx-breadcrumb>
@@ -159,60 +159,60 @@
       <bx-status-badge label="Completed" tone="success"></bx-status-badge>
       <bx-status-badge label="Pending" tone="warning"></bx-status-badge>
       <bx-status-badge label="Rejected" tone="danger"></bx-status-badge>
-      <div data-variant="filled"><bx-status-badge variant="filled" label="Completed" tone="success"></bx-status-badge></div>
-      <div data-variant="outlined"><bx-status-badge variant="outlined" label="Completed" tone="success"></bx-status-badge></div>
-      <div data-variant="dot"><bx-status-badge variant="dot" label="Completed" tone="success"></bx-status-badge></div>
+      <oj-bind-if test="[[variantAsked === 'filled']]"><div data-variant="filled"><bx-status-badge variant="filled" label="Completed" tone="success"></bx-status-badge></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'outlined']]"><div data-variant="outlined"><bx-status-badge variant="outlined" label="Completed" tone="success"></bx-status-badge></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'dot']]"><div data-variant="dot"><bx-status-badge variant="dot" label="Completed" tone="success"></bx-status-badge></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="timeline" aria-labelledby="w1-16-h"><h2 id="w1-16-h">Timeline</h2><div class="gate-body">
       <bx-timeline items='[{"label": "Initiated", "meta": "09:12 · A. Rao"}, {"label": "Approved", "meta": "10:40 · Priya Nair"}, {"label": "Sent to the bank", "meta": "10:41", "state": "current"}, {"label": "Completed", "state": "pending"}]'></bx-timeline>
-      <div data-variant="compact"><bx-timeline variant="compact" items='[{"label": "Initiated", "meta": "09:12 · A. Rao"}, {"label": "Approved", "meta": "10:40 · Priya Nair"}, {"label": "Sent to the bank", "meta": "10:41", "state": "current"}, {"label": "Completed", "state": "pending"}]'></bx-timeline></div>
-      <div data-variant="cards"><bx-timeline variant="cards" items='[{"label": "Initiated", "meta": "09:12 · A. Rao"}, {"label": "Approved", "meta": "10:40 · Priya Nair"}, {"label": "Sent to the bank", "meta": "10:41", "state": "current"}, {"label": "Completed", "state": "pending"}]'></bx-timeline></div>
-      <div data-variant="horizontal"><bx-timeline variant="horizontal" items='[{"label": "Initiated", "meta": "09:12 · A. Rao"}, {"label": "Approved", "meta": "10:40 · Priya Nair"}, {"label": "Sent to the bank", "meta": "10:41", "state": "current"}, {"label": "Completed", "state": "pending"}]'></bx-timeline></div>
+      <oj-bind-if test="[[variantAsked === 'compact']]"><div data-variant="compact"><bx-timeline variant="compact" items='[{"label": "Initiated", "meta": "09:12 · A. Rao"}, {"label": "Approved", "meta": "10:40 · Priya Nair"}, {"label": "Sent to the bank", "meta": "10:41", "state": "current"}, {"label": "Completed", "state": "pending"}]'></bx-timeline></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'cards']]"><div data-variant="cards"><bx-timeline variant="cards" items='[{"label": "Initiated", "meta": "09:12 · A. Rao"}, {"label": "Approved", "meta": "10:40 · Priya Nair"}, {"label": "Sent to the bank", "meta": "10:41", "state": "current"}, {"label": "Completed", "state": "pending"}]'></bx-timeline></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'horizontal']]"><div data-variant="horizontal"><bx-timeline variant="horizontal" items='[{"label": "Initiated", "meta": "09:12 · A. Rao"}, {"label": "Approved", "meta": "10:40 · Priya Nair"}, {"label": "Sent to the bank", "meta": "10:41", "state": "current"}, {"label": "Completed", "state": "pending"}]'></bx-timeline></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="spinner" aria-labelledby="w1-17-h"><h2 id="w1-17-h">Spinner</h2><div class="gate-body">
       <bx-spinner></bx-spinner>
       <bx-spinner size="lg" label="Loading accounts"></bx-spinner>
-      <div data-variant="material"><bx-spinner variant="material"></bx-spinner></div>
-      <div data-variant="dots"><bx-spinner variant="dots"></bx-spinner></div>
-      <div data-variant="orbs"><bx-spinner variant="orbs"></bx-spinner></div>
+      <oj-bind-if test="[[variantAsked === 'material']]"><div data-variant="material"><bx-spinner variant="material"></bx-spinner></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'dots']]"><div data-variant="dots"><bx-spinner variant="dots"></bx-spinner></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'orbs']]"><div data-variant="orbs"><bx-spinner variant="orbs"></bx-spinner></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="skeleton" aria-labelledby="w1-18-h"><h2 id="w1-18-h">Skeleton</h2><div class="gate-body">
       <bx-skeleton></bx-skeleton>
       <bx-skeleton shape="card" lines="2"></bx-skeleton>
       <bx-skeleton shape="circle" lines="1"></bx-skeleton>
-      <div data-variant="pulse"><bx-skeleton variant="pulse"></bx-skeleton></div>
-      <div data-variant="soft"><bx-skeleton variant="soft"></bx-skeleton></div>
+      <oj-bind-if test="[[variantAsked === 'pulse']]"><div data-variant="pulse"><bx-skeleton variant="pulse"></bx-skeleton></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'soft']]"><div data-variant="soft"><bx-skeleton variant="soft"></bx-skeleton></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="empty-state" aria-labelledby="w1-19-h"><h2 id="w1-19-h">Empty state</h2><div class="gate-body">
       <bx-empty-state heading="No payees yet" text="Add one to pay faster next time." action-label="Add a payee"></bx-empty-state>
-      <div data-variant="illustrated"><bx-empty-state variant="illustrated" heading="No payees yet" text="Add one to pay faster next time." action-label="Add a payee"></bx-empty-state></div>
-      <div data-variant="compact"><bx-empty-state variant="compact" heading="No payees yet" text="Add one to pay faster next time." action-label="Add a payee"></bx-empty-state></div>
-      <div data-variant="card"><bx-empty-state variant="card" heading="No payees yet" text="Add one to pay faster next time." action-label="Add a payee"></bx-empty-state></div>
+      <oj-bind-if test="[[variantAsked === 'illustrated']]"><div data-variant="illustrated"><bx-empty-state variant="illustrated" heading="No payees yet" text="Add one to pay faster next time." action-label="Add a payee"></bx-empty-state></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'compact']]"><div data-variant="compact"><bx-empty-state variant="compact" heading="No payees yet" text="Add one to pay faster next time." action-label="Add a payee"></bx-empty-state></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'card']]"><div data-variant="card"><bx-empty-state variant="card" heading="No payees yet" text="Add one to pay faster next time." action-label="Add a payee"></bx-empty-state></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="tooltip" aria-labelledby="w1-20-h"><h2 id="w1-20-h">Tooltip</h2><div class="gate-body">
       <bx-tooltip label="Available balance" text="What you can spend now: the balance less holds and pending card payments."></bx-tooltip>
-      <div data-variant="plain"><bx-tooltip variant="plain" label="Available balance" text="What you can spend now: the balance less holds and pending card payments."></bx-tooltip></div>
-      <div data-variant="rich"><bx-tooltip variant="rich" label="Available balance" text="What you can spend now: the balance less holds and pending card payments."></bx-tooltip></div>
-      <div data-variant="beak"><bx-tooltip variant="beak" label="Available balance" text="What you can spend now: the balance less holds and pending card payments."></bx-tooltip></div>
+      <oj-bind-if test="[[variantAsked === 'plain']]"><div data-variant="plain"><bx-tooltip variant="plain" label="Available balance" text="What you can spend now: the balance less holds and pending card payments."></bx-tooltip></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'rich']]"><div data-variant="rich"><bx-tooltip variant="rich" label="Available balance" text="What you can spend now: the balance less holds and pending card payments."></bx-tooltip></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'beak']]"><div data-variant="beak"><bx-tooltip variant="beak" label="Available balance" text="What you can spend now: the balance less holds and pending card payments."></bx-tooltip></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="alert-banner" aria-labelledby="w1-21-h"><h2 id="w1-21-h">Alert banner</h2><div class="gate-body">
       <bx-alert-banner message="Transfers after 6 pm arrive the next working day."></bx-alert-banner>
       <bx-alert-banner severity="warning" message="Your session ends in 2 minutes." dismissible="true"></bx-alert-banner>
-      <div data-variant="filled"><bx-alert-banner variant="filled" message="Transfers after 6 pm arrive the next working day."></bx-alert-banner></div>
-      <div data-variant="outlined"><bx-alert-banner variant="outlined" message="Transfers after 6 pm arrive the next working day."></bx-alert-banner></div>
-      <div data-variant="banner"><bx-alert-banner variant="banner" message="Transfers after 6 pm arrive the next working day."></bx-alert-banner></div>
+      <oj-bind-if test="[[variantAsked === 'filled']]"><div data-variant="filled"><bx-alert-banner variant="filled" message="Transfers after 6 pm arrive the next working day."></bx-alert-banner></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'outlined']]"><div data-variant="outlined"><bx-alert-banner variant="outlined" message="Transfers after 6 pm arrive the next working day."></bx-alert-banner></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'banner']]"><div data-variant="banner"><bx-alert-banner variant="banner" message="Transfers after 6 pm arrive the next working day."></bx-alert-banner></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="error-message" aria-labelledby="w1-22-h"><h2 id="w1-22-h">Error message</h2><div class="gate-body">
       <bx-error-message message="The amount is more than your daily limit of 5,000.00." action-label="Change the amount"></bx-error-message>
-      <div data-variant="filled"><bx-error-message variant="filled" message="The amount is more than your daily limit of 5,000.00." action-label="Change the amount"></bx-error-message></div>
-      <div data-variant="outlined"><bx-error-message variant="outlined" message="The amount is more than your daily limit of 5,000.00." action-label="Change the amount"></bx-error-message></div>
-      <div data-variant="banner"><bx-error-message variant="banner" message="The amount is more than your daily limit of 5,000.00." action-label="Change the amount"></bx-error-message></div>
+      <oj-bind-if test="[[variantAsked === 'filled']]"><div data-variant="filled"><bx-error-message variant="filled" message="The amount is more than your daily limit of 5,000.00." action-label="Change the amount"></bx-error-message></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'outlined']]"><div data-variant="outlined"><bx-error-message variant="outlined" message="The amount is more than your daily limit of 5,000.00." action-label="Change the amount"></bx-error-message></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'banner']]"><div data-variant="banner"><bx-error-message variant="banner" message="The amount is more than your daily limit of 5,000.00." action-label="Change the amount"></bx-error-message></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="success-message" aria-labelledby="w1-23-h"><h2 id="w1-23-h">Success message</h2><div class="gate-body">
       <bx-success-message message="Payment sent. Reference FX-20391." action-label="View receipt"></bx-success-message>
-      <div data-variant="filled"><bx-success-message variant="filled" message="Payment sent. Reference FX-20391." action-label="View receipt"></bx-success-message></div>
-      <div data-variant="outlined"><bx-success-message variant="outlined" message="Payment sent. Reference FX-20391." action-label="View receipt"></bx-success-message></div>
-      <div data-variant="banner"><bx-success-message variant="banner" message="Payment sent. Reference FX-20391." action-label="View receipt"></bx-success-message></div>
+      <oj-bind-if test="[[variantAsked === 'filled']]"><div data-variant="filled"><bx-success-message variant="filled" message="Payment sent. Reference FX-20391." action-label="View receipt"></bx-success-message></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'outlined']]"><div data-variant="outlined"><bx-success-message variant="outlined" message="Payment sent. Reference FX-20391." action-label="View receipt"></bx-success-message></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'banner']]"><div data-variant="banner"><bx-success-message variant="banner" message="Payment sent. Reference FX-20391." action-label="View receipt"></bx-success-message></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="notification-panel" aria-labelledby="w1-24-h"><h2 id="w1-24-h">Notification panel</h2><div class="gate-body">
       <bx-notification-panel items="[[notes]]"></bx-notification-panel>
@@ -255,9 +255,9 @@
     </div></section>
     <section class="gate" data-component="payment-status" aria-labelledby="w2-11-h"><h2 id="w2-11-h">Payment status</h2><div class="gate-body">
       <bx-payment-status steps='["Initiated", "Approved", "Sent", "Completed"]' selected-step="Sent"></bx-payment-status>
-      <div data-variant="material"><bx-payment-status variant="material" steps='["Initiated", "Approved", "Sent", "Completed"]' selected-step="Sent"></bx-payment-status></div>
-      <div data-variant="vertical"><bx-payment-status variant="vertical" steps='["Initiated", "Approved", "Sent", "Completed"]' selected-step="Sent"></bx-payment-status></div>
-      <div data-variant="segmented"><bx-payment-status variant="segmented" steps='["Initiated", "Approved", "Sent", "Completed"]' selected-step="Sent"></bx-payment-status></div>
+      <oj-bind-if test="[[variantAsked === 'material']]"><div data-variant="material"><bx-payment-status variant="material" steps='["Initiated", "Approved", "Sent", "Completed"]' selected-step="Sent"></bx-payment-status></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'vertical']]"><div data-variant="vertical"><bx-payment-status variant="vertical" steps='["Initiated", "Approved", "Sent", "Completed"]' selected-step="Sent"></bx-payment-status></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'segmented']]"><div data-variant="segmented"><bx-payment-status variant="segmented" steps='["Initiated", "Approved", "Sent", "Completed"]' selected-step="Sent"></bx-payment-status></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="transaction-list" aria-labelledby="w2-12-h"><h2 id="w2-12-h">Transaction list</h2><div class="gate-body">
       <bx-transaction-list currency="USD" items="[[txns]]"></bx-transaction-list>
@@ -307,9 +307,9 @@
     </div></section>
     <section class="gate" data-component="disbursement" aria-labelledby="w3-4-h"><h2 id="w3-4-h">Disbursement timeline</h2><div class="gate-body">
       <bx-disbursement items='[{"label":"Sanctioned 30,000.00","meta":"02 Jan"},{"label":"First disbursement 20,000.00","meta":"05 Jan"},{"label":"Second disbursement 10,000.00","meta":"Due 05 Mar","state":"pending"}]'></bx-disbursement>
-      <div data-variant="compact"><bx-disbursement variant="compact" items='[{"label":"Sanctioned 30,000.00","meta":"02 Jan"},{"label":"First disbursement 20,000.00","meta":"05 Jan"},{"label":"Second disbursement 10,000.00","meta":"Due 05 Mar","state":"pending"}]'></bx-disbursement></div>
-      <div data-variant="cards"><bx-disbursement variant="cards" items='[{"label":"Sanctioned 30,000.00","meta":"02 Jan"},{"label":"First disbursement 20,000.00","meta":"05 Jan"},{"label":"Second disbursement 10,000.00","meta":"Due 05 Mar","state":"pending"}]'></bx-disbursement></div>
-      <div data-variant="horizontal"><bx-disbursement variant="horizontal" items='[{"label":"Sanctioned 30,000.00","meta":"02 Jan"},{"label":"First disbursement 20,000.00","meta":"05 Jan"},{"label":"Second disbursement 10,000.00","meta":"Due 05 Mar","state":"pending"}]'></bx-disbursement></div>
+      <oj-bind-if test="[[variantAsked === 'compact']]"><div data-variant="compact"><bx-disbursement variant="compact" items='[{"label":"Sanctioned 30,000.00","meta":"02 Jan"},{"label":"First disbursement 20,000.00","meta":"05 Jan"},{"label":"Second disbursement 10,000.00","meta":"Due 05 Mar","state":"pending"}]'></bx-disbursement></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'cards']]"><div data-variant="cards"><bx-disbursement variant="cards" items='[{"label":"Sanctioned 30,000.00","meta":"02 Jan"},{"label":"First disbursement 20,000.00","meta":"05 Jan"},{"label":"Second disbursement 10,000.00","meta":"Due 05 Mar","state":"pending"}]'></bx-disbursement></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'horizontal']]"><div data-variant="horizontal"><bx-disbursement variant="horizontal" items='[{"label":"Sanctioned 30,000.00","meta":"02 Jan"},{"label":"First disbursement 20,000.00","meta":"05 Jan"},{"label":"Second disbursement 10,000.00","meta":"Due 05 Mar","state":"pending"}]'></bx-disbursement></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="card-tile" aria-labelledby="w3-5-h"><h2 id="w3-5-h">Card tile</h2><div class="gate-body">
       <bx-card-tile label="Platinum" number="4111111111114821" holder="A. RAO" expiry="09/29" network="Visa"></bx-card-tile>
@@ -359,8 +359,8 @@
     <section class="gate" data-component="session-timeout" aria-labelledby="w3-19-h"><h2 id="w3-19-h">Session timeout</h2><div class="gate-body">
       <bx-secondary-button label="Show the warning" on-oj-action="[[openTimeout]]"></bx-secondary-button>
       <bx-session-timeout open="{{timeoutOpen}}" seconds="90"></bx-session-timeout>
-      <div data-variant="countdown"><bx-session-timeout variant="countdown" open="[[variantAsked === 'countdown']]" seconds="90"></bx-session-timeout></div>
-      <div data-variant="sheet"><bx-session-timeout variant="sheet" open="[[variantAsked === 'sheet']]" seconds="90"></bx-session-timeout></div>
+      <oj-bind-if test="[[variantAsked === 'countdown']]"><div data-variant="countdown"><p>The warning opens over the page, its seconds in a ring.</p><bx-session-timeout variant="countdown" open="[[variantAsked === 'countdown']]" seconds="90"></bx-session-timeout></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'sheet']]"><div data-variant="sheet"><p>The warning rises from the bottom of the page.</p><bx-session-timeout variant="sheet" open="[[variantAsked === 'sheet']]" seconds="90"></bx-session-timeout></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="secure-confirmation" aria-labelledby="w3-20-h"><h2 id="w3-20-h">Secure confirmation</h2><div class="gate-body">
       <bx-secure-confirmation items='[{"label":"Pay","value":"A. Rao"},{"label":"Amount","value":"1,250.00 USD"},{"label":"Code sent to","value":"•••• 0123"}]'></bx-secure-confirmation>
@@ -370,33 +370,33 @@
     </div></section>
     <section class="gate" data-component="kyc-steps" aria-labelledby="w3-22-h"><h2 id="w3-22-h">KYC steps</h2><div class="gate-body">
       <bx-kyc-steps selected-step="Selfie"></bx-kyc-steps>
-      <div data-variant="material"><bx-kyc-steps variant="material" selected-step="Selfie"></bx-kyc-steps></div>
-      <div data-variant="vertical"><bx-kyc-steps variant="vertical" selected-step="Selfie"></bx-kyc-steps></div>
-      <div data-variant="segmented"><bx-kyc-steps variant="segmented" selected-step="Selfie"></bx-kyc-steps></div>
+      <oj-bind-if test="[[variantAsked === 'material']]"><div data-variant="material"><bx-kyc-steps variant="material" selected-step="Selfie"></bx-kyc-steps></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'vertical']]"><div data-variant="vertical"><bx-kyc-steps variant="vertical" selected-step="Selfie"></bx-kyc-steps></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'segmented']]"><div data-variant="segmented"><bx-kyc-steps variant="segmented" selected-step="Selfie"></bx-kyc-steps></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="fraud-alert" aria-labelledby="w3-23-h"><h2 id="w3-23-h">Fraud alert</h2><div class="gate-body">
       <bx-fraud-alert message="We stopped a payment of 899.00 to Unknown Ltd."></bx-fraud-alert>
-      <div data-variant="filled"><bx-fraud-alert variant="filled" message="We stopped a payment of 899.00 to Unknown Ltd."></bx-fraud-alert></div>
-      <div data-variant="outlined"><bx-fraud-alert variant="outlined" message="We stopped a payment of 899.00 to Unknown Ltd."></bx-fraud-alert></div>
-      <div data-variant="banner"><bx-fraud-alert variant="banner" message="We stopped a payment of 899.00 to Unknown Ltd."></bx-fraud-alert></div>
+      <oj-bind-if test="[[variantAsked === 'filled']]"><div data-variant="filled"><bx-fraud-alert variant="filled" message="We stopped a payment of 899.00 to Unknown Ltd."></bx-fraud-alert></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'outlined']]"><div data-variant="outlined"><bx-fraud-alert variant="outlined" message="We stopped a payment of 899.00 to Unknown Ltd."></bx-fraud-alert></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'banner']]"><div data-variant="banner"><bx-fraud-alert variant="banner" message="We stopped a payment of 899.00 to Unknown Ltd."></bx-fraud-alert></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="spending-chart" aria-labelledby="w4-0-h"><h2 id="w4-0-h">Spending chart</h2><div class="gate-body">
       <bx-spending-chart items='[{"label":"Aug","value":1240},{"label":"Sep","value":980},{"label":"Oct","value":1410},{"label":"Nov","value":1640},{"label":"Dec","value":2120}]' unit="USD"></bx-spending-chart>
-      <div data-variant="rounded"><bx-spending-chart variant="rounded" items='[{"label":"Aug","value":1240},{"label":"Sep","value":980},{"label":"Oct","value":1410},{"label":"Nov","value":1640},{"label":"Dec","value":2120}]' unit="USD"></bx-spending-chart></div>
-      <div data-variant="lollipop"><bx-spending-chart variant="lollipop" items='[{"label":"Aug","value":1240},{"label":"Sep","value":980},{"label":"Oct","value":1410},{"label":"Nov","value":1640},{"label":"Dec","value":2120}]' unit="USD"></bx-spending-chart></div>
-      <div data-variant="meter"><bx-spending-chart variant="meter" items='[{"label":"Aug","value":1240},{"label":"Sep","value":980},{"label":"Oct","value":1410},{"label":"Nov","value":1640},{"label":"Dec","value":2120}]' unit="USD"></bx-spending-chart></div>
+      <oj-bind-if test="[[variantAsked === 'rounded']]"><div data-variant="rounded"><bx-spending-chart variant="rounded" items='[{"label":"Aug","value":1240},{"label":"Sep","value":980},{"label":"Oct","value":1410},{"label":"Nov","value":1640},{"label":"Dec","value":2120}]' unit="USD"></bx-spending-chart></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'lollipop']]"><div data-variant="lollipop"><bx-spending-chart variant="lollipop" items='[{"label":"Aug","value":1240},{"label":"Sep","value":980},{"label":"Oct","value":1410},{"label":"Nov","value":1640},{"label":"Dec","value":2120}]' unit="USD"></bx-spending-chart></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'meter']]"><div data-variant="meter"><bx-spending-chart variant="meter" items='[{"label":"Aug","value":1240},{"label":"Sep","value":980},{"label":"Oct","value":1410},{"label":"Nov","value":1640},{"label":"Dec","value":2120}]' unit="USD"></bx-spending-chart></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="budget-progress" aria-labelledby="w4-1-h"><h2 id="w4-1-h">Budget progress</h2><div class="gate-body">
       <bx-budget-progress items='[{"label":"Groceries","value":320,"max":400},{"label":"Travel","value":180,"max":300},{"label":"Eating out","value":210,"max":200}]'></bx-budget-progress>
-      <div data-variant="linear"><bx-budget-progress variant="linear" items='[{"label":"Groceries","value":320,"max":400},{"label":"Travel","value":180,"max":300},{"label":"Eating out","value":210,"max":200}]'></bx-budget-progress></div>
-      <div data-variant="ring"><bx-budget-progress variant="ring" items='[{"label":"Groceries","value":320,"max":400},{"label":"Travel","value":180,"max":300},{"label":"Eating out","value":210,"max":200}]'></bx-budget-progress></div>
-      <div data-variant="segmented"><bx-budget-progress variant="segmented" items='[{"label":"Groceries","value":320,"max":400},{"label":"Travel","value":180,"max":300},{"label":"Eating out","value":210,"max":200}]'></bx-budget-progress></div>
+      <oj-bind-if test="[[variantAsked === 'linear']]"><div data-variant="linear"><bx-budget-progress variant="linear" items='[{"label":"Groceries","value":320,"max":400},{"label":"Travel","value":180,"max":300},{"label":"Eating out","value":210,"max":200}]'></bx-budget-progress></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'ring']]"><div data-variant="ring"><bx-budget-progress variant="ring" items='[{"label":"Groceries","value":320,"max":400},{"label":"Travel","value":180,"max":300},{"label":"Eating out","value":210,"max":200}]'></bx-budget-progress></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'segmented']]"><div data-variant="segmented"><bx-budget-progress variant="segmented" items='[{"label":"Groceries","value":320,"max":400},{"label":"Travel","value":180,"max":300},{"label":"Eating out","value":210,"max":200}]'></bx-budget-progress></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="savings-goal" aria-labelledby="w4-2-h"><h2 id="w4-2-h">Savings goal</h2><div class="gate-body">
       <bx-savings-goal items='[{"label":"Holiday fund","value":1800,"max":3000}]' unit="USD"></bx-savings-goal>
-      <div data-variant="linear"><bx-savings-goal variant="linear" items='[{"label":"Holiday fund","value":1800,"max":3000}]' unit="USD"></bx-savings-goal></div>
-      <div data-variant="ring"><bx-savings-goal variant="ring" items='[{"label":"Holiday fund","value":1800,"max":3000}]' unit="USD"></bx-savings-goal></div>
-      <div data-variant="segmented"><bx-savings-goal variant="segmented" items='[{"label":"Holiday fund","value":1800,"max":3000}]' unit="USD"></bx-savings-goal></div>
+      <oj-bind-if test="[[variantAsked === 'linear']]"><div data-variant="linear"><bx-savings-goal variant="linear" items='[{"label":"Holiday fund","value":1800,"max":3000}]' unit="USD"></bx-savings-goal></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'ring']]"><div data-variant="ring"><bx-savings-goal variant="ring" items='[{"label":"Holiday fund","value":1800,"max":3000}]' unit="USD"></bx-savings-goal></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'segmented']]"><div data-variant="segmented"><bx-savings-goal variant="segmented" items='[{"label":"Holiday fund","value":1800,"max":3000}]' unit="USD"></bx-savings-goal></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="spend-categories" aria-labelledby="w4-3-h"><h2 id="w4-3-h">Spend categories</h2><div class="gate-body">
       <bx-spend-categories options='["Eating out","Groceries","Travel","Shopping"]' label-hint="Coffee House · 4.50 is" value="{{cats}}"></bx-spend-categories>
@@ -409,18 +409,18 @@
     </div></section>
     <section class="gate" data-component="approval-journey" aria-labelledby="w4-6-h"><h2 id="w4-6-h">Approval journey</h2><div class="gate-body">
       <bx-approval-journey items='[{"label":"Initiated","meta":"A. Rao · 09:12"},{"label":"Approved, level 1","meta":"P. Nair · 10:40"},{"label":"Waiting, level 2","meta":"Finance head","state":"current"},{"label":"Release","meta":"Treasury","state":"pending"}]'></bx-approval-journey>
-      <div data-variant="compact"><bx-approval-journey variant="compact" items='[{"label":"Initiated","meta":"A. Rao · 09:12"},{"label":"Approved, level 1","meta":"P. Nair · 10:40"},{"label":"Waiting, level 2","meta":"Finance head","state":"current"},{"label":"Release","meta":"Treasury","state":"pending"}]'></bx-approval-journey></div>
-      <div data-variant="cards"><bx-approval-journey variant="cards" items='[{"label":"Initiated","meta":"A. Rao · 09:12"},{"label":"Approved, level 1","meta":"P. Nair · 10:40"},{"label":"Waiting, level 2","meta":"Finance head","state":"current"},{"label":"Release","meta":"Treasury","state":"pending"}]'></bx-approval-journey></div>
-      <div data-variant="horizontal"><bx-approval-journey variant="horizontal" items='[{"label":"Initiated","meta":"A. Rao · 09:12"},{"label":"Approved, level 1","meta":"P. Nair · 10:40"},{"label":"Waiting, level 2","meta":"Finance head","state":"current"},{"label":"Release","meta":"Treasury","state":"pending"}]'></bx-approval-journey></div>
+      <oj-bind-if test="[[variantAsked === 'compact']]"><div data-variant="compact"><bx-approval-journey variant="compact" items='[{"label":"Initiated","meta":"A. Rao · 09:12"},{"label":"Approved, level 1","meta":"P. Nair · 10:40"},{"label":"Waiting, level 2","meta":"Finance head","state":"current"},{"label":"Release","meta":"Treasury","state":"pending"}]'></bx-approval-journey></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'cards']]"><div data-variant="cards"><bx-approval-journey variant="cards" items='[{"label":"Initiated","meta":"A. Rao · 09:12"},{"label":"Approved, level 1","meta":"P. Nair · 10:40"},{"label":"Waiting, level 2","meta":"Finance head","state":"current"},{"label":"Release","meta":"Treasury","state":"pending"}]'></bx-approval-journey></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'horizontal']]"><div data-variant="horizontal"><bx-approval-journey variant="horizontal" items='[{"label":"Initiated","meta":"A. Rao · 09:12"},{"label":"Approved, level 1","meta":"P. Nair · 10:40"},{"label":"Waiting, level 2","meta":"Finance head","state":"current"},{"label":"Release","meta":"Treasury","state":"pending"}]'></bx-approval-journey></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="reroute" aria-labelledby="w4-7-h"><h2 id="w4-7-h">Re-route</h2><div class="gate-body">
       <bx-reroute options="[[approvers]]" value="{{reroute}}"></bx-reroute>
     </div></section>
     <section class="gate" data-component="modification-requested" aria-labelledby="w4-8-h"><h2 id="w4-8-h">Modification requested</h2><div class="gate-body">
       <bx-modification-requested message="PAY-4410 was sent back: change the value date to a working day."></bx-modification-requested>
-      <div data-variant="filled"><bx-modification-requested variant="filled" message="PAY-4410 was sent back: change the value date to a working day."></bx-modification-requested></div>
-      <div data-variant="outlined"><bx-modification-requested variant="outlined" message="PAY-4410 was sent back: change the value date to a working day."></bx-modification-requested></div>
-      <div data-variant="banner"><bx-modification-requested variant="banner" message="PAY-4410 was sent back: change the value date to a working day."></bx-modification-requested></div>
+      <oj-bind-if test="[[variantAsked === 'filled']]"><div data-variant="filled"><bx-modification-requested variant="filled" message="PAY-4410 was sent back: change the value date to a working day."></bx-modification-requested></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'outlined']]"><div data-variant="outlined"><bx-modification-requested variant="outlined" message="PAY-4410 was sent back: change the value date to a working day."></bx-modification-requested></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'banner']]"><div data-variant="banner"><bx-modification-requested variant="banner" message="PAY-4410 was sent back: change the value date to a working day."></bx-modification-requested></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="pending-release" aria-labelledby="w4-9-h"><h2 id="w4-9-h">Pending release</h2><div class="gate-body">
       <bx-pending-release items='[{"title":"Payroll Jan","meta":"Approved 3 of 3","value":"182,400.00"},{"title":"Tax payment","meta":"Approved 2 of 2","value":"9,800.00"}]'></bx-pending-release>
@@ -436,15 +436,15 @@
     </div></section>
     <section class="gate" data-component="intercompany-limits" aria-labelledby="w4-13-h"><h2 id="w4-13-h">Intercompany limits</h2><div class="gate-body">
       <bx-intercompany-limits items='[{"label":"Payroll Ltd","value":120,"max":500},{"label":"Vendors Ltd","value":340,"max":400}]' unit="k"></bx-intercompany-limits>
-      <div data-variant="linear"><bx-intercompany-limits variant="linear" items='[{"label":"Payroll Ltd","value":120,"max":500},{"label":"Vendors Ltd","value":340,"max":400}]' unit="k"></bx-intercompany-limits></div>
-      <div data-variant="ring"><bx-intercompany-limits variant="ring" items='[{"label":"Payroll Ltd","value":120,"max":500},{"label":"Vendors Ltd","value":340,"max":400}]' unit="k"></bx-intercompany-limits></div>
-      <div data-variant="segmented"><bx-intercompany-limits variant="segmented" items='[{"label":"Payroll Ltd","value":120,"max":500},{"label":"Vendors Ltd","value":340,"max":400}]' unit="k"></bx-intercompany-limits></div>
+      <oj-bind-if test="[[variantAsked === 'linear']]"><div data-variant="linear"><bx-intercompany-limits variant="linear" items='[{"label":"Payroll Ltd","value":120,"max":500},{"label":"Vendors Ltd","value":340,"max":400}]' unit="k"></bx-intercompany-limits></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'ring']]"><div data-variant="ring"><bx-intercompany-limits variant="ring" items='[{"label":"Payroll Ltd","value":120,"max":500},{"label":"Vendors Ltd","value":340,"max":400}]' unit="k"></bx-intercompany-limits></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'segmented']]"><div data-variant="segmented"><bx-intercompany-limits variant="segmented" items='[{"label":"Payroll Ltd","value":120,"max":500},{"label":"Vendors Ltd","value":340,"max":400}]' unit="k"></bx-intercompany-limits></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="sweep-monitor" aria-labelledby="w4-14-h"><h2 id="w4-14-h">Sweep monitor</h2><div class="gate-body">
       <bx-sweep-monitor items='[{"label":"Sweep started","meta":"18:00"},{"label":"3 of 3 accounts swept","meta":"18:02"},{"label":"Interest reallocated","meta":"18:05","state":"current"}]'></bx-sweep-monitor>
-      <div data-variant="compact"><bx-sweep-monitor variant="compact" items='[{"label":"Sweep started","meta":"18:00"},{"label":"3 of 3 accounts swept","meta":"18:02"},{"label":"Interest reallocated","meta":"18:05","state":"current"}]'></bx-sweep-monitor></div>
-      <div data-variant="cards"><bx-sweep-monitor variant="cards" items='[{"label":"Sweep started","meta":"18:00"},{"label":"3 of 3 accounts swept","meta":"18:02"},{"label":"Interest reallocated","meta":"18:05","state":"current"}]'></bx-sweep-monitor></div>
-      <div data-variant="horizontal"><bx-sweep-monitor variant="horizontal" items='[{"label":"Sweep started","meta":"18:00"},{"label":"3 of 3 accounts swept","meta":"18:02"},{"label":"Interest reallocated","meta":"18:05","state":"current"}]'></bx-sweep-monitor></div>
+      <oj-bind-if test="[[variantAsked === 'compact']]"><div data-variant="compact"><bx-sweep-monitor variant="compact" items='[{"label":"Sweep started","meta":"18:00"},{"label":"3 of 3 accounts swept","meta":"18:02"},{"label":"Interest reallocated","meta":"18:05","state":"current"}]'></bx-sweep-monitor></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'cards']]"><div data-variant="cards"><bx-sweep-monitor variant="cards" items='[{"label":"Sweep started","meta":"18:00"},{"label":"3 of 3 accounts swept","meta":"18:02"},{"label":"Interest reallocated","meta":"18:05","state":"current"}]'></bx-sweep-monitor></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'horizontal']]"><div data-variant="horizontal"><bx-sweep-monitor variant="horizontal" items='[{"label":"Sweep started","meta":"18:00"},{"label":"3 of 3 accounts swept","meta":"18:02"},{"label":"Interest reallocated","meta":"18:05","state":"current"}]'></bx-sweep-monitor></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="profile" aria-labelledby="w4-15-h"><h2 id="w4-15-h">Profile</h2><div class="gate-body">
       <bx-profile items='[{"label":"Name","value":"A. Rao"},{"label":"Email","value":"a.rao@mail.example"},{"label":"Mobile","value":"•••• 0123"},{"label":"Address","value":"12 Bridge St, London"}]'></bx-profile>
@@ -475,24 +475,24 @@
     </div></section>
     <section class="gate" data-component="transaction-limits" aria-labelledby="w4-24-h"><h2 id="w4-24-h">Transaction limits</h2><div class="gate-body">
       <bx-transaction-limits items='[{"label":"Daily transfers","value":1200,"max":5000},{"label":"Bill payments","value":300,"max":2000}]'></bx-transaction-limits>
-      <div data-variant="linear"><bx-transaction-limits variant="linear" items='[{"label":"Daily transfers","value":1200,"max":5000},{"label":"Bill payments","value":300,"max":2000}]'></bx-transaction-limits></div>
-      <div data-variant="ring"><bx-transaction-limits variant="ring" items='[{"label":"Daily transfers","value":1200,"max":5000},{"label":"Bill payments","value":300,"max":2000}]'></bx-transaction-limits></div>
-      <div data-variant="segmented"><bx-transaction-limits variant="segmented" items='[{"label":"Daily transfers","value":1200,"max":5000},{"label":"Bill payments","value":300,"max":2000}]'></bx-transaction-limits></div>
+      <oj-bind-if test="[[variantAsked === 'linear']]"><div data-variant="linear"><bx-transaction-limits variant="linear" items='[{"label":"Daily transfers","value":1200,"max":5000},{"label":"Bill payments","value":300,"max":2000}]'></bx-transaction-limits></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'ring']]"><div data-variant="ring"><bx-transaction-limits variant="ring" items='[{"label":"Daily transfers","value":1200,"max":5000},{"label":"Bill payments","value":300,"max":2000}]'></bx-transaction-limits></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'segmented']]"><div data-variant="segmented"><bx-transaction-limits variant="segmented" items='[{"label":"Daily transfers","value":1200,"max":5000},{"label":"Bill payments","value":300,"max":2000}]'></bx-transaction-limits></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="session-summary" aria-labelledby="w4-25-h"><h2 id="w4-25-h">Session summary</h2><div class="gate-body">
       <bx-session-summary items='[{"label":"Today 08:12","meta":"iPhone 15 · London"},{"label":"Yesterday 19:40","meta":"Chrome on Windows · London"},{"label":"3 Jan 07:55","meta":"iPhone 15 · Paris"}]'></bx-session-summary>
-      <div data-variant="compact"><bx-session-summary variant="compact" items='[{"label":"Today 08:12","meta":"iPhone 15 · London"},{"label":"Yesterday 19:40","meta":"Chrome on Windows · London"},{"label":"3 Jan 07:55","meta":"iPhone 15 · Paris"}]'></bx-session-summary></div>
-      <div data-variant="cards"><bx-session-summary variant="cards" items='[{"label":"Today 08:12","meta":"iPhone 15 · London"},{"label":"Yesterday 19:40","meta":"Chrome on Windows · London"},{"label":"3 Jan 07:55","meta":"iPhone 15 · Paris"}]'></bx-session-summary></div>
-      <div data-variant="horizontal"><bx-session-summary variant="horizontal" items='[{"label":"Today 08:12","meta":"iPhone 15 · London"},{"label":"Yesterday 19:40","meta":"Chrome on Windows · London"},{"label":"3 Jan 07:55","meta":"iPhone 15 · Paris"}]'></bx-session-summary></div>
+      <oj-bind-if test="[[variantAsked === 'compact']]"><div data-variant="compact"><bx-session-summary variant="compact" items='[{"label":"Today 08:12","meta":"iPhone 15 · London"},{"label":"Yesterday 19:40","meta":"Chrome on Windows · London"},{"label":"3 Jan 07:55","meta":"iPhone 15 · Paris"}]'></bx-session-summary></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'cards']]"><div data-variant="cards"><bx-session-summary variant="cards" items='[{"label":"Today 08:12","meta":"iPhone 15 · London"},{"label":"Yesterday 19:40","meta":"Chrome on Windows · London"},{"label":"3 Jan 07:55","meta":"iPhone 15 · Paris"}]'></bx-session-summary></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'horizontal']]"><div data-variant="horizontal"><bx-session-summary variant="horizontal" items='[{"label":"Today 08:12","meta":"iPhone 15 · London"},{"label":"Yesterday 19:40","meta":"Chrome on Windows · London"},{"label":"3 Jan 07:55","meta":"iPhone 15 · Paris"}]'></bx-session-summary></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="raise-request" aria-labelledby="w5-0-h"><h2 id="w5-0-h">Raise request</h2><div class="gate-body">
       <bx-raise-request items='[{"label":"Request","value":"Cheque book"},{"label":"Account","value":"Savings ·· 4821"},{"label":"Leaves","value":"25"}]'></bx-raise-request>
     </div></section>
     <section class="gate" data-component="track-requests" aria-labelledby="w5-1-h"><h2 id="w5-1-h">Track requests</h2><div class="gate-body">
       <bx-track-requests items='[{"label":"Received","meta":"SR-2210 · 10 Jan"},{"label":"In progress","meta":"Printing the cheque book","state":"current"},{"label":"Dispatched","meta":"Expected 15 Jan","state":"pending"}]'></bx-track-requests>
-      <div data-variant="compact"><bx-track-requests variant="compact" items='[{"label":"Received","meta":"SR-2210 · 10 Jan"},{"label":"In progress","meta":"Printing the cheque book","state":"current"},{"label":"Dispatched","meta":"Expected 15 Jan","state":"pending"}]'></bx-track-requests></div>
-      <div data-variant="cards"><bx-track-requests variant="cards" items='[{"label":"Received","meta":"SR-2210 · 10 Jan"},{"label":"In progress","meta":"Printing the cheque book","state":"current"},{"label":"Dispatched","meta":"Expected 15 Jan","state":"pending"}]'></bx-track-requests></div>
-      <div data-variant="horizontal"><bx-track-requests variant="horizontal" items='[{"label":"Received","meta":"SR-2210 · 10 Jan"},{"label":"In progress","meta":"Printing the cheque book","state":"current"},{"label":"Dispatched","meta":"Expected 15 Jan","state":"pending"}]'></bx-track-requests></div>
+      <oj-bind-if test="[[variantAsked === 'compact']]"><div data-variant="compact"><bx-track-requests variant="compact" items='[{"label":"Received","meta":"SR-2210 · 10 Jan"},{"label":"In progress","meta":"Printing the cheque book","state":"current"},{"label":"Dispatched","meta":"Expected 15 Jan","state":"pending"}]'></bx-track-requests></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'cards']]"><div data-variant="cards"><bx-track-requests variant="cards" items='[{"label":"Received","meta":"SR-2210 · 10 Jan"},{"label":"In progress","meta":"Printing the cheque book","state":"current"},{"label":"Dispatched","meta":"Expected 15 Jan","state":"pending"}]'></bx-track-requests></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'horizontal']]"><div data-variant="horizontal"><bx-track-requests variant="horizontal" items='[{"label":"Received","meta":"SR-2210 · 10 Jan"},{"label":"In progress","meta":"Printing the cheque book","state":"current"},{"label":"Dispatched","meta":"Expected 15 Jan","state":"pending"}]'></bx-track-requests></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="mailbox" aria-labelledby="w5-2-h"><h2 id="w5-2-h">Mailbox</h2><div class="gate-body">
       <bx-mailbox items='[{"title":"Your cheque book is on the way","meta":"Today","value":"Mail","unread":true},{"title":"Low balance on Current ·· 7730","meta":"Yesterday","value":"Alert"},{"title":"New statement ready","meta":"2 days ago","value":"Notice"}]'></bx-mailbox>
@@ -514,24 +514,24 @@
     </div></section>
     <section class="gate" data-component="self-register" aria-labelledby="w5-8-h"><h2 id="w5-8-h">Self registration</h2><div class="gate-body">
       <bx-self-register selected-step="Verify"></bx-self-register>
-      <div data-variant="material"><bx-self-register variant="material" selected-step="Verify"></bx-self-register></div>
-      <div data-variant="vertical"><bx-self-register variant="vertical" selected-step="Verify"></bx-self-register></div>
-      <div data-variant="segmented"><bx-self-register variant="segmented" selected-step="Verify"></bx-self-register></div>
+      <oj-bind-if test="[[variantAsked === 'material']]"><div data-variant="material"><bx-self-register variant="material" selected-step="Verify"></bx-self-register></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'vertical']]"><div data-variant="vertical"><bx-self-register variant="vertical" selected-step="Verify"></bx-self-register></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'segmented']]"><div data-variant="segmented"><bx-self-register variant="segmented" selected-step="Verify"></bx-self-register></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="fatca-crs" aria-labelledby="w5-9-h"><h2 id="w5-9-h">FATCA and CRS</h2><div class="gate-body">
       <bx-fatca-crs selected-step="Tax residency"></bx-fatca-crs>
-      <div data-variant="material"><bx-fatca-crs variant="material" selected-step="Tax residency"></bx-fatca-crs></div>
-      <div data-variant="vertical"><bx-fatca-crs variant="vertical" selected-step="Tax residency"></bx-fatca-crs></div>
-      <div data-variant="segmented"><bx-fatca-crs variant="segmented" selected-step="Tax residency"></bx-fatca-crs></div>
+      <oj-bind-if test="[[variantAsked === 'material']]"><div data-variant="material"><bx-fatca-crs variant="material" selected-step="Tax residency"></bx-fatca-crs></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'vertical']]"><div data-variant="vertical"><bx-fatca-crs variant="vertical" selected-step="Tax residency"></bx-fatca-crs></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'segmented']]"><div data-variant="segmented"><bx-fatca-crs variant="segmented" selected-step="Tax residency"></bx-fatca-crs></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="product-showcase" aria-labelledby="w5-10-h"><h2 id="w5-10-h">Product showcase</h2><div class="gate-body">
       <bx-product-showcase heading="Platinum credit card" text="2% cashback · no annual fee in year one" badge="New" action-label="Apply now →"></bx-product-showcase>
     </div></section>
     <section class="gate" data-component="application-tracker" aria-labelledby="w5-11-h"><h2 id="w5-11-h">Application tracker</h2><div class="gate-body">
       <bx-application-tracker items='[{"label":"Submitted","meta":"12 Jan"},{"label":"Documents checked","meta":"13 Jan"},{"label":"Credit decision","meta":"Expected 16 Jan","state":"current"},{"label":"Card sent","meta":"—","state":"pending"}]'></bx-application-tracker>
-      <div data-variant="compact"><bx-application-tracker variant="compact" items='[{"label":"Submitted","meta":"12 Jan"},{"label":"Documents checked","meta":"13 Jan"},{"label":"Credit decision","meta":"Expected 16 Jan","state":"current"},{"label":"Card sent","meta":"—","state":"pending"}]'></bx-application-tracker></div>
-      <div data-variant="cards"><bx-application-tracker variant="cards" items='[{"label":"Submitted","meta":"12 Jan"},{"label":"Documents checked","meta":"13 Jan"},{"label":"Credit decision","meta":"Expected 16 Jan","state":"current"},{"label":"Card sent","meta":"—","state":"pending"}]'></bx-application-tracker></div>
-      <div data-variant="horizontal"><bx-application-tracker variant="horizontal" items='[{"label":"Submitted","meta":"12 Jan"},{"label":"Documents checked","meta":"13 Jan"},{"label":"Credit decision","meta":"Expected 16 Jan","state":"current"},{"label":"Card sent","meta":"—","state":"pending"}]'></bx-application-tracker></div>
+      <oj-bind-if test="[[variantAsked === 'compact']]"><div data-variant="compact"><bx-application-tracker variant="compact" items='[{"label":"Submitted","meta":"12 Jan"},{"label":"Documents checked","meta":"13 Jan"},{"label":"Credit decision","meta":"Expected 16 Jan","state":"current"},{"label":"Card sent","meta":"—","state":"pending"}]'></bx-application-tracker></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'cards']]"><div data-variant="cards"><bx-application-tracker variant="cards" items='[{"label":"Submitted","meta":"12 Jan"},{"label":"Documents checked","meta":"13 Jan"},{"label":"Credit decision","meta":"Expected 16 Jan","state":"current"},{"label":"Card sent","meta":"—","state":"pending"}]'></bx-application-tracker></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'horizontal']]"><div data-variant="horizontal"><bx-application-tracker variant="horizontal" items='[{"label":"Submitted","meta":"12 Jan"},{"label":"Documents checked","meta":"13 Jan"},{"label":"Credit decision","meta":"Expected 16 Jan","state":"current"},{"label":"Card sent","meta":"—","state":"pending"}]'></bx-application-tracker></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="terms-consent" aria-labelledby="w5-12-h"><h2 id="w5-12-h">Terms consent</h2><div class="gate-body">
       <bx-terms-consent options='["I accept the terms and conditions","Send me offers by email"]' value="{{terms}}"></bx-terms-consent>
@@ -559,8 +559,8 @@
     </div></section>
     <section class="gate" data-component="feedback" aria-labelledby="w5-20-h"><h2 id="w5-20-h">Feedback rating</h2><div class="gate-body">
       <bx-feedback label-hint="How was this payment?" value="{{stars}}"></bx-feedback>
-      <div data-variant="emoji"><bx-feedback variant="emoji" label-hint="How was this payment?" value="{{stars}}"></bx-feedback></div>
-      <div data-variant="numbers"><bx-feedback variant="numbers" label-hint="How was this payment?" value="{{stars}}"></bx-feedback></div>
+      <oj-bind-if test="[[variantAsked === 'emoji']]"><div data-variant="emoji"><bx-feedback variant="emoji" label-hint="How was this payment?" value="{{stars}}"></bx-feedback></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'numbers']]"><div data-variant="numbers"><bx-feedback variant="numbers" label-hint="How was this payment?" value="{{stars}}"></bx-feedback></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="nominations" aria-labelledby="w5-21-h"><h2 id="w5-21-h">Nominations</h2><div class="gate-body">
       <bx-nominations items='[{"title":"S. Rao · spouse","meta":"Savings ·· 4821","value":"50%"},{"title":"K. Rao · son","meta":"Savings ·· 4821","value":"50%"}]'></bx-nominations>
@@ -582,30 +582,30 @@
     </div></section>
     <section class="gate" data-component="spend-analysis" aria-labelledby="w6-4-h"><h2 id="w6-4-h">Spend analysis</h2><div class="gate-body">
       <bx-spend-analysis items='[{"label":"Groceries","value":320},{"label":"Travel","value":180},{"label":"Eating out","value":210},{"label":"Shopping","value":140}]' unit="USD"></bx-spend-analysis>
-      <div data-variant="rounded"><bx-spend-analysis variant="rounded" items='[{"label":"Groceries","value":320},{"label":"Travel","value":180},{"label":"Eating out","value":210},{"label":"Shopping","value":140}]' unit="USD"></bx-spend-analysis></div>
-      <div data-variant="lollipop"><bx-spend-analysis variant="lollipop" items='[{"label":"Groceries","value":320},{"label":"Travel","value":180},{"label":"Eating out","value":210},{"label":"Shopping","value":140}]' unit="USD"></bx-spend-analysis></div>
-      <div data-variant="meter"><bx-spend-analysis variant="meter" items='[{"label":"Groceries","value":320},{"label":"Travel","value":180},{"label":"Eating out","value":210},{"label":"Shopping","value":140}]' unit="USD"></bx-spend-analysis></div>
+      <oj-bind-if test="[[variantAsked === 'rounded']]"><div data-variant="rounded"><bx-spend-analysis variant="rounded" items='[{"label":"Groceries","value":320},{"label":"Travel","value":180},{"label":"Eating out","value":210},{"label":"Shopping","value":140}]' unit="USD"></bx-spend-analysis></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'lollipop']]"><div data-variant="lollipop"><bx-spend-analysis variant="lollipop" items='[{"label":"Groceries","value":320},{"label":"Travel","value":180},{"label":"Eating out","value":210},{"label":"Shopping","value":140}]' unit="USD"></bx-spend-analysis></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'meter']]"><div data-variant="meter"><bx-spend-analysis variant="meter" items='[{"label":"Groceries","value":320},{"label":"Travel","value":180},{"label":"Eating out","value":210},{"label":"Shopping","value":140}]' unit="USD"></bx-spend-analysis></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="goals" aria-labelledby="w6-5-h"><h2 id="w6-5-h">Goals</h2><div class="gate-body">
       <bx-goals items='[{"label":"Holiday fund","value":1800,"max":3000},{"label":"New car","value":4200,"max":15000}]'></bx-goals>
-      <div data-variant="linear"><bx-goals variant="linear" items='[{"label":"Holiday fund","value":1800,"max":3000},{"label":"New car","value":4200,"max":15000}]'></bx-goals></div>
-      <div data-variant="ring"><bx-goals variant="ring" items='[{"label":"Holiday fund","value":1800,"max":3000},{"label":"New car","value":4200,"max":15000}]'></bx-goals></div>
-      <div data-variant="segmented"><bx-goals variant="segmented" items='[{"label":"Holiday fund","value":1800,"max":3000},{"label":"New car","value":4200,"max":15000}]'></bx-goals></div>
+      <oj-bind-if test="[[variantAsked === 'linear']]"><div data-variant="linear"><bx-goals variant="linear" items='[{"label":"Holiday fund","value":1800,"max":3000},{"label":"New car","value":4200,"max":15000}]'></bx-goals></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'ring']]"><div data-variant="ring"><bx-goals variant="ring" items='[{"label":"Holiday fund","value":1800,"max":3000},{"label":"New car","value":4200,"max":15000}]'></bx-goals></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'segmented']]"><div data-variant="segmented"><bx-goals variant="segmented" items='[{"label":"Holiday fund","value":1800,"max":3000},{"label":"New car","value":4200,"max":15000}]'></bx-goals></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="budgets" aria-labelledby="w6-6-h"><h2 id="w6-6-h">Budgets</h2><div class="gate-body">
       <bx-budgets items='[{"label":"Groceries","value":320,"max":400},{"label":"Travel","value":180,"max":300},{"label":"Eating out","value":210,"max":200}]'></bx-budgets>
-      <div data-variant="linear"><bx-budgets variant="linear" items='[{"label":"Groceries","value":320,"max":400},{"label":"Travel","value":180,"max":300},{"label":"Eating out","value":210,"max":200}]'></bx-budgets></div>
-      <div data-variant="ring"><bx-budgets variant="ring" items='[{"label":"Groceries","value":320,"max":400},{"label":"Travel","value":180,"max":300},{"label":"Eating out","value":210,"max":200}]'></bx-budgets></div>
-      <div data-variant="segmented"><bx-budgets variant="segmented" items='[{"label":"Groceries","value":320,"max":400},{"label":"Travel","value":180,"max":300},{"label":"Eating out","value":210,"max":200}]'></bx-budgets></div>
+      <oj-bind-if test="[[variantAsked === 'linear']]"><div data-variant="linear"><bx-budgets variant="linear" items='[{"label":"Groceries","value":320,"max":400},{"label":"Travel","value":180,"max":300},{"label":"Eating out","value":210,"max":200}]'></bx-budgets></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'ring']]"><div data-variant="ring"><bx-budgets variant="ring" items='[{"label":"Groceries","value":320,"max":400},{"label":"Travel","value":180,"max":300},{"label":"Eating out","value":210,"max":200}]'></bx-budgets></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'segmented']]"><div data-variant="segmented"><bx-budgets variant="segmented" items='[{"label":"Groceries","value":320,"max":400},{"label":"Travel","value":180,"max":300},{"label":"Eating out","value":210,"max":200}]'></bx-budgets></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="calculators" aria-labelledby="w6-7-h"><h2 id="w6-7-h">Calculators</h2><div class="gate-body">
       <bx-calculators currency="USD"></bx-calculators>
     </div></section>
     <section class="gate" data-component="credit-score" aria-labelledby="w6-8-h"><h2 id="w6-8-h">Credit score</h2><div class="gate-body">
       <bx-credit-score items='[{"label":"Credit score","value":742,"max":900}]'></bx-credit-score>
-      <div data-variant="linear"><bx-credit-score variant="linear" items='[{"label":"Credit score","value":742,"max":900}]'></bx-credit-score></div>
-      <div data-variant="ring"><bx-credit-score variant="ring" items='[{"label":"Credit score","value":742,"max":900}]'></bx-credit-score></div>
-      <div data-variant="segmented"><bx-credit-score variant="segmented" items='[{"label":"Credit score","value":742,"max":900}]'></bx-credit-score></div>
+      <oj-bind-if test="[[variantAsked === 'linear']]"><div data-variant="linear"><bx-credit-score variant="linear" items='[{"label":"Credit score","value":742,"max":900}]'></bx-credit-score></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'ring']]"><div data-variant="ring"><bx-credit-score variant="ring" items='[{"label":"Credit score","value":742,"max":900}]'></bx-credit-score></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'segmented']]"><div data-variant="segmented"><bx-credit-score variant="segmented" items='[{"label":"Credit score","value":742,"max":900}]'></bx-credit-score></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="rewards" aria-labelledby="w6-9-h"><h2 id="w6-9-h">Rewards</h2><div class="gate-body">
       <bx-rewards items='[{"label":"Points","value":"12,400","meta":"Redeem for merchandise, vouchers or air miles"},{"label":"Vouchers","value":"3","meta":"Expire 31 Mar"},{"label":"Cashback","value":"45.00","meta":"Paid on the 1st"}]'></bx-rewards>
@@ -624,24 +624,24 @@
     </div></section>
     <section class="gate" data-component="delinquency-notice" aria-labelledby="w6-14-h"><h2 id="w6-14-h">Delinquency notice</h2><div class="gate-body">
       <bx-delinquency-notice message="Your car loan ·· 3310 is 12 days overdue: 412.00."></bx-delinquency-notice>
-      <div data-variant="filled"><bx-delinquency-notice variant="filled" message="Your car loan ·· 3310 is 12 days overdue: 412.00."></bx-delinquency-notice></div>
-      <div data-variant="outlined"><bx-delinquency-notice variant="outlined" message="Your car loan ·· 3310 is 12 days overdue: 412.00."></bx-delinquency-notice></div>
-      <div data-variant="banner"><bx-delinquency-notice variant="banner" message="Your car loan ·· 3310 is 12 days overdue: 412.00."></bx-delinquency-notice></div>
+      <oj-bind-if test="[[variantAsked === 'filled']]"><div data-variant="filled"><bx-delinquency-notice variant="filled" message="Your car loan ·· 3310 is 12 days overdue: 412.00."></bx-delinquency-notice></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'outlined']]"><div data-variant="outlined"><bx-delinquency-notice variant="outlined" message="Your car loan ·· 3310 is 12 days overdue: 412.00."></bx-delinquency-notice></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'banner']]"><div data-variant="banner"><bx-delinquency-notice variant="banner" message="Your car loan ·· 3310 is 12 days overdue: 412.00."></bx-delinquency-notice></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="financial-overview" aria-labelledby="w6-15-h"><h2 id="w6-15-h">Financial overview</h2><div class="gate-body">
       <bx-financial-overview items='[{"label":"Assets","value":"4.2M","meta":"CASA, deposits"},{"label":"Liabilities","value":"1.1M","meta":"Loans"},{"label":"Net worth","value":"3.1M","meta":"Assets less liabilities"}]'></bx-financial-overview>
     </div></section>
     <section class="gate" data-component="position-by-currency" aria-labelledby="w6-16-h"><h2 id="w6-16-h">Position by currency</h2><div class="gate-body">
       <bx-position-by-currency items='[{"label":"USD","value":88},{"label":"EUR","value":60},{"label":"GBP","value":42},{"label":"INR","value":30},{"label":"AED","value":18}]' note="In millions, assets"></bx-position-by-currency>
-      <div data-variant="rounded"><bx-position-by-currency variant="rounded" items='[{"label":"USD","value":88},{"label":"EUR","value":60},{"label":"GBP","value":42},{"label":"INR","value":30},{"label":"AED","value":18}]' note="In millions, assets"></bx-position-by-currency></div>
-      <div data-variant="lollipop"><bx-position-by-currency variant="lollipop" items='[{"label":"USD","value":88},{"label":"EUR","value":60},{"label":"GBP","value":42},{"label":"INR","value":30},{"label":"AED","value":18}]' note="In millions, assets"></bx-position-by-currency></div>
-      <div data-variant="meter"><bx-position-by-currency variant="meter" items='[{"label":"USD","value":88},{"label":"EUR","value":60},{"label":"GBP","value":42},{"label":"INR","value":30},{"label":"AED","value":18}]' note="In millions, assets"></bx-position-by-currency></div>
+      <oj-bind-if test="[[variantAsked === 'rounded']]"><div data-variant="rounded"><bx-position-by-currency variant="rounded" items='[{"label":"USD","value":88},{"label":"EUR","value":60},{"label":"GBP","value":42},{"label":"INR","value":30},{"label":"AED","value":18}]' note="In millions, assets"></bx-position-by-currency></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'lollipop']]"><div data-variant="lollipop"><bx-position-by-currency variant="lollipop" items='[{"label":"USD","value":88},{"label":"EUR","value":60},{"label":"GBP","value":42},{"label":"INR","value":30},{"label":"AED","value":18}]' note="In millions, assets"></bx-position-by-currency></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'meter']]"><div data-variant="meter"><bx-position-by-currency variant="meter" items='[{"label":"USD","value":88},{"label":"EUR","value":60},{"label":"GBP","value":42},{"label":"INR","value":30},{"label":"AED","value":18}]' note="In millions, assets"></bx-position-by-currency></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="credit-line-usage" aria-labelledby="w6-17-h"><h2 id="w6-17-h">Credit line usage</h2><div class="gate-body">
       <bx-credit-line-usage items='[{"label":"Working capital","value":720,"max":1000},{"label":"Import LC line","value":300,"max":500},{"label":"Guarantees","value":90,"max":400}]' unit="k"></bx-credit-line-usage>
-      <div data-variant="linear"><bx-credit-line-usage variant="linear" items='[{"label":"Working capital","value":720,"max":1000},{"label":"Import LC line","value":300,"max":500},{"label":"Guarantees","value":90,"max":400}]' unit="k"></bx-credit-line-usage></div>
-      <div data-variant="ring"><bx-credit-line-usage variant="ring" items='[{"label":"Working capital","value":720,"max":1000},{"label":"Import LC line","value":300,"max":500},{"label":"Guarantees","value":90,"max":400}]' unit="k"></bx-credit-line-usage></div>
-      <div data-variant="segmented"><bx-credit-line-usage variant="segmented" items='[{"label":"Working capital","value":720,"max":1000},{"label":"Import LC line","value":300,"max":500},{"label":"Guarantees","value":90,"max":400}]' unit="k"></bx-credit-line-usage></div>
+      <oj-bind-if test="[[variantAsked === 'linear']]"><div data-variant="linear"><bx-credit-line-usage variant="linear" items='[{"label":"Working capital","value":720,"max":1000},{"label":"Import LC line","value":300,"max":500},{"label":"Guarantees","value":90,"max":400}]' unit="k"></bx-credit-line-usage></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'ring']]"><div data-variant="ring"><bx-credit-line-usage variant="ring" items='[{"label":"Working capital","value":720,"max":1000},{"label":"Import LC line","value":300,"max":500},{"label":"Guarantees","value":90,"max":400}]' unit="k"></bx-credit-line-usage></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'segmented']]"><div data-variant="segmented"><bx-credit-line-usage variant="segmented" items='[{"label":"Working capital","value":720,"max":1000},{"label":"Import LC line","value":300,"max":500},{"label":"Guarantees","value":90,"max":400}]' unit="k"></bx-credit-line-usage></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="bills-receivable-payable" aria-labelledby="w6-18-h"><h2 id="w6-18-h">Bills receivable and payable</h2><div class="gate-body">
       <bx-bills-receivable-payable items='[{"label":"Receivable","value":"1.8M","meta":"Export bills"},{"label":"Payable","value":"0.9M","meta":"Import bills"}]'></bx-bills-receivable-payable>
@@ -657,9 +657,9 @@
     </div></section>
     <section class="gate" data-component="corporate-limits" aria-labelledby="w6-22-h"><h2 id="w6-22-h">Corporate limits</h2><div class="gate-body">
       <bx-corporate-limits items='[{"label":"Daily, own transfers","value":420,"max":1000},{"label":"Monthly, payments","value":6200,"max":20000}]' unit="k"></bx-corporate-limits>
-      <div data-variant="linear"><bx-corporate-limits variant="linear" items='[{"label":"Daily, own transfers","value":420,"max":1000},{"label":"Monthly, payments","value":6200,"max":20000}]' unit="k"></bx-corporate-limits></div>
-      <div data-variant="ring"><bx-corporate-limits variant="ring" items='[{"label":"Daily, own transfers","value":420,"max":1000},{"label":"Monthly, payments","value":6200,"max":20000}]' unit="k"></bx-corporate-limits></div>
-      <div data-variant="segmented"><bx-corporate-limits variant="segmented" items='[{"label":"Daily, own transfers","value":420,"max":1000},{"label":"Monthly, payments","value":6200,"max":20000}]' unit="k"></bx-corporate-limits></div>
+      <oj-bind-if test="[[variantAsked === 'linear']]"><div data-variant="linear"><bx-corporate-limits variant="linear" items='[{"label":"Daily, own transfers","value":420,"max":1000},{"label":"Monthly, payments","value":6200,"max":20000}]' unit="k"></bx-corporate-limits></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'ring']]"><div data-variant="ring"><bx-corporate-limits variant="ring" items='[{"label":"Daily, own transfers","value":420,"max":1000},{"label":"Monthly, payments","value":6200,"max":20000}]' unit="k"></bx-corporate-limits></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'segmented']]"><div data-variant="segmented"><bx-corporate-limits variant="segmented" items='[{"label":"Daily, own transfers","value":420,"max":1000},{"label":"Monthly, payments","value":6200,"max":20000}]' unit="k"></bx-corporate-limits></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="transactions-widget" aria-labelledby="w6-23-h"><h2 id="w6-23-h">Transactions (corporate)</h2><div class="gate-body">
       <bx-transactions-widget items='[{"id":"pending","label":"Pending","summary":"6 waiting: 4 financial, 2 non-financial"},{"id":"initiated","label":"Initiated","summary":"3 initiated today"},{"id":"log","label":"Log","summary":"42 this week"},{"id":"approved","label":"Approved","summary":"18 approved today"}]' selection="{{txTab}}"></bx-transactions-widget>
@@ -681,15 +681,15 @@
     </div></section>
     <section class="gate" data-component="pending-for-action" aria-labelledby="w6-29-h"><h2 id="w6-29-h">Pending for action</h2><div class="gate-body">
       <bx-pending-for-action items='[{"label":"Payments","value":70},{"label":"Trade","value":35},{"label":"Accounts","value":20},{"label":"Limits","value":10}]' unit="pending"></bx-pending-for-action>
-      <div data-variant="rounded"><bx-pending-for-action variant="rounded" items='[{"label":"Payments","value":70},{"label":"Trade","value":35},{"label":"Accounts","value":20},{"label":"Limits","value":10}]' unit="pending"></bx-pending-for-action></div>
-      <div data-variant="lollipop"><bx-pending-for-action variant="lollipop" items='[{"label":"Payments","value":70},{"label":"Trade","value":35},{"label":"Accounts","value":20},{"label":"Limits","value":10}]' unit="pending"></bx-pending-for-action></div>
-      <div data-variant="meter"><bx-pending-for-action variant="meter" items='[{"label":"Payments","value":70},{"label":"Trade","value":35},{"label":"Accounts","value":20},{"label":"Limits","value":10}]' unit="pending"></bx-pending-for-action></div>
+      <oj-bind-if test="[[variantAsked === 'rounded']]"><div data-variant="rounded"><bx-pending-for-action variant="rounded" items='[{"label":"Payments","value":70},{"label":"Trade","value":35},{"label":"Accounts","value":20},{"label":"Limits","value":10}]' unit="pending"></bx-pending-for-action></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'lollipop']]"><div data-variant="lollipop"><bx-pending-for-action variant="lollipop" items='[{"label":"Payments","value":70},{"label":"Trade","value":35},{"label":"Accounts","value":20},{"label":"Limits","value":10}]' unit="pending"></bx-pending-for-action></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'meter']]"><div data-variant="meter"><bx-pending-for-action variant="meter" items='[{"label":"Payments","value":70},{"label":"Trade","value":35},{"label":"Accounts","value":20},{"label":"Limits","value":10}]' unit="pending"></bx-pending-for-action></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="my-limits" aria-labelledby="w6-30-h"><h2 id="w6-30-h">My limits</h2><div class="gate-body">
       <bx-my-limits items='[{"label":"Initiate, per transaction","value":50,"max":100},{"label":"Approve, daily","value":240,"max":500}]' unit="k"></bx-my-limits>
-      <div data-variant="linear"><bx-my-limits variant="linear" items='[{"label":"Initiate, per transaction","value":50,"max":100},{"label":"Approve, daily","value":240,"max":500}]' unit="k"></bx-my-limits></div>
-      <div data-variant="ring"><bx-my-limits variant="ring" items='[{"label":"Initiate, per transaction","value":50,"max":100},{"label":"Approve, daily","value":240,"max":500}]' unit="k"></bx-my-limits></div>
-      <div data-variant="segmented"><bx-my-limits variant="segmented" items='[{"label":"Initiate, per transaction","value":50,"max":100},{"label":"Approve, daily","value":240,"max":500}]' unit="k"></bx-my-limits></div>
+      <oj-bind-if test="[[variantAsked === 'linear']]"><div data-variant="linear"><bx-my-limits variant="linear" items='[{"label":"Initiate, per transaction","value":50,"max":100},{"label":"Approve, daily","value":240,"max":500}]' unit="k"></bx-my-limits></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'ring']]"><div data-variant="ring"><bx-my-limits variant="ring" items='[{"label":"Initiate, per transaction","value":50,"max":100},{"label":"Approve, daily","value":240,"max":500}]' unit="k"></bx-my-limits></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'segmented']]"><div data-variant="segmented"><bx-my-limits variant="segmented" items='[{"label":"Initiate, per transaction","value":50,"max":100},{"label":"Approve, daily","value":240,"max":500}]' unit="k"></bx-my-limits></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="pending-approvals" aria-labelledby="w6-31-h"><h2 id="w6-31-h">Pending approvals</h2><div class="gate-body">
       <bx-pending-approvals items='[{"title":"Payroll Feb · prioritized","meta":"Financial · 182,400.00","value":"PAY-4410"},{"title":"Add payee J. Mehta","meta":"Non-financial","value":"BEN-218"}]'></bx-pending-approvals>
@@ -849,17 +849,17 @@
     </div></section>
     <section class="gate" data-component="success-check" aria-labelledby="w7-51-h"><h2 id="w7-51-h">Success check</h2><div class="gate-body">
       <bx-success-check label="Payment sent" text="1,250.00 USD to A. Rao"></bx-success-check>
-      <div data-variant="filled"><bx-success-check variant="filled" label="Payment sent" text="1,250.00 USD to A. Rao"></bx-success-check></div>
-      <div data-variant="soft"><bx-success-check variant="soft" label="Payment sent" text="1,250.00 USD to A. Rao"></bx-success-check></div>
+      <oj-bind-if test="[[variantAsked === 'filled']]"><div data-variant="filled"><bx-success-check variant="filled" label="Payment sent" text="1,250.00 USD to A. Rao"></bx-success-check></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'soft']]"><div data-variant="soft"><bx-success-check variant="soft" label="Payment sent" text="1,250.00 USD to A. Rao"></bx-success-check></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="swipe-row" aria-labelledby="w7-52-h"><h2 id="w7-52-h">Swipe row</h2><div class="gate-body">
       <bx-swipe-row heading="Coffee House" meta="Today 08:14" value="-4.50" actions='[{"value":"split","label":"Split"},{"value":"dispute","label":"Dispute","tone":"danger"}]'></bx-swipe-row>
     </div></section>
     <section class="gate" data-component="swipe-toast" aria-labelledby="w7-53-h"><h2 id="w7-53-h">Swipe toast</h2><div class="gate-body">
       <bx-swipe-toast message="Saved as a payee"></bx-swipe-toast>
-      <div data-variant="snackbar"><bx-swipe-toast variant="snackbar" message="Saved as a payee"></bx-swipe-toast></div>
-      <div data-variant="stacked"><bx-swipe-toast variant="stacked" message="Saved as a payee"></bx-swipe-toast></div>
-      <div data-variant="pill"><bx-swipe-toast variant="pill" message="Saved as a payee"></bx-swipe-toast></div>
+      <oj-bind-if test="[[variantAsked === 'snackbar']]"><div data-variant="snackbar"><bx-swipe-toast variant="snackbar" message="Saved as a payee"></bx-swipe-toast></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'stacked']]"><div data-variant="stacked"><bx-swipe-toast variant="stacked" message="Saved as a payee"></bx-swipe-toast></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'pill']]"><div data-variant="pill"><bx-swipe-toast variant="pill" message="Saved as a payee"></bx-swipe-toast></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="bell-toggle" aria-labelledby="w7-54-h"><h2 id="w7-54-h">Bell toggle</h2><div class="gate-body">
       <bx-bell-toggle value="true"></bx-bell-toggle>
@@ -881,28 +881,28 @@
     </div></section>
     <section class="gate" data-component="budget-gauge" aria-labelledby="w7-60-h"><h2 id="w7-60-h">Budget gauge</h2><div class="gate-body">
       <bx-budget-gauge label="Groceries" value="320" max="400" unit="USD"></bx-budget-gauge>
-      <div data-variant="ring"><bx-budget-gauge variant="ring" label="Groceries" value="320" max="400" unit="USD"></bx-budget-gauge></div>
-      <div data-variant="thin"><bx-budget-gauge variant="thin" label="Groceries" value="320" max="400" unit="USD"></bx-budget-gauge></div>
+      <oj-bind-if test="[[variantAsked === 'ring']]"><div data-variant="ring"><bx-budget-gauge variant="ring" label="Groceries" value="320" max="400" unit="USD"></bx-budget-gauge></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'thin']]"><div data-variant="thin"><bx-budget-gauge variant="thin" label="Groceries" value="320" max="400" unit="USD"></bx-budget-gauge></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="status-mark" aria-labelledby="w7-61-h"><h2 id="w7-61-h">Status mark</h2><div class="gate-body">
       <bx-status-mark label="Approved" status="success"></bx-status-mark>
-      <div data-variant="filled"><bx-status-mark variant="filled" label="Approved" status="success"></bx-status-mark></div>
-      <div data-variant="outlined"><bx-status-mark variant="outlined" label="Approved" status="success"></bx-status-mark></div>
-      <div data-variant="dot"><bx-status-mark variant="dot" label="Approved" status="success"></bx-status-mark></div>
+      <oj-bind-if test="[[variantAsked === 'filled']]"><div data-variant="filled"><bx-status-mark variant="filled" label="Approved" status="success"></bx-status-mark></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'outlined']]"><div data-variant="outlined"><bx-status-mark variant="outlined" label="Approved" status="success"></bx-status-mark></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'dot']]"><div data-variant="dot"><bx-status-mark variant="dot" label="Approved" status="success"></bx-status-mark></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="favourite-heart" aria-labelledby="w7-62-h"><h2 id="w7-62-h">Favourite heart</h2><div class="gate-body">
       <bx-favourite-heart name="A. Rao" value="true"></bx-favourite-heart>
     </div></section>
     <section class="gate" data-component="peek-rating" aria-labelledby="w7-63-h"><h2 id="w7-63-h">Peek rating</h2><div class="gate-body">
       <bx-peek-rating label-hint="How was this payment?" value="4"></bx-peek-rating>
-      <div data-variant="emoji"><bx-peek-rating variant="emoji" label-hint="How was this payment?" value="4"></bx-peek-rating></div>
-      <div data-variant="numbers"><bx-peek-rating variant="numbers" label-hint="How was this payment?" value="4"></bx-peek-rating></div>
+      <oj-bind-if test="[[variantAsked === 'emoji']]"><div data-variant="emoji"><bx-peek-rating variant="emoji" label-hint="How was this payment?" value="4"></bx-peek-rating></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'numbers']]"><div data-variant="numbers"><bx-peek-rating variant="numbers" label-hint="How was this payment?" value="4"></bx-peek-rating></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="warm-tooltip" aria-labelledby="w7-64-h"><h2 id="w7-64-h">Warm tooltip</h2><div class="gate-body">
       <bx-warm-tooltip label="Reward points" text="Points expire after 2 years."></bx-warm-tooltip>
-      <div data-variant="plain"><bx-warm-tooltip variant="plain" label="Reward points" text="Points expire after 2 years."></bx-warm-tooltip></div>
-      <div data-variant="rich"><bx-warm-tooltip variant="rich" label="Reward points" text="Points expire after 2 years."></bx-warm-tooltip></div>
-      <div data-variant="beak"><bx-warm-tooltip variant="beak" label="Reward points" text="Points expire after 2 years."></bx-warm-tooltip></div>
+      <oj-bind-if test="[[variantAsked === 'plain']]"><div data-variant="plain"><bx-warm-tooltip variant="plain" label="Reward points" text="Points expire after 2 years."></bx-warm-tooltip></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'rich']]"><div data-variant="rich"><bx-warm-tooltip variant="rich" label="Reward points" text="Points expire after 2 years."></bx-warm-tooltip></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'beak']]"><div data-variant="beak"><bx-warm-tooltip variant="beak" label="Reward points" text="Points expire after 2 years."></bx-warm-tooltip></div></oj-bind-if>
     </div></section>
     <section class="gate" data-component="prompt-bar" aria-labelledby="w7-65-h"><h2 id="w7-65-h">Prompt bar</h2><div class="gate-body">
       <bx-prompt-bar suggestions='["What did I spend on travel?","When is my card bill due?"]'></bx-prompt-bar>
@@ -915,9 +915,9 @@
     </div></section>
     <section class="gate" data-component="lattice-loader" aria-labelledby="w7-68-h"><h2 id="w7-68-h">Lattice loader</h2><div class="gate-body">
       <bx-lattice-loader label="Loading your accounts"></bx-lattice-loader>
-      <div data-variant="material"><bx-lattice-loader variant="material" label="Loading your accounts"></bx-lattice-loader></div>
-      <div data-variant="dots"><bx-lattice-loader variant="dots" label="Loading your accounts"></bx-lattice-loader></div>
-      <div data-variant="orbs"><bx-lattice-loader variant="orbs" label="Loading your accounts"></bx-lattice-loader></div>
+      <oj-bind-if test="[[variantAsked === 'material']]"><div data-variant="material"><bx-lattice-loader variant="material" label="Loading your accounts"></bx-lattice-loader></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'dots']]"><div data-variant="dots"><bx-lattice-loader variant="dots" label="Loading your accounts"></bx-lattice-loader></div></oj-bind-if>
+      <oj-bind-if test="[[variantAsked === 'orbs']]"><div data-variant="orbs"><bx-lattice-loader variant="orbs" label="Loading your accounts"></bx-lattice-loader></div></oj-bind-if>
     </div></section>
   </main>
   <script>

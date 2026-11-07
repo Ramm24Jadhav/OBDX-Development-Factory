@@ -10,10 +10,10 @@ import {
 } from '../src';
 import { useTheme } from '../src';
 
-/** A variant of the section's component (variants.json): ?only=<id>&variant=<id> shows only it (index.html). */
+/** A variant of the section's component (variants.json), drawn only when the page asks for it (?only=<id>&variant=<id>), so the plain gallery keeps one instance. */
 export function Variant({ id, children }: { id: string; children: ReactNode }) {
   // react-native-web writes dataSet as data-* attributes (React Native's own types do not list it)
-  return <View {...({ dataSet: { variant: id } } as object)}>{children}</View>;
+  return asked === id ? <View {...({ dataSet: { variant: id } } as object)}>{children}</View> : null;
 }
 // a variant of the session warning opens by itself when the page asks for it alone (?variant=)
 const asked = typeof location === 'undefined' ? null : new URLSearchParams(location.search).get('variant');
@@ -184,7 +184,7 @@ export const SAMPLES: Record<string, [string, ReactElement]> = {
   'self-register': ["Self-registration", <><SelfRegister testID="self-register" steps={['Details', 'Verify', 'Password', 'Done']} selectedStep="Verify" /><Variant id="material"><SelfRegister variant="material" testID="self-register-material" steps={['Details', 'Verify', 'Password', 'Done']} selectedStep="Verify" /></Variant><Variant id="vertical"><SelfRegister variant="vertical" testID="self-register-vertical" steps={['Details', 'Verify', 'Password', 'Done']} selectedStep="Verify" /></Variant><Variant id="segmented"><SelfRegister variant="segmented" testID="self-register-segmented" steps={['Details', 'Verify', 'Password', 'Done']} selectedStep="Verify" /></Variant></>],
   'sensitive': ["Sensitive information masking", <SensitiveField testID="sensitive" label="Card number" value="4111 1111 1111 4821" />],
   'session-summary': ["Session summary", <><SessionSummary testID="session-summary" items={[{ label: 'Today 08:12', meta: 'iPhone 15 · London' }]} /><Variant id="compact"><SessionSummary variant="compact" testID="session-summary-compact" items={[{ label: 'Today 08:12', meta: 'iPhone 15 · London' }]} /></Variant><Variant id="cards"><SessionSummary variant="cards" testID="session-summary-cards" items={[{ label: 'Today 08:12', meta: 'iPhone 15 · London' }]} /></Variant><Variant id="horizontal"><SessionSummary variant="horizontal" testID="session-summary-horizontal" items={[{ label: 'Today 08:12', meta: 'iPhone 15 · London' }]} /></Variant></>],
-  'session-timeout': ["Session expiry warning", <><SessionExpiryWarning testID="session-timeout" open={!asked} onStay={noop} onSignOut={noop} /><Variant id="countdown"><SessionExpiryWarning variant="countdown" testID="session-timeout-countdown" open={asked === 'countdown'} onStay={noop} onSignOut={noop} /></Variant><Variant id="sheet"><SessionExpiryWarning variant="sheet" testID="session-timeout-sheet" open={asked === 'sheet'} onStay={noop} onSignOut={noop} /></Variant></>],
+  'session-timeout': ["Session expiry warning", <><SessionExpiryWarning testID="session-timeout" open={!asked} onStay={noop} onSignOut={noop} /><Variant id="countdown"><Line>The warning opens over the page, its seconds in a ring.</Line><SessionExpiryWarning variant="countdown" testID="session-timeout-countdown" open={asked === 'countdown'} onStay={noop} onSignOut={noop} /></Variant><Variant id="sheet"><Line>The warning rises from the bottom of the page.</Line><SessionExpiryWarning variant="sheet" testID="session-timeout-sheet" open={asked === 'sheet'} onStay={noop} onSignOut={noop} /></Variant></>],
   'sheet': ["Drawer and sheet", <BottomSheet testID="sheet" heading="Filter transactions" open onOpenChange={noop}><Line>Body</Line></BottomSheet>],
   'shimmer-text': ["Shimmer text", <ShimmerText text="Loading offers" />],
   'side-nav': ["Drawer navigation", <Drawer testID="side-nav" label="Menu" open items={[{ value: 'a', label: 'Accounts' }]} selection="a" onOpenChange={noop} />],

@@ -10,7 +10,9 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     // From this folder, so the pack's source (../src) finds it in a build too, with one copy of React
-    alias: { 'react-native': resolve(import.meta.dirname, 'node_modules/react-native-web') },
+    // thinking-orbs too: the pack's orb spinner (../src/variants.tsx) draws its engine's frames
+    alias: { 'react-native': resolve(import.meta.dirname, 'node_modules/react-native-web'),
+      'thinking-orbs/engine': resolve(import.meta.dirname, 'node_modules/thinking-orbs/dist/engine.es.js') },
     dedupe: ['react', 'react-dom'],
     extensions: ['.web.tsx', '.web.ts', '.tsx', '.ts', '.web.js', '.js', '.json'],
   },

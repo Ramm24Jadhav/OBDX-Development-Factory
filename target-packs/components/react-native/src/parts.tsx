@@ -604,7 +604,7 @@ export function Bars({ testID, label, bars, currency, value, onChange, horizonta
             : <Grow share={size} vertical={!across} style={{ ...(across ? { height: thick ? 18 : 14 } : { width: '100%' }), borderRadius: thick ? 9 : 4,
                 backgroundColor: on ? t.color.primary : thick ? alpha(t.color.primary, 0.55) : t.color.primarySoft, borderWidth: thick ? 0 : 1, borderColor: t.color.primary }} />;
           return (
-            <Touch key={b.label} testID={`${testID}-${b.label}`} label={horizontal ? undefined : `${b.label}, ${show(b.value)}`} selected={on} onPress={() => pick(b.label)}
+            <Touch key={b.label} testID={`${testID}-${b.label}`} label={across ? undefined : `${b.label}, ${show(b.value)}`} selected={on} onPress={() => pick(b.label)}
                    style={across ? { flexDirection: 'row', alignItems: 'center', gap: 8 } : { flex: 1, height: '100%', justifyContent: 'flex-end', gap: 4 }}>
               {variant === 'meter' ? <View style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: segColours(t)[i % 6] }} /> : null}
               {across ? <Text style={{ width: 80, fontSize: 12.5, color: t.color.textBody }}>{b.label}</Text> : null}
