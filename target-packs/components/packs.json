@@ -23361,6 +23361,210 @@
             "status": "passed",
             "evidence": "target-packs/components/gates/snapshots: light and dark screenshots compared with the accepted ones; GitHub Actions run 42272072723 (commit 946b68b), all checks passed"
           }
+        },
+        "danger-button": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "filter-chips": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "accordion": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "avatar": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "skeleton": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "quick-actions": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "repeat": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "upcoming-bills": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "card-tile": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "activate-card": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "spend-limit": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "card-controls": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "reset-pin": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "biometric": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "kyc-steps": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "fraud-alert": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "savings-goal": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "loan-calculator": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "currency-converter": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "overview": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "quick-insights": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "recent-transactions": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "bills-widget": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "spend-analysis": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "goals": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "budgets": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "calculators": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "credit-score": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "rewards": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "financial-advisor": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "special-offers": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "credit-cards-overview": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "loans-overview": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
+        },
+        "delinquency-notice": {
+          "unit": {
+            "status": "passed",
+            "evidence": "target-packs/components/angular/test: vitest with the Angular compiler and Testing Library (behaviour, keyboard, form controls) and axe on every push"
+          }
         }
       },
       "folder": "target-packs/components/angular",

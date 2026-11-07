@@ -65,12 +65,13 @@ class ComponentPackServiceTest {
     @Test
     void readinessComesOnlyFromWhatIsBuiltAndItsChecks() {
         ComponentPackService.Catalogue c = service.catalogue();
-        // The foundation set is built in every pack with its unit and accessibility checks passed; the browser gates are not run yet
-        assertThat(find(c, "text-field").packs().get("react").readiness()).isEqualTo("in-test");
+        // The foundation set passed every gate in React, the browser gates and parity with the JET element included
+        assertThat(find(c, "text-field").packs().get("react").readiness()).isEqualTo("available");
         assertThat(find(c, "text-field").packs().get("react").source()).isEqualTo("target-packs/components/react/src#TextField");
         assertThat(find(c, "data-grid").packs().get("angular").source()).isEqualTo("target-packs/components/angular/src#DataTable");
         assertThat(find(c, "dialog").packs().get("react-native").gates().get("accessibility")).isEqualTo("passed");
-        assertThat(find(c, "dialog").packs().get("react-native").gates().get("visual")).isEqualTo("not-run");
+        assertThat(find(c, "dialog").packs().get("react-native").gates().get("visual")).isEqualTo("passed");
+        assertThat(find(c, "dialog").packs().get("react-native").gates().get("responsive")).isEqualTo("not-run");
         // The group 2 pack components replaced the starters' own; the forms wave replaced their switch
         assertThat(find(c, "account-picker").packs().get("react").source()).isEqualTo("target-packs/components/react/src#AccountSelector");
         assertThat(find(c, "switch").packs().get("react").source()).isEqualTo("target-packs/components/react/src#Toggle");
@@ -79,19 +80,20 @@ class ComponentPackServiceTest {
         assertThat(find(c, "button").packs().get("jet-premium").readiness()).isEqualTo("available");
         assertThat(find(c, "button").packs().get("jet-premium").gates().get("parity")).isEqualTo("passed");
         assertThat(find(c, "date-range").packs().get("jet-premium").readiness()).isEqualTo("available");
-        assertThat(c.packs().get(0).counts().available()).isEqualTo(34);
-        // React and Angular passed the browser gates; parity with the JET screens is still to run, so only components
-        // that replace nothing (the card, and group 1's that passed) are Available
+        assertThat(c.packs().get(0).counts().available()).isEqualTo(220);
+        // React and Angular passed the browser gates and the web parity specs; components that replace a JET element without a
+        // parity spec yet stay in test
         assertThat(find(c, "card").packs().get("react").readiness()).isEqualTo("available");
-        assertThat(find(c, "button").packs().get("angular").gates().get("parity")).isEqualTo("not-run");
-        // Angular carries the widgets too, built and in test
+        assertThat(find(c, "button").packs().get("angular").gates().get("parity")).isEqualTo("passed");
+        assertThat(find(c, "segmented").packs().get("angular").gates().get("parity")).isEqualTo("not-run");
+        // Angular's newest components are built and unit tested; their browser gates are not recorded yet
         assertThat(find(c, "overview").packs().get("angular").readiness()).isEqualTo("in-test");
         assertThat(c.packs()).allSatisfy((p) -> assertThat(p.counts().available() + p.counts().inTest() + p.counts().planned() + p.counts().notInPack()).isEqualTo(245));
-        assertThat(c.packs().get(1).counts().available()).isEqualTo(11);
-        assertThat(c.packs().get(1).counts().inTest()).isEqualTo(234);
+        assertThat(c.packs().get(1).counts().available()).isEqualTo(219);
+        assertThat(c.packs().get(1).counts().inTest()).isEqualTo(26);
         assertThat(c.packs().get(2).counts().available()).isZero();
-        assertThat(c.packs().get(3).counts().available()).isEqualTo(9);
-        assertThat(c.packs().get(3).counts().inTest()).isEqualTo(236);
+        assertThat(c.packs().get(3).counts().available()).isEqualTo(189);
+        assertThat(c.packs().get(3).counts().inTest()).isEqualTo(56);
 
         // Available only when every gate passes (parity does not apply to a component with nothing to replace)
         ComponentRegistry.Entry card = REGISTRY.component("card");
