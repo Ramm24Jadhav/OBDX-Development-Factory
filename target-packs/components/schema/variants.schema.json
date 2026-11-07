@@ -32,7 +32,9 @@
           "description": "Effect names from motion.json's effects (style follows the Component factory's motion choice); null for none",
           "properties": {
             "enter": { "type": ["string", "null"] }, "hover": { "type": ["string", "null"] },
-            "press": { "type": ["string", "null"] }, "change": { "type": ["string", "null"] }
+            "press": { "type": ["string", "null"] }, "change": { "type": ["string", "null"] },
+            "loading": { "type": ["string", "null"], "description": "While it waits (spinners, skeletons)" },
+            "reduced": { "type": "string", "description": "What it shows under reduced motion (the end state)" }
           },
           "additionalProperties": false
         }
@@ -49,7 +51,9 @@
         "pattern": { "type": "string", "description": "The design-system pattern it follows" },
         "source": { "type": "string", "description": "own, or where a ported or inspired variant comes from (a URL)" },
         "licence": { "type": "string", "description": "own, or the source's licence (MIT, Apache-2.0); never a licence that forbids ports" },
-        "built": { "type": "array", "items": { "$ref": "#/$defs/pack" }, "uniqueItems": true, "description": "The packs it is built in" }
+        "built": { "type": "array", "items": { "$ref": "#/$defs/pack" }, "uniqueItems": true, "description": "The packs it is built in" },
+        "motion": { "type": "object", "description": "Where this variant moves differently from its component (the component motion keys)", "additionalProperties": { "type": ["string", "null"] } },
+        "note": { "type": "string", "description": "How a pack builds it, when that differs (why React draws a Material variant rather than MUI)" }
       },
       "additionalProperties": false
     }

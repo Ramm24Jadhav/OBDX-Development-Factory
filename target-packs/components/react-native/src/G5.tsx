@@ -18,7 +18,7 @@ import { TimelineItem, FormProps, InfoCard, InfoCardProps, Item, ItemList, Segme
   Touch, panel } from './parts';
 import { Enter, Roll } from './motion';
 import { useTheme } from './theme';
-import { FACES, RatingVariant } from './variants';
+import { FACES, RatingVariant, TimelineVariant } from './variants';
 
 const money = (n: number, currency?: string) => `${formatAmount(n, currency)}${currency ? ` ${currency}` : ''}`;
 
@@ -65,6 +65,8 @@ export interface TrackerProps {
   testID: string;
   label?: string;
   items: ReadonlyArray<TimelineItem>;
+  /** The style: default, compact, cards or horizontal. */
+  variant?: TimelineVariant;
 }
 
 /** Where each request is. */

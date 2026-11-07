@@ -18,7 +18,7 @@ import { Banner, FormProps, BannerProps, CodeBoxes, CodeBoxesProps, TimelineItem
   StepsProps, Tiles, TilesProps, TimelineList, Touch, maskNumber, panel } from './parts';
 import { Enter } from './motion';
 import { useTheme } from './theme';
-import { DotRing, TimeoutVariant } from './variants';
+import { DotRing, TimelineVariant, TimeoutVariant } from './variants';
 
 const money = (n: number, currency?: string) => `${formatAmount(n, currency)}${currency ? ` ${currency}` : ''}`;
 
@@ -226,6 +226,8 @@ export interface DisbursementTimelineProps {
   testID: string;
   label?: string;
   items: ReadonlyArray<TimelineItem>;
+  /** The style: default, compact, cards or horizontal. */
+  variant?: TimelineVariant;
 }
 
 /** Each disbursement of the loan, in order; future ones take state "todo". */

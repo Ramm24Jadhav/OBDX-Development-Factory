@@ -8,3 +8,13 @@
 .bx-fx-peek .bx-star:hover, .bx-fx-peek .bx-star:hover ~ .bx-star { transform: translateY(-3px); }
 .bx-fx-peek .bx-stars:hover .bx-star { color: var(--bx-warning); }
 .bx-fx-peek .bx-star:hover ~ .bx-star { color: var(--bx-border-strong); }
+/* variants (variants.json, wave V3) */
+.bx-rating.bx-v-emoji .bx-star { color: inherit; font-size: 26px; filter: grayscale(1); opacity: 0.55; animation: none; }
+.bx-rating.bx-v-emoji .bx-star.is-chosen { filter: none; opacity: 1; transform: scale(1.12); animation: bx-pop var(--bx-dur-slow) var(--bx-ease-spring); }
+.bx-rating.bx-v-numbers .bx-stars { gap: 0; }
+.bx-rating.bx-v-numbers .bx-star { border: var(--bx-bw) solid var(--bx-border-strong); border-radius: 0; background: var(--bx-fill); color: var(--bx-text-body); font-size: 15px; font-weight: 700; animation: none; }
+.bx-rating.bx-v-numbers .bx-star + .bx-star { margin-left: calc(var(--bx-bw) * -1); }
+.bx-rating.bx-v-numbers .bx-star:first-of-type { border-radius: var(--bx-radius-control) 0 0 var(--bx-radius-control); }
+.bx-rating.bx-v-numbers .bx-star:last-of-type { border-radius: 0 var(--bx-radius-control) var(--bx-radius-control) 0; }
+.bx-rating.bx-v-numbers .bx-star:hover { transform: none; background: var(--bx-track); }
+.bx-rating.bx-v-numbers .bx-star.is-chosen { position: relative; z-index: 1; border-color: var(--bx-brand); background: var(--bx-brand); color: var(--bx-on-brand); }

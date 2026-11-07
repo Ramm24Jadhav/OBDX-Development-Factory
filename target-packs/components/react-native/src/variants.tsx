@@ -1,5 +1,5 @@
 /*
- * Style variants of the feedback and status components (variants/v3.json), the React Native side of the web packs'
+ * Style variants of the feedback and status components (variants.json, wave V3), the React Native side of the web packs'
  * bx-<kind>--<variant> classes: each look function turns the theme and a variant into styles, so the components keep
  * one structure and one behaviour. 'default' is the look a component had before variants. The thinking orb is
  * thinking-orbs by Jakub Antalik (MIT, notice below), its frames drawn as plain views.

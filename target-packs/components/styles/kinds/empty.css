@@ -3,3 +3,13 @@
   color: var(--bx-brand-text); font-size: 24px; }
 .bx-empty-title { margin: 4px 0 0; font-size: 16px; font-weight: var(--bx-weight-title); color: var(--bx-text); }
 .bx-empty-text { margin: 0 0 8px; max-width: 360px; color: var(--bx-muted); font-size: 14px; }
+/* variants (variants.json, wave V3) */
+.bx-empty.bx-v-illustrated { gap: 10px; padding: 48px 24px; }
+.bx-empty.bx-v-illustrated .bx-empty-icon { width: 96px; height: 96px; font-size: 40px; background: color-mix(in srgb, var(--bx-brand) 14%, var(--bx-surface)); box-shadow: 0 0 0 12px color-mix(in srgb, var(--bx-brand) 6%, transparent); }
+.bx-empty.bx-v-illustrated .bx-empty-title { margin-top: 12px; font-size: 18px; }
+.bx-empty.bx-v-compact { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 12px; row-gap: 2px; align-items: center; padding: 12px var(--bx-pad); text-align: left; }
+.bx-empty.bx-v-compact .bx-empty-icon { grid-row: 1 / span 2; width: 36px; height: 36px; font-size: 16px; }
+.bx-empty.bx-v-compact .bx-empty-title { margin: 0; font-size: 14.5px; }
+.bx-empty.bx-v-compact .bx-empty-text { margin: 0; font-size: 13px; }
+.bx-empty.bx-v-compact > .bx-btn { grid-column: 3; grid-row: 1 / span 2; }
+.bx-empty.bx-v-card { border: calc(var(--bx-bw) * 1.5) dashed var(--bx-border-strong); border-radius: var(--bx-radius-lg); background: var(--bx-card); }

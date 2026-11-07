@@ -1,0 +1,11 @@
+/* timeout: the session warning (a dialog); its variants (variants.json, wave V3) */
+.bx-countdown { position: relative; display: flex; align-items: center; justify-content: center; width: 88px; height: 88px; margin: 4px auto 12px; }
+.bx-countdown svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.bx-countdown-track, .bx-countdown-fill { fill: none; stroke-width: 3; }
+.bx-countdown-track { stroke: var(--bx-track); }
+.bx-countdown-fill { stroke: var(--bx-brand); stroke-linecap: round; stroke-dasharray: 125.7; transition: stroke-dashoffset 1s linear; }
+.bx-countdown-num { font-size: 28px; font-weight: var(--bx-weight-title); font-variant-numeric: tabular-nums; color: var(--bx-text); }
+.bx-dialog.bx-timeout.bx-v-countdown .bx-dialog-body { text-align: center; }
+.bx-dialog.bx-timeout.bx-v-sheet { top: auto; bottom: 0; left: 0; right: 0; width: 100%; max-width: none; transform: none; border-radius: var(--bx-radius-xl) var(--bx-radius-xl) 0 0;
+  animation: bx-sheet-up var(--bx-dur-slow) var(--bx-ease-standard); }
+@keyframes bx-sheet-up { from { transform: translateY(100%); } }

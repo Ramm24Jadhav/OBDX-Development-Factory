@@ -12,3 +12,24 @@
 .bx-status-mark.is-error .bx-status-mark-icon { background: var(--bx-danger); }
 .bx-status-mark.is-info .bx-status-mark-icon { background: var(--bx-info); }
 .bx-status-mark.is-pending .bx-status-mark-icon { background: transparent; border: 2.5px solid color-mix(in srgb, var(--bx-warning) 30%, transparent); border-top-color: var(--bx-warning); animation: bx-spin 0.9s linear infinite; }
+/* variants (variants.json, wave V3) */
+.bx-badge.bx-v-filled, .bx-badge.bx-v-outlined { border-radius: var(--bx-radius-sm); }
+.bx-badge.bx-v-filled { background: var(--bx-text-body); color: var(--bx-surface); }
+.bx-badge.bx-v-filled.is-info { background: var(--bx-info-text); }
+.bx-badge.bx-v-filled.is-success { background: var(--bx-success-text); }
+.bx-badge.bx-v-filled.is-warning { background: var(--bx-warning-text); }
+.bx-badge.bx-v-filled.is-danger { background: var(--bx-danger-text); }
+.bx-badge.bx-v-outlined { background: transparent; border: var(--bx-bw) solid color-mix(in srgb, currentColor 45%, transparent); }
+:is(.bx-badge.bx-v-filled, .bx-badge.bx-v-outlined) .bx-badge-dot { display: none; }
+.bx-badge.bx-v-dot { min-height: 0; padding: 0; background: none; color: var(--bx-text); }
+.bx-badge.bx-v-dot .bx-badge-dot { width: 8px; height: 8px; background: var(--bx-muted); }
+.bx-badge.bx-v-dot.is-info .bx-badge-dot { background: var(--bx-info); }
+.bx-badge.bx-v-dot.is-success .bx-badge-dot { background: var(--bx-success); }
+.bx-badge.bx-v-dot.is-warning .bx-badge-dot { background: var(--bx-warning); }
+.bx-badge.bx-v-dot.is-danger .bx-badge-dot { background: var(--bx-danger); }
+.bx-status-mark.bx-v-filled { padding: 3px 12px 3px 3px; border-radius: var(--bx-radius-pill); background: var(--bx-track); }
+.bx-status-mark.bx-v-outlined { padding: 2px 12px 2px 2px; border: var(--bx-bw) solid var(--bx-border-strong); border-radius: var(--bx-radius-pill); }
+.bx-status-mark.bx-v-dot { gap: 6px; font-weight: 500; }
+.bx-status-mark.bx-v-dot .bx-status-mark-icon { width: 8px; height: 8px; font-size: 0; border-width: 0; animation: none; }
+.bx-status-mark.bx-v-dot .bx-status-mark-icon::after { display: none; }
+.bx-status-mark.bx-v-dot.is-pending .bx-status-mark-icon { background: var(--bx-warning); }

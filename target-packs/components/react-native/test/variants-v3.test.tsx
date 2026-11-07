@@ -7,7 +7,8 @@ import * as bx from '../src';
 import { accessibilityProblems } from './a11y';
 
 interface Entry { kind: string; variants: { id: string; built: string[] }[] }
-const v3 = JSON.parse(readFileSync(resolve(__dirname, '../../variants/v3.json'), 'utf8')) as { components: Record<string, Entry> };
+// wave V3's entries in variants.json
+const v3 = { components: Object.fromEntries(Object.entries(JSON.parse(readFileSync(resolve(__dirname, '../../variants.json'), 'utf8')).components).filter(([, c]) => (c as { wave: string }).wave === 'V3')) as Record<string, Entry> };
 const names: Record<string, Record<string, string>> = Object.fromEntries((JSON.parse(readFileSync(resolve(__dirname, '../../catalogue.json'), 'utf8')) as { categories: { components: { id: string; names: Record<string, string> }[] }[] })
   .categories.flatMap((g) => g.components).map((c) => [c.id, c.names]));
 

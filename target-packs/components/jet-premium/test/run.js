@@ -1046,8 +1046,10 @@ test('the skin has the motion tokens, the effects and a reduced-motion rule for 
   eq(toFrames, [], 'keyframes that end away from the element style');
 });
 
-// Wave V3 variants (variants/v3.json): every feedback and status element takes variant and its root gets bx-<kind>--<variant>
-const V3 = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'variants', 'v3.json'), 'utf8')).components;
+// Wave V3 variants (variants.json): every feedback and status element takes variant and its root gets bx-<kind>--<variant>
+const V3 = {};
+const V3all = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'variants.json'), 'utf8')).components;
+Object.keys(V3all).filter((id) => V3all[id].wave === 'V3').forEach((id) => { V3[id] = V3all[id]; });
 const v3Names = {};
 JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'catalogue.json'), 'utf8')).categories.forEach((g) => g.components.forEach((c) => { v3Names[c.id] = c.names; }));
 const v3Rows = Object.keys(V3).flatMap((id) => V3[id].variants.filter((v) => v.built.indexOf('jet-premium') >= 0).map((v) => ({ id, kind: V3[id].kind, name: v3Names[id]['jet-premium'], variant: v.id })));

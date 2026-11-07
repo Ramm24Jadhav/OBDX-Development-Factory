@@ -1,13 +1,13 @@
 /*
- * Style variants of the feedback and status elements (variants/v3.json): each takes variant and its root gets
+ * Style variants of the feedback and status elements (variants.json, wave V3): each takes variant and its root gets
  * " bx-v-<id>"; 'default' (or empty) is the look the element had before variants and adds nothing. The Material variants are drawn by
  * bx.css. The thinking orb (bx-spinner variant orbs) is painted by bx-orbs-engine.js, thinking-orbs (MIT).
  */
 define(['./bx-core', './bx-orbs-engine'], function (bx, orbs) {
   'use strict';
   var ko = bx.ko;
-  /** A variant's class with its leading space, " bx-v-filled"; nothing for the default look; only plain ids pass (as bx-core's variantClass). */
-  var vx = function (variant) { return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(variant || '') && variant !== 'default' ? ' bx-v-' + variant : ''; };
+  /** A variant's class with its leading space, " bx-v-filled"; nothing for the default look. */
+  var vx = bx.variantClass;
   /** A view model's variant class, following its variant property. */
   var vclass = function (self) { return ko.pureComputed(function () { return vx(self.props.variant); }); };
   /** A ring's dash offset for a share (0 to 1) of a circle of radius r. */

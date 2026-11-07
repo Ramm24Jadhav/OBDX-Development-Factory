@@ -15,3 +15,18 @@
 @supports (animation-timeline: view()) {
   .bx-motion-scroll-fadeup .bx-alert { animation: bx-in-up linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
 }
+/* variants (variants.json, wave V3) */
+.bx-alert.bx-v-filled { border-color: transparent; background: var(--bx-info-text); color: var(--bx-surface); box-shadow: var(--bx-shadow-2); }
+.bx-alert.bx-v-filled.is-error { background: var(--bx-danger-text); }
+.bx-alert.bx-v-filled.is-warning { background: var(--bx-warning-text); }
+.bx-alert.bx-v-filled.is-confirmation { background: var(--bx-success-text); }
+.bx-alert.bx-v-filled .bx-alert-text strong, .bx-alert.bx-v-filled .bx-alert-action, .bx-alert.bx-v-filled .bx-btn { color: inherit; }
+.bx-alert.bx-v-filled .bx-alert-icon { background: color-mix(in srgb, var(--bx-surface) 24%, transparent); color: inherit; }
+.bx-alert.bx-v-outlined { background: var(--bx-card); border-color: var(--bx-info); box-shadow: none; }
+.bx-alert.bx-v-outlined.is-error { border-color: var(--bx-danger); }
+.bx-alert.bx-v-outlined.is-warning { border-color: var(--bx-warning); }
+.bx-alert.bx-v-outlined.is-confirmation { border-color: var(--bx-success); }
+.bx-alert.bx-v-banner { border-radius: 0; border-width: 0 0 var(--bx-bw); border-top: calc(var(--bx-bw) * 3) solid var(--bx-info); box-shadow: none; padding-inline: var(--bx-pad-card); }
+.bx-alert.bx-v-banner.is-error { border-top-color: var(--bx-danger); }
+.bx-alert.bx-v-banner.is-warning { border-top-color: var(--bx-warning); }
+.bx-alert.bx-v-banner.is-confirmation { border-top-color: var(--bx-success); }

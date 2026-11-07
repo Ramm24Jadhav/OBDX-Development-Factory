@@ -8,3 +8,10 @@
 .bx-skeleton.is-circle .bx-skel-block { flex: none; width: 44px; height: 44px; border-radius: 50%; }
 .bx-skeleton.is-circle .bx-skel-line { flex: 1 1 auto; }
 @keyframes bx-skel { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+/* variants (variants.json, wave V3) */
+.bx-skeleton.bx-v-pulse :is(.bx-skel-line, .bx-skel-block) { background: var(--bx-track); border-radius: var(--bx-radius-sm); animation: bx-skel-pulse 1.5s ease-in-out infinite; }
+.bx-skeleton.bx-v-pulse.is-circle .bx-skel-block { border-radius: 50%; }
+@keyframes bx-skel-pulse { 50% { opacity: 0.45; } }
+.bx-skeleton.bx-v-soft :is(.bx-skel-line, .bx-skel-block) { background: var(--bx-surface-2); border-radius: var(--bx-radius-pill); animation: none; }
+.bx-skeleton.bx-v-soft .bx-skel-block { border-radius: var(--bx-radius-lg); }
+.bx-skeleton.bx-v-soft.is-circle .bx-skel-block { border-radius: 50%; }

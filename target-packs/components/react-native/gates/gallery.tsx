@@ -5,9 +5,9 @@
  */
 import { ReactElement, ReactNode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Text, View } from 'react-native';
+import { Text } from 'react-native';
 
-import { SAMPLES } from './samples';
+import { SAMPLES, Variant } from './samples';
 
 import {
   AccountBalance, Accordion, AlertSubscriptions, AmountInput, ApprovalQueue, Autocomplete, BarChart, Button, Card, CardTile, CheckboxGroup, CurrencySelector,
@@ -46,12 +46,6 @@ function Section({ id, title, children }: { id: string; title: string; children:
       <div className="gate-body">{children}</div>
     </section>
   );
-}
-
-/** A variant of the section's component (variants.json): ?only=<id>&variant=<id> shows only it (index.html). */
-function Variant({ id, children }: { id: string; children: ReactNode }) {
-  // react-native-web writes dataSet as data-* attributes (React Native's own types do not list it)
-  return <View {...({ dataSet: { variant: id } } as object)}>{children}</View>;
 }
 
 /** A controlled component with its own state, so a section needs one line. */
@@ -95,7 +89,13 @@ function Gallery() {
         <Section id="toast" title="Toast">
           <Toast onClose={noop} messages={[{ id: '1', severity: 'error', summary: 'Payment failed', detail: 'The account is blocked. Call the bank.', autoTimeout: 0 },
             { id: '2', severity: 'confirmation', summary: 'Beneficiary added', autoTimeout: 0 }]} />
-        </Section>
+        
+          <Variant id="snackbar"><Toast variant="snackbar" onClose={noop} messages={[{ id: '1', severity: 'error', summary: 'Payment failed', detail: 'The account is blocked. Call the bank.', autoTimeout: 0 },
+            { id: '2', severity: 'confirmation', summary: 'Beneficiary added', autoTimeout: 0 }]} /></Variant>
+          <Variant id="stacked"><Toast variant="stacked" onClose={noop} messages={[{ id: '1', severity: 'error', summary: 'Payment failed', detail: 'The account is blocked. Call the bank.', autoTimeout: 0 },
+            { id: '2', severity: 'confirmation', summary: 'Beneficiary added', autoTimeout: 0 }]} /></Variant>
+          <Variant id="pill"><Toast variant="pill" onClose={noop} messages={[{ id: '1', severity: 'error', summary: 'Payment failed', detail: 'The account is blocked. Call the bank.', autoTimeout: 0 },
+            { id: '2', severity: 'confirmation', summary: 'Beneficiary added', autoTimeout: 0 }]} /></Variant></Section>
         <Section id="card" title="Card"><Card heading="Savings •••• 4521" subheading="Available balance"><Line>₹85,000.00</Line></Card>
           <Variant id="outlined"><Card variant="outlined" heading="Savings •••• 4521" subheading="Available balance"><Line>₹85,000.00</Line></Card></Variant></Section>
         <Section id="tabs" title="Tabs">
@@ -135,10 +135,22 @@ function Gallery() {
         <Section id="segmented" title="Toggle group"><Held initial="Day">{(v, set) => <ToggleGroup testID="tg" label="Show" value={v} onChange={set} options={['Day', 'Week', 'Month']} />}</Held></Section>
         <Section id="filter-chips" title="Filter chips"><Held initial={['Card']}>{(v, set) => <FilterChips testID="fc" label="Filter" value={v} onChange={set} options={['Card', 'Transfer', 'Bills']} />}</Held></Section>
         <Section id="accordion" title="Accordion"><Accordion testID="acc" items={[{ id: 'a', title: 'How long does a transfer take?', body: 'Same day inside the bank.' }]} expanded={['a']} /></Section>
-        <Section id="stepper" title="Stepper"><Stepper testID="st" steps={['Details', 'Review', 'Done']} selectedStep="Review" /></Section>
-        <Section id="status-badge" title="Status badge"><StatusBadge label="Completed" tone="success" /><StatusBadge label="Failed" tone="danger" /></Section>
-        <Section id="timeline" title="Timeline"><Timeline testID="tl" items={[{ label: 'Initiated', meta: '09:12' }, { label: 'Completed', state: 'current' }]} /></Section>
-        <Section id="error-message" title="Error message"><ErrorMessage testID="em" message="The amount is more than your daily limit of 5,000.00." actionLabel="Change the amount" /></Section>
+        <Section id="stepper" title="Stepper"><Stepper testID="st" steps={['Details', 'Review', 'Done']} selectedStep="Review" />
+          <Variant id="material"><Stepper variant="material" testID="st-material" steps={['Details', 'Review', 'Done']} selectedStep="Review" /></Variant>
+          <Variant id="vertical"><Stepper variant="vertical" testID="st-vertical" steps={['Details', 'Review', 'Done']} selectedStep="Review" /></Variant>
+          <Variant id="segmented"><Stepper variant="segmented" testID="st-segmented" steps={['Details', 'Review', 'Done']} selectedStep="Review" /></Variant></Section>
+        <Section id="status-badge" title="Status badge"><StatusBadge label="Completed" tone="success" /><StatusBadge label="Failed" tone="danger" />
+          <Variant id="filled"><StatusBadge variant="filled" label="Completed" tone="success" /></Variant>
+          <Variant id="outlined"><StatusBadge variant="outlined" label="Completed" tone="success" /></Variant>
+          <Variant id="dot"><StatusBadge variant="dot" label="Completed" tone="success" /></Variant></Section>
+        <Section id="timeline" title="Timeline"><Timeline testID="tl" items={[{ label: 'Initiated', meta: '09:12' }, { label: 'Completed', state: 'current' }]} />
+          <Variant id="compact"><Timeline variant="compact" testID="tl-compact" items={[{ label: 'Initiated', meta: '09:12' }, { label: 'Completed', state: 'current' }]} /></Variant>
+          <Variant id="cards"><Timeline variant="cards" testID="tl-cards" items={[{ label: 'Initiated', meta: '09:12' }, { label: 'Completed', state: 'current' }]} /></Variant>
+          <Variant id="horizontal"><Timeline variant="horizontal" testID="tl-horizontal" items={[{ label: 'Initiated', meta: '09:12' }, { label: 'Completed', state: 'current' }]} /></Variant></Section>
+        <Section id="error-message" title="Error message"><ErrorMessage testID="em" message="The amount is more than your daily limit of 5,000.00." actionLabel="Change the amount" />
+          <Variant id="filled"><ErrorMessage variant="filled" testID="em-filled" message="The amount is more than your daily limit of 5,000.00." actionLabel="Change the amount" /></Variant>
+          <Variant id="outlined"><ErrorMessage variant="outlined" testID="em-outlined" message="The amount is more than your daily limit of 5,000.00." actionLabel="Change the amount" /></Variant>
+          <Variant id="banner"><ErrorMessage variant="banner" testID="em-banner" message="The amount is more than your daily limit of 5,000.00." actionLabel="Change the amount" /></Variant></Section>
         <Section id="balance-card" title="Account balance"><AccountBalance testID="ab" label="Savings ·· 4821" balance={12400} available={12150} currency="USD" /></Section>
         <Section id="transaction-list" title="Transaction history">
           <TransactionHistory testID="th" transactions={[{ id: '1', description: 'Coffee House', date: 'Today', amount: -4.5, currency: 'USD' },
@@ -147,8 +159,14 @@ function Gallery() {
         <Section id="otp" title="OTP input"><Held initial="12">{(v, set) => <OtpInput testID="otp" label="Enter the code" value={v} onChange={set} />}</Held></Section>
         <Section id="card-tile" title="Card tile"><Held initial={false}>{(v, set) => <CardTile testID="ct" card={{ id: 'c', name: 'Platinum', number: '4111111111114821', expiry: '08/29' }}
                                                                                        frozen={v} onFrozenChange={set} />}</Held></Section>
-        <Section id="spending-chart" title="Chart"><BarChart testID="bc" label="Spending" currency="USD" bars={[{ label: 'Sep', value: 980 }, { label: 'Oct', value: 1240 }]} /></Section>
-        <Section id="budget-progress" title="Progress bar"><ProgressBar testID="pb" currency="USD" items={[{ label: 'Groceries', value: 320, max: 400 }, { label: 'Eating out', value: 210, max: 200 }]} /></Section>
+        <Section id="spending-chart" title="Chart"><BarChart testID="bc" label="Spending" currency="USD" bars={[{ label: 'Sep', value: 980 }, { label: 'Oct', value: 1240 }]} />
+          <Variant id="rounded"><BarChart variant="rounded" testID="bc-rounded" label="Spending" currency="USD" bars={[{ label: 'Sep', value: 980 }, { label: 'Oct', value: 1240 }]} /></Variant>
+          <Variant id="lollipop"><BarChart variant="lollipop" testID="bc-lollipop" label="Spending" currency="USD" bars={[{ label: 'Sep', value: 980 }, { label: 'Oct', value: 1240 }]} /></Variant>
+          <Variant id="meter"><BarChart variant="meter" testID="bc-meter" label="Spending" currency="USD" bars={[{ label: 'Sep', value: 980 }, { label: 'Oct', value: 1240 }]} /></Variant></Section>
+        <Section id="budget-progress" title="Progress bar"><ProgressBar testID="pb" currency="USD" items={[{ label: 'Groceries', value: 320, max: 400 }, { label: 'Eating out', value: 210, max: 200 }]} />
+          <Variant id="linear"><ProgressBar variant="linear" testID="pb-linear" currency="USD" items={[{ label: 'Groceries', value: 320, max: 400 }, { label: 'Eating out', value: 210, max: 200 }]} /></Variant>
+          <Variant id="ring"><ProgressBar variant="ring" testID="pb-ring" currency="USD" items={[{ label: 'Groceries', value: 320, max: 400 }, { label: 'Eating out', value: 210, max: 200 }]} /></Variant>
+          <Variant id="segmented"><ProgressBar variant="segmented" testID="pb-segmented" currency="USD" items={[{ label: 'Groceries', value: 320, max: 400 }, { label: 'Eating out', value: 210, max: 200 }]} /></Variant></Section>
         <Section id="approval-queue" title="Pending for approval"><ApprovalQueue testID="aq" items={[{ id: 'p', title: 'Payroll Feb', meta: '182,400.00', priority: true }]} onApprove={noop} onReject={noop} /></Section>
         <Section id="alerts-subscription" title="Alerts"><Held initial={['Low balance']}>{(v, set) => <AlertSubscriptions testID="as" label="Tell me about" value={v} onChange={set}
                                                                                                                      options={['Low balance', 'Payments over 500.00']} />}</Held></Section>
@@ -159,7 +177,9 @@ function Gallery() {
         {/* The five effect categories: one of each moving kind (under reduced motion they show their end state) */}
         <Section id="rolling-digits" title="Rolling digits"><RollingDigits value="12,400.00" /></Section>
         <Section id="slide-to-confirm" title="Slide to confirm"><SlideToConfirm label="Slide to pay 1,250.00" onConfirm={noop} /></Section>
-        <Section id="success-check" title="Success check"><SuccessCheck label="Payment sent" /></Section>
+        <Section id="success-check" title="Success check"><SuccessCheck label="Payment sent" />
+          <Variant id="filled"><SuccessCheck variant="filled" label="Payment sent" /></Variant>
+          <Variant id="soft"><SuccessCheck variant="soft" label="Payment sent" /></Variant></Section>
       </main>
     </ThemeProvider>
   );

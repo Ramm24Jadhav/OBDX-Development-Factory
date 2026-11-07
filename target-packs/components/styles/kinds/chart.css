@@ -14,3 +14,25 @@
 .bx-chart.is-columns .bx-bar-fill { width: 100%; animation-name: bx-grow-y; }
 .bx-chart.is-columns .bx-bar-value { font-size: 12px; }
 @keyframes bx-grow-y { from { transform: scaleY(0); } }
+/* variants (variants.json, wave V3) */
+.bx-chart.bx-v-rounded .bx-bar-track { height: 18px; background: color-mix(in srgb, var(--bx-brand) 8%, var(--bx-track)); }
+.bx-chart.bx-v-rounded .bx-bar-fill { background: var(--bx-brand); }
+.bx-chart.is-columns.bx-v-rounded .bx-bar-track { width: min(44px, 100%); border-radius: var(--bx-radius-pill); }
+.bx-chart.bx-v-lollipop .bx-bar-track { background: none; overflow: visible; }
+.bx-chart.bx-v-lollipop .bx-bar-fill { top: 5px; bottom: auto; height: 2px; border-radius: 0; background: var(--bx-border-strong); }
+.bx-chart.bx-v-lollipop .bx-bar-fill::after { content: ""; position: absolute; right: -5px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--bx-brand); }
+.bx-chart.is-columns.bx-v-lollipop .bx-bar-fill { top: auto; left: calc(50% - 1px); width: 2px; }
+.bx-chart.is-columns.bx-v-lollipop .bx-bar-fill::after { left: -4px; right: auto; top: -5px; }
+.bx-meter-bar { display: flex; height: 14px; margin: 4px 0 14px; border-radius: var(--bx-radius-pill); background: var(--bx-track); overflow: hidden; }
+.bx-meter-seg { flex: none; height: 100%; border-right: 2px solid var(--bx-card); transform-origin: left; animation: bx-grow-x var(--bx-dur-slow) var(--bx-ease-standard); }
+.bx-meter-seg:last-child { border-right: 0; }
+.bx-chart.bx-v-meter .bx-bar-track { display: none; }
+.bx-chart.bx-v-meter .bx-bars { flex-direction: column; gap: 8px; min-height: 0; }
+.bx-chart.bx-v-meter .bx-bar { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 10px; text-align: left; }
+.bx-chart.bx-v-meter .bx-bar::before { content: ""; width: 10px; height: 10px; border-radius: calc(var(--bx-radius-sm) / 2); background: var(--bx-brand); }
+.bx-seg-0, .bx-chart.bx-v-meter .bx-bar:nth-child(6n+1)::before { background: var(--bx-brand); }
+.bx-seg-1, .bx-chart.bx-v-meter .bx-bar:nth-child(6n+2)::before { background: var(--bx-brand-2); }
+.bx-seg-2, .bx-chart.bx-v-meter .bx-bar:nth-child(6n+3)::before { background: var(--bx-info); }
+.bx-seg-3, .bx-chart.bx-v-meter .bx-bar:nth-child(6n+4)::before { background: var(--bx-success); }
+.bx-seg-4, .bx-chart.bx-v-meter .bx-bar:nth-child(6n+5)::before { background: var(--bx-warning); }
+.bx-seg-5, .bx-chart.bx-v-meter .bx-bar:nth-child(6n+6)::before { background: var(--bx-danger); }

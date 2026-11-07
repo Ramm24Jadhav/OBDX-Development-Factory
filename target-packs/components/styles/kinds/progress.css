@@ -17,3 +17,37 @@
 .bx-gauge-label { font-weight: 650; }
 .bx-gauge-text { font-size: 13px; color: var(--bx-muted); font-variant-numeric: tabular-nums; }
 @keyframes bx-gauge-in { from { stroke-dashoffset: 126; } }
+/* variants (variants.json, wave V3) */
+.bx-meters.bx-v-linear .bx-meter-track { height: 4px; }
+.bx-meter-stop { position: absolute; right: 0; top: 0; width: 4px; height: 4px; border-radius: 50%; background: var(--bx-brand); }
+.bx-meters.bx-v-linear .bx-meter-mui { position: absolute; inset: 0; height: 100%; border-radius: inherit; background: var(--bx-track); }
+.bx-meters.bx-v-linear .bx-meter-mui .MuiLinearProgress-bar { background: var(--bx-brand); }
+.bx-meters.bx-v-linear .bx-meter-mui.is-near .MuiLinearProgress-bar { background: var(--bx-warning); }
+.bx-meters.bx-v-linear .bx-meter-mui.is-over .MuiLinearProgress-bar { background: var(--bx-danger); }
+.bx-meters.bx-v-ring { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+.bx-meters.bx-v-ring > .bx-panel-title { grid-column: 1 / -1; }
+.bx-meters.bx-v-ring .bx-meter { flex-direction: column-reverse; align-items: center; text-align: center; }
+.bx-meters.bx-v-ring .bx-meter-head { flex-direction: column; align-items: center; gap: 2px; }
+.bx-meters.bx-v-ring .bx-meter-text { text-align: center; }
+.bx-meters.bx-v-ring .bx-meter-track { height: auto; border-radius: 0; background: none; overflow: visible; }
+.bx-meter-ring { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 72px; height: 72px; }
+.bx-meter-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.bx-meter-ring .MuiCircularProgress-root { position: absolute; inset: 0; width: 100% !important; height: 100% !important; color: var(--bx-brand); }
+.bx-meter-ring.is-near .MuiCircularProgress-root { color: var(--bx-warning); }
+.bx-meter-ring.is-over .MuiCircularProgress-root { color: var(--bx-danger); }
+.bx-ring-track, .bx-ring-fill { fill: none; stroke-width: 4; }
+.bx-ring-track { stroke: var(--bx-track); }
+.bx-ring-fill { stroke: var(--bx-brand); stroke-linecap: round; transition: stroke-dashoffset var(--bx-dur-slow) var(--bx-ease-standard); }
+.bx-meter-ring.is-near .bx-ring-fill { stroke: var(--bx-warning); }
+.bx-meter-ring.is-over .bx-ring-fill { stroke: var(--bx-danger); }
+.bx-meter-pct { position: relative; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--bx-text); }
+.bx-meters.bx-v-segmented .bx-meter-track { height: 10px; border-radius: 0; background: none; }
+.bx-meter-segs { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; height: 100%; }
+.bx-meter-segs span { border-radius: calc(var(--bx-radius-sm) / 2); background: var(--bx-track); }
+.bx-meter-segs span.is-on { background: var(--bx-brand); animation: bx-pop var(--bx-dur-base) var(--bx-ease-spring); }
+.bx-meter-segs.is-near span.is-on { background: var(--bx-warning); }
+.bx-meter-segs.is-over span.is-on { background: var(--bx-danger); }
+.bx-gauge.bx-v-ring svg { width: 140px; }
+.bx-gauge.bx-v-ring .bx-gauge-fill { stroke-dasharray: 251.3; transform: rotate(-90deg); transform-origin: 50% 50%; transform-box: fill-box; animation-name: bx-gauge-ring-in; }
+@keyframes bx-gauge-ring-in { from { stroke-dashoffset: 251.3; } }
+.bx-gauge.bx-v-thin :is(.bx-gauge-track, .bx-gauge-fill) { stroke-width: 4; }

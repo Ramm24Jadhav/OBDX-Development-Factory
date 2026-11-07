@@ -14,6 +14,7 @@ import { FieldProps, Option } from './field';
 import { Banner, BannerProps, Bars, BarsProps, Chips, ChipsProps, TimelineItem, Item, ItemList, KeyValues, KeyValuesProps, ProgressList, ProgressListProps,
   Segment, SegmentProps, TimelineList } from './parts';
 import { useTheme } from './theme';
+import type { TimelineVariant } from './variants';
 
 /* ---------- BarChart, ProgressBar, SavingsGoal, SpendCategories, TransactionLimits ---------- */
 
@@ -143,6 +144,8 @@ export interface JourneyProps {
   testID: string;
   label?: string;
   items: ReadonlyArray<TimelineItem>;
+  /** The style: default, compact, cards or horizontal. */
+  variant?: TimelineVariant;
 }
 
 /** Who approved, and who is next (the next level takes state "current"). */

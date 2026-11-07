@@ -13,3 +13,20 @@
 .bx-toast-text strong { color: var(--bx-text); }
 .bx-toast { animation: bx-slide var(--bx-dur-base) var(--bx-ease-standard); }
 .bx-swipe-toast { touch-action: pan-y; }
+/* variants (variants.json, wave V3) */
+:is(.bx-toasts.bx-v-snackbar .bx-toast, .bx-toast.bx-v-snackbar) { grid-template-columns: minmax(0, 1fr) auto; align-items: center; border: 0; border-radius: var(--bx-radius-sm); background: var(--bx-text);
+  color: var(--bx-surface); box-shadow: var(--bx-shadow-3); }
+:is(.bx-toasts.bx-v-snackbar .bx-toast, .bx-toast.bx-v-snackbar) .bx-toast-icon { display: none; }
+:is(.bx-toasts.bx-v-snackbar .bx-toast, .bx-toast.bx-v-snackbar) :is(.bx-toast-text, .bx-toast-text strong, .bx-btn) { color: inherit; }
+:is(.bx-toasts.bx-v-stacked .bx-toast, .bx-toast.bx-v-stacked) { border-radius: var(--bx-radius-xl);
+  box-shadow: var(--bx-shadow-2), 0 8px 0 -4px var(--bx-raised), 0 8px 0 calc(var(--bx-bw) - 4px) var(--bx-border); }
+.bx-toasts.bx-v-stacked { gap: 0; isolation: isolate; }
+.bx-toasts.bx-v-stacked .bx-toast { position: relative; transition: margin var(--bx-dur-base) var(--bx-ease-standard), transform var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-toasts.bx-v-stacked .bx-toast:nth-child(1) { z-index: 3; }
+.bx-toasts.bx-v-stacked .bx-toast:nth-child(2) { z-index: 2; margin-top: -36px; transform: scale(0.95); }
+.bx-toasts.bx-v-stacked .bx-toast:nth-child(n+3) { z-index: 1; margin-top: -36px; transform: scale(0.9); }
+.bx-toasts.bx-v-stacked:is(:hover, :focus-within) .bx-toast { margin-top: 8px; transform: none; }
+.bx-toasts.bx-v-stacked:is(:hover, :focus-within) .bx-toast:first-child { margin-top: 0; }
+:is(.bx-toasts.bx-v-pill .bx-toast, .bx-toast.bx-v-pill) { width: fit-content; max-width: 100%; align-items: center; padding: 6px 6px 6px 8px; border-radius: var(--bx-radius-pill); border-left-width: var(--bx-bw); }
+:is(.bx-toasts.bx-v-pill .bx-toast, .bx-toast.bx-v-pill) .bx-toast-text { flex-direction: row; flex-wrap: wrap; column-gap: 6px; }
+.bx-toast.bx-v-pill { display: inline-grid; }

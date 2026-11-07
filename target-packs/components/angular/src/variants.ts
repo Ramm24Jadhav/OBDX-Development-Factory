@@ -1,6 +1,6 @@
 /*
- * Style variants of the feedback and status components (variants/v3.json): the root of each component gets
- * bx-<kind>--<variant>; 'default' is the look the component had before variants. The Material variants are drawn by
+ * Style variants of the feedback and status components (variants.json, wave V3): a variant adds bx-v-<id> to the
+ * component's root; 'default' is the look the component had before variants and adds nothing. The Material variants are drawn by
  * bx.css (React's use MUI). The thinking orb is thinking-orbs by Jakub Antalik (MIT, see the notice below).
  */
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, effect, inject, input } from '@angular/core';
