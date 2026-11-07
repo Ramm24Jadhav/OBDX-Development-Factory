@@ -11,6 +11,7 @@ import { Banner, BannerProps, Chips, ChipsProps, Item, ItemList, ListEntry, Segm
   TimelineItem, TimelineList, TimelineListProps, Tone, Touch, panel, toItems, toneColors } from './parts';
 import { Enter, useShimmer } from './motion';
 import { useTheme } from './theme';
+import { AvatarVariant, BillsVariant, ListVariantProps, hueOf } from './bankVariants';
 
 /* ---------- SecondaryButton and DestructiveButton ---------- */
 
@@ -286,16 +287,20 @@ export const initials = (name = '') => name.split(/\s+/).filter(Boolean).slice(0
 const AVATAR = { sm: 32, md: 40, lg: 56 } as const;
 
 /** Initials or a photo for a person or payee. */
-export function Avatar({ testID, name, src, size = 'md' }: AvatarProps) {
+export function Avatar({ testID, name, src, size = 'md', variant }: AvatarProps & { variant?: AvatarVariant }) {
   const t = useTheme();
   const d = AVATAR[size];
-  const box = { width: d, height: d, borderRadius: d / 2 };
+  const box = { width: d, height: d, borderRadius: variant === 'rounded' ? d / 4 : d / 2,
+    ...(variant === 'ring' ? { borderWidth: 2, borderColor: t.color.primary } : {}) };
+  // the tonal avatar's soft fill and text, from a hue of the name (dark text on light, light text on dark)
+  const dark = t.color.onPrimary !== '#ffffff';
+  const tone = variant === 'tonal' ? { bg: `hsl(${hueOf(name)}, 60%, ${dark ? 24 : 90}%)`, fg: `hsl(${hueOf(name)}, 70%, ${dark ? 85 : 25}%)` } : null;
   return src
     ? <Image testID={testID} source={{ uri: src }} style={box} accessibilityLabel={name} accessibilityRole="image" />
     : (
       <View testID={testID} accessible accessibilityRole="image" accessibilityLabel={name}
-            style={[box, { backgroundColor: t.color.primarySoft, alignItems: 'center', justifyContent: 'center' }]}>
-        <Text style={{ fontSize: d * 0.38, fontWeight: '700', color: t.color.primaryText }}>{initials(name)}</Text>
+            style={[box, { backgroundColor: tone ? tone.bg : t.color.primarySoft, alignItems: 'center', justifyContent: 'center' }]}>
+        <Text style={{ fontSize: d * 0.38, fontWeight: '700', color: tone ? tone.fg : t.color.primaryText }}>{initials(name)}</Text>
       </View>
     );
 }
@@ -517,8 +522,8 @@ export interface NotificationPanelProps {
 
 /** Alerts and notices for the customer, newest first, with Read on the unread ones. */
 export function NotificationPanel({ testID, heading = 'Notifications', items, actionLabel = 'Read', onAction, onSelect,
-  emptyText = 'No messages from the bank.' }: NotificationPanelProps) {
+  emptyText = 'No messages from the bank.', variant, loading }: NotificationPanelProps & ListVariantProps<BillsVariant>) {
   const unread = items.filter((x) => x.unread).length;
-  return <ItemList testID={testID} heading={unread ? `${heading}, ${unread} unread` : heading} items={items} onSelect={onSelect}
+  return <ItemList variant={variant} loading={loading} testID={testID} heading={unread ? `${heading}, ${unread} unread` : heading} items={items} onSelect={onSelect}
                    actionLabel={onAction ? actionLabel : undefined} onAction={onAction} showAction={(x) => !!x.unread} emptyText={emptyText} />;
 }

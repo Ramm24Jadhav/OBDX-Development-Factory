@@ -8,6 +8,7 @@ import { Animated, Easing, StyleProp, Text, TextStyle, View } from 'react-native
 import { formatAmount } from './TextField';
 import { DURATION, useCycle, useProgress, useReducedMotion, useStagger } from './motion';
 import { useTheme } from './theme';
+import { BoardVariant, SensitiveVariant, variantLook } from './bankVariants';
 
 export interface TextEffectProps {
   testID?: string;
@@ -101,16 +102,17 @@ function Flap({ char, delay }: { char: string; delay: number }) {
 
 export interface SplitFlapBoardProps {
   testID?: string;
+  variant?: BoardVariant;
   label: string;
   /** Each row: "USD / EUR" and "0.9213"; a changed character flips. */
   rows: ReadonlyArray<{ label: string; value: string }>;
 }
 
 /** An exchange-rate board whose characters flip when they change. */
-export function SplitFlapBoard({ testID, label, rows }: SplitFlapBoardProps) {
+export function SplitFlapBoard({ testID, label, rows, variant }: SplitFlapBoardProps) {
   const t = useTheme();
   return (
-    <View testID={testID} style={{ gap: 8, padding: 12, borderRadius: t.radius.card, backgroundColor: t.color.surface2 }}>
+    <View testID={testID} style={[{ gap: 8, padding: 12, borderRadius: t.radius.card, backgroundColor: t.color.surface2 }, variantLook(t, 'board', variant).surface]}>
       <Text accessibilityRole="header" style={{ fontSize: 14, fontWeight: '700', color: t.color.textBody }}>{label}</Text>
       {rows.map((row) => (
         <View key={row.label} accessible accessibilityLabel={`${row.label}: ${row.value}`} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -129,11 +131,15 @@ export interface RevealDigitsProps extends TextEffectProps {
   value: string;
   /** While masked only the last four show; unmasking reveals the rest one character at a time. */
   masked: boolean;
+  variant?: SensitiveVariant;
 }
 
 /** An account number that unmasks digit by digit. */
-export function RevealDigits({ testID, value, masked, style }: RevealDigitsProps) {
-  const s = useTextStyle(style, 18);
+export function RevealDigits({ testID, value, masked, style, variant }: RevealDigitsProps) {
+  const s = useTextStyle(style, variant === 'card' ? 22 : 18);
+  const t = useTheme();
+  // blur: the masked digits fade and spread (the real number is never drawn while masked); card: a surface of its own
+  const v = variant === 'blur' && masked ? { opacity: 0.55, letterSpacing: 4 } : variant === 'card' ? { padding: 16, borderRadius: t.radius.card, backgroundColor: t.color.surface2, overflow: 'hidden' as const } : null;
   const r = useReducedMotion();
   /* the last four digits always show; spaces and separators stay */
   const digitsAt = value.split('').map((c, i) => (/\d/.test(c) ? i : -1)).filter((i) => i >= 0);
@@ -147,7 +153,7 @@ export function RevealDigits({ testID, value, masked, style }: RevealDigitsProps
     return () => clearInterval(timer);
   }, [masked, value, r]);
   const shown = value.split('').map((c, i) => (/\d/.test(c) && !keep.has(i) && i >= open ? '•' : c)).join('');
-  return <Text testID={testID} accessibilityLabel={masked ? `ending ${value.replace(/\s/g, '').slice(-4)}, hidden` : value} style={s}>{shown}</Text>;
+  return <Text testID={testID} accessibilityLabel={masked ? `ending ${value.replace(/\s/g, '').slice(-4)}, hidden` : value} style={[s, v]}>{shown}</Text>;
 }
 
 /* ---------- BlurInText, TextReveal, ScrollFloatText ---------- */

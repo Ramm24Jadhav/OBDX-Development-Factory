@@ -14,6 +14,7 @@ import { Chips, FormProps, ChipsProps, Item, ItemList, KeyValues, KeyValuesProps
   toneColors } from './parts';
 import { Enter, Roll } from './motion';
 import { useTheme } from './theme';
+import { BalanceVariant, BillsVariant, FormVariant, ListVariantProps, LoadingLines, PayeesVariant, ReceiptVariant, TxListVariant, variantLook } from './bankVariants';
 
 export interface Account {
   id: string;
@@ -76,13 +77,15 @@ export interface AccountBalanceProps {
 }
 
 /** The balance and available funds, hidden or shown with one tap. */
-export function AccountBalance({ testID, label, balance, available, currency, hidden, onHiddenChange }: AccountBalanceProps) {
-  const t = useTheme();
+export function AccountBalance({ testID, label, balance, available, currency, hidden, onHiddenChange, variant, loading }: AccountBalanceProps & ListVariantProps<BalanceVariant>) {
+  const look = variantLook(useTheme(), 'balance', variant);
+  const t = look.t;
   const [own, setOwn] = useState(false);
   const off = hidden ?? own;
   const flip = () => { setOwn(!off); onHiddenChange?.(!off); };
   return (
-    <Enter testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={[panel(t), look.surface, variant === 'compact' ? { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' } : null]}>
+      {loading ? <LoadingLines testID={`${testID}-loading`} t={t} /> : <>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text style={{ fontSize: 14, color: t.color.textMuted }}>{label}</Text>
         <Touch testID={`${testID}-hide`} label={off ? 'Show balance' : 'Hide balance'} selected={off} onPress={flip} style={{ paddingHorizontal: 8 }}>
@@ -91,13 +94,14 @@ export function AccountBalance({ testID, label, balance, available, currency, hi
       </View>
       <Roll on={off ? 'hidden' : balance}>
       <Text testID={`${testID}-amount`} accessibilityLabel={off ? 'Balance hidden' : `Balance ${money(balance, currency)}`}
-            style={{ fontSize: 30, fontWeight: '700', color: t.color.text, fontVariant: ['tabular-nums'] }}>
+            style={{ fontSize: variant === 'compact' ? 20 : variant === 'hero' ? 36 : 30, fontWeight: '700', color: t.color.text, fontVariant: ['tabular-nums'] }}>
         {off ? '••••••' : formatAmount(balance, currency)}{off || !currency ? '' : <Text style={{ fontSize: 15, color: t.color.textMuted }}> {currency}</Text>}
       </Text>
       </Roll>
       {available !== undefined ? (
         <Text style={{ fontSize: 13.5, color: t.color.textMuted }}>Available {off ? '••••' : money(available, currency)}</Text>
       ) : null}
+      </>}
     </Enter>
   );
 }
@@ -271,9 +275,10 @@ export interface BeneficiarySelectorProps extends FieldProps<string> {
 }
 
 /** Saved payees to pick from, searchable when there are many, with Add a new payee (value is the payee id). */
-export function BeneficiarySelector(props: BeneficiarySelectorProps) {
-  const { testID, label, value, onChange, payees, onAdd, disabled, readOnly, required, helpText, error } = props;
-  const t = useTheme();
+export function BeneficiarySelector(props: BeneficiarySelectorProps & ListVariantProps<PayeesVariant>) {
+  const { testID, label, value, onChange, payees, onAdd, disabled, readOnly, required, helpText, error, variant, loading } = props;
+  const look = variantLook(useTheme(), 'payees', variant);
+  const t = look.t;
   const s = styles(t);
   const [query, setQuery] = useState('');
   const q = query.trim().toLowerCase();
@@ -282,13 +287,14 @@ export function BeneficiarySelector(props: BeneficiarySelectorProps) {
     <View testID={testID} style={s.field} accessibilityRole="radiogroup" accessibilityLabel={label}>
       <Text style={s.label} importantForAccessibility="no">{label}{required ? <Text style={s.req}> *</Text> : null}</Text>
       {payees.length > 5 ? <TextField testID={`${testID}-search`} label={`Search ${label}`} value={query} onChange={setQuery} clearable /> : null}
-      <Enter style={[panel(t), { gap: 0, paddingVertical: 4 }]}>
-        {shown.length === 0 ? <Text style={{ padding: 12, color: t.color.textMuted }}>{q ? `No payee matches "${query}".` : 'No saved payees yet.'}</Text> : null}
-        {shown.map((p) => {
+      <Enter style={[panel(t), { gap: 0, paddingVertical: 4 }, look.surface]}>
+        {loading ? <LoadingLines testID={`${testID}-loading`} t={t} /> : null}
+        {loading ? null : shown.length === 0 ? <Text style={{ padding: 12, color: t.color.textMuted }}>{q ? `No payee matches "${query}".` : 'No saved payees yet.'}</Text> : null}
+        {(loading ? [] : shown).map((p) => {
           const on = p.id === value;
           return (
             <Touch key={p.id} testID={`${testID}-${p.id}`} role="radio" label={`${p.name}, ${p.bank ? `${p.bank}, ` : ''}${maskNumber(p.number)}`} selected={on}
-                   disabled={disabled || readOnly} onPress={() => onChange?.(p.id)} style={{ paddingHorizontal: 8 }}>
+                   disabled={disabled || readOnly} onPress={() => onChange?.(p.id)} style={[{ paddingHorizontal: 8 }, look.row]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 15, fontWeight: on ? '700' : '500', color: t.color.text }}>{p.name}</Text>
@@ -352,9 +358,10 @@ export interface PaymentFormProps extends FormProps<PaymentValue> {
 }
 
 /** Payee and amount, ready to review: the fields are checked when Review is pressed, each with what to fix. */
-export function PaymentForm(props: PaymentFormProps) {
-  const { testID, label, value, onChange, accounts, payees, currency, onReview, reviewLabel = 'Review payment', disabled, error } = props;
-  const t = useTheme();
+export function PaymentForm(props: PaymentFormProps & { variant?: FormVariant }) {
+  const { testID, label, value, onChange, accounts, payees, currency, onReview, reviewLabel = 'Review payment', disabled, error, variant } = props;
+  const look = variantLook(useTheme(), 'form', variant);
+  const t = look.t;
   const [tried, setTried] = useState(false);
   const v = value ?? { from: '', to: '', amount: null, note: '' };
   const set = (patch: Partial<PaymentValue>) => onChange?.({ ...v, ...patch });
@@ -367,7 +374,7 @@ export function PaymentForm(props: PaymentFormProps) {
   };
   const ok = !problems.from && !problems.to && !problems.amount;
   return (
-    <Enter testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={[panel(t), look.surface]}>
       {label ? <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text> : null}
       <AccountSelector testID={`${testID}-from`} label="From account" accounts={accounts} value={v.from} onChange={(x) => set({ from: x })} required
                        disabled={disabled} error={tried ? problems.from : undefined} />
@@ -426,7 +433,8 @@ export interface TransactionHistoryProps {
 }
 
 /** Recent activity with money in and money out filters; money in is green with a plus, so colour is never the only sign. */
-export function TransactionHistory({ testID, label = 'Transactions', transactions, filter, onFilterChange, onSelect, limit, onViewAll }: TransactionHistoryProps) {
+export function TransactionHistory({ testID, label = 'Transactions', transactions, filter, onFilterChange, onSelect, limit, onViewAll, variant, loading }:
+  TransactionHistoryProps & ListVariantProps<TxListVariant>) {
   const [own, setOwn] = useState<'all' | 'in' | 'out'>('all');
   const f = filter ?? own;
   const list = transactions.filter((x) => (f === 'in' ? x.amount > 0 : f === 'out' ? x.amount < 0 : true));
@@ -438,7 +446,7 @@ export function TransactionHistory({ testID, label = 'Transactions', transaction
         <Segment testID={`${testID}-filter`} label="Show" value={f} options={[{ value: 'all', label: 'All' }, { value: 'in', label: 'Money in' },
           { value: 'out', label: 'Money out' }]} onChange={(x) => { const v = x as 'all' | 'in' | 'out'; setOwn(v); onFilterChange?.(v); }} />
       )}
-      <ItemList testID={`${testID}-list`} heading={label} items={rows} emptyText="No transactions in this view."
+      <ItemList kind="txlist" variant={variant} loading={loading} testID={`${testID}-list`} heading={label} items={rows} emptyText="No transactions in this view."
                 onSelect={onSelect ? (i) => onSelect(transactions.find((x) => x.id === i.id)!) : undefined} />
       {onViewAll ? <Button testID={`${testID}-all`} label="View all" chroming="borderless" onAction={onViewAll} /> : null}
     </View>
@@ -472,10 +480,11 @@ export interface TransactionReceiptProps {
 }
 
 /** What was paid, with share and download; the outcome is announced when it opens. */
-export function TransactionReceipt({ testID, title = 'Payment sent', amount, currency, rows, onShare, onDownload }: TransactionReceiptProps) {
-  const t = useTheme();
+export function TransactionReceipt({ testID, title = 'Payment sent', amount, currency, rows, onShare, onDownload, variant }: TransactionReceiptProps & { variant?: ReceiptVariant }) {
+  const look = variantLook(useTheme(), 'receipt', variant);
+  const t = look.t;
   return (
-    <Enter testID={testID} style={[panel(t), { alignItems: 'stretch' }]}>
+    <Enter testID={testID} style={[panel(t), { alignItems: 'stretch' }, look.surface]}>
       <View style={{ alignItems: 'center', gap: 6 }} accessible accessibilityRole="summary" accessibilityLiveRegion="polite"
             accessibilityLabel={`${title}, ${money(amount, currency)}`}>
         <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: t.color.successSoft, alignItems: 'center', justifyContent: 'center' }}>
@@ -514,10 +523,10 @@ export interface UpcomingBillsProps {
 }
 
 /** Bills due soon, pay from the list; overdue ones are marked in words. */
-export function UpcomingBills({ testID, label = 'Upcoming bills', bills, onPay, actionLabel = 'Pay' }: UpcomingBillsProps) {
+export function UpcomingBills({ testID, label = 'Upcoming bills', bills, onPay, actionLabel = 'Pay', variant, loading }: UpcomingBillsProps & ListVariantProps<BillsVariant>) {
   const items: Item[] = bills.map((b) => ({ id: b.id, title: b.payee, meta: b.overdue ? `Overdue · ${b.due}` : b.due, tone: b.overdue ? 'danger' : undefined,
     value: money(b.amount, b.currency) }));
-  return <ItemList testID={testID} heading={label} items={items} actionLabel={onPay ? actionLabel : undefined} emptyText="No bills due."
+  return <ItemList variant={variant} loading={loading} testID={testID} heading={label} items={items} actionLabel={onPay ? actionLabel : undefined} emptyText="No bills due."
                    onAction={(i) => onPay?.(bills.find((b) => b.id === i.id)!)} />;
 }
 
@@ -550,9 +559,10 @@ export interface NewDepositFormProps extends FormProps<DepositValue> {
 const tenureLabel = (m: number) => (m % 12 === 0 ? `${m / 12} year${m === 12 ? '' : 's'}` : `${m} months`);
 
 /** Amount, tenure and where the money comes from. */
-export function NewDepositForm(props: NewDepositFormProps) {
-  const { testID, label, value, onChange, accounts, tenures = [3, 6, 12, 24], currency, minAmount, onReview, disabled } = props;
-  const t = useTheme();
+export function NewDepositForm(props: NewDepositFormProps & { variant?: FormVariant }) {
+  const { testID, label, value, onChange, accounts, tenures = [3, 6, 12, 24], currency, minAmount, onReview, disabled, variant } = props;
+  const look = variantLook(useTheme(), 'form', variant);
+  const t = look.t;
   const [tried, setTried] = useState(false);
   const v = value ?? { from: '', amount: null, months: null };
   const set = (patch: Partial<DepositValue>) => onChange?.({ ...v, ...patch });
@@ -565,7 +575,7 @@ export function NewDepositForm(props: NewDepositFormProps) {
     months: v.months ? '' : 'Choose the tenure.',
   };
   return (
-    <Enter testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={[panel(t), look.surface]}>
       {label ? <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text> : null}
       <AccountSelector testID={`${testID}-from`} label="From account" accounts={accounts} value={v.from} onChange={(x) => set({ from: x })} required
                        disabled={disabled} error={tried ? problems.from : undefined} />

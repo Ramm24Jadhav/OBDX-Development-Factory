@@ -13,6 +13,7 @@ import type { Severity } from './Toast';
 import { FieldProps, styles, useField } from './field';
 import { Enter, MODAL_FADE, Pop, Press, Roll, Shake, useGrow, useOpen, useSlide } from './motion';
 import { Theme, useTheme } from './theme';
+import { LoadingLines, variantLook } from './bankVariants';
 
 /** A form's props: the field props with the heading optional. */
 export type FormProps<T> = Omit<FieldProps<T>, 'label'> & { label?: string };
@@ -276,17 +277,24 @@ export interface ItemListProps {
   /** Makes each row a button (open the item). */
   onSelect?: (item: Item) => void;
   emptyText?: string;
+  /** A variant of the widget it draws (variants/v4.json): its kind and the variant's name. */
+  kind?: string;
+  variant?: string;
+  /** Skeleton lines in place of the rows while the screen fetches them. */
+  loading?: boolean;
 }
 
 /** Rows with a title, a line under it, a value on the right and one action each. */
-export function ItemList({ testID, heading, items, actionLabel, onAction, secondaryLabel, onSecondary, showAction, onSelect, emptyText = 'Nothing here yet.' }:
-  ItemListProps) {
-  const t = useTheme();
+export function ItemList({ testID, heading, items, actionLabel, onAction, secondaryLabel, onSecondary, showAction, onSelect, emptyText = 'Nothing here yet.',
+  kind = 'bills', variant, loading }: ItemListProps) {
+  const look = variantLook(useTheme(), kind, variant);
+  const t = look.t;
   return (
-    <Enter testID={testID} style={[panel(t), { gap: 0, paddingVertical: 6 }]}>
+    <Enter testID={testID} style={[panel(t), { gap: 0, paddingVertical: 6 }, look.surface]}>
       {heading ? <View style={{ paddingVertical: 8 }}><Heading t={t}>{heading}</Heading></View> : null}
-      {items.length === 0 ? <Text style={{ fontSize: 14, color: t.color.textMuted, paddingVertical: 12 }}>{emptyText}</Text> : null}
-      {items.map((x, i) => {
+      {loading ? <LoadingLines testID={`${testID}-loading`} t={t} /> : null}
+      {!loading && items.length === 0 ? <Text style={{ fontSize: 14, color: t.color.textMuted, paddingVertical: 12 }}>{emptyText}</Text> : null}
+      {(loading ? [] : items).map((x, i) => {
         const name = [x.unread ? 'Unread' : '', x.title, x.meta, x.value].filter(Boolean).join(', ');
         const text = (
           <View style={{ flex: 1, gap: 2 }}>
@@ -295,8 +303,8 @@ export function ItemList({ testID, heading, items, actionLabel, onAction, second
           </View>
         );
         return (
-          <Enter key={x.id} effect="settle" testID={`${testID}-${x.id}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: t.minTouch + 8,
-            borderTopWidth: i || heading ? StyleSheet.hairlineWidth : 0, borderColor: t.color.border }}>
+          <Enter key={x.id} effect="settle" testID={`${testID}-${x.id}`} style={[{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: t.minTouch + 8,
+            borderTopWidth: i || heading ? StyleSheet.hairlineWidth : 0, borderColor: t.color.border }, look.row]}>
             {onSelect
               ? <Touch testID={`${testID}-${x.id}-open`} label={name} onPress={() => onSelect(x)} style={{ flex: 1 }}>{text}</Touch>
               : <View style={{ flex: 1 }} accessible accessibilityLabel={name}>{text}</View>}

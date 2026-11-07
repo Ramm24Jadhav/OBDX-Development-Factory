@@ -3,7 +3,7 @@
  * data-component="id"> each (the catalogue ids), in the theme the URL asks for (?mode=light|dark). Fixed data so the
  * screenshots are stable; values are held in state so the controls work.
  */
-import { ReactElement, ReactNode, useState } from 'react';
+import { ReactElement, ReactNode, cloneElement, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Text } from 'react-native';
 
@@ -20,6 +20,8 @@ const params = new URLSearchParams(location.search);
 const mode = params.get('mode') === 'dark' ? 'dark' : 'light';
 // The factory's Component factory shows one section (?only=id) in the design, motion and brand its card has chosen
 const only = params.get('only');
+// and the variant (variants/v4.json) its card cycles through; each component's variant prop checks the name
+const variant = (params.get('variant') || undefined) as never;
 const look = (params.get('look') || 'elevated') as NonNullable<ComponentStyle['look']>;
 const click = (params.get('click') || 'press') as NonNullable<NonNullable<ComponentStyle['motion']>['click']>;
 const scroll = (params.get('scroll') || 'fadeup') as NonNullable<NonNullable<ComponentStyle['motion']>['scroll']>;
@@ -57,7 +59,7 @@ function Gallery() {
     <ThemeProvider style={{ mode, look, motion: { click, scroll } }} brand={brand}>
       <main className={`gallery ${mode}`} data-gallery-ready>
         {/* A component the sections below do not show, from the unit tests' examples, when the factory asks for it alone */}
-        {only && SAMPLES[only] ? <Section id={only} title={SAMPLES[only][0]}>{SAMPLES[only][1]}</Section> : null}
+        {only && SAMPLES[only] ? <Section id={only} title={SAMPLES[only][0]}>{variant ? cloneElement(SAMPLES[only][1] as ReactElement<{ variant?: string }>, { variant }) : SAMPLES[only][1]}</Section> : null}
         {/* The foundation and the forms wave (the same ids as the web packs' galleries) */}
         <Section id="button" title="Button"><Button label="Pay now" /><Button label="Paying" busy /></Section>
         <Section id="icon-button" title="Icon button"><IconButton label="More actions" /><IconButton label="Close" icon="close" chroming="outlined" /></Section>
@@ -130,20 +132,20 @@ function Gallery() {
         <Section id="status-badge" title="Status badge"><StatusBadge label="Completed" tone="success" /><StatusBadge label="Failed" tone="danger" /></Section>
         <Section id="timeline" title="Timeline"><Timeline testID="tl" items={[{ label: 'Initiated', meta: '09:12' }, { label: 'Completed', state: 'current' }]} /></Section>
         <Section id="error-message" title="Error message"><ErrorMessage testID="em" message="The amount is more than your daily limit of 5,000.00." actionLabel="Change the amount" /></Section>
-        <Section id="balance-card" title="Account balance"><AccountBalance testID="ab" label="Savings ·· 4821" balance={12400} available={12150} currency="USD" /></Section>
+        <Section id="balance-card" title="Account balance"><AccountBalance variant={variant} testID="ab" label="Savings ·· 4821" balance={12400} available={12150} currency="USD" /></Section>
         <Section id="transaction-list" title="Transaction history">
-          <TransactionHistory testID="th" transactions={[{ id: '1', description: 'Coffee House', date: 'Today', amount: -4.5, currency: 'USD' },
+          <TransactionHistory variant={variant} testID="th" transactions={[{ id: '1', description: 'Coffee House', date: 'Today', amount: -4.5, currency: 'USD' },
             { id: '2', description: 'Salary', date: '1 Nov', amount: 4200, currency: 'USD' }]} />
         </Section>
         <Section id="otp" title="OTP input"><Held initial="12">{(v, set) => <OtpInput testID="otp" label="Enter the code" value={v} onChange={set} />}</Held></Section>
-        <Section id="card-tile" title="Card tile"><Held initial={false}>{(v, set) => <CardTile testID="ct" card={{ id: 'c', name: 'Platinum', number: '4111111111114821', expiry: '08/29' }}
+        <Section id="card-tile" title="Card tile"><Held initial={false}>{(v, set) => <CardTile variant={variant} testID="ct" card={{ id: 'c', name: 'Platinum', number: '4111111111114821', expiry: '08/29' }}
                                                                                        frozen={v} onFrozenChange={set} />}</Held></Section>
         <Section id="spending-chart" title="Chart"><BarChart testID="bc" label="Spending" currency="USD" bars={[{ label: 'Sep', value: 980 }, { label: 'Oct', value: 1240 }]} /></Section>
         <Section id="budget-progress" title="Progress bar"><ProgressBar testID="pb" currency="USD" items={[{ label: 'Groceries', value: 320, max: 400 }, { label: 'Eating out', value: 210, max: 200 }]} /></Section>
-        <Section id="approval-queue" title="Pending for approval"><ApprovalQueue testID="aq" items={[{ id: 'p', title: 'Payroll Feb', meta: '182,400.00', priority: true }]} onApprove={noop} onReject={noop} /></Section>
+        <Section id="approval-queue" title="Pending for approval"><ApprovalQueue variant={variant} testID="aq" items={[{ id: 'p', title: 'Payroll Feb', meta: '182,400.00', priority: true }]} onApprove={noop} onReject={noop} /></Section>
         <Section id="alerts-subscription" title="Alerts"><Held initial={['Low balance']}>{(v, set) => <AlertSubscriptions testID="as" label="Tell me about" value={v} onChange={set}
                                                                                                                      options={['Low balance', 'Payments over 500.00']} />}</Held></Section>
-        <Section id="loan-calculator" title="Loan calculator"><LoanCalculator testID="lc" value={{ amount: 100000, rate: 12, months: 12 }} currency="USD" /></Section>
+        <Section id="loan-calculator" title="Loan calculator"><LoanCalculator variant={variant} testID="lc" value={{ amount: 100000, rate: 12, months: 12 }} currency="USD" /></Section>
         <Section id="faq" title="FAQ"><Faq testID="faq" items={[{ id: 'a', title: 'How do I block my card?', body: 'Settings › Cards › Block.' }]} /></Section>
         <Section id="overview" title="Overview widget"><OverviewWidget testID="ov" tiles={[{ id: 'cs', title: 'Current and savings', value: '15,610.50', note: '3 accounts' }]} /></Section>
 

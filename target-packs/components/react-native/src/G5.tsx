@@ -18,6 +18,7 @@ import { TimelineItem, FormProps, InfoCard, InfoCardProps, Item, ItemList, Segme
   Touch, panel } from './parts';
 import { Enter, Roll } from './motion';
 import { useTheme } from './theme';
+import { BillsVariant, CalcVariant, ChatVariant, FormVariant, ListVariantProps, LoadingLines, LocatorVariant, messageLook, variantLook } from './bankVariants';
 
 const money = (n: number, currency?: string) => `${formatAmount(n, currency)}${currency ? ` ${currency}` : ''}`;
 
@@ -38,14 +39,15 @@ export interface RaiseRequestProps extends FormProps<RequestValue> {
 }
 
 /** Cheque book, address change and other requests: what, for which account, and any details. */
-export function RaiseRequest({ testID, label = 'Raise a request', value, onChange, types, accounts, onSubmit, busy, disabled }: RaiseRequestProps) {
-  const t = useTheme();
+export function RaiseRequest({ testID, label = 'Raise a request', value, onChange, types, accounts, onSubmit, busy, disabled, variant }: RaiseRequestProps & { variant?: FormVariant }) {
+  const look = variantLook(useTheme(), 'form', variant);
+  const t = look.t;
   const [tried, setTried] = useState(false);
   const v = value ?? { type: '', account: '', details: '' };
   const set = (patch: Partial<RequestValue>) => onChange?.({ ...v, ...patch });
   const problems = { type: v.type ? '' : 'Choose a request.', account: v.account ? '' : 'Choose the account.' };
   return (
-    <Enter testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={[panel(t), look.surface]}>
       <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
       <Dropdown testID={`${testID}-type`} label="Request" options={types} value={v.type} onChange={(x) => set({ type: x })} required disabled={disabled}
                 error={tried ? problems.type : undefined} />
@@ -87,9 +89,9 @@ export interface MailboxProps {
 }
 
 /** Mails, alerts and notices from the bank. */
-export function Mailbox({ testID, label = 'Mailbox', messages, onOpen }: MailboxProps) {
+export function Mailbox({ testID, label = 'Mailbox', messages, onOpen, variant, loading }: MailboxProps & ListVariantProps<BillsVariant>) {
   const unread = messages.filter((m) => m.unread).length;
-  return <ItemList testID={testID} heading={unread ? `${label}, ${unread} unread` : label} items={messages} onSelect={onOpen} emptyText="No messages." />;
+  return <ItemList variant={variant} loading={loading} testID={testID} heading={unread ? `${label}, ${unread} unread` : label} items={messages} onSelect={onOpen} emptyText="No messages." />;
 }
 
 export interface DocumentsProps {
@@ -100,13 +102,13 @@ export interface DocumentsProps {
 }
 
 /** Receipts for past transactions. */
-export function EReceipts({ testID, label = 'E-receipts', documents, onDownload }: DocumentsProps) {
-  return <ItemList testID={testID} heading={label} items={documents} actionLabel="Download" onAction={onDownload} emptyText="No receipts yet." />;
+export function EReceipts({ testID, label = 'E-receipts', documents, onDownload, variant, loading }: DocumentsProps & ListVariantProps<BillsVariant>) {
+  return <ItemList variant={variant} loading={loading} testID={testID} heading={label} items={documents} actionLabel="Download" onAction={onDownload} emptyText="No receipts yet." />;
 }
 
 /** Interest, balance and tax certificates. */
-export function Certificates({ testID, label = 'Certificates', documents, onDownload }: DocumentsProps) {
-  return <ItemList testID={testID} heading={label} items={documents} actionLabel="Download" onAction={onDownload} emptyText="No certificates yet." />;
+export function Certificates({ testID, label = 'Certificates', documents, onDownload, variant, loading }: DocumentsProps & ListVariantProps<BillsVariant>) {
+  return <ItemList variant={variant} loading={loading} testID={testID} heading={label} items={documents} actionLabel="Download" onAction={onDownload} emptyText="No certificates yet." />;
 }
 
 export interface NominationsProps {
@@ -118,8 +120,8 @@ export interface NominationsProps {
 }
 
 /** Who receives the account, and their share. */
-export function Nominations({ testID, label = 'Nominations', nominees, onEdit }: NominationsProps) {
-  return <ItemList testID={testID} heading={label} items={nominees} actionLabel={onEdit ? 'Edit' : undefined} onAction={onEdit} emptyText="No nominees yet." />;
+export function Nominations({ testID, label = 'Nominations', nominees, onEdit, variant, loading }: NominationsProps & ListVariantProps<BillsVariant>) {
+  return <ItemList variant={variant} loading={loading} testID={testID} heading={label} items={nominees} actionLabel={onEdit ? 'Edit' : undefined} onAction={onEdit} emptyText="No nominees yet." />;
 }
 
 /* ---------- ComposeMessage ---------- */
@@ -272,12 +274,13 @@ export interface CalculatorProps<T> {
 const NOTE = 'An estimate; the bank confirms the figures when you apply.';
 
 /** The monthly payment for a loan amount, with the interest over the whole loan. */
-export function LoanCalculator({ testID, label = 'Loan instalment calculator', value, onChange, currency }: CalculatorProps<LoanInputs>) {
-  const t = useTheme();
+export function LoanCalculator({ testID, label = 'Loan instalment calculator', value, onChange, currency, variant }: CalculatorProps<LoanInputs> & { variant?: CalcVariant }) {
+  const look = variantLook(useTheme(), 'calc', variant);
+  const t = look.t;
   const v = value;
   const each = v.amount && v.rate !== null && v.months ? instalment(v.amount, v.rate, v.months) : null;
   return (
-    <Enter testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={[panel(t), look.surface]}>
       <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
       <AmountInput testID={`${testID}-amount`} label="Loan amount" currency={currency} value={v.amount} onChange={(x) => onChange?.({ ...v, amount: x })} min={0} />
       <NumberInput testID={`${testID}-rate`} label="Interest rate (% a year)" value={v.rate} decimals={2} min={0} max={60} step={0.25}
@@ -290,12 +293,13 @@ export function LoanCalculator({ testID, label = 'Loan instalment calculator', v
 }
 
 /** What a term deposit is worth at maturity. */
-export function DepositCalculator({ testID, label = 'Term deposit calculator', value, onChange, currency }: CalculatorProps<LoanInputs>) {
-  const t = useTheme();
+export function DepositCalculator({ testID, label = 'Term deposit calculator', value, onChange, currency, variant }: CalculatorProps<LoanInputs> & { variant?: CalcVariant }) {
+  const look = variantLook(useTheme(), 'calc', variant);
+  const t = look.t;
   const v = value;
   const end = v.amount && v.rate !== null && v.months ? maturityValue(v.amount, v.rate, v.months) : null;
   return (
-    <Enter testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={[panel(t), look.surface]}>
       <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
       <AmountInput testID={`${testID}-amount`} label="Deposit amount" currency={currency} value={v.amount} onChange={(x) => onChange?.({ ...v, amount: x })} min={0} />
       <NumberInput testID={`${testID}-rate`} label="Interest rate (% a year)" value={v.rate} decimals={2} min={0} max={30} step={0.25}
@@ -317,10 +321,11 @@ export interface ForexCalculatorProps extends CalculatorProps<number | null> {
 }
 
 /** What the payee gets at the rate today (value is the amount sent). */
-export function ForexCalculator({ testID, label = 'Forex calculator', value, onChange, currency, to, rate }: ForexCalculatorProps) {
-  const t = useTheme();
+export function ForexCalculator({ testID, label = 'Forex calculator', value, onChange, currency, to, rate, variant }: ForexCalculatorProps & { variant?: CalcVariant }) {
+  const look = variantLook(useTheme(), 'calc', variant);
+  const t = look.t;
   return (
-    <Enter testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={[panel(t), look.surface]}>
       <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
       <AmountInput testID={`${testID}-amount`} label="You send" currency={currency} value={value} onChange={(x) => onChange?.(x)} min={0} />
       {value ? <Result testID={`${testID}-result`} label="The payee gets" value={money(value * rate, to)} note={`1 ${currency} = ${rate} ${to}. ${NOTE}`} /> : null}
@@ -382,7 +387,7 @@ export interface LocatorProps {
 }
 
 /** Nearby ATMs and branches: the app's map, a filter and the list with Directions. */
-export function Locator({ testID, label = 'ATMs and branches', places, onDirections, map }: LocatorProps) {
+export function Locator({ testID, label = 'ATMs and branches', places, onDirections, map, variant, loading }: LocatorProps & ListVariantProps<LocatorVariant>) {
   const [kind, setKind] = useState('all');
   const shown = places.filter((p) => kind === 'all' || p.kind === kind);
   return (
@@ -390,7 +395,7 @@ export function Locator({ testID, label = 'ATMs and branches', places, onDirecti
       {map}
       <Segment testID={`${testID}-kind`} label="Show" value={kind} onChange={setKind}
                options={[{ value: 'all', label: 'All' }, { value: 'atm', label: 'ATMs' }, { value: 'branch', label: 'Branches' }]} />
-      <ItemList testID={`${testID}-list`} heading={label} actionLabel="Directions" emptyText="Nothing near here."
+      <ItemList kind="locator" variant={variant} loading={loading} testID={`${testID}-list`} heading={label} actionLabel="Directions" emptyText="Nothing near here."
                 items={shown.map((p) => ({ id: p.id, title: p.name, meta: [p.kind === 'atm' ? 'ATM' : 'Branch', p.address, p.hours].filter(Boolean).join(' · '),
                   value: p.distance }))}
                 onAction={(i) => onDirections(places.find((p) => p.id === i.id)!)} />
@@ -419,23 +424,26 @@ export interface LiveChatProps {
 }
 
 /** Chat with the bank: the messages, suggested questions and a box to write; new bank messages are announced. */
-export function LiveChat({ testID, label = 'Chat with us', messages, suggestions = [], onSend, typing }: LiveChatProps) {
-  const t = useTheme();
+export function LiveChat({ testID, label = 'Chat with us', messages, suggestions = [], onSend, typing, variant, loading }: LiveChatProps & ListVariantProps<ChatVariant>) {
+  const look = variantLook(useTheme(), 'chat', variant);
+  const t = look.t;
   const [draft, setDraft] = useState('');
   const send = (text: string) => { const x = text.trim(); if (x) { onSend(x); setDraft(''); } };
   const started = messages.some((m) => m.from === 'customer');
   return (
-    <Enter testID={testID} style={[panel(t), { gap: 8 }]}>
+    <Enter testID={testID} style={[panel(t), { gap: 8 }, look.surface]}>
       <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
+      {loading ? <LoadingLines testID={`${testID}-loading`} t={t} /> : null}
       <FlatList data={messages} keyExtractor={(m) => m.id} scrollEnabled={false} contentContainerStyle={{ gap: 6 }} renderItem={({ item: m }) => {
         const mine = m.from === 'customer';
         return (
           <View accessible accessibilityLabel={`${mine ? 'You' : 'Bank'}${m.time ? ` at ${m.time}` : ''}: ${m.text}`}
                 accessibilityLiveRegion={mine ? 'none' : 'polite'}
                 style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '82%', padding: 10, borderRadius: 14,
-                  backgroundColor: mine ? t.color.primary : t.color.surface2 }}>
-            <Text style={{ fontSize: 14.5, color: mine ? t.color.onPrimary : t.color.text }}>{m.text}</Text>
-            {m.time ? <Text style={{ fontSize: 11, color: mine ? t.color.onPrimary : t.color.textMuted, marginTop: 2 }}>{m.time}</Text> : null}
+                  backgroundColor: mine ? t.color.primary : t.color.surface2, ...messageLook(variant) }}>
+            {variant === 'flat' ? <Text style={{ fontSize: 12.5, fontWeight: '700', color: t.color.textMuted }}>{mine ? 'You' : 'Bank'}</Text> : null}
+            <Text style={{ fontSize: 14.5, color: mine && variant !== 'flat' ? t.color.onPrimary : t.color.text }}>{m.text}</Text>
+            {m.time ? <Text style={{ fontSize: 11, color: mine && variant !== 'flat' ? t.color.onPrimary : t.color.textMuted, marginTop: 2 }}>{m.time}</Text> : null}
           </View>
         );
       }} />

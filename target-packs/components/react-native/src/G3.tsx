@@ -18,6 +18,7 @@ import { Banner, FormProps, BannerProps, CodeBoxes, CodeBoxesProps, TimelineItem
   StepsProps, Tiles, TilesProps, TimelineList, Touch, maskNumber, panel } from './parts';
 import { Enter } from './motion';
 import { useTheme } from './theme';
+import { BillsVariant, BiometricVariant, CardTileVariant, FormVariant, ListVariantProps, variantLook } from './bankVariants';
 
 const money = (n: number, currency?: string) => `${formatAmount(n, currency)}${currency ? ` ${currency}` : ''}`;
 
@@ -60,9 +61,10 @@ export interface LoanRepaymentProps extends FormProps<RepaymentValue> {
 }
 
 /** Pay an instalment or a part of the loan. */
-export function LoanRepayment(props: LoanRepaymentProps) {
-  const { testID, label, value, onChange, loans, accounts, currency, due, onReview, disabled } = props;
-  const t = useTheme();
+export function LoanRepayment(props: LoanRepaymentProps & { variant?: FormVariant }) {
+  const { testID, label, value, onChange, loans, accounts, currency, due, onReview, disabled, variant } = props;
+  const look = variantLook(useTheme(), 'form', variant);
+  const t = look.t;
   const [tried, setTried] = useState(false);
   const v = value ?? { loan: '', amount: null, from: '' };
   const set = (patch: Partial<RepaymentValue>) => onChange?.({ ...v, ...patch });
@@ -74,7 +76,7 @@ export function LoanRepayment(props: LoanRepaymentProps) {
     from: v.from ? '' : 'Choose the account to pay from.',
   };
   return (
-    <Enter testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={[panel(t), look.surface]}>
       {label ? <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text> : null}
       <Dropdown testID={`${testID}-loan`} label="Loan" options={loans} value={v.loan} onChange={(x) => set({ loan: x })} required disabled={disabled}
                 error={tried ? problems.loan : undefined} />
@@ -104,16 +106,17 @@ export interface RaiseDisputeProps extends FormProps<DisputeValue> {
 }
 
 /** Question a card transaction: the reason, then what happened. */
-export function RaiseDispute(props: RaiseDisputeProps) {
+export function RaiseDispute(props: RaiseDisputeProps & { variant?: FormVariant }) {
   const { testID, label = 'Raise a dispute', value, onChange, transaction, onSubmit, busy, disabled,
-    reasons = ['Charged twice', 'I did not make this payment', 'The amount is wrong', 'I did not get the goods', 'Other'] } = props;
-  const t = useTheme();
+    reasons = ['Charged twice', 'I did not make this payment', 'The amount is wrong', 'I did not get the goods', 'Other'], variant } = props;
+  const look = variantLook(useTheme(), 'form', variant);
+  const t = look.t;
   const [tried, setTried] = useState(false);
   const v = value ?? { reason: '', details: '' };
   const set = (patch: Partial<DisputeValue>) => onChange?.({ ...v, ...patch });
   const problems = { reason: v.reason ? '' : 'Choose a reason.', details: v.reason === 'Other' && !v.details.trim() ? 'Say what happened.' : '' };
   return (
-    <Enter testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={[panel(t), look.surface]}>
       <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
       <Text style={{ fontSize: 14, color: t.color.textBody }}>Transaction: {transaction}</Text>
       <Dropdown testID={`${testID}-reason`} label="Reason" options={reasons} value={v.reason} onChange={(x) => set({ reason: x })} required disabled={disabled}
@@ -142,10 +145,11 @@ export interface AddOnCardProps extends FormProps<AddOnValue> {
 }
 
 /** Apply for a card for a family member on this account. */
-export function AddOnCard(props: AddOnCardProps) {
+export function AddOnCard(props: AddOnCardProps & { variant?: FormVariant }) {
   const { testID, label = 'Apply for an add-on card', value, onChange, currency, maxLimit, onSubmit, busy, disabled,
-    relationships = ['Spouse', 'Parent', 'Child', 'Sibling'] } = props;
-  const t = useTheme();
+    relationships = ['Spouse', 'Parent', 'Child', 'Sibling'], variant } = props;
+  const look = variantLook(useTheme(), 'form', variant);
+  const t = look.t;
   const [tried, setTried] = useState(false);
   const v = value ?? { name: '', relationship: '', limit: null };
   const set = (patch: Partial<AddOnValue>) => onChange?.({ ...v, ...patch });
@@ -155,7 +159,7 @@ export function AddOnCard(props: AddOnCardProps) {
     limit: !v.limit ? 'Enter the limit.' : maxLimit !== undefined && v.limit > maxLimit ? `The limit can be at most ${money(maxLimit, currency)}.` : '',
   };
   return (
-    <Enter testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={[panel(t), look.surface]}>
       <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
       <TextField testID={`${testID}-name`} label="Name on the card" value={v.name} onChange={(x) => set({ name: x })} maxLength={26} required disabled={disabled}
                  error={tried ? problems.name : undefined} />
@@ -255,23 +259,27 @@ export interface CardTileProps {
 }
 
 /** The card, with freeze and unfreeze; a frozen card is greyed and says so. */
-export function CardTile({ testID, card, frozen, onFrozenChange, disabled }: CardTileProps) {
+export function CardTile({ testID, card, frozen, onFrozenChange, disabled, variant }: CardTileProps & { variant?: CardTileVariant }) {
   const t = useTheme();
+  const look = variantLook(t, 'cardtile', variant);
+  // the face and its text: the brand colour (classic), outlined, glass or metal
+  const face = frozen ? { bg: t.color.surface3, fg: t.color.textMuted } : variant === 'minimal' || variant === 'glass' || variant === 'metal'
+    ? { bg: (look.surface.backgroundColor === 'transparent' ? t.color.surface : look.surface.backgroundColor) as string, fg: look.t.color.text } : { bg: t.color.primary, fg: t.color.onPrimary };
   return (
     <View testID={testID} style={{ gap: 10 }}>
       <View accessible accessibilityLabel={`${card.name} card ${maskNumber(card.number)}${card.expiry ? `, expires ${card.expiry}` : ''}${frozen ? ', frozen' : ''}`}
             style={{ aspectRatio: 1.586, borderRadius: t.radius.card + 4, padding: 18, justifyContent: 'space-between',
-              backgroundColor: frozen ? t.color.surface3 : t.color.primary }}>
+              ...look.surface, backgroundColor: face.bg }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Text style={{ fontSize: 15, fontWeight: '700', color: frozen ? t.color.textMuted : t.color.onPrimary }}>{card.name}</Text>
+          <Text style={{ fontSize: 15, fontWeight: '700', color: face.fg }}>{card.name}</Text>
           {frozen ? <Text style={{ fontSize: 12.5, fontWeight: '700', color: t.color.textBody }}>Frozen</Text> : null}
         </View>
-        <Text style={{ fontSize: 19, letterSpacing: 2, color: frozen ? t.color.textMuted : t.color.onPrimary, fontVariant: ['tabular-nums'] }}>
+        <Text style={{ fontSize: 19, letterSpacing: 2, color: face.fg, fontVariant: ['tabular-nums'] }}>
           •••• •••• •••• {card.number.replace(/\s/g, '').slice(-4)}
         </Text>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Text style={{ fontSize: 13, color: frozen ? t.color.textMuted : t.color.onPrimary }}>{card.holder ?? ''}{card.expiry ? `  ${card.expiry}` : ''}</Text>
-          {card.network ? <Text style={{ fontSize: 13, fontWeight: '700', color: frozen ? t.color.textMuted : t.color.onPrimary }}>{card.network}</Text> : null}
+          <Text style={{ fontSize: 13, color: face.fg }}>{card.holder ?? ''}{card.expiry ? `  ${card.expiry}` : ''}</Text>
+          {card.network ? <Text style={{ fontSize: 13, fontWeight: '700', color: face.fg }}>{card.network}</Text> : null}
         </View>
       </View>
       <Toggle testID={`${testID}-freeze`} label="Freeze the card" value={frozen} onChange={onFrozenChange} disabled={disabled}
@@ -456,8 +464,8 @@ export interface CardStatementsProps {
 }
 
 /** Past statements, ready to download. */
-export function CardStatements({ testID, label = 'Statements', statements, onDownload }: CardStatementsProps) {
-  return <ItemList testID={testID} heading={label} items={statements} actionLabel="Download" onAction={onDownload} emptyText="No statements yet." />;
+export function CardStatements({ testID, label = 'Statements', statements, onDownload, variant, loading }: CardStatementsProps & ListVariantProps<BillsVariant>) {
+  return <ItemList variant={variant} loading={loading} testID={testID} heading={label} items={statements} actionLabel="Download" onAction={onDownload} emptyText="No statements yet." />;
 }
 
 /* ---------- AuthChallenge ---------- */
@@ -474,8 +482,9 @@ export interface AuthChallengeProps {
 }
 
 /** Approve with a fingerprint or face; a failed check says so and offers to try again or use a code. */
-export function AuthChallenge({ testID, label, authenticate, onSuccess, onFallback }: AuthChallengeProps) {
-  const t = useTheme();
+export function AuthChallenge({ testID, label, authenticate, onSuccess, onFallback, variant }: AuthChallengeProps & { variant?: BiometricVariant }) {
+  const look = variantLook(useTheme(), 'biometric', variant);
+  const t = look.t;
   const [state, setState] = useState<'idle' | 'busy' | 'failed'>('idle');
   const run = async () => {
     setState('busy');
@@ -483,7 +492,7 @@ export function AuthChallenge({ testID, label, authenticate, onSuccess, onFallba
     if (ok) { setState('idle'); onSuccess(); } else { setState('failed'); }
   };
   return (
-    <Enter testID={testID} style={[panel(t), { alignItems: 'center' }]}>
+    <Enter testID={testID} style={[panel(t), { alignItems: 'center' }, look.surface]}>
       <View importantForAccessibility="no" style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: t.color.primarySoft, alignItems: 'center',
         justifyContent: 'center' }}>
         <Text style={{ fontSize: 28, color: t.color.primaryText }}>◉</Text>

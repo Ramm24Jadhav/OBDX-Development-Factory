@@ -14,6 +14,7 @@ import { FieldProps, Option } from './field';
 import { Banner, BannerProps, Bars, BarsProps, Chips, ChipsProps, TimelineItem, Item, ItemList, KeyValues, KeyValuesProps, ProgressList, ProgressListProps,
   Segment, SegmentProps, TimelineList } from './parts';
 import { useTheme } from './theme';
+import { BillsVariant, ListVariantProps } from './bankVariants';
 
 /* ---------- BarChart, ProgressBar, SavingsGoal, SpendCategories, TransactionLimits ---------- */
 
@@ -80,11 +81,11 @@ export interface ApprovalQueueProps {
 }
 
 /** Items waiting for this approver, prioritized ones first, each with Approve and Reject. */
-export function ApprovalQueue({ testID, label = 'Pending for approval', items, onApprove, onReject, onSelect }: ApprovalQueueProps) {
+export function ApprovalQueue({ testID, label = 'Pending for approval', items, onApprove, onReject, onSelect, variant, loading }: ApprovalQueueProps & ListVariantProps<BillsVariant>) {
   const sorted = [...items].sort((a, b) => Number(!!b.priority) - Number(!!a.priority))
     .map((x) => ({ ...x, title: x.priority ? `${x.title} · prioritized` : x.title }));
   const find = (i: Item) => items.find((x) => x.id === i.id)!;
-  return <ItemList testID={testID} heading={`${label}, ${items.length}`} items={sorted} actionLabel="Approve" onAction={(i) => onApprove(find(i))}
+  return <ItemList variant={variant} loading={loading} testID={testID} heading={`${label}, ${items.length}`} items={sorted} actionLabel="Approve" onAction={(i) => onApprove(find(i))}
                    secondaryLabel={onReject ? 'Reject' : undefined} onSecondary={(i) => onReject?.(find(i))}
                    onSelect={onSelect ? (i) => onSelect(find(i)) : undefined} emptyText="Nothing is waiting for you." />;
 }
@@ -227,9 +228,9 @@ export interface DevicesProps {
 }
 
 /** Devices that can sign in, with Remove on all but this one. */
-export function Devices({ testID, label = 'Registered devices', devices, onRemove }: DevicesProps) {
+export function Devices({ testID, label = 'Registered devices', devices, onRemove, variant, loading }: DevicesProps & ListVariantProps<BillsVariant>) {
   const items = devices.map((d) => ({ ...d, title: d.current ? `${d.title} · this device` : d.title }));
-  return <ItemList testID={testID} heading={label} items={items} actionLabel="Remove" showAction={(i) => !devices.find((d) => d.id === i.id)?.current}
+  return <ItemList variant={variant} loading={loading} testID={testID} heading={label} items={items} actionLabel="Remove" showAction={(i) => !devices.find((d) => d.id === i.id)?.current}
                    onAction={(i) => onRemove(devices.find((d) => d.id === i.id)!)} />;
 }
 
@@ -241,6 +242,6 @@ export interface ConsentsProps {
 }
 
 /** Apps that can read the accounts, with Revoke. */
-export function Consents({ testID, label = 'Access and consent', consents, onRevoke }: ConsentsProps) {
-  return <ItemList testID={testID} heading={label} items={consents} actionLabel="Revoke" onAction={onRevoke} emptyText="No app can read your accounts." />;
+export function Consents({ testID, label = 'Access and consent', consents, onRevoke, variant, loading }: ConsentsProps & ListVariantProps<BillsVariant>) {
+  return <ItemList variant={variant} loading={loading} testID={testID} heading={label} items={consents} actionLabel="Revoke" onAction={onRevoke} emptyText="No app can read your accounts." />;
 }

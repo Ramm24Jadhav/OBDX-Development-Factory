@@ -12,6 +12,7 @@ import { FieldProps, Option, options as toOptions, styles } from './field';
 import { DURATION, Enter, Pop, Press, Shake, useCycle, useOpen, usePop, useProgress, useReducedMotion, useSlide } from './motion';
 import { CodeBoxes, CodeBoxesProps, Tone, Touch, toneColors } from './parts';
 import { useTheme } from './theme';
+import { PromptVariant, ReceiptVariant, variantLook } from './bankVariants';
 
 /* ---------- SlideToConfirm ---------- */
 
@@ -96,14 +97,15 @@ export function OtpSlots(props: CodeBoxesProps) {
 /* ---------- ReceiptTear ---------- */
 
 /** A receipt that prints out of a slot, with a torn edge at the foot. */
-export function ReceiptTear({ testID, children }: { testID?: string; children: ReactNode }) {
-  const t = useTheme();
+export function ReceiptTear({ testID, children, variant }: { testID?: string; children: ReactNode; variant?: ReceiptVariant }) {
+  const look = variantLook(useTheme(), 'receipt', variant);
+  const t = look.t;
   const v = useProgress('print', 700);
   return (
     <View testID={testID} style={{ overflow: 'hidden' }}>
       <View style={{ height: 8, borderRadius: 4, backgroundColor: t.color.text, marginHorizontal: 8 }} />
       <Animated.View style={{ marginHorizontal: 16, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [-160, 0] }) }] }}>
-        <View style={{ backgroundColor: t.color.surface, padding: 16, gap: 8, borderWidth: 1, borderBottomWidth: 0, borderColor: t.color.border }}>{children}</View>
+        <View style={[{ backgroundColor: t.color.surface, padding: 16, gap: 8, borderWidth: 1, borderBottomWidth: 0, borderColor: t.color.border }, look.surface]}>{children}</View>
         <View style={{ flexDirection: 'row', overflow: 'hidden', height: 8 }} importantForAccessibility="no">
           {Array.from({ length: 40 }, (_, i) => <View key={i} style={{ width: 12, height: 12, marginTop: -6, backgroundColor: t.color.surface, borderWidth: 1,
             borderColor: t.color.border, transform: [{ rotate: '45deg' }] }} />)}
@@ -519,18 +521,21 @@ export interface PromptBarProps {
   /** The assistant is answering: the border glows and Send waits. */
   busy?: boolean;
   placeholder?: string;
+  variant?: PromptVariant;
 }
 
 /** The assistant's question bar: its border glows while it is in use or answering. */
-export function PromptBar({ testID, label = 'Ask the assistant', value, onChange, onSubmit, busy, placeholder = 'Ask about your accounts' }: PromptBarProps) {
-  const t = useTheme();
+export function PromptBar({ testID, label = 'Ask the assistant', value, onChange, onSubmit, busy, placeholder = 'Ask about your accounts', variant }: PromptBarProps) {
+  const look = variantLook(useTheme(), 'chat', variant);
+  const t = look.t;
+  const radius = variant === 'boxed' ? 6 : 999;
   const [focused, setFocused] = useState(false);
   const glow = useCycle(1600, !!busy || focused, 0.5);
   const send = () => { if (value.trim() && !busy) { onSubmit(value.trim()); } };
   return (
-    <View testID={testID} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 4, minHeight: t.minTouch + 8, borderRadius: 999,
-      backgroundColor: t.color.surface, borderWidth: 1, borderColor: t.color.border }}>
-      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: 999, borderWidth: 2, borderColor: t.color.primary,
+    <View testID={testID} style={[{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 4, minHeight: t.minTouch + 8, borderRadius: radius,
+      backgroundColor: t.color.surface, borderWidth: 1, borderColor: t.color.border }, look.surface]}>
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius, borderWidth: 2, borderColor: t.color.primary,
         opacity: busy || focused ? glow.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.35, 1, 0.35] }) : 0 }]} />
       <TextInput testID={testID ? `${testID}-input` : undefined} style={{ flex: 1, minHeight: t.minTouch, fontSize: 16, color: t.color.text, paddingVertical: 10 }} value={value}
                  onChangeText={onChange} placeholder={placeholder} placeholderTextColor={t.color.textMuted} accessibilityLabel={label} returnKeyType="send"

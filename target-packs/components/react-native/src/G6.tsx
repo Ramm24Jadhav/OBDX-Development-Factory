@@ -14,6 +14,7 @@ import { Tabs } from './Tabs';
 import { Banner, BannerProps, Bars, BarsProps, InfoCard, InfoCardProps, Item, ItemList, Meter, ProgressList, Tiles, TilesProps, panel } from './parts';
 import { Enter } from './motion';
 import { useTheme } from './theme';
+import { BillsVariant, CalcVariant, ListVariantProps, TxListVariant } from './bankVariants';
 
 /* ---------- Tile widgets ---------- */
 
@@ -54,27 +55,27 @@ export interface QuickInsightsWidgetProps {
 }
 
 /** Events that need attention, each with an action. */
-export function QuickInsightsWidget({ testID, label = 'Quick insights', insights, actionLabel = 'View', onAction }: QuickInsightsWidgetProps) {
-  return <ItemList testID={testID} heading={label} items={insights} actionLabel={actionLabel} onAction={onAction} emptyText="Nothing needs you today." />;
+export function QuickInsightsWidget({ testID, label = 'Quick insights', insights, actionLabel = 'View', onAction, variant, loading }: QuickInsightsWidgetProps & ListVariantProps<BillsVariant>) {
+  return <ItemList variant={variant} loading={loading} testID={testID} heading={label} items={insights} actionLabel={actionLabel} onAction={onAction} emptyText="Nothing needs you today." />;
 }
 
 /** The latest activity, five rows, with View all. */
-export function RecentTransactionsWidget({ label = 'Recent transactions', limit = 5, ...props }: TransactionHistoryProps) {
+export function RecentTransactionsWidget({ label = 'Recent transactions', limit = 5, ...props }: TransactionHistoryProps & ListVariantProps<TxListVariant>) {
   return <TransactionHistory {...props} label={label} limit={limit} />;
 }
 
 /** Bills due, with Pay now. */
-export function BillsWidget({ label = 'Bills', actionLabel = 'Pay now', ...props }: UpcomingBillsProps) {
+export function BillsWidget({ label = 'Bills', actionLabel = 'Pay now', ...props }: UpcomingBillsProps & ListVariantProps<BillsVariant>) {
   return <UpcomingBills {...props} label={label} actionLabel={actionLabel} />;
 }
 
 /** The last bank notifications. */
-export function NotificationsWidget(props: NotificationPanelProps) {
+export function NotificationsWidget(props: NotificationPanelProps & ListVariantProps<BillsVariant>) {
   return <NotificationPanel {...props} />;
 }
 
 /** Items waiting for this approver, prioritized first. */
-export function PendingApprovalsWidget(props: ApprovalQueueProps) {
+export function PendingApprovalsWidget(props: ApprovalQueueProps & ListVariantProps<BillsVariant>) {
   return <ApprovalQueue {...props} />;
 }
 
@@ -226,13 +227,14 @@ export interface CalculatorsWidgetProps {
 }
 
 /** Loan, term deposit and forex calculators behind tabs. */
-export function CalculatorsWidget({ testID, label = 'Calculators', currency = 'USD', loan, onLoanChange, deposit, onDepositChange, forex }: CalculatorsWidgetProps) {
+export function CalculatorsWidget({ testID, label = 'Calculators', currency = 'USD', loan, onLoanChange, deposit, onDepositChange, forex, variant }:
+  CalculatorsWidgetProps & { variant?: CalcVariant }) {
   const [tab, setTab] = useState('loan');
   const tabs = [
-    { id: 'loan', label: 'Loan', content: <LoanCalculator testID={`${testID}-loan`} value={loan} onChange={onLoanChange} currency={currency} /> },
-    { id: 'deposit', label: 'Deposit', content: <DepositCalculator testID={`${testID}-deposit`} value={deposit} onChange={onDepositChange} currency={currency} /> },
+    { id: 'loan', label: 'Loan', content: <LoanCalculator testID={`${testID}-loan`} value={loan} onChange={onLoanChange} currency={currency} variant={variant} /> },
+    { id: 'deposit', label: 'Deposit', content: <DepositCalculator testID={`${testID}-deposit`} value={deposit} onChange={onDepositChange} currency={currency} variant={variant} /> },
     ...(forex ? [{ id: 'forex', label: 'Forex', content: <ForexCalculator testID={`${testID}-forex`} value={forex.value} onChange={forex.onChange} currency={currency}
-                                                                          to={forex.to} rate={forex.rate} /> }] : []),
+                                                                          to={forex.to} rate={forex.rate} variant={variant} /> }] : []),
   ];
   return <Tabs testID={testID} label={label} tabs={tabs} selection={tab} onSelectionChange={setTab} />;
 }
