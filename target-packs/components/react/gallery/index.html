@@ -11,7 +11,9 @@
         if (!only) { return; }
         var sel = '[data-component="' + CSS.escape(only) + '"]';
         var css = document.createElement('style');
-        css.textContent = 'html,body{margin:0;background:transparent!important}.gallery{padding:16px!important;gap:0!important;min-height:0!important;background:transparent!important}'
+        // Transparent only inside the factory's frame; opened on its own (the gates) the page keeps the theme's background
+        var framed = window.parent !== window;
+        css.textContent = (framed ? 'html,body{margin:0;background:transparent!important}.gallery{padding:16px!important;gap:0!important;min-height:0!important;background:transparent!important}' : '.gallery>h1{display:none}')
           + '.gallery>h1,[data-component]:not(' + sel + '){display:none!important}' + sel + '>h2{display:none!important}' + sel + '{padding:0!important;margin:0!important;background:transparent!important;border:0!important;box-shadow:none!important}'
           // one instance, as each card on the board shows it
           + sel + ' .gate-body>:not(:first-child),' + sel + ' .gate-body>.gate-row>:not(:first-child){display:none!important}'
