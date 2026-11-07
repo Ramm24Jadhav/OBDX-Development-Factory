@@ -4,8 +4,8 @@
  * the workspace's component style. Readiness is only what the registry records: Available when every quality gate
  * passed, In test when built, Planned when named but not built; a preview shows only what a pack has built.
  *
- * Each card has its own theme (light or dark, a brand), design option (the carousel) and motion; "Apply to all" makes a
- * card's choice the workspace default. The panel shows a component's checks, API, mapping, the four packs side by side,
+ * Each card has its own theme (light or dark, a brand), design and motion (the Design panel); "Apply to all" makes a card's
+ * choice the workspace default. The carousel cycles the component's variants (variants.json); a pack shows only the ones it has built. The panel shows a component's checks, API, mapping, the four packs side by side,
  * and Customise, which saves a copy in My copies. Manage pack installs or upgrades a pack in the code through a change.
  */
 define(['knockout', '../accUtils', '../services/api', '../services/workspaceSelection', '../services/ui', '../services/toast', '../services/session',
@@ -80,6 +80,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       self.mapGroup = ko.observable('all');
       self.dashboard = ko.observable('all');
       self.limits = ko.observable({});
+      // variants.json's components, and the variant each card shows (page state: the variant is chosen in the code, not saved here)
+      self.variants = ko.observable({});
+      self.variantOf = ko.observable({});
 
       // Counts over the category (or the search) and the mapping filter, so each choice says how many it shows
       const readinessCount = (key) => ko.pureComputed(() => { const p = self.packId(); const q = self.query().trim().toLowerCase();
@@ -183,16 +186,18 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       // (only that component, in the card's design, motion, theme and brand), JET from the JET gallery's example
       const jetExamples = ko.observable(null);
       const framed = jetPack.previews();
-      const frameOf = (packId, id, s) => {
+      const frameOf = (packId, id, s, variant) => {
         const page = framed()[packId];
         if (!page) { return null; }
         const b = BRANDS.find((x) => x[0] === s.brand);
         const m = s.motion || {};
-        const q = [['only', id], ['mode', s.mode === 'dark' ? 'dark' : 'light'], ['look', s.look], ['hover', m.hover], ['click', m.click], ['scroll', m.scroll], ['brand', b && b[2]]]
+        const q = [['only', id], ['variant', variant !== 'default' && variant], ['mode', s.mode === 'dark' ? 'dark' : 'light'], ['look', s.look], ['hover', m.hover], ['click', m.click], ['scroll', m.scroll], ['brand', b && b[2]]]
           .filter((x) => x[1] && x[1] !== 'none').map((x) => x[0] + '=' + encodeURIComponent(x[1])).join('&');
         return page + '?' + q;
       };
-      const exampleOf = (id) => { const ex = jetExamples(); const view = ex && !PREVIEW[id] ? ex.view(id) : null; return view ? { view: view, data: ex.data } : null; };
+      // a variant other than the default always comes from the JET gallery, so a new variant needs no change here
+      const exampleOf = (id, variant) => { const ex = jetExamples(); const view = ex && (!PREVIEW[id] || variant !== 'default') ? ex.view(id, variant) : null; return view ? { view: view, data: ex.data } : null; };
+      const variantsOf = (id) => ((self.variants()[id] || {}).variants || [{ id: 'default', name: 'Default', built: [] }]);
 
       const visibleDash = (m) => self.dashboard() === 'all' || !m.dashboard || m.dashboard.toLowerCase().indexOf(self.dashboard() === 'retail' ? 'retail' : 'corporate') >= 0;
 
@@ -230,9 +235,15 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           const m = e.m;
           const ip = m.packs[p.id];
           const s = styleOf(m.id);
-          const built = !!ip.source;
+          const has = !!ip.source;
           const isNew = adds.indexOf(m.id) >= 0;
-          const kind = PREVIEW[m.id] || 'generic';
+          const vs = variantsOf(m.id);
+          const vIndex = Math.max(0, vs.findIndex((x) => x.id === self.variantOf()[m.id]));
+          const v = vs[vIndex];
+          const setVariant = (i) => { const o = Object.assign({}, self.variantOf()); o[m.id] = vs[(i + vs.length) % vs.length].id; self.variantOf(o); };
+          // the default is drawn wherever the component is; another variant only where variants.json says it is built
+          const built = has && (v.id === 'default' || v.built.indexOf(p.id) >= 0);
+          const kind = v.id === 'default' ? PREVIEW[m.id] || 'generic' : 'generic';
           const usedHere = m.workspaceKind === 'element' && (!usedSet || usedSet.has(m.workspaceElement));
           const lookIndex = Math.max(0, LOOKS.findIndex((x) => x[0] === s.look));
           const setLook = (i) => setOwn(m.id, (o) => { o.look = LOOKS[(i + LOOKS.length) % LOOKS.length][0]; });
@@ -247,9 +258,10 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
             jetNote: m.workspaceKind === 'element' ? 'Not used in ' + self.workspaceName() + ' today' : m.workspaceKind === 'none' ? 'Nothing in ' + self.workspaceName() + ' today: this is new'
               : 'Today an OBDX ' + (m.workspaceKind === 'widget' ? 'widget' : 'screen') + ' built by hand',
             tag: isNew ? 'New in ' + p.next.version : 'New', logo: LOGO[p.id] || p.name[0], packName: p.name,
-            frame: built ? frameOf(p.id, m.id, s) : null, example: built ? exampleOf(m.id) : null, frameTitle: m.name + ' as ' + p.name + ' draws it',
+            frame: built ? frameOf(p.id, m.id, s, v.id) : null, example: built ? exampleOf(m.id, v.id) : null, frameTitle: m.name + ' as ' + p.name + ' draws it',
             live: built && self.packReady() && (p.id !== 'react-native' || !!framed()[p.id]), kind: kind, native: built && p.id === 'react-native' && !framed()[p.id],
-            emptyText: isNew ? 'Planned for ' + p.next.version + ': it ships when it passes its checks' : ip.readiness === 'not-in-pack' ? 'Not in this pack' : 'Not in this pack yet',
+            emptyText: isNew ? 'Planned for ' + p.next.version + ': it ships when it passes its checks' : ip.readiness === 'not-in-pack' ? 'Not in this pack'
+              : has ? v.name + ' is not built in ' + p.name + ' yet: ' + (v.built.length ? 'see it in ' + v.built.map((x) => (self.catalogue().packs.find((y) => y.id === x) || { name: x }).name).join(', ') : 'it is planned') : 'Not in this pack yet',
             nameInPack: ip.name || '—', label: (m.sample && m.sample.label) || m.name,
             css: previewCss(s), brand: brandStyle(s.brand),
             // The theme bar
@@ -265,12 +277,14 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
               self.draft(next);
               toast.info(nameOf(BRANDS, s.brand) + ' · ' + s.mode + ' is now the theme of every component. Save the style to keep it.');
             },
-            // The design carousel
-            canDesign: built, lookLabel: nameOf(LOOKS, s.look) + ' · ' + (lookIndex + 1) + ' of ' + LOOKS.length,
-            prevLook: () => setLook(lookIndex - 1), nextLook: () => setLook(lookIndex + 1),
-            dots: LOOKS.map((x, i) => ({ label: x[1], on: i === lookIndex ? 'true' : 'false', css: 'factory-cf-dot' + (i === lookIndex ? ' is-on' : ''), pick: () => setLook(i) })),
+            // The variant carousel, and the design as a choice of its own
+            canDesign: has, lookLabel: v.name + ' · ' + nameOf(LOOKS, s.look), variantTitle: v.name + ': ' + (v.purpose || '') + ' (' + (vIndex + 1) + ' of ' + vs.length + ')',
+            hasVariants: has && vs.length > 1, prevVariant: () => setVariant(vIndex - 1), nextVariant: () => setVariant(vIndex + 1),
+            dots: vs.map((x, i) => ({ label: x.name + (x.id === 'default' || x.built.indexOf(p.id) >= 0 ? '' : ' (not built in ' + p.name + ')'), on: i === vIndex ? 'true' : 'false',
+              css: 'factory-cf-dot' + (i === vIndex ? ' is-on' : '') + (x.id === 'default' || x.built.indexOf(p.id) >= 0 ? '' : ' is-planned'), pick: () => setVariant(i) })),
+            designs: LOOKS.map((x, i) => ({ label: x[1], on: i === lookIndex ? 'true' : 'false', css: 'factory-cf-chip' + (i === lookIndex ? ' is-on' : ''), pick: () => setLook(i) })),
             // Motion
-            motionTitle: 'Motion: ' + nameOf(HOVER, s.motion.hover) + ' · ' + nameOf(CLICK, s.motion.click) + ' · ' + nameOf(SCROLL, s.motion.scroll),
+            motionTitle: 'Design: ' + nameOf(LOOKS, s.look) + '. Motion: ' + nameOf(HOVER, s.motion.hover) + ' · ' + nameOf(CLICK, s.motion.click) + ' · ' + nameOf(SCROLL, s.motion.scroll),
             motionOpen: ko.pureComputed(() => self.openMotion() === m.id), motionExpanded: ko.pureComputed(() => (self.openMotion() === m.id ? 'true' : 'false')),
             toggleMotion: () => self.openMotion(self.openMotion() === m.id ? null : m.id),
             motionGroups: [['hover', 'Hover', HOVER], ['click', 'Click', CLICK], ['scroll', 'Scroll', SCROLL]].map((g) => ({ label: g[1],
@@ -518,7 +532,9 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       const loadPackStates = (id) => (id ? api.get('workspaces/' + id + '/modernization/packs').then((s) => self.packStates(s)).catch(() => self.packStates([])) : Promise.resolve());
       const loadUsed = (id) => (id ? api.get('workspaces/' + id + '/modernization/components').then((v) => self.used(v.counted ? new Set(v.rows.map((r) => r.element)) : null))
         .catch(() => self.used(null)) : Promise.resolve(self.used(null)));
-      const loadAll = (id) => Promise.all([loadCatalogue(id), loadStyle(id), loadPackStates(id), loadUsed(id)]);
+      // a factory without variants.json still shows every component as drawn today
+      const loadVariants = () => api.get('component-packs/variants').then((v) => self.variants(v.components || {})).catch(() => self.variants({}));
+      const loadAll = (id) => Promise.all([loadCatalogue(id), loadStyle(id), loadPackStates(id), loadUsed(id), loadVariants()]);
       self.workspaceId.subscribe((id) => { loadAll(id).catch((e) => self.error(ui.errorText(e))); });
 
       // A framed gallery says how tall its one component is; the frame takes that height (within limits)

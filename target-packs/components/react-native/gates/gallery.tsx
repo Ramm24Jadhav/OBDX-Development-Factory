@@ -20,6 +20,8 @@ const params = new URLSearchParams(location.search);
 const mode = params.get('mode') === 'dark' ? 'dark' : 'light';
 // The factory's Component factory shows one section (?only=id) in the design, motion and brand its card has chosen
 const only = params.get('only');
+// ?samples=all also draws every sample at once (the design gates check them all in one page)
+const samples = params.get('samples') === 'all';
 const look = (params.get('look') || 'elevated') as NonNullable<ComponentStyle['look']>;
 const click = (params.get('click') || 'press') as NonNullable<NonNullable<ComponentStyle['motion']>['click']>;
 const scroll = (params.get('scroll') || 'fadeup') as NonNullable<NonNullable<ComponentStyle['motion']>['scroll']>;
@@ -62,8 +64,8 @@ function Gallery() {
   return (
     <ThemeProvider style={{ mode, look, motion: { click, scroll } }} brand={brand}>
       <main className={`gallery ${mode}`} data-gallery-ready>
-        {/* A component the sections below do not show, from the unit tests' examples, when the factory asks for it alone */}
-        {only && SAMPLES[only] ? <Section id={only} title={SAMPLES[only][0]}>{SAMPLES[only][1]}</Section> : null}
+        {/* A component the sections below do not show, from the unit tests' examples, when the factory asks for it alone (or the design gates for all) */}
+        {(only ? [only] : samples ? Object.keys(SAMPLES) : []).filter((id) => SAMPLES[id]).map((id) => <Section key={id} id={id} title={SAMPLES[id][0]}>{SAMPLES[id][1]}</Section>)}
         {/* The foundation and the forms wave (the same ids as the web packs' galleries) */}
         <Section id="button" title="Button"><Button label="Pay now" /><Button label="Paying" busy /></Section>
         <Section id="icon-button" title="Icon button"><IconButton label="More actions" /><IconButton label="Close" icon="close" chroming="outlined" /></Section>

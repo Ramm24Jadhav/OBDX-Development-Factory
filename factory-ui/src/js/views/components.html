@@ -117,9 +117,9 @@
                   </div>
                   <span class="factory-cf-arrow" aria-hidden="true">→</span>
                   <div class="factory-cf-side is-pack">
-                    <span class="factory-cf-side-tag"><span class="fx-badge fx-badge--violet"><oj-bind-text value="[[c.data.tag]]"></oj-bind-text></span> <span class="factory-cf-logo is-sm" aria-hidden="true"><oj-bind-text value="[[c.data.logo]]"></oj-bind-text></span> <oj-bind-text value="[[c.data.packName]]"></oj-bind-text><oj-bind-if test="[[c.data.canDesign]]"><span class="factory-cf-look"><oj-bind-text value="[[c.data.lookLabel]]"></oj-bind-text></span></oj-bind-if></span>
+                    <span class="factory-cf-side-tag"><span class="fx-badge fx-badge--violet"><oj-bind-text value="[[c.data.tag]]"></oj-bind-text></span> <span class="factory-cf-logo is-sm" aria-hidden="true"><oj-bind-text value="[[c.data.logo]]"></oj-bind-text></span> <oj-bind-text value="[[c.data.packName]]"></oj-bind-text><oj-bind-if test="[[c.data.canDesign]]"><span class="factory-cf-look" :title="[[c.data.variantTitle]]"><oj-bind-text value="[[c.data.lookLabel]]"></oj-bind-text></span></oj-bind-if></span>
                     <div class="factory-cf-side-body">
-                    <oj-bind-if test="[[c.data.canDesign]]"><button type="button" class="factory-cf-nav is-prev" aria-label="Previous design" on-click="[[c.data.prevLook]]">‹</button></oj-bind-if>
+                    <oj-bind-if test="[[c.data.hasVariants]]"><button type="button" class="factory-cf-nav is-prev" aria-label="Previous variant" on-click="[[c.data.prevVariant]]">‹</button></oj-bind-if>
                     <div class="factory-cf-stage">
                     <oj-bind-if test="[[c.data.live && c.data.frame]]"><iframe class="factory-cf-frame" :src="[[c.data.frame]]" :title="[[c.data.frameTitle]]" loading="lazy"></iframe></oj-bind-if>
                     <oj-bind-if test="[[c.data.live && !c.data.frame]]"><div :class="[[c.data.css]]" :style="[[c.data.brand]]">
@@ -142,15 +142,18 @@
                     <oj-bind-if test="[[c.data.native]]"><p class="fx-muted factory-cf-side-empty">Built for Android and iOS: React Native renders it with native controls, so it is checked on its own gallery, not in this browser.</p></oj-bind-if>
                     <oj-bind-if test="[[!c.data.live && !c.data.native]]"><p class="fx-muted factory-cf-side-empty"><oj-bind-text value="[[c.data.emptyText]]"></oj-bind-text></p></oj-bind-if>
                     </div>
-                    <oj-bind-if test="[[c.data.canDesign]]"><button type="button" class="factory-cf-nav is-next" aria-label="Next design" on-click="[[c.data.nextLook]]">›</button><span class="factory-cf-dots" role="tablist" aria-label="Designs"><oj-bind-for-each data="[[c.data.dots]]" as="d"><template><button type="button" role="tab" :class="[[d.data.css]]" :aria-selected="[[d.data.on]]" :aria-label="[[d.data.label]]" :title="[[d.data.label]]" on-click="[[d.data.pick]]"></button></template></oj-bind-for-each></span></oj-bind-if>
+                    <oj-bind-if test="[[c.data.hasVariants]]"><button type="button" class="factory-cf-nav is-next" aria-label="Next variant" on-click="[[c.data.nextVariant]]">›</button><span class="factory-cf-dots" role="tablist" aria-label="Variants"><oj-bind-for-each data="[[c.data.dots]]" as="d"><template><button type="button" role="tab" :class="[[d.data.css]]" :aria-selected="[[d.data.on]]" :aria-label="[[d.data.label]]" :title="[[d.data.label]]" on-click="[[d.data.pick]]"></button></template></oj-bind-for-each></span></oj-bind-if>
                     </div>
-                    <div class="factory-cf-side-foot"><span class="factory-cf-mono factory-cf-side-name"><oj-bind-text value="[[c.data.nameInPack]]"></oj-bind-text></span><span class="factory-cf-card-actions"><button type="button" class="factory-mb-btn is-outline is-xs" on-click="[[c.data.details]]">Details</button><oj-bind-if test="[[c.data.canDesign]]"><button type="button" class="factory-mb-btn is-outline is-xs" on-click="[[c.data.customise]]">Customise</button><button type="button" class="factory-mb-btn is-outline is-xs factory-cf-motionbtn" :aria-expanded="[[c.data.motionExpanded]]" :title="[[c.data.motionTitle]]" on-click="[[c.data.toggleMotion]]">Motion ▾</button></oj-bind-if></span></div>
+                    <div class="factory-cf-side-foot"><span class="factory-cf-mono factory-cf-side-name"><oj-bind-text value="[[c.data.nameInPack]]"></oj-bind-text></span><span class="factory-cf-card-actions"><button type="button" class="factory-mb-btn is-outline is-xs" on-click="[[c.data.details]]">Details</button><oj-bind-if test="[[c.data.canDesign]]"><button type="button" class="factory-mb-btn is-outline is-xs" on-click="[[c.data.customise]]">Customise</button><button type="button" class="factory-mb-btn is-outline is-xs factory-cf-motionbtn" :aria-expanded="[[c.data.motionExpanded]]" :title="[[c.data.motionTitle]]" on-click="[[c.data.toggleMotion]]">Design ▾</button></oj-bind-if></span></div>
                   </div>
                 </div>
                 <oj-bind-if test="[[c.data.canDesign]]">
                   <oj-bind-if test="[[c.data.differsDesign]]"><div class="factory-cf-design"><button type="button" class="fx-btn fx-btn--link fx-btn--sm" on-click="[[c.data.applyDesign]]">Apply design and motion to all</button></div></oj-bind-if>
                   <oj-bind-if test="[[c.data.motionOpen()]]">
                     <div class="factory-cf-motion">
+                      <div class="factory-cf-chips" role="group" aria-label="Design"><span class="factory-cf-chips-label">Design</span>
+                        <oj-bind-for-each data="[[c.data.designs]]" as="x"><template><button type="button" :class="[[x.data.css]]" :aria-pressed="[[x.data.on]]" on-click="[[x.data.pick]]"><oj-bind-text value="[[x.data.label]]"></oj-bind-text></button></template></oj-bind-for-each>
+                      </div>
                       <oj-bind-for-each data="[[c.data.motionGroups]]" as="g"><template>
                         <div class="factory-cf-chips" role="group" :aria-label="[[g.data.label]]"><span class="factory-cf-chips-label"><oj-bind-text value="[[g.data.label]]"></oj-bind-text></span>
                           <oj-bind-for-each data="[[g.data.chips]]" as="x"><template><button type="button" :class="[[x.data.css]]" :aria-pressed="[[x.data.on]]" on-click="[[x.data.pick]]"><oj-bind-text value="[[x.data.label]]"></oj-bind-text></button></template></oj-bind-for-each>
