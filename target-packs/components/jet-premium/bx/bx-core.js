@@ -188,16 +188,20 @@ define(['knockout', './bx-variants'], function (ko, VARIANTS) {
     element.dispatchEvent(new CustomEvent(name, { bubbles: true, detail: detail || {} }));
   }
 
-  /** Puts bx-<kind>--<variant> on the element for a variant it takes, and takes off the one before. */
+  /**
+   * Puts bx-v-<variant> and the kind hook bx-k-<kind> on the element for a variant it takes, and takes off the one before.
+   * The kind's rules read .bx-k-<kind>.bx-v-<variant> .bx-<part>, so a variant never reaches another component inside.
+   */
   function applyVariant(element, kind, ids, variant) {
     if (!element || !element.classList) { return; }
-    ids.forEach(function (v) { element.classList.remove('bx-' + kind + '--' + v); });
-    if (variant && ids.indexOf(variant) >= 0) { element.classList.add('bx-' + kind + '--' + variant); }
+    ids.forEach(function (v) { element.classList.remove('bx-v-' + v); });
+    element.classList.remove('bx-k-' + kind);
+    if (variant && ids.indexOf(variant) >= 0) { element.classList.add('bx-k-' + kind); element.classList.add('bx-v-' + variant); }
   }
 
   /**
-   * Wraps ojs/ojcomposite so every element in the variant table (bx-variants, from variants/*.json) takes a variant
-   * property: an empty variant keeps the pack's own look; the others add bx-<kind>--<variant> to the element.
+   * Wraps ojs/ojcomposite so every element in the variant table (bx-variants, from variants.json) takes a variant
+   * property: an empty variant keeps the pack's own look; the others add bx-k-<kind> bx-v-<variant> to the element.
    */
   function withVariants(Composite) {
     return { register: function (name, descriptor) {

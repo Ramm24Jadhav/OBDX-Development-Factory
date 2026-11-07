@@ -8,3 +8,24 @@
 .bx-code-action { align-self: flex-start; padding: 0; }
 .bx-fx-otp .bx-slot { border-radius: 14px; }
 .bx-fx-otp .bx-slot.is-filled { background: color-mix(in srgb, var(--bx-brand) 8%, var(--bx-surface)); }
+/* ---------- Variants (variants.json, wave V1): the element carries bx-k-code bx-v-<id>; one .bx-slot per digit ---------- */
+/* Material: outlined boxes with small corners; the next box doubles its brand edge */
+.bx-k-code.bx-v-material .bx-slot { border-width: var(--bx-bw); border-radius: var(--bx-radius-sm); box-shadow: none; background: transparent; }
+.bx-k-code.bx-v-material .bx-slot.is-next { box-shadow: inset 0 0 0 var(--bx-bw) var(--bx-brand); }
+/* Underlined: a line under each digit; the next line thickens in the brand colour */
+.bx-k-code.bx-v-underline .bx-slot { border-width: 0 0 calc(var(--bx-bw) * 2); border-radius: 0; background: transparent; box-shadow: none; }
+.bx-k-code.bx-v-underline .bx-slot.is-next { box-shadow: 0 var(--bx-bw) 0 var(--bx-brand); }
+.bx-k-code.bx-v-underline .bx-slot.is-filled { animation: none; }
+/* Rounded: soft filled cells, as on phone sign-in; a digit pops in on a spring */
+.bx-k-code.bx-v-rounded .bx-slot { border-color: var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-track); box-shadow: none; }
+.bx-k-code.bx-v-rounded .bx-slot.is-filled { border-color: transparent; background: color-mix(in srgb, var(--bx-brand) 12%, var(--bx-fill)); }
+.bx-k-code.bx-v-rounded .bx-slot.is-next { border-color: var(--bx-brand); background: var(--bx-fill); }
+/* Joined: one field split by thin dividers */
+.bx-k-code.bx-v-joined .bx-slots { gap: 0; }
+.bx-k-code.bx-v-joined .bx-slot { border-width: var(--bx-bw); border-radius: 0; box-shadow: none; }
+.bx-k-code.bx-v-joined .bx-slot + .bx-slot { border-left-width: 0; }
+.bx-k-code.bx-v-joined .bx-slot:first-of-type { border-radius: var(--bx-radius-control) 0 0 var(--bx-radius-control); }
+.bx-k-code.bx-v-joined .bx-slot:last-of-type { border-radius: 0 var(--bx-radius-control) var(--bx-radius-control) 0; }
+.bx-k-code.bx-v-joined .bx-slot.is-filled, .bx-k-code.bx-v-joined .bx-slot.is-next { border-color: var(--bx-border-strong); }
+.bx-k-code.bx-v-joined .bx-slot.is-next { box-shadow: inset 0 -3px 0 var(--bx-brand); }
+.bx-k-code.bx-v-underline .bx-slot.is-filled { border-color: var(--bx-text-body); }

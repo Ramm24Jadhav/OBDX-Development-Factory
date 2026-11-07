@@ -61,3 +61,44 @@
 .bx-caret.is-typing { animation: bx-blink 900ms steps(1) infinite; }
 @keyframes bx-shake { 20% { transform: translateX(-6px); } 45% { transform: translateX(5px); } 70% { transform: translateX(-3px); } }
 @keyframes bx-blink { 50% { opacity: 0; } }
+/* ---------- Field variants (variants.json, wave V1): kinds text, textarea, password, date, daterange and select share this box ----------
+   The element carries bx-k-<kind> bx-v-<id>; React's material variant of the foundation fields is @mui/material instead. */
+/* Material filled: a tinted box with an underline that grows in the brand colour on focus */
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-material .bx-control {
+  border-width: 0 0 var(--bx-bw); border-radius: var(--bx-radius-sm) var(--bx-radius-sm) 0 0; background: var(--bx-track); box-shadow: none; }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-material .bx-control::after { content: ""; position: absolute; left: 0; right: 0; bottom: calc(var(--bx-bw) * -1);
+  height: calc(var(--bx-bw) * 2); background: var(--bx-brand); transform: scaleX(0); transition: transform var(--bx-dur-base) var(--bx-ease-standard); pointer-events: none; }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-material .bx-field.is-focus .bx-control { box-shadow: none; }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-material .bx-field.is-focus .bx-control::after { transform: scaleX(1); }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-material .bx-field.is-error .bx-control { box-shadow: none; border-color: var(--bx-danger); }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-material .bx-field.is-focus .bx-label { color: var(--bx-brand-text); }
+/* Outlined: a quiet edge that takes the brand colour, doubled, on focus; no shadow */
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-outlined .bx-control { background: transparent; box-shadow: none; border-radius: var(--bx-radius-sm); }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-outlined .bx-field.is-focus .bx-control { box-shadow: inset 0 0 0 var(--bx-bw) var(--bx-brand); }
+/* Underlined: only a bottom line, for forms on a coloured or image surface */
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-underlined .bx-control {
+  border-width: 0 0 var(--bx-bw); border-radius: 0; background: transparent; box-shadow: none; }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-underlined .bx-input { padding-left: 2px; }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-underlined .bx-field.is-focus .bx-control { box-shadow: 0 var(--bx-bw) 0 var(--bx-brand); }
+/* Floating label: the label sits on the box's top edge, as a floated label does */
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-select).bx-v-floating .bx-field > .bx-label { position: relative; z-index: 1; align-self: flex-start; margin: 0 0 calc(-1em - 2px) calc(var(--bx-pad) - 4px);
+  padding: 0 4px; font-size: 11.5px; background: var(--bx-fill); color: var(--bx-muted); transition: color var(--bx-dur) var(--bx-ease); }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-select).bx-v-floating .bx-field.is-focus > .bx-label { color: var(--bx-brand-text); }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-select).bx-v-floating .bx-control { box-shadow: none; padding-top: 4px; }
+/* Inline label: the label to the left of the box on one line, for settings and review screens; stacked again on narrow screens */
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-inline .bx-field { display: grid; grid-template-columns: minmax(96px, 32%) 1fr; align-items: center; column-gap: 12px; }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-inline .bx-field > :not(.bx-label) { grid-column: 2; }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-inline .bx-field > .bx-label { font-size: 14px; }
+@media (max-width: 480px) {
+  :is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-inline .bx-field { display: flex; }
+}
+/* Search pill: a capsule with a soft fill, the edge appearing on focus */
+:is(.bx-k-text, .bx-k-select).bx-v-pill .bx-control { border-color: var(--bx-border); border-radius: var(--bx-radius-pill); background: var(--bx-track); box-shadow: none; }
+:is(.bx-k-text, .bx-k-select).bx-v-pill .bx-input { padding: 0 calc(var(--bx-pad) + 4px); }
+:is(.bx-k-text, .bx-k-select).bx-v-pill .bx-field.is-focus .bx-control { background: var(--bx-fill); border-color: var(--bx-brand); }
+/* Errors and focus stay visible in every field variant */
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-material .bx-field.is-error .bx-control::after { background: var(--bx-danger); transform: scaleX(1); }
+:is(.bx-k-text, .bx-k-select).bx-v-pill .bx-field.is-error .bx-control,
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-select).bx-v-floating .bx-field.is-error .bx-control { border-color: var(--bx-danger); box-shadow: 0 0 0 4px var(--bx-danger-soft); }
+:is(.bx-k-text, .bx-k-select).bx-v-pill .bx-field.is-focus .bx-control,
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-select).bx-v-floating .bx-field.is-focus .bx-control { box-shadow: var(--bx-focus); }

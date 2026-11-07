@@ -11,16 +11,21 @@ import { violations } from './a11y';
 
 afterEach(cleanup);
 
-const wave1 = JSON.parse(readFileSync(join(__dirname, '..', '..', 'variants', 'v1.json'), 'utf8')) as {
-  components: Record<string, { kind: string; variants: string[]; packs: Record<string, { name: string }> }>;
+const all = JSON.parse(readFileSync(join(__dirname, '..', '..', 'variants.json'), 'utf8')) as {
+  components: Record<string, { kind: string; wave: string; variants: { id: string }[] }>;
 };
+const names: Record<string, Record<string, string>> = {};
+for (const g of JSON.parse(readFileSync(join(__dirname, '..', '..', 'catalogue.json'), 'utf8')).categories) { for (const x of g.components ?? []) { names[x.id] = x.names; } }
+/** The V1 components: kind, the variant ids (not default) and the pack names. */
+const wave1 = { components: Object.fromEntries(Object.entries(all.components).filter(([, c]) => c.wave === 'V1').map(([id, c]) => [id,
+  { kind: c.kind, variants: c.variants.map((v) => v.id).filter((v) => v !== 'default'), packs: Object.fromEntries(Object.entries(names[id]).map(([p, n]) => [p, { name: n }])) }])) };
 
 describe('every V1 component takes each of its variants', () => {
   for (const [id, c] of Object.entries(wave1.components)) {
     const name = c.packs.react.name;
     it.each(c.variants)(`${id} (${name}): %s`, (v) => {
       expect(VARIANTS[name]).toEqual([c.kind, c.variants]);
-      expect(variantClass(name, v)).toBe(`bx-${c.kind}--${v}`);
+      expect(variantClass(name, v)).toBe(`bx-k-${c.kind} bx-v-${v}`);
       expect((pack as Record<string, { displayName?: string }>)[name].displayName).toBe(name);
     });
   }
@@ -32,19 +37,19 @@ describe('every V1 component takes each of its variants', () => {
 });
 
 describe('the variant wrapper', () => {
-  it('adds bx-<kind>--<variant> around the component and nothing without a variant', () => {
+  it('adds bx-k-<kind> bx-v-<variant> around the component and nothing without a variant', () => {
     const { container, rerender } = render(<Button label="Pay" />);
     expect(container.firstElementChild?.tagName).toBe('BUTTON');
     rerender(<Button label="Pay" variant="tonal" />);
     const wrap = container.firstElementChild as HTMLElement;
-    expect(wrap.className).toBe('bx-button--tonal');
+    expect(wrap.className).toBe('bx-k-button bx-v-tonal');
     expect(wrap.style.display).toBe('contents');
     expect(screen.getByRole('button', { name: 'Pay' }).className).toContain('bx-btn');
   });
 
   it('gives a composite its kind\'s class, drawn by the skin', () => {
     const { container } = render(<PaymentSchedule value="Once" variant="ios" />);
-    expect(container.firstElementChild?.className).toBe('bx-segmented--ios');
+    expect(container.firstElementChild?.className).toBe('bx-k-segmented bx-v-ios');
     expect(screen.getByRole('radio', { name: 'Once' })).toBeTruthy();
   });
 });

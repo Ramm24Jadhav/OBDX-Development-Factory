@@ -48,7 +48,10 @@ define(['knockout'], function (ko) {
       return { data: make(ko), view: (id, variant) => {
         const b = bodies[id]; if (!b) { return null; }
         // a variant (variants.json) is the element marked data-variant in the section; the default is its first instance
-        const first = variant && variant !== 'default' ? b.querySelector('[data-variant="' + CSS.escape(variant) + '"] > *')
+        // (the actions and inputs keep theirs in <template data-variants>, drawn only when the gallery asks for a variant)
+        const sel = '[data-variant="' + CSS.escape(variant || '') + '"] > *';
+        const first = variant && variant !== 'default'
+          ? b.querySelector(sel) || Array.from(b.querySelectorAll('template'), (t) => t.content.querySelector(sel)).find(Boolean)
           : b.firstElementChild && b.firstElementChild.classList.contains('gate-row') ? b.firstElementChild.firstElementChild : b.firstElementChild;
         return first ? [document.importNode(first, true)] : null;
       } };

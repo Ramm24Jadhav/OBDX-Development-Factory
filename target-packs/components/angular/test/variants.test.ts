@@ -9,9 +9,14 @@ import { VARIANTS, variantClass } from '../src';
 
 afterEach(() => { document.body.innerHTML = ''; TestBed.resetTestingModule(); });
 
-const wave1 = JSON.parse(readFileSync(join(__dirname, '..', '..', 'variants', 'v1.json'), 'utf8')) as {
-  components: Record<string, { kind: string; variants: string[]; packs: Record<string, { name: string }> }>;
+const all = JSON.parse(readFileSync(join(__dirname, '..', '..', 'variants.json'), 'utf8')) as {
+  components: Record<string, { kind: string; wave: string; variants: { id: string }[] }>;
 };
+const names: Record<string, Record<string, string>> = {};
+for (const g of JSON.parse(readFileSync(join(__dirname, '..', '..', 'catalogue.json'), 'utf8')).categories) { for (const x of g.components ?? []) { names[x.id] = x.names; } }
+/** The V1 components: kind, the variant ids (not default) and the pack names. */
+const wave1 = { components: Object.fromEntries(Object.entries(all.components).filter(([, c]) => c.wave === 'V1').map(([id, c]) => [id,
+  { kind: c.kind, variants: c.variants.map((v) => v.id).filter((v) => v !== 'default'), packs: Object.fromEntries(Object.entries(names[id]).map(([p, n]) => [p, { name: n }])) }])) };
 
 // Every exported component by its element name
 const bySelector: Record<string, Type<unknown>> = {};
@@ -36,10 +41,10 @@ describe('every V1 element takes each of its variants', () => {
       }
       ref.setInput('variant', v);
       ref.changeDetectorRef.detectChanges();
-      expect(host.classList.contains(`bx-${c.kind}--${v}`)).toBe(true);
+      expect(host.classList.contains(`bx-k-${c.kind}`) && host.classList.contains(`bx-v-${v}`)).toBe(true);
       ref.setInput('variant', '');
       ref.changeDetectorRef.detectChanges();
-      expect(host.className).not.toContain(`bx-${c.kind}--`);
+      expect(host.className).not.toContain('bx-v-');
       ref.destroy();
     });
   }

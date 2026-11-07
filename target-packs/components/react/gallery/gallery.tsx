@@ -13,7 +13,7 @@ const params = new URLSearchParams(location.search);
 const mode = params.get('mode') === 'dark' ? 'dark' : 'light';
 // The factory's Component factory shows one section (?only=id) in the design and motion its card has chosen
 const only = params.get('only');
-// ?variant= also draws each component's variants (variants/v1.json): the factory card and the variant gates ask for one
+// ?variant= also draws each component's variants (variants.json, wave V1): the factory card and the variant gates ask for one
 const variantsShown = params.has('variant');
 const look = (params.get('look') || 'elevated') as ComponentStyle['look'];
 const motion = { hover: params.get('hover') || undefined, click: params.get('click') || undefined, scroll: params.get('scroll') || undefined } as ComponentStyle['motion'];
@@ -1289,13 +1289,6 @@ function Gallery() {
       </Section>
       <Section id="scrub-field" title="Scrub field">
         <ScrubField value={250} currency="USD" />
-        {variantsShown ? <>
-          <div data-variant="material"><ScrubField variant="material" value={250} currency="USD" /></div>
-          <div data-variant="outlined"><ScrubField variant="outlined" value={250} currency="USD" /></div>
-          <div data-variant="underlined"><ScrubField variant="underlined" value={250} currency="USD" /></div>
-          <div data-variant="floating"><ScrubField variant="floating" value={250} currency="USD" /></div>
-          <div data-variant="inline"><ScrubField variant="inline" value={250} currency="USD" /></div>
-        </> : null}
       </Section>
       <Section id="budget-gauge" title="Budget gauge">
         <BudgetGauge label="Groceries" value={320} max={400} unit="USD" />

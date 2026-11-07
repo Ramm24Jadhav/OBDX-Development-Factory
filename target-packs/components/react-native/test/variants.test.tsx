@@ -9,9 +9,14 @@ import { Button, CheckboxGroup, FileUpload, FilterChips, IconButton, OtpInput, P
 import { withVariant } from '../src/variants';
 import { accessibilityProblems } from './a11y';
 
-const wave1 = JSON.parse(readFileSync(resolve(__dirname, '..', '..', 'variants', 'v1.json'), 'utf8')) as {
-  components: Record<string, { kind: string; variants: string[]; packs: Record<string, { name: string }> }>;
+const all = JSON.parse(readFileSync(resolve(__dirname, '..', '..', 'variants.json'), 'utf8')) as {
+  components: Record<string, { kind: string; wave: string; variants: { id: string }[] }>;
 };
+const names: Record<string, Record<string, string>> = {};
+for (const g of JSON.parse(readFileSync(resolve(__dirname, '..', '..', 'catalogue.json'), 'utf8')).categories) { for (const x of g.components ?? []) { names[x.id] = x.names; } }
+/** The V1 components: kind, the variant ids (not default) and the pack names. */
+const wave1 = { components: Object.fromEntries(Object.entries(all.components).filter(([, c]) => c.wave === 'V1').map(([id, c]) => [id,
+  { kind: c.kind, variants: c.variants.map((v) => v.id).filter((v) => v !== 'default'), packs: Object.fromEntries(Object.entries(names[id]).map(([p, n]) => [p, { name: n }])) }])) };
 const t = makeTheme();
 const flat = (el: { props: { style?: unknown } }) => StyleSheet.flatten(el.props.style as never) as Record<string, unknown>;
 

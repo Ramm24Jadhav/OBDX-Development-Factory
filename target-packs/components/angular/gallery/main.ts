@@ -1214,13 +1214,6 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="scrub-field" aria-labelledby="aw7-59-h"><h2 id="aw7-59-h">Scrub field</h2><div class="gate-body">
         <bx-scrub-field [value]="250" currency="USD" />
-      @if (variantsShown) {
-          <div data-variant="material"><bx-scrub-field variant="material" [value]="250" currency="USD" /></div>
-          <div data-variant="outlined"><bx-scrub-field variant="outlined" [value]="250" currency="USD" /></div>
-          <div data-variant="underlined"><bx-scrub-field variant="underlined" [value]="250" currency="USD" /></div>
-          <div data-variant="floating"><bx-scrub-field variant="floating" [value]="250" currency="USD" /></div>
-          <div data-variant="inline"><bx-scrub-field variant="inline" [value]="250" currency="USD" /></div>
-        }
       </div></section>
       <section class="gate" data-component="budget-gauge" aria-labelledby="aw7-60-h"><h2 id="aw7-60-h">Budget gauge</h2><div class="gate-body">
         <bx-budget-gauge label="Groceries" [value]="320" [max]="400" unit="USD" />
@@ -1280,7 +1273,7 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
   `,
 })
 class Gallery {
-  // ?variant= also draws each component's variants (variants/v1.json): the factory card and the variant gates ask for one
+  // ?variant= also draws each component's variants (variants.json, wave V1): the factory card and the variant gates ask for one
   variantsShown = params.has('variant');
   rootClass = styleClasses({ look, mode, motion }) + ' gallery';
   name = signal('A. Sharma');

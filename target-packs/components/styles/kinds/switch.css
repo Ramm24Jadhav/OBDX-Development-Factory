@@ -26,3 +26,44 @@
 .bx-fx-squish .bx-switch:active::after { transform: scaleX(1.25); }
 .bx-fx-squish .bx-switch[aria-checked="true"]:active::after { transform: translateX(14px) scaleX(1.25); }
 @keyframes bx-ring { 20% { transform: rotate(14deg); } 40% { transform: rotate(-12deg); } 60% { transform: rotate(8deg); } 80% { transform: rotate(-4deg); } }
+/* ---------- Variants (variants.json, wave V1): the element carries bx-k-switch bx-v-<id>; the thumb is .bx-switch::after ---------- */
+/* Material: a wide track with an edge when off; the thumb grows and shows a check when on (React: @mui/material Switch) */
+.bx-k-switch.bx-v-material .bx-switch { width: 52px; height: 32px; background: var(--bx-track); box-shadow: inset 0 0 0 calc(var(--bx-bw) * 2) var(--bx-muted); }
+.bx-k-switch.bx-v-material .bx-switch::after { top: 8px; left: 8px; width: 16px; height: 16px; background: var(--bx-muted); box-shadow: none;
+  transition: transform var(--bx-dur-base) var(--bx-ease-standard), width var(--bx-dur-base) var(--bx-ease-standard), height var(--bx-dur-base) var(--bx-ease-standard), top var(--bx-dur-base) var(--bx-ease-standard), left var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-k-switch.bx-v-material .bx-switch[aria-checked="true"] { background: var(--bx-brand); box-shadow: none; }
+.bx-k-switch.bx-v-material .bx-switch[aria-checked="true"]::after { top: 4px; left: 4px; width: 24px; height: 24px; transform: translateX(20px); background: var(--bx-on-brand); }
+.bx-k-switch.bx-v-material .bx-switch:not(:disabled):active::after { width: 28px; height: 28px; top: 2px; left: 2px; }
+/* iOS: the platform's green track; the thumb stretches while pressed and springs across */
+.bx-k-switch.bx-v-ios .bx-switch { width: 51px; height: 31px; background: var(--bx-track); }
+.bx-k-switch.bx-v-ios .bx-switch::after { top: 2px; left: 2px; width: 27px; height: 27px; box-shadow: var(--bx-shadow-2); transition: transform var(--bx-dur-slow) var(--bx-ease-spring), width var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-k-switch.bx-v-ios .bx-switch[aria-checked="true"] { background: var(--bx-success); }
+.bx-k-switch.bx-v-ios .bx-switch[aria-checked="true"]::after { transform: translateX(20px); }
+.bx-k-switch.bx-v-ios .bx-switch:not(:disabled):active::after { width: 33px; }
+.bx-k-switch.bx-v-ios .bx-switch[aria-checked="true"]:not(:disabled):active::after { transform: translateX(14px); }
+/* Fluent: a slim edged track that fills when on */
+.bx-k-switch.bx-v-fluent .bx-switch { width: 40px; height: 20px; background: transparent; box-shadow: inset 0 0 0 var(--bx-bw) var(--bx-muted); }
+.bx-k-switch.bx-v-fluent .bx-switch::after { top: 4px; left: 4px; width: 12px; height: 12px; background: var(--bx-muted); box-shadow: none; }
+.bx-k-switch.bx-v-fluent .bx-switch[aria-checked="true"] { background: var(--bx-brand); box-shadow: none; }
+.bx-k-switch.bx-v-fluent .bx-switch[aria-checked="true"]::after { transform: translateX(20px); background: var(--bx-on-brand); }
+.bx-k-switch.bx-v-fluent .bx-switch:not(:disabled):hover { box-shadow: inset 0 0 0 var(--bx-bw) var(--bx-text); }
+.bx-k-switch.bx-v-fluent .bx-switch[aria-checked="true"]:not(:disabled):hover { box-shadow: none; }
+/* Labelled: On or Off inside the track (the switch role already announces it) */
+.bx-k-switch.bx-v-labelled .bx-switch { width: 64px; }
+.bx-k-switch.bx-v-labelled .bx-switch::before { content: "Off"; position: absolute; top: 0; bottom: 0; right: 9px; display: flex; align-items: center; font-size: 11px; font-weight: 700; color: var(--bx-text-body); }
+.bx-k-switch.bx-v-labelled .bx-switch[aria-checked="true"]::before { content: "On"; right: auto; left: 10px; color: var(--bx-on-brand); }
+.bx-k-switch.bx-v-labelled .bx-switch[aria-checked="true"]::after { transform: translateX(36px); }
+.bx-k-switch.bx-v-labelled .bx-switch:not(:disabled):active { transform: scale(0.97); }
+/* Squish: a soft thumb that squashes as it travels */
+.bx-k-switch.bx-v-squish .bx-switch { border-radius: calc(var(--bx-radius-control) + 2px); }
+.bx-k-switch.bx-v-squish .bx-switch::after { border-radius: var(--bx-radius-control); transition: transform var(--bx-dur-slow) var(--bx-ease-spring); }
+.bx-k-switch.bx-v-squish .bx-switch:not(:disabled):active::after { transform: scaleX(1.3); }
+.bx-k-switch.bx-v-squish .bx-switch[aria-checked="true"]:not(:disabled):active::after { transform: translateX(13px) scaleX(1.3); }
+.bx-k-switch.bx-v-squish .bx-switch:not(:disabled):hover::after { transform: scale(1.08); }
+.bx-k-switch.bx-v-squish .bx-switch[aria-checked="true"]:not(:disabled):hover::after { transform: translateX(18px) scale(1.08); }
+/* The press toggles of this kind (bell, heart) take the shape */
+.bx-k-switch:is(.bx-v-fluent, .bx-v-labelled) .bx-press-toggle { border-radius: var(--bx-radius-control); }
+.bx-k-switch.bx-v-material .bx-press-toggle.is-on { background: color-mix(in srgb, var(--bx-brand) 14%, var(--bx-fill)); border-color: transparent; }
+/* Every variant keeps the focus ring; Fluent's slim track keeps a 24 px touch target */
+.bx-k-switch[class*="bx-v-"] .bx-switch:focus-visible { box-shadow: var(--bx-focus); }
+.bx-k-switch.bx-v-fluent .bx-switch::before { content: ""; position: absolute; inset: -4px 0; }

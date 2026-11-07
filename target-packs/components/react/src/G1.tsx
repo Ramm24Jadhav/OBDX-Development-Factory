@@ -4,7 +4,7 @@
  * reused by the later groups, which give them their own names and defaults.
  */
 import * as RadixDialog from '@radix-ui/react-dialog';
-import { KeyboardEvent, ReactNode, useEffect, useId, useRef, useState } from 'react';
+import { CSSProperties, KeyboardEvent, ReactNode, useEffect, useId, useRef, useState } from 'react';
 
 import { Button, ButtonProps } from './Button';
 import { Lens } from './lens';
@@ -79,7 +79,7 @@ export function Slider({ testID, label, value, onChange, min = 0, max = 100, ste
         <label className="bx-label" htmlFor={id}>{label}</label>
         <output className="bx-slider-value" htmlFor={id}>{shown}</output>
       </div>
-      <input type="range" className="bx-range-input" id={id} min={min} max={max} step={step} value={value} disabled={disabled} aria-valuetext={shown}
+      <input type="range" className="bx-range-input" style={{ '--bx-pct': `${max > min ? Math.min(100, Math.max(0, ((value || 0) - min) / (max - min) * 100)) : 0}%` } as CSSProperties} id={id} min={min} max={max} step={step} value={value} disabled={disabled} aria-valuetext={shown}
              aria-describedby={helpText ? `${id}-help` : undefined} onChange={(e) => onChange?.(Number(e.target.value))} />
       <div className="bx-slider-scale" aria-hidden="true"><span>{p + min.toLocaleString()}</span><span>{p + max.toLocaleString()}</span></div>
       {helpText ? <span className="bx-help" id={`${id}-help`}>{helpText}</span> : null}

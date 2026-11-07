@@ -724,7 +724,7 @@ export function SliderControl(props: SliderControlProps) {
             {...(off ? {} : pan.panHandlers)} style={{ height: t.minTouch, justifyContent: 'center', opacity: off ? 0.5 : 1 }}>
         <Shake error={error}>
         <View style={[{ height: 6, borderRadius: 3, backgroundColor: t.track }, part(t, SLIDERS, 'track')]}>
-          <View style={{ width: `${share * 100}%`, height: 6, borderRadius: 3, backgroundColor: t.color.primary }, part(t, SLIDERS, 'fill')]} />
+          <View style={[{ width: `${share * 100}%`, height: 6, borderRadius: 3, backgroundColor: t.color.primary }, part(t, SLIDERS, 'fill')]} />
         </View>
         {/* stepped: a tick at each step, up to 20 */}
         {variantOf(t, SLIDERS) === 'ticks' && (max - min) / step <= 20

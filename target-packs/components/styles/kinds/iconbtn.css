@@ -1,0 +1,17 @@
+/* Icon button variants (variants.json, wave V1): the element carries bx-k-iconbtn bx-v-<id>; the button is .bx-btn.bx-btn--icon (button.css) */
+.bx-k-iconbtn .bx-btn--icon { transition: transform var(--bx-dur-base) var(--bx-ease-spring), background var(--bx-dur) var(--bx-ease), border-color var(--bx-dur) var(--bx-ease); }
+.bx-k-iconbtn .bx-btn--icon:not(:disabled):active { transform: scale(0.94); }
+/* Material: round and borderless, a state layer on hover (React: @mui/material IconButton) */
+.bx-k-iconbtn.bx-v-material .bx-btn--icon { border-radius: var(--bx-radius-pill); background: transparent; border-color: transparent; box-shadow: none; color: var(--bx-text-body); }
+.bx-k-iconbtn.bx-v-material .bx-btn--icon:not(:disabled):hover { background: color-mix(in srgb, var(--bx-text) 8%, transparent); }
+.bx-k-iconbtn.bx-v-filled .bx-btn--icon { border-radius: var(--bx-radius-pill); background: var(--bx-brand); color: var(--bx-on-brand); border-color: transparent; box-shadow: none; }
+.bx-k-iconbtn.bx-v-filled .bx-btn--icon:not(:disabled):hover { background: color-mix(in srgb, var(--bx-on-brand) 10%, var(--bx-brand)); }
+.bx-k-iconbtn.bx-v-tonal .bx-btn--icon { border-radius: var(--bx-radius-pill); background: color-mix(in srgb, var(--bx-brand) 14%, var(--bx-fill)); color: var(--bx-brand-text); border-color: transparent; box-shadow: none; }
+.bx-k-iconbtn.bx-v-tonal .bx-btn--icon:not(:disabled):hover { background: color-mix(in srgb, var(--bx-brand) 22%, var(--bx-fill)); }
+.bx-k-iconbtn.bx-v-outlined .bx-btn--icon { border-radius: var(--bx-radius-pill); background: transparent; border-color: var(--bx-border-strong); box-shadow: none; }
+.bx-k-iconbtn.bx-v-outlined .bx-btn--icon:not(:disabled):hover { border-color: var(--bx-brand); color: var(--bx-brand-text); }
+.bx-k-iconbtn.bx-v-circular .bx-btn--icon { border-radius: var(--bx-radius-pill); background: var(--bx-track); border-color: var(--bx-border); box-shadow: none; color: var(--bx-text); }
+.bx-k-iconbtn.bx-v-circular .bx-btn--icon:not(:disabled):active { transform: scale(0.92); }
+.bx-k-iconbtn.bx-v-square .bx-btn--icon { border-radius: var(--bx-radius-sm); background: transparent; border-color: var(--bx-border); box-shadow: none; }
+.bx-k-iconbtn.bx-v-square .bx-btn--icon:not(:disabled):hover { background: var(--bx-track); }
+.bx-k-iconbtn[class*="bx-v-"] .bx-btn--icon:focus-visible { box-shadow: var(--bx-focus); }

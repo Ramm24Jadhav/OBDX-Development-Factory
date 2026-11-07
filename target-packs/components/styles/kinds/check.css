@@ -1,0 +1,30 @@
+/* Checkbox variants (variants.json, wave V1): the element carries bx-k-check bx-v-<id>; the choices are .bx-choice (choice.css) */
+/* Material: plain rows; a square box that fills with a check (React: @mui/material Checkbox) */
+.bx-k-check.bx-v-material .bx-choice { border-color: transparent; background: transparent; box-shadow: none; padding: 0 4px; }
+.bx-k-check.bx-v-material .bx-choice:hover { background: color-mix(in srgb, var(--bx-brand) 6%, transparent); }
+.bx-k-check.bx-v-material .bx-choice-mark { border-width: calc(var(--bx-bw) * 2); border-radius: calc(var(--bx-radius-sm) / 2); }
+.bx-k-check.bx-v-material .bx-choice.is-on .bx-choice-mark { box-shadow: none; }
+/* Choice cards: each option a tile; the chosen one takes the brand edge and lifts */
+.bx-k-check.bx-v-cards .bx-choice { align-items: flex-start; min-height: calc(var(--bx-height) + 16px); padding: 12px var(--bx-pad-card); border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-1); }
+.bx-k-check.bx-v-cards .bx-choice-mark { margin-top: 2px; }
+.bx-k-check.bx-v-cards .bx-choice.is-on { box-shadow: var(--bx-shadow-2), inset 0 0 0 var(--bx-bw) var(--bx-brand); }
+/* Toggle chips: the options as chips that fill when chosen */
+.bx-k-check.bx-v-chips .bx-choices { flex-direction: row; flex-wrap: wrap; }
+.bx-k-check.bx-v-chips .bx-choice { min-height: 36px; border-radius: var(--bx-radius-pill); box-shadow: none; }
+.bx-k-check.bx-v-chips .bx-choice-mark { display: none; }
+.bx-k-check.bx-v-chips .bx-choice.is-on { background: color-mix(in srgb, var(--bx-brand) 14%, var(--bx-fill)); }
+.bx-k-check.bx-v-chips .bx-choice.is-on .bx-choice-label { color: var(--bx-brand-text); font-weight: var(--bx-weight); }
+.bx-k-check.bx-v-chips .bx-choice:has(.bx-choice-input:focus-visible) { box-shadow: var(--bx-focus); }
+/* List rows: full-width rows split by rules, the box on the right */
+.bx-k-check.bx-v-rows .bx-choices { gap: 0; }
+.bx-k-check.bx-v-rows .bx-choice { flex-direction: row-reverse; justify-content: space-between; border-width: 0 0 var(--bx-bw); border-color: var(--bx-rule); border-radius: 0; background: transparent; box-shadow: none; }
+.bx-k-check.bx-v-rows .bx-choice.is-on { background: transparent; }
+.bx-k-check.bx-v-rows .bx-choice:hover { background: color-mix(in srgb, var(--bx-brand) 5%, transparent); }
+/* Round: circular check marks, as in phone settings, popping on a spring */
+.bx-k-check.bx-v-round .bx-choice-mark { width: 22px; height: 22px; border-radius: 50%; }
+.bx-k-check.bx-v-round .bx-choice.is-on .bx-choice-mark { box-shadow: none; }
+/* The tick is drawn in the brand's on-colour (a light brand keeps it legible), and the mark keeps its focus ring */
+.bx-k-check:is(.bx-v-material, .bx-v-round) .bx-choice.is-on .bx-choice-mark { position: relative; background: var(--bx-brand); }
+.bx-k-check:is(.bx-v-material, .bx-v-round) .bx-choice.is-on .bx-choice-mark::after { content: ""; position: absolute; inset: 0; background: var(--bx-on-brand);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5 5 9l5-6' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / 12px no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5 5 9l5-6' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / 12px no-repeat; }
+.bx-k-check[class*="bx-v-"] .bx-choice:has(.bx-choice-input:focus-visible) { box-shadow: var(--bx-focus); }

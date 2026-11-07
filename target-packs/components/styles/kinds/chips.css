@@ -14,3 +14,22 @@
 .bx-motion-hover-lift .bx-filter-chip:hover:not(:disabled) { transform: translateY(-1px); }
 .bx-motion-click-press .bx-filter-chip:active { transform: scale(0.97); }
 .bx-motion-click-bounce .bx-filter-chip:active { animation: bx-bounce 300ms var(--bx-ease-spring); }
+/* ---------- Variants (variants.json, wave V1): the element carries bx-k-chips bx-v-<id> ---------- */
+/* Material filter chips: small corners; the chosen chip fills tonal with a check (React: @mui/material Chip) */
+.bx-k-chips.bx-v-material :is(.bx-filter-chip, .bx-chip) { border-radius: var(--bx-radius-sm); }
+.bx-k-chips.bx-v-material .bx-filter-chip.is-on { border-color: transparent; background: color-mix(in srgb, var(--bx-brand) 16%, var(--bx-fill)); }
+.bx-k-chips.bx-v-material .bx-filter-chip.is-on::before { content: "\2713" / ""; margin-right: 6px; font-weight: 700; }
+/* Outlined: edged chips; the chosen one fills in the brand colour */
+.bx-k-chips.bx-v-outlined .bx-filter-chip { background: transparent; }
+.bx-k-chips.bx-v-outlined .bx-filter-chip.is-on { border-color: var(--bx-brand); background: var(--bx-brand); color: var(--bx-on-brand); }
+.bx-k-chips.bx-v-outlined .bx-chip { background: transparent; border: var(--bx-bw) solid var(--bx-border-strong); }
+/* Tonal: no edges; a stronger tint marks the chosen ones */
+.bx-k-chips.bx-v-tonal .bx-filter-chip { border-color: transparent; background: var(--bx-track); }
+.bx-k-chips.bx-v-tonal .bx-filter-chip.is-on { background: color-mix(in srgb, var(--bx-brand) 18%, var(--bx-fill)); }
+/* Square tags: small corners and a tighter fit for dense filters */
+.bx-k-chips.bx-v-square :is(.bx-filter-chip, .bx-chip) { border-radius: calc(var(--bx-radius-sm) / 2); }
+.bx-k-chips.bx-v-square .bx-filter-chip { min-height: 32px; padding: 0 10px; font-size: 13px; }
+/* Glass: translucent chips over a header image or card */
+.bx-k-chips.bx-v-glass :is(.bx-filter-chip, .bx-chip) { background: color-mix(in srgb, var(--bx-fill) 55%, transparent); border-color: color-mix(in srgb, var(--bx-surface) 60%, transparent);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4); backdrop-filter: blur(12px) saturate(1.4); }
+.bx-k-chips.bx-v-glass .bx-filter-chip.is-on { background: color-mix(in srgb, var(--bx-brand) 22%, transparent); }

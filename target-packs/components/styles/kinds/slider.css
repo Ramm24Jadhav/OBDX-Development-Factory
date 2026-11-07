@@ -4,3 +4,33 @@
 .bx-range-input:focus-visible { outline: none; box-shadow: var(--bx-focus); border-radius: var(--bx-radius-pill); }
 .bx-slider-scale { display: flex; justify-content: space-between; font-size: 12px; color: var(--bx-muted); font-variant-numeric: tabular-nums; }
 .bx-fx-elastic .bx-range-input:active { transform: scaleX(1.02); transition: transform var(--bx-dur-base) var(--bx-ease-spring); }
+/* ---------- Variants (variants.json, wave V1): the element carries bx-k-slider bx-v-<id>; each draws the native range ---------- */
+.bx-k-slider:is(.bx-v-material, .bx-v-ticks, .bx-v-bubble, .bx-v-thick) .bx-range-input { -webkit-appearance: none; appearance: none; height: 28px; background: transparent; }
+.bx-k-slider:is(.bx-v-material, .bx-v-ticks, .bx-v-bubble, .bx-v-thick) .bx-range-input::-webkit-slider-runnable-track { height: 4px; border-radius: var(--bx-radius-pill); background: var(--bx-track); }
+.bx-k-slider:is(.bx-v-material, .bx-v-ticks, .bx-v-bubble, .bx-v-thick) .bx-range-input::-moz-range-track { height: 4px; border-radius: var(--bx-radius-pill); background: var(--bx-track); }
+.bx-k-slider:is(.bx-v-material, .bx-v-ticks, .bx-v-bubble, .bx-v-thick) .bx-range-input::-moz-range-progress { height: 4px; border-radius: var(--bx-radius-pill); background: var(--bx-brand); }
+.bx-k-slider:is(.bx-v-material, .bx-v-ticks, .bx-v-bubble, .bx-v-thick) .bx-range-input::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; margin-top: -8px; border: 0; border-radius: 50%;
+  background: var(--bx-brand); box-shadow: var(--bx-shadow-1); transition: transform var(--bx-dur) var(--bx-ease), box-shadow var(--bx-dur) var(--bx-ease); }
+.bx-k-slider:is(.bx-v-material, .bx-v-ticks, .bx-v-bubble, .bx-v-thick) .bx-range-input::-moz-range-thumb { width: 20px; height: 20px; border: 0; border-radius: 50%; background: var(--bx-brand); box-shadow: var(--bx-shadow-1); }
+/* Material: a state layer round the handle on hover and press (React: @mui/material Slider) */
+.bx-k-slider.bx-v-material .bx-range-input:not(:disabled):hover::-webkit-slider-thumb { box-shadow: 0 0 0 8px color-mix(in srgb, var(--bx-brand) 14%, transparent); }
+.bx-k-slider.bx-v-material .bx-range-input:not(:disabled):active::-webkit-slider-thumb { box-shadow: 0 0 0 12px color-mix(in srgb, var(--bx-brand) 20%, transparent); }
+/* Stepped with ticks: a scale of ticks under the track, the handle snapping between them */
+.bx-k-slider.bx-v-ticks .bx-range-input { background: repeating-linear-gradient(to right, var(--bx-border-strong) 0 2px, transparent 2px 10%) left 10px bottom 1px / calc(100% - 18px) 6px no-repeat; }
+.bx-k-slider.bx-v-ticks .bx-range-input:not(:disabled):active::-webkit-slider-thumb { transform: scale(1.15); }
+/* Value bubble: the value in a brand bubble beside the label, growing while the handle is held */
+.bx-k-slider.bx-v-bubble .bx-slider-value { padding: 2px 10px; border-radius: var(--bx-radius-pill); background: var(--bx-brand); color: var(--bx-on-brand); font-size: 15px;
+  transition: transform var(--bx-dur-base) var(--bx-ease-spring); }
+.bx-k-slider.bx-v-bubble .bx-slider:has(.bx-range-input:active) .bx-slider-value { transform: scale(1.08); }
+/* Thick track: a tall rounded track, as in phone controls; the handle is the end of the fill */
+.bx-k-slider.bx-v-thick .bx-range-input { height: 32px; }
+.bx-k-slider.bx-v-thick .bx-range-input::-webkit-slider-runnable-track { height: 28px; border-radius: var(--bx-radius-control); }
+.bx-k-slider.bx-v-thick .bx-range-input::-moz-range-track { height: 28px; border-radius: var(--bx-radius-control); }
+.bx-k-slider.bx-v-thick .bx-range-input::-moz-range-progress { height: 28px; border-radius: var(--bx-radius-control); }
+.bx-k-slider.bx-v-thick .bx-range-input::-webkit-slider-thumb { width: 8px; height: 20px; margin-top: 4px; border-radius: var(--bx-radius-pill); background: var(--bx-surface); }
+.bx-k-slider.bx-v-thick .bx-range-input::-moz-range-thumb { width: 8px; height: 20px; border-radius: var(--bx-radius-pill); background: var(--bx-surface); }
+/* Chrome and Safari draw no fill on a restyled range: the track fills to --bx-pct, the share the element sets */
+.bx-k-slider:is(.bx-v-material, .bx-v-ticks, .bx-v-bubble, .bx-v-thick) .bx-range-input::-webkit-slider-runnable-track {
+  background: linear-gradient(to right, var(--bx-brand) var(--bx-pct, 0%), var(--bx-track) 0); }
+.bx-k-slider[class*="bx-v-"] .bx-range-input:focus-visible::-webkit-slider-thumb { box-shadow: var(--bx-focus); }
+.bx-k-slider[class*="bx-v-"] .bx-range-input:focus-visible::-moz-range-thumb { box-shadow: var(--bx-focus); }

@@ -18,3 +18,8 @@ Rules for a kind file: read the shared settings (`--bx-radius*`, `--bx-bw`, `--b
 design reaches the component. A variant is a class on the component's root, `bx-v-<variant id>` (see
 `target-packs/components/variants.json` and its README section in `docs/COMPONENT-VARIANTS-PLAN.md`), written in the
 kind's own file.
+
+The actions and inputs (wave V1, `tools/gen-variants.js`) put the variant on the component's outer element (the JET and
+Angular host, React's `display: contents` wrapper) with a kind hook beside it: `bx-k-<kind> bx-v-<id>`. Their rules read
+`.bx-k-<kind>.bx-v-<id> .bx-<part>`, so a composite's inner part takes the variant and a component nested inside another
+kind never does. The field kinds (text, textarea, password, date, daterange, select) share theirs in `_field.css`.

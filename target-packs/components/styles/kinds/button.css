@@ -54,3 +54,55 @@
 .bx-call-icon { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--bx-success); color: #fff; }
 @keyframes bx-ripple { from { transform: scale(0); opacity: 1; } to { transform: scale(40); opacity: 0; } }
 @keyframes bx-wave { 50% { height: 18px; } }
+/* ---------- Variants (variants.json, wave V1): the element carries bx-k-button bx-v-<id>; the default is the look above ---------- */
+/* Material: a filled capsule with a state layer and a ripple from the press point (React draws it with @mui/material) */
+.bx-k-button.bx-v-material .bx-btn { border-radius: var(--bx-radius-pill); color: var(--bx-on-brand); background: var(--bx-brand); border-color: transparent; box-shadow: none; }
+.bx-k-button.bx-v-material .bx-btn:not(:disabled):hover { box-shadow: var(--bx-shadow-1); background: color-mix(in srgb, var(--bx-on-brand) 8%, var(--bx-brand)); }
+.bx-k-button.bx-v-material .bx-btn::before { content: ""; position: absolute; left: var(--bx-x, 50%); top: var(--bx-y, 50%); width: 8px; height: 8px; margin: -4px; border-radius: 50%;
+  background: color-mix(in srgb, currentColor 35%, transparent); transform: scale(0); opacity: 0; pointer-events: none; }
+.bx-k-button.bx-v-material .bx-btn:not(:disabled):active::before { animation: bx-ripple 450ms var(--bx-ease-standard); }
+/* Tonal: a soft brand tint, no edge */
+.bx-k-button.bx-v-tonal .bx-btn { color: var(--bx-brand-text); background: color-mix(in srgb, var(--bx-brand) 14%, var(--bx-fill)); border-color: transparent; box-shadow: none; }
+.bx-k-button.bx-v-tonal .bx-btn:not(:disabled):hover { background: color-mix(in srgb, var(--bx-brand) 22%, var(--bx-fill)); }
+/* Outlined: drawn by its edge, the brand on hover */
+.bx-k-button.bx-v-outlined .bx-btn { color: var(--bx-brand-text); background: transparent; border-color: var(--bx-border-strong); box-shadow: none; }
+.bx-k-button.bx-v-outlined .bx-btn:not(:disabled):hover { border-color: var(--bx-brand); background: color-mix(in srgb, var(--bx-brand) 6%, transparent); }
+/* Text: no container, a tint on hover */
+.bx-k-button.bx-v-text .bx-btn { color: var(--bx-brand-text); background: transparent; border-color: transparent; box-shadow: none; padding: 0 var(--bx-pad); }
+.bx-k-button.bx-v-text .bx-btn:not(:disabled):hover { background: color-mix(in srgb, var(--bx-brand) 8%, transparent); }
+/* Elevated: a raised surface that lifts on hover */
+.bx-k-button.bx-v-elevated .bx-btn { color: var(--bx-brand-text); background: var(--bx-raised); border-color: transparent; box-shadow: var(--bx-shadow-2); }
+.bx-k-button.bx-v-elevated .bx-btn:not(:disabled):hover { transform: translateY(-1px); box-shadow: var(--bx-shadow-3); }
+.bx-k-button.bx-v-elevated .bx-btn:not(:disabled):active { transform: none; box-shadow: var(--bx-shadow-1); }
+/* Gradient: the brand gradient, its light shifting on hover */
+.bx-k-button.bx-v-gradient .bx-btn { color: var(--bx-on-brand); background: var(--bx-gradient); background-size: 160% 100%; background-position: 0 0; border-color: transparent;
+  box-shadow: var(--bx-cta-shadow); transition: background-position var(--bx-dur-slow) var(--bx-ease-standard), transform var(--bx-dur) var(--bx-ease); }
+.bx-k-button.bx-v-gradient .bx-btn:not(:disabled):hover { background-position: 100% 0; }
+.bx-k-button.bx-v-gradient .bx-btn:not(:disabled):active { transform: scale(0.97); }
+/* Glass: translucent over a photo or card, brightening on hover */
+.bx-k-button.bx-v-glass .bx-btn { color: var(--bx-text); background: color-mix(in srgb, var(--bx-fill) 55%, transparent); border-color: color-mix(in srgb, var(--bx-surface) 60%, transparent);
+  box-shadow: var(--bx-shadow-1); -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4); }
+.bx-k-button.bx-v-glass .bx-btn:not(:disabled):hover { background: color-mix(in srgb, var(--bx-fill) 75%, transparent); }
+.bx-k-button.bx-v-glass .bx-btn:not(:disabled):active { transform: scale(0.97); }
+/* Pill: a full capsule that presses on a spring */
+.bx-k-button.bx-v-pill .bx-btn { border-radius: var(--bx-radius-pill); min-height: calc(var(--bx-height) + 4px); padding: 0 calc(var(--bx-pad) * 2); transition: transform var(--bx-dur-base) var(--bx-ease-spring), background var(--bx-dur) var(--bx-ease); }
+.bx-k-button.bx-v-pill .bx-btn:not(:disabled):active { transform: scale(0.96); }
+/* A destructive action stays red in every variant */
+.bx-k-button:is(.bx-v-tonal, .bx-v-outlined, .bx-v-text, .bx-v-elevated, .bx-v-glass) .bx-btn--danger { color: var(--bx-danger-text); }
+.bx-k-button.bx-v-tonal .bx-btn--danger { background: var(--bx-danger-soft); }
+.bx-k-button.bx-v-outlined .bx-btn--danger:not(:disabled):hover { border-color: var(--bx-danger); background: var(--bx-danger-soft); }
+.bx-k-button.bx-v-text .bx-btn--danger:not(:disabled):hover { background: var(--bx-danger-soft); }
+.bx-k-button:is(.bx-v-material, .bx-v-gradient) .bx-btn--danger { color: var(--bx-on-danger); background: var(--bx-danger-button); box-shadow: none; }
+/* The micro interactions of this kind (voice pill, call chip, slide to confirm) take the variant's shape and surface */
+.bx-k-button:is(.bx-v-outlined, .bx-v-text) .bx-voice-pill { background: transparent; }
+.bx-k-button.bx-v-tonal .bx-voice-pill { border-color: transparent; background: color-mix(in srgb, var(--bx-brand) 14%, var(--bx-fill)); color: var(--bx-brand-text); }
+.bx-k-button.bx-v-elevated :is(.bx-voice-pill, .bx-call-chip, .bx-slide-confirm) { box-shadow: var(--bx-shadow-2); }
+.bx-k-button.bx-v-glass :is(.bx-voice-pill, .bx-call-chip, .bx-slide-confirm) { background: color-mix(in srgb, var(--bx-fill) 55%, transparent); -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4); }
+.bx-k-button.bx-v-outlined :is(.bx-call-chip, .bx-slide-confirm) { background: transparent; border: var(--bx-bw) solid var(--bx-border-strong); }
+.bx-k-button:is(.bx-v-material, .bx-v-gradient) .bx-slide-handle { background: var(--bx-brand); }
+.bx-k-button.bx-v-gradient .bx-slide-confirm { background: color-mix(in srgb, var(--bx-brand-2) 14%, var(--bx-surface)); }
+/* Every variant keeps the focus ring, and a destructive action keeps its colour on hover */
+.bx-k-button[class*="bx-v-"] .bx-btn:focus-visible { box-shadow: var(--bx-focus); }
+.bx-k-button.bx-v-material .bx-btn--danger:not(:disabled):hover { background: color-mix(in srgb, var(--bx-on-danger) 8%, var(--bx-danger-button)); }
+.bx-k-button.bx-v-tonal .bx-btn--danger:not(:disabled):hover { background: color-mix(in srgb, var(--bx-danger) 22%, var(--bx-fill)); }
+.bx-k-button.bx-v-glass .bx-btn--danger:not(:disabled):hover { background: color-mix(in srgb, var(--bx-danger) 14%, transparent); }

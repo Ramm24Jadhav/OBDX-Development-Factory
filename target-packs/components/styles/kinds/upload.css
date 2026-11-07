@@ -12,3 +12,22 @@
   .bx-motion-scroll-fadeup .bx-drop { animation: bx-in-up linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
 }
 .bx-file { animation: bx-settle var(--bx-dur-base) var(--bx-ease-standard); }
+/* ---------- Variants (variants.json, wave V1): the element carries bx-k-upload bx-v-<id> ---------- */
+/* Material: a tonal Choose files button and the files as chips */
+.bx-k-upload.bx-v-material .bx-drop { min-height: 0; padding: 0; align-items: flex-start; border: 0; background: transparent; }
+.bx-k-upload.bx-v-material .bx-drop-button { border-color: transparent; border-radius: var(--bx-radius-pill); background: color-mix(in srgb, var(--bx-brand) 14%, var(--bx-fill)); color: var(--bx-brand-text); }
+.bx-k-upload.bx-v-material .bx-files { flex-direction: row; flex-wrap: wrap; }
+.bx-k-upload.bx-v-material .bx-file { border-radius: var(--bx-radius-sm); }
+/* Drop zone: a large dashed area to drop files on, the edge taking the brand colour as files come over */
+.bx-k-upload.bx-v-dropzone .bx-drop { min-height: 180px; border-width: calc(var(--bx-bw) * 2); background: var(--bx-track); }
+.bx-k-upload.bx-v-dropzone .bx-drop:hover { border-color: color-mix(in srgb, var(--bx-brand) 55%, var(--bx-border-strong)); }
+/* Compact: one line, the button and the hint side by side */
+.bx-k-upload.bx-v-compact .bx-drop { flex-direction: row; justify-content: flex-start; min-height: var(--bx-height); padding: 4px; border-style: solid; border-width: var(--bx-bw);
+  border-radius: var(--bx-radius-control); background: var(--bx-fill); text-align: left; }
+.bx-k-upload.bx-v-compact .bx-drop-button { min-height: calc(var(--bx-height) - 10px); }
+/* Card: each file a card with its size, rising in */
+.bx-k-upload.bx-v-card .bx-drop { border-style: solid; border-width: var(--bx-bw); border-color: var(--bx-border); background: var(--bx-card); box-shadow: var(--bx-shadow-1); }
+.bx-k-upload.bx-v-card .bx-file { min-height: 56px; border-color: transparent; border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-2); }
+.bx-k-upload.bx-v-card .bx-file:hover { transform: translateY(-1px); transition: transform var(--bx-dur) var(--bx-ease); }
+/* Files dragged over show in every variant */
+.bx-k-upload[class*="bx-v-"] .bx-drop.is-over { border: calc(var(--bx-bw) * 1.5) dashed var(--bx-brand); background: color-mix(in srgb, var(--bx-brand) 6%, var(--bx-fill)); }

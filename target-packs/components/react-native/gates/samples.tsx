@@ -11,7 +11,7 @@ import {
 import { useTheme } from '../src';
 
 const noop = () => undefined;
-// ?variant= also draws each component's variants (variants/v1.json): the factory card and the variant gates ask for one
+// ?variant= also draws each component's variants (variants.json, wave V1): the factory card and the variant gates ask for one
 export const variantsShown = typeof location !== 'undefined' && new URLSearchParams(location.search).has('variant');
 /** A variant of the sample's component, marked for ?only=<id>&variant=<id> (react-native-web writes dataSet as data-* attributes). */
 export function Variant({ id, children }: { id: string; children: ReactNode }) {
@@ -352,13 +352,7 @@ export const SAMPLES: Record<string, [string, ReactElement]> = {
   'scroll-float-text': ["Scroll float text", <ScrollFloatText text="Plan ahead" />],
   'scroll-reveal': ["Scroll reveal", <ScrollReveal><Line>Hi</Line></ScrollReveal>],
   'scroll-stack': ["Scroll stack", <ScrollStack cards={[{ id: 'a', content: <Line>A</Line> }]} />],
-  'scrub-field': ["Scrub field", <><ScrubField testID="scrub-field" label="Amount" value={100} max={1000} currency="USD" />{variantsShown ? <>
-    <Variant id="material"><ScrubField variant="material" testID="scrub-field-material" label="Amount" value={100} max={1000} currency="USD" /></Variant>
-    <Variant id="outlined"><ScrubField variant="outlined" testID="scrub-field-outlined" label="Amount" value={100} max={1000} currency="USD" /></Variant>
-    <Variant id="underlined"><ScrubField variant="underlined" testID="scrub-field-underlined" label="Amount" value={100} max={1000} currency="USD" /></Variant>
-    <Variant id="floating"><ScrubField variant="floating" testID="scrub-field-floating" label="Amount" value={100} max={1000} currency="USD" /></Variant>
-    <Variant id="inline"><ScrubField variant="inline" testID="scrub-field-inline" label="Amount" value={100} max={1000} currency="USD" /></Variant>
-  </> : null}</>],
+  'scrub-field': ["Scrub field", <ScrubField testID="scrub-field" label="Amount" value={100} max={1000} currency="USD" />],
   'secure-confirmation': ["Secure transaction confirmation", <SecureConfirmation testID="secure-confirmation" rows={[{ label: 'Pay', value: 'A. Rao' }]} code="" onCodeChange={noop} onConfirm={noop} />],
   'self-register': ["Self-registration", <SelfRegister testID="self-register" steps={['Details', 'Verify', 'Password', 'Done']} selectedStep="Verify" />],
   'sensitive': ["Sensitive information masking", <><SensitiveField testID="sensitive" label="Card number" value="4111 1111 1111 4821" />{variantsShown ? <>

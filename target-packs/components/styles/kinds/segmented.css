@@ -12,3 +12,34 @@
 .bx-fx-rubber .bx-segment:active { transform: scale(0.92, 1.06); transition: transform 90ms var(--bx-ease-standard); }
 .bx-fx-rubber .bx-segment.is-on { animation: bx-jelly 520ms var(--bx-ease-standard); }
 @keyframes bx-glide { from { transform: scaleX(0.7); } }
+/* ---------- Variants (variants.json, wave V1): the element carries bx-k-segmented bx-v-<id> ---------- */
+/* Material segmented buttons: joined outlined segments; the chosen one fills tonal with a check (React: @mui/material ToggleButtonGroup) */
+.bx-k-segmented.bx-v-material .bx-segmented { gap: 0; padding: 0; background: transparent; border: var(--bx-bw) solid var(--bx-border-strong); border-radius: var(--bx-radius-pill); overflow: hidden; }
+.bx-k-segmented.bx-v-material .bx-segment { border-radius: 0; min-height: 40px; }
+.bx-k-segmented.bx-v-material .bx-segment + .bx-segment { border-left: var(--bx-bw) solid var(--bx-border-strong); }
+.bx-k-segmented.bx-v-material .bx-segment.is-on { background: color-mix(in srgb, var(--bx-brand) 16%, var(--bx-fill)); box-shadow: none; animation: none; }
+.bx-k-segmented.bx-v-material .bx-segment.is-on::before { content: "\2713" / ""; margin-right: 6px; }
+.bx-k-segmented.bx-v-material .bx-segment:focus-visible { box-shadow: inset var(--bx-focus); }
+/* iOS segmented control: a grey track; the white thumb settles on a spring */
+.bx-k-segmented.bx-v-ios .bx-segmented { gap: 2px; padding: 2px; border-radius: calc(var(--bx-radius-control) - 1px); background: var(--bx-track); }
+.bx-k-segmented.bx-v-ios .bx-segment { min-height: 32px; border-radius: calc(var(--bx-radius-control) - 3px); color: var(--bx-text); }
+.bx-k-segmented.bx-v-ios .bx-segment.is-on { background: var(--bx-raised); color: var(--bx-text); box-shadow: var(--bx-shadow-2); animation: bx-glide 320ms var(--bx-ease-spring); }
+.bx-k-segmented.bx-v-ios .bx-segment:not(:disabled):active { transform: scale(0.96); }
+/* Underline: text segments with a line under the chosen one, like tabs */
+.bx-k-segmented.bx-v-underline .bx-segmented { gap: 0; padding: 0; border-radius: 0; background: transparent; box-shadow: inset 0 calc(var(--bx-bw) * -1) 0 var(--bx-rule); }
+.bx-k-segmented.bx-v-underline .bx-segment { border-radius: 0; color: var(--bx-muted); }
+.bx-k-segmented.bx-v-underline .bx-segment:hover { color: var(--bx-text); }
+.bx-k-segmented.bx-v-underline .bx-segment.is-on { background: transparent; color: var(--bx-brand-text); box-shadow: inset 0 -2px 0 var(--bx-brand); animation: bx-glide 280ms var(--bx-ease-standard); }
+/* Enclosed: boxes joined edge to edge; the chosen one fills */
+.bx-k-segmented.bx-v-enclosed .bx-segmented { gap: 0; padding: 0; background: var(--bx-fill); border: var(--bx-bw) solid var(--bx-border-strong); border-radius: var(--bx-radius-sm); }
+.bx-k-segmented.bx-v-enclosed .bx-segment { border-radius: 0; }
+.bx-k-segmented.bx-v-enclosed .bx-segment + .bx-segment { border-left: var(--bx-bw) solid var(--bx-border-strong); }
+.bx-k-segmented.bx-v-enclosed .bx-segment:hover:not(.is-on) { background: var(--bx-track); }
+.bx-k-segmented.bx-v-enclosed .bx-segment.is-on { background: color-mix(in srgb, var(--bx-brand) 12%, var(--bx-fill)); box-shadow: none; animation: none; }
+/* Pill: rounded pills on a tinted track; the chosen one fills in the brand colour */
+.bx-k-segmented.bx-v-pill .bx-segmented { border-radius: var(--bx-radius-pill); background: color-mix(in srgb, var(--bx-brand) 10%, var(--bx-fill)); }
+.bx-k-segmented.bx-v-pill .bx-segment { border-radius: var(--bx-radius-pill); }
+.bx-k-segmented.bx-v-pill .bx-segment.is-on { background: var(--bx-brand); color: var(--bx-on-brand); box-shadow: none; }
+.bx-k-segmented.bx-v-pill .bx-segment:not(:disabled):active { transform: scale(0.96); }
+/* Every variant keeps a focus ring, drawn inside so a joined or edge-to-edge track does not clip it */
+.bx-k-segmented[class*="bx-v-"] .bx-segment:focus-visible { box-shadow: inset 0 0 0 2px var(--bx-brand); }

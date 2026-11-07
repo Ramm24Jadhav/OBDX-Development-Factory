@@ -222,6 +222,47 @@ bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pi
 .bx-caret.is-typing { animation: bx-blink 900ms steps(1) infinite; }
 @keyframes bx-shake { 20% { transform: translateX(-6px); } 45% { transform: translateX(5px); } 70% { transform: translateX(-3px); } }
 @keyframes bx-blink { 50% { opacity: 0; } }
+/* ---------- Field variants (variants.json, wave V1): kinds text, textarea, password, date, daterange and select share this box ----------
+   The element carries bx-k-<kind> bx-v-<id>; React's material variant of the foundation fields is @mui/material instead. */
+/* Material filled: a tinted box with an underline that grows in the brand colour on focus */
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-material .bx-control {
+  border-width: 0 0 var(--bx-bw); border-radius: var(--bx-radius-sm) var(--bx-radius-sm) 0 0; background: var(--bx-track); box-shadow: none; }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-material .bx-control::after { content: ""; position: absolute; left: 0; right: 0; bottom: calc(var(--bx-bw) * -1);
+  height: calc(var(--bx-bw) * 2); background: var(--bx-brand); transform: scaleX(0); transition: transform var(--bx-dur-base) var(--bx-ease-standard); pointer-events: none; }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-material .bx-field.is-focus .bx-control { box-shadow: none; }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-material .bx-field.is-focus .bx-control::after { transform: scaleX(1); }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-material .bx-field.is-error .bx-control { box-shadow: none; border-color: var(--bx-danger); }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-material .bx-field.is-focus .bx-label { color: var(--bx-brand-text); }
+/* Outlined: a quiet edge that takes the brand colour, doubled, on focus; no shadow */
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-outlined .bx-control { background: transparent; box-shadow: none; border-radius: var(--bx-radius-sm); }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-outlined .bx-field.is-focus .bx-control { box-shadow: inset 0 0 0 var(--bx-bw) var(--bx-brand); }
+/* Underlined: only a bottom line, for forms on a coloured or image surface */
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-underlined .bx-control {
+  border-width: 0 0 var(--bx-bw); border-radius: 0; background: transparent; box-shadow: none; }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-underlined .bx-input { padding-left: 2px; }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-underlined .bx-field.is-focus .bx-control { box-shadow: 0 var(--bx-bw) 0 var(--bx-brand); }
+/* Floating label: the label sits on the box's top edge, as a floated label does */
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-select).bx-v-floating .bx-field > .bx-label { position: relative; z-index: 1; align-self: flex-start; margin: 0 0 calc(-1em - 2px) calc(var(--bx-pad) - 4px);
+  padding: 0 4px; font-size: 11.5px; background: var(--bx-fill); color: var(--bx-muted); transition: color var(--bx-dur) var(--bx-ease); }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-select).bx-v-floating .bx-field.is-focus > .bx-label { color: var(--bx-brand-text); }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-select).bx-v-floating .bx-control { box-shadow: none; padding-top: 4px; }
+/* Inline label: the label to the left of the box on one line, for settings and review screens; stacked again on narrow screens */
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-inline .bx-field { display: grid; grid-template-columns: minmax(96px, 32%) 1fr; align-items: center; column-gap: 12px; }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-inline .bx-field > :not(.bx-label) { grid-column: 2; }
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-inline .bx-field > .bx-label { font-size: 14px; }
+@media (max-width: 480px) {
+  :is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-inline .bx-field { display: flex; }
+}
+/* Search pill: a capsule with a soft fill, the edge appearing on focus */
+:is(.bx-k-text, .bx-k-select).bx-v-pill .bx-control { border-color: var(--bx-border); border-radius: var(--bx-radius-pill); background: var(--bx-track); box-shadow: none; }
+:is(.bx-k-text, .bx-k-select).bx-v-pill .bx-input { padding: 0 calc(var(--bx-pad) + 4px); }
+:is(.bx-k-text, .bx-k-select).bx-v-pill .bx-field.is-focus .bx-control { background: var(--bx-fill); border-color: var(--bx-brand); }
+/* Errors and focus stay visible in every field variant */
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-date, .bx-k-daterange, .bx-k-select).bx-v-material .bx-field.is-error .bx-control::after { background: var(--bx-danger); transform: scaleX(1); }
+:is(.bx-k-text, .bx-k-select).bx-v-pill .bx-field.is-error .bx-control,
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-select).bx-v-floating .bx-field.is-error .bx-control { border-color: var(--bx-danger); box-shadow: 0 0 0 4px var(--bx-danger-soft); }
+:is(.bx-k-text, .bx-k-select).bx-v-pill .bx-field.is-focus .bx-control,
+:is(.bx-k-text, .bx-k-textarea, .bx-k-password, .bx-k-select).bx-v-floating .bx-field.is-focus .bx-control { box-shadow: var(--bx-focus); }
 .bx-panel { display: flex; flex-direction: column; gap: 4px; padding: calc(var(--bx-pad-card) - 2px) var(--bx-pad-card); border-radius: var(--bx-radius-lg); background: var(--bx-card); -webkit-backdrop-filter: var(--bx-blur); backdrop-filter: var(--bx-blur); border: var(--bx-bw) solid var(--bx-border); box-shadow: var(--bx-shadow-1); }
 .bx-panel-title { margin: 0 0 6px; font-size: 15px; font-weight: var(--bx-weight-title); color: var(--bx-text); }
 .bx-panel-empty { margin: 8px 0; color: var(--bx-muted); font-size: 14px; }
@@ -402,6 +443,58 @@ bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pi
 .bx-call-icon { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--bx-success); color: #fff; }
 @keyframes bx-ripple { from { transform: scale(0); opacity: 1; } to { transform: scale(40); opacity: 0; } }
 @keyframes bx-wave { 50% { height: 18px; } }
+/* ---------- Variants (variants.json, wave V1): the element carries bx-k-button bx-v-<id>; the default is the look above ---------- */
+/* Material: a filled capsule with a state layer and a ripple from the press point (React draws it with @mui/material) */
+.bx-k-button.bx-v-material .bx-btn { border-radius: var(--bx-radius-pill); color: var(--bx-on-brand); background: var(--bx-brand); border-color: transparent; box-shadow: none; }
+.bx-k-button.bx-v-material .bx-btn:not(:disabled):hover { box-shadow: var(--bx-shadow-1); background: color-mix(in srgb, var(--bx-on-brand) 8%, var(--bx-brand)); }
+.bx-k-button.bx-v-material .bx-btn::before { content: ""; position: absolute; left: var(--bx-x, 50%); top: var(--bx-y, 50%); width: 8px; height: 8px; margin: -4px; border-radius: 50%;
+  background: color-mix(in srgb, currentColor 35%, transparent); transform: scale(0); opacity: 0; pointer-events: none; }
+.bx-k-button.bx-v-material .bx-btn:not(:disabled):active::before { animation: bx-ripple 450ms var(--bx-ease-standard); }
+/* Tonal: a soft brand tint, no edge */
+.bx-k-button.bx-v-tonal .bx-btn { color: var(--bx-brand-text); background: color-mix(in srgb, var(--bx-brand) 14%, var(--bx-fill)); border-color: transparent; box-shadow: none; }
+.bx-k-button.bx-v-tonal .bx-btn:not(:disabled):hover { background: color-mix(in srgb, var(--bx-brand) 22%, var(--bx-fill)); }
+/* Outlined: drawn by its edge, the brand on hover */
+.bx-k-button.bx-v-outlined .bx-btn { color: var(--bx-brand-text); background: transparent; border-color: var(--bx-border-strong); box-shadow: none; }
+.bx-k-button.bx-v-outlined .bx-btn:not(:disabled):hover { border-color: var(--bx-brand); background: color-mix(in srgb, var(--bx-brand) 6%, transparent); }
+/* Text: no container, a tint on hover */
+.bx-k-button.bx-v-text .bx-btn { color: var(--bx-brand-text); background: transparent; border-color: transparent; box-shadow: none; padding: 0 var(--bx-pad); }
+.bx-k-button.bx-v-text .bx-btn:not(:disabled):hover { background: color-mix(in srgb, var(--bx-brand) 8%, transparent); }
+/* Elevated: a raised surface that lifts on hover */
+.bx-k-button.bx-v-elevated .bx-btn { color: var(--bx-brand-text); background: var(--bx-raised); border-color: transparent; box-shadow: var(--bx-shadow-2); }
+.bx-k-button.bx-v-elevated .bx-btn:not(:disabled):hover { transform: translateY(-1px); box-shadow: var(--bx-shadow-3); }
+.bx-k-button.bx-v-elevated .bx-btn:not(:disabled):active { transform: none; box-shadow: var(--bx-shadow-1); }
+/* Gradient: the brand gradient, its light shifting on hover */
+.bx-k-button.bx-v-gradient .bx-btn { color: var(--bx-on-brand); background: var(--bx-gradient); background-size: 160% 100%; background-position: 0 0; border-color: transparent;
+  box-shadow: var(--bx-cta-shadow); transition: background-position var(--bx-dur-slow) var(--bx-ease-standard), transform var(--bx-dur) var(--bx-ease); }
+.bx-k-button.bx-v-gradient .bx-btn:not(:disabled):hover { background-position: 100% 0; }
+.bx-k-button.bx-v-gradient .bx-btn:not(:disabled):active { transform: scale(0.97); }
+/* Glass: translucent over a photo or card, brightening on hover */
+.bx-k-button.bx-v-glass .bx-btn { color: var(--bx-text); background: color-mix(in srgb, var(--bx-fill) 55%, transparent); border-color: color-mix(in srgb, var(--bx-surface) 60%, transparent);
+  box-shadow: var(--bx-shadow-1); -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4); }
+.bx-k-button.bx-v-glass .bx-btn:not(:disabled):hover { background: color-mix(in srgb, var(--bx-fill) 75%, transparent); }
+.bx-k-button.bx-v-glass .bx-btn:not(:disabled):active { transform: scale(0.97); }
+/* Pill: a full capsule that presses on a spring */
+.bx-k-button.bx-v-pill .bx-btn { border-radius: var(--bx-radius-pill); min-height: calc(var(--bx-height) + 4px); padding: 0 calc(var(--bx-pad) * 2); transition: transform var(--bx-dur-base) var(--bx-ease-spring), background var(--bx-dur) var(--bx-ease); }
+.bx-k-button.bx-v-pill .bx-btn:not(:disabled):active { transform: scale(0.96); }
+/* A destructive action stays red in every variant */
+.bx-k-button:is(.bx-v-tonal, .bx-v-outlined, .bx-v-text, .bx-v-elevated, .bx-v-glass) .bx-btn--danger { color: var(--bx-danger-text); }
+.bx-k-button.bx-v-tonal .bx-btn--danger { background: var(--bx-danger-soft); }
+.bx-k-button.bx-v-outlined .bx-btn--danger:not(:disabled):hover { border-color: var(--bx-danger); background: var(--bx-danger-soft); }
+.bx-k-button.bx-v-text .bx-btn--danger:not(:disabled):hover { background: var(--bx-danger-soft); }
+.bx-k-button:is(.bx-v-material, .bx-v-gradient) .bx-btn--danger { color: var(--bx-on-danger); background: var(--bx-danger-button); box-shadow: none; }
+/* The micro interactions of this kind (voice pill, call chip, slide to confirm) take the variant's shape and surface */
+.bx-k-button:is(.bx-v-outlined, .bx-v-text) .bx-voice-pill { background: transparent; }
+.bx-k-button.bx-v-tonal .bx-voice-pill { border-color: transparent; background: color-mix(in srgb, var(--bx-brand) 14%, var(--bx-fill)); color: var(--bx-brand-text); }
+.bx-k-button.bx-v-elevated :is(.bx-voice-pill, .bx-call-chip, .bx-slide-confirm) { box-shadow: var(--bx-shadow-2); }
+.bx-k-button.bx-v-glass :is(.bx-voice-pill, .bx-call-chip, .bx-slide-confirm) { background: color-mix(in srgb, var(--bx-fill) 55%, transparent); -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4); }
+.bx-k-button.bx-v-outlined :is(.bx-call-chip, .bx-slide-confirm) { background: transparent; border: var(--bx-bw) solid var(--bx-border-strong); }
+.bx-k-button:is(.bx-v-material, .bx-v-gradient) .bx-slide-handle { background: var(--bx-brand); }
+.bx-k-button.bx-v-gradient .bx-slide-confirm { background: color-mix(in srgb, var(--bx-brand-2) 14%, var(--bx-surface)); }
+/* Every variant keeps the focus ring, and a destructive action keeps its colour on hover */
+.bx-k-button[class*="bx-v-"] .bx-btn:focus-visible { box-shadow: var(--bx-focus); }
+.bx-k-button.bx-v-material .bx-btn--danger:not(:disabled):hover { background: color-mix(in srgb, var(--bx-on-danger) 8%, var(--bx-danger-button)); }
+.bx-k-button.bx-v-tonal .bx-btn--danger:not(:disabled):hover { background: color-mix(in srgb, var(--bx-danger) 22%, var(--bx-fill)); }
+.bx-k-button.bx-v-glass .bx-btn--danger:not(:disabled):hover { background: color-mix(in srgb, var(--bx-danger) 14%, transparent); }
 .bx-calc-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0 12px; }
 .bx-calc-result { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: var(--bx-radius); background: color-mix(in srgb, var(--bx-brand) 8%, var(--bx-surface)); }
 .bx-calc-title { font-size: 13px; color: var(--bx-text-body); font-weight: 600; }
@@ -460,6 +553,36 @@ bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pi
 .bx-prompt-row .bx-control { flex: 1 1 auto; border-radius: var(--bx-radius-pill); }
 .bx-prompt-spark { padding-left: 14px; color: var(--bx-brand-text); }
 .bx-prompt-bar .bx-btn { border-radius: var(--bx-radius-pill); }
+/* Checkbox variants (variants.json, wave V1): the element carries bx-k-check bx-v-<id>; the choices are .bx-choice (choice.css) */
+/* Material: plain rows; a square box that fills with a check (React: @mui/material Checkbox) */
+.bx-k-check.bx-v-material .bx-choice { border-color: transparent; background: transparent; box-shadow: none; padding: 0 4px; }
+.bx-k-check.bx-v-material .bx-choice:hover { background: color-mix(in srgb, var(--bx-brand) 6%, transparent); }
+.bx-k-check.bx-v-material .bx-choice-mark { border-width: calc(var(--bx-bw) * 2); border-radius: calc(var(--bx-radius-sm) / 2); }
+.bx-k-check.bx-v-material .bx-choice.is-on .bx-choice-mark { box-shadow: none; }
+/* Choice cards: each option a tile; the chosen one takes the brand edge and lifts */
+.bx-k-check.bx-v-cards .bx-choice { align-items: flex-start; min-height: calc(var(--bx-height) + 16px); padding: 12px var(--bx-pad-card); border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-1); }
+.bx-k-check.bx-v-cards .bx-choice-mark { margin-top: 2px; }
+.bx-k-check.bx-v-cards .bx-choice.is-on { box-shadow: var(--bx-shadow-2), inset 0 0 0 var(--bx-bw) var(--bx-brand); }
+/* Toggle chips: the options as chips that fill when chosen */
+.bx-k-check.bx-v-chips .bx-choices { flex-direction: row; flex-wrap: wrap; }
+.bx-k-check.bx-v-chips .bx-choice { min-height: 36px; border-radius: var(--bx-radius-pill); box-shadow: none; }
+.bx-k-check.bx-v-chips .bx-choice-mark { display: none; }
+.bx-k-check.bx-v-chips .bx-choice.is-on { background: color-mix(in srgb, var(--bx-brand) 14%, var(--bx-fill)); }
+.bx-k-check.bx-v-chips .bx-choice.is-on .bx-choice-label { color: var(--bx-brand-text); font-weight: var(--bx-weight); }
+.bx-k-check.bx-v-chips .bx-choice:has(.bx-choice-input:focus-visible) { box-shadow: var(--bx-focus); }
+/* List rows: full-width rows split by rules, the box on the right */
+.bx-k-check.bx-v-rows .bx-choices { gap: 0; }
+.bx-k-check.bx-v-rows .bx-choice { flex-direction: row-reverse; justify-content: space-between; border-width: 0 0 var(--bx-bw); border-color: var(--bx-rule); border-radius: 0; background: transparent; box-shadow: none; }
+.bx-k-check.bx-v-rows .bx-choice.is-on { background: transparent; }
+.bx-k-check.bx-v-rows .bx-choice:hover { background: color-mix(in srgb, var(--bx-brand) 5%, transparent); }
+/* Round: circular check marks, as in phone settings, popping on a spring */
+.bx-k-check.bx-v-round .bx-choice-mark { width: 22px; height: 22px; border-radius: 50%; }
+.bx-k-check.bx-v-round .bx-choice.is-on .bx-choice-mark { box-shadow: none; }
+/* The tick is drawn in the brand's on-colour (a light brand keeps it legible), and the mark keeps its focus ring */
+.bx-k-check:is(.bx-v-material, .bx-v-round) .bx-choice.is-on .bx-choice-mark { position: relative; background: var(--bx-brand); }
+.bx-k-check:is(.bx-v-material, .bx-v-round) .bx-choice.is-on .bx-choice-mark::after { content: ""; position: absolute; inset: 0; background: var(--bx-on-brand);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5 5 9l5-6' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / 12px no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5 5 9l5-6' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / 12px no-repeat; }
+.bx-k-check[class*="bx-v-"] .bx-choice:has(.bx-choice-input:focus-visible) { box-shadow: var(--bx-focus); }
 .bx-chip-remove:focus-visible { outline: none; box-shadow: var(--bx-focus); }
 .bx-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 0 6px 10px; flex: 1 1 auto; min-width: 0; }
 .bx-chip { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 4px 0 10px; border-radius: var(--bx-radius-pill); background: color-mix(in srgb, var(--bx-brand) 12%, var(--bx-surface)); color: var(--bx-text); font-size: 13px; }
@@ -476,6 +599,25 @@ bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pi
 .bx-motion-hover-lift .bx-filter-chip:hover:not(:disabled) { transform: translateY(-1px); }
 .bx-motion-click-press .bx-filter-chip:active { transform: scale(0.97); }
 .bx-motion-click-bounce .bx-filter-chip:active { animation: bx-bounce 300ms var(--bx-ease-spring); }
+/* ---------- Variants (variants.json, wave V1): the element carries bx-k-chips bx-v-<id> ---------- */
+/* Material filter chips: small corners; the chosen chip fills tonal with a check (React: @mui/material Chip) */
+.bx-k-chips.bx-v-material :is(.bx-filter-chip, .bx-chip) { border-radius: var(--bx-radius-sm); }
+.bx-k-chips.bx-v-material .bx-filter-chip.is-on { border-color: transparent; background: color-mix(in srgb, var(--bx-brand) 16%, var(--bx-fill)); }
+.bx-k-chips.bx-v-material .bx-filter-chip.is-on::before { content: "\2713" / ""; margin-right: 6px; font-weight: 700; }
+/* Outlined: edged chips; the chosen one fills in the brand colour */
+.bx-k-chips.bx-v-outlined .bx-filter-chip { background: transparent; }
+.bx-k-chips.bx-v-outlined .bx-filter-chip.is-on { border-color: var(--bx-brand); background: var(--bx-brand); color: var(--bx-on-brand); }
+.bx-k-chips.bx-v-outlined .bx-chip { background: transparent; border: var(--bx-bw) solid var(--bx-border-strong); }
+/* Tonal: no edges; a stronger tint marks the chosen ones */
+.bx-k-chips.bx-v-tonal .bx-filter-chip { border-color: transparent; background: var(--bx-track); }
+.bx-k-chips.bx-v-tonal .bx-filter-chip.is-on { background: color-mix(in srgb, var(--bx-brand) 18%, var(--bx-fill)); }
+/* Square tags: small corners and a tighter fit for dense filters */
+.bx-k-chips.bx-v-square :is(.bx-filter-chip, .bx-chip) { border-radius: calc(var(--bx-radius-sm) / 2); }
+.bx-k-chips.bx-v-square .bx-filter-chip { min-height: 32px; padding: 0 10px; font-size: 13px; }
+/* Glass: translucent chips over a header image or card */
+.bx-k-chips.bx-v-glass :is(.bx-filter-chip, .bx-chip) { background: color-mix(in srgb, var(--bx-fill) 55%, transparent); border-color: color-mix(in srgb, var(--bx-surface) 60%, transparent);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4); backdrop-filter: blur(12px) saturate(1.4); }
+.bx-k-chips.bx-v-glass .bx-filter-chip.is-on { background: color-mix(in srgb, var(--bx-brand) 22%, transparent); }
 .bx-choices { display: flex; flex-direction: column; gap: 8px; }
 .bx-choices.is-row { flex-direction: row; flex-wrap: wrap; }
 .bx-choice { position: relative; display: flex; align-items: center; gap: 10px; min-height: var(--bx-height); padding: 0 var(--bx-pad); border: var(--bx-bw) solid var(--bx-border-strong); border-radius: var(--bx-radius-control);
@@ -498,6 +640,33 @@ bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pi
 .bx-choice-text { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; }
 .bx-choice-meta { font-size: 12.5px; color: var(--bx-muted); }
 .bx-fx-jelly .bx-choice.is-on .bx-choice-mark { animation: bx-jelly 560ms var(--bx-ease-standard); }
+/* ---------- Variants (variants.json, wave V1): the element carries bx-k-choice bx-v-<id> ---------- */
+/* Material: plain rows; a ring whose dot grows when chosen (React: @mui/material Radio) */
+.bx-k-choice.bx-v-material .bx-choice { border-color: transparent; background: transparent; box-shadow: none; padding: 0 4px; }
+.bx-k-choice.bx-v-material .bx-choice:hover { background: color-mix(in srgb, var(--bx-brand) 6%, transparent); }
+.bx-k-choice.bx-v-material .bx-choice-mark { width: 20px; height: 20px; border-width: calc(var(--bx-bw) * 2); }
+.bx-k-choice.bx-v-material .bx-choice.is-on .bx-choice-mark { background: var(--bx-surface); box-shadow: inset 0 0 0 4px var(--bx-surface), inset 0 0 0 10px var(--bx-brand); }
+/* Choice cards: each option a tile with its description; the chosen one takes the brand edge and lifts */
+.bx-k-choice.bx-v-cards .bx-choice { align-items: flex-start; min-height: calc(var(--bx-height) + 16px); padding: 12px var(--bx-pad-card); border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-1); }
+.bx-k-choice.bx-v-cards .bx-choice-mark { margin-top: 2px; }
+.bx-k-choice.bx-v-cards .bx-choice.is-on { box-shadow: var(--bx-shadow-2), inset 0 0 0 var(--bx-bw) var(--bx-brand); }
+/* Toggle chips: one chip fills */
+.bx-k-choice.bx-v-chips .bx-choices { flex-direction: row; flex-wrap: wrap; }
+.bx-k-choice.bx-v-chips .bx-choice { min-height: 36px; border-radius: var(--bx-radius-pill); box-shadow: none; }
+.bx-k-choice.bx-v-chips .bx-choice-mark { display: none; }
+.bx-k-choice.bx-v-chips .bx-choice.is-on { background: color-mix(in srgb, var(--bx-brand) 14%, var(--bx-fill)); }
+.bx-k-choice.bx-v-chips .bx-choice.is-on .bx-choice-label { color: var(--bx-brand-text); font-weight: var(--bx-weight); }
+.bx-k-choice.bx-v-chips .bx-choice:has(.bx-choice-input:focus-visible) { box-shadow: var(--bx-focus); }
+/* List rows: full-width rows split by rules, a check beside the chosen one */
+.bx-k-choice.bx-v-rows .bx-choices { gap: 0; }
+.bx-k-choice.bx-v-rows .bx-choice { flex-direction: row-reverse; justify-content: space-between; border-width: 0 0 var(--bx-bw); border-color: var(--bx-rule); border-radius: 0; background: transparent; box-shadow: none; }
+.bx-k-choice.bx-v-rows .bx-choice-mark { border-color: transparent; background: transparent; }
+.bx-k-choice.bx-v-rows .bx-choice.is-on { background: transparent; }
+.bx-k-choice.bx-v-rows .bx-choice.is-on .bx-choice-mark { border-color: transparent; box-shadow: none; background: var(--bx-brand);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5 5 9l5-6' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / 14px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5 5 9l5-6' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / 14px no-repeat; }
+.bx-k-choice.bx-v-rows .bx-choice.is-on .bx-choice-label { font-weight: var(--bx-weight); }
+.bx-k-choice[class*="bx-v-"] .bx-choice:has(.bx-choice-input:focus-visible) { box-shadow: var(--bx-focus); }
 .bx-code { gap: 10px; }
 .bx-slots { position: relative; display: flex; gap: 8px; }
 .bx-code-input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; padding: 0; border: 0; background: transparent; color: transparent; caret-color: transparent; font-size: 16px; outline: none; }
@@ -508,6 +677,27 @@ bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pi
 .bx-code-action { align-self: flex-start; padding: 0; }
 .bx-fx-otp .bx-slot { border-radius: 14px; }
 .bx-fx-otp .bx-slot.is-filled { background: color-mix(in srgb, var(--bx-brand) 8%, var(--bx-surface)); }
+/* ---------- Variants (variants.json, wave V1): the element carries bx-k-code bx-v-<id>; one .bx-slot per digit ---------- */
+/* Material: outlined boxes with small corners; the next box doubles its brand edge */
+.bx-k-code.bx-v-material .bx-slot { border-width: var(--bx-bw); border-radius: var(--bx-radius-sm); box-shadow: none; background: transparent; }
+.bx-k-code.bx-v-material .bx-slot.is-next { box-shadow: inset 0 0 0 var(--bx-bw) var(--bx-brand); }
+/* Underlined: a line under each digit; the next line thickens in the brand colour */
+.bx-k-code.bx-v-underline .bx-slot { border-width: 0 0 calc(var(--bx-bw) * 2); border-radius: 0; background: transparent; box-shadow: none; }
+.bx-k-code.bx-v-underline .bx-slot.is-next { box-shadow: 0 var(--bx-bw) 0 var(--bx-brand); }
+.bx-k-code.bx-v-underline .bx-slot.is-filled { animation: none; }
+/* Rounded: soft filled cells, as on phone sign-in; a digit pops in on a spring */
+.bx-k-code.bx-v-rounded .bx-slot { border-color: var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-track); box-shadow: none; }
+.bx-k-code.bx-v-rounded .bx-slot.is-filled { border-color: transparent; background: color-mix(in srgb, var(--bx-brand) 12%, var(--bx-fill)); }
+.bx-k-code.bx-v-rounded .bx-slot.is-next { border-color: var(--bx-brand); background: var(--bx-fill); }
+/* Joined: one field split by thin dividers */
+.bx-k-code.bx-v-joined .bx-slots { gap: 0; }
+.bx-k-code.bx-v-joined .bx-slot { border-width: var(--bx-bw); border-radius: 0; box-shadow: none; }
+.bx-k-code.bx-v-joined .bx-slot + .bx-slot { border-left-width: 0; }
+.bx-k-code.bx-v-joined .bx-slot:first-of-type { border-radius: var(--bx-radius-control) 0 0 var(--bx-radius-control); }
+.bx-k-code.bx-v-joined .bx-slot:last-of-type { border-radius: 0 var(--bx-radius-control) var(--bx-radius-control) 0; }
+.bx-k-code.bx-v-joined .bx-slot.is-filled, .bx-k-code.bx-v-joined .bx-slot.is-next { border-color: var(--bx-border-strong); }
+.bx-k-code.bx-v-joined .bx-slot.is-next { box-shadow: inset 0 -3px 0 var(--bx-brand); }
+.bx-k-code.bx-v-underline .bx-slot.is-filled { border-color: var(--bx-text-body); }
 .bx-crumb:focus-visible { outline: none; box-shadow: var(--bx-focus); }
 .bx-crumbs ol { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: 13.5px; }
 .bx-crumbs li { display: inline-flex; align-items: center; gap: 6px; }
@@ -558,6 +748,23 @@ bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pi
 @media (max-width: 480px) {
   .bx-layout-grid[class*="is-cols-"] { grid-template-columns: minmax(0, 1fr); }
 }
+/* Icon button variants (variants.json, wave V1): the element carries bx-k-iconbtn bx-v-<id>; the button is .bx-btn.bx-btn--icon (button.css) */
+.bx-k-iconbtn .bx-btn--icon { transition: transform var(--bx-dur-base) var(--bx-ease-spring), background var(--bx-dur) var(--bx-ease), border-color var(--bx-dur) var(--bx-ease); }
+.bx-k-iconbtn .bx-btn--icon:not(:disabled):active { transform: scale(0.94); }
+/* Material: round and borderless, a state layer on hover (React: @mui/material IconButton) */
+.bx-k-iconbtn.bx-v-material .bx-btn--icon { border-radius: var(--bx-radius-pill); background: transparent; border-color: transparent; box-shadow: none; color: var(--bx-text-body); }
+.bx-k-iconbtn.bx-v-material .bx-btn--icon:not(:disabled):hover { background: color-mix(in srgb, var(--bx-text) 8%, transparent); }
+.bx-k-iconbtn.bx-v-filled .bx-btn--icon { border-radius: var(--bx-radius-pill); background: var(--bx-brand); color: var(--bx-on-brand); border-color: transparent; box-shadow: none; }
+.bx-k-iconbtn.bx-v-filled .bx-btn--icon:not(:disabled):hover { background: color-mix(in srgb, var(--bx-on-brand) 10%, var(--bx-brand)); }
+.bx-k-iconbtn.bx-v-tonal .bx-btn--icon { border-radius: var(--bx-radius-pill); background: color-mix(in srgb, var(--bx-brand) 14%, var(--bx-fill)); color: var(--bx-brand-text); border-color: transparent; box-shadow: none; }
+.bx-k-iconbtn.bx-v-tonal .bx-btn--icon:not(:disabled):hover { background: color-mix(in srgb, var(--bx-brand) 22%, var(--bx-fill)); }
+.bx-k-iconbtn.bx-v-outlined .bx-btn--icon { border-radius: var(--bx-radius-pill); background: transparent; border-color: var(--bx-border-strong); box-shadow: none; }
+.bx-k-iconbtn.bx-v-outlined .bx-btn--icon:not(:disabled):hover { border-color: var(--bx-brand); color: var(--bx-brand-text); }
+.bx-k-iconbtn.bx-v-circular .bx-btn--icon { border-radius: var(--bx-radius-pill); background: var(--bx-track); border-color: var(--bx-border); box-shadow: none; color: var(--bx-text); }
+.bx-k-iconbtn.bx-v-circular .bx-btn--icon:not(:disabled):active { transform: scale(0.92); }
+.bx-k-iconbtn.bx-v-square .bx-btn--icon { border-radius: var(--bx-radius-sm); background: transparent; border-color: var(--bx-border); box-shadow: none; }
+.bx-k-iconbtn.bx-v-square .bx-btn--icon:not(:disabled):hover { background: var(--bx-track); }
+.bx-k-iconbtn[class*="bx-v-"] .bx-btn--icon:focus-visible { box-shadow: var(--bx-focus); }
 .bx-kv-list { display: flex; flex-direction: column; margin: 0; }
 .bx-kv-row { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: var(--bx-bw) solid var(--bx-rule); font-size: 14px; }
 .bx-kv-row:first-child { border-top: 0; }
@@ -726,6 +933,37 @@ button.bx-payee:hover { background: var(--bx-surface-2); }
 .bx-fx-rubber .bx-segment:active { transform: scale(0.92, 1.06); transition: transform 90ms var(--bx-ease-standard); }
 .bx-fx-rubber .bx-segment.is-on { animation: bx-jelly 520ms var(--bx-ease-standard); }
 @keyframes bx-glide { from { transform: scaleX(0.7); } }
+/* ---------- Variants (variants.json, wave V1): the element carries bx-k-segmented bx-v-<id> ---------- */
+/* Material segmented buttons: joined outlined segments; the chosen one fills tonal with a check (React: @mui/material ToggleButtonGroup) */
+.bx-k-segmented.bx-v-material .bx-segmented { gap: 0; padding: 0; background: transparent; border: var(--bx-bw) solid var(--bx-border-strong); border-radius: var(--bx-radius-pill); overflow: hidden; }
+.bx-k-segmented.bx-v-material .bx-segment { border-radius: 0; min-height: 40px; }
+.bx-k-segmented.bx-v-material .bx-segment + .bx-segment { border-left: var(--bx-bw) solid var(--bx-border-strong); }
+.bx-k-segmented.bx-v-material .bx-segment.is-on { background: color-mix(in srgb, var(--bx-brand) 16%, var(--bx-fill)); box-shadow: none; animation: none; }
+.bx-k-segmented.bx-v-material .bx-segment.is-on::before { content: "\2713" / ""; margin-right: 6px; }
+.bx-k-segmented.bx-v-material .bx-segment:focus-visible { box-shadow: inset var(--bx-focus); }
+/* iOS segmented control: a grey track; the white thumb settles on a spring */
+.bx-k-segmented.bx-v-ios .bx-segmented { gap: 2px; padding: 2px; border-radius: calc(var(--bx-radius-control) - 1px); background: var(--bx-track); }
+.bx-k-segmented.bx-v-ios .bx-segment { min-height: 32px; border-radius: calc(var(--bx-radius-control) - 3px); color: var(--bx-text); }
+.bx-k-segmented.bx-v-ios .bx-segment.is-on { background: var(--bx-raised); color: var(--bx-text); box-shadow: var(--bx-shadow-2); animation: bx-glide 320ms var(--bx-ease-spring); }
+.bx-k-segmented.bx-v-ios .bx-segment:not(:disabled):active { transform: scale(0.96); }
+/* Underline: text segments with a line under the chosen one, like tabs */
+.bx-k-segmented.bx-v-underline .bx-segmented { gap: 0; padding: 0; border-radius: 0; background: transparent; box-shadow: inset 0 calc(var(--bx-bw) * -1) 0 var(--bx-rule); }
+.bx-k-segmented.bx-v-underline .bx-segment { border-radius: 0; color: var(--bx-muted); }
+.bx-k-segmented.bx-v-underline .bx-segment:hover { color: var(--bx-text); }
+.bx-k-segmented.bx-v-underline .bx-segment.is-on { background: transparent; color: var(--bx-brand-text); box-shadow: inset 0 -2px 0 var(--bx-brand); animation: bx-glide 280ms var(--bx-ease-standard); }
+/* Enclosed: boxes joined edge to edge; the chosen one fills */
+.bx-k-segmented.bx-v-enclosed .bx-segmented { gap: 0; padding: 0; background: var(--bx-fill); border: var(--bx-bw) solid var(--bx-border-strong); border-radius: var(--bx-radius-sm); }
+.bx-k-segmented.bx-v-enclosed .bx-segment { border-radius: 0; }
+.bx-k-segmented.bx-v-enclosed .bx-segment + .bx-segment { border-left: var(--bx-bw) solid var(--bx-border-strong); }
+.bx-k-segmented.bx-v-enclosed .bx-segment:hover:not(.is-on) { background: var(--bx-track); }
+.bx-k-segmented.bx-v-enclosed .bx-segment.is-on { background: color-mix(in srgb, var(--bx-brand) 12%, var(--bx-fill)); box-shadow: none; animation: none; }
+/* Pill: rounded pills on a tinted track; the chosen one fills in the brand colour */
+.bx-k-segmented.bx-v-pill .bx-segmented { border-radius: var(--bx-radius-pill); background: color-mix(in srgb, var(--bx-brand) 10%, var(--bx-fill)); }
+.bx-k-segmented.bx-v-pill .bx-segment { border-radius: var(--bx-radius-pill); }
+.bx-k-segmented.bx-v-pill .bx-segment.is-on { background: var(--bx-brand); color: var(--bx-on-brand); box-shadow: none; }
+.bx-k-segmented.bx-v-pill .bx-segment:not(:disabled):active { transform: scale(0.96); }
+/* Every variant keeps a focus ring, drawn inside so a joined or edge-to-edge track does not clip it */
+.bx-k-segmented[class*="bx-v-"] .bx-segment:focus-visible { box-shadow: inset 0 0 0 2px var(--bx-brand); }
 .bx-wheel { position: relative; height: 168px; margin: 0; padding: 56px 0; overflow-y: auto; scroll-snap-type: y mandatory; list-style: none; border-radius: var(--bx-radius-lg);
   background: var(--bx-surface-2); border: var(--bx-bw) solid var(--bx-border); box-shadow: var(--bx-shadow-1); -webkit-mask-image: linear-gradient(transparent, #000 35%, #000 65%, transparent); mask-image: linear-gradient(transparent, #000 35%, #000 65%, transparent); }
 .bx-wheel:focus-visible { outline: none; box-shadow: var(--bx-focus); }
@@ -749,6 +987,36 @@ button.bx-payee:hover { background: var(--bx-surface-2); }
 .bx-range-input:focus-visible { outline: none; box-shadow: var(--bx-focus); border-radius: var(--bx-radius-pill); }
 .bx-slider-scale { display: flex; justify-content: space-between; font-size: 12px; color: var(--bx-muted); font-variant-numeric: tabular-nums; }
 .bx-fx-elastic .bx-range-input:active { transform: scaleX(1.02); transition: transform var(--bx-dur-base) var(--bx-ease-spring); }
+/* ---------- Variants (variants.json, wave V1): the element carries bx-k-slider bx-v-<id>; each draws the native range ---------- */
+.bx-k-slider:is(.bx-v-material, .bx-v-ticks, .bx-v-bubble, .bx-v-thick) .bx-range-input { -webkit-appearance: none; appearance: none; height: 28px; background: transparent; }
+.bx-k-slider:is(.bx-v-material, .bx-v-ticks, .bx-v-bubble, .bx-v-thick) .bx-range-input::-webkit-slider-runnable-track { height: 4px; border-radius: var(--bx-radius-pill); background: var(--bx-track); }
+.bx-k-slider:is(.bx-v-material, .bx-v-ticks, .bx-v-bubble, .bx-v-thick) .bx-range-input::-moz-range-track { height: 4px; border-radius: var(--bx-radius-pill); background: var(--bx-track); }
+.bx-k-slider:is(.bx-v-material, .bx-v-ticks, .bx-v-bubble, .bx-v-thick) .bx-range-input::-moz-range-progress { height: 4px; border-radius: var(--bx-radius-pill); background: var(--bx-brand); }
+.bx-k-slider:is(.bx-v-material, .bx-v-ticks, .bx-v-bubble, .bx-v-thick) .bx-range-input::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; margin-top: -8px; border: 0; border-radius: 50%;
+  background: var(--bx-brand); box-shadow: var(--bx-shadow-1); transition: transform var(--bx-dur) var(--bx-ease), box-shadow var(--bx-dur) var(--bx-ease); }
+.bx-k-slider:is(.bx-v-material, .bx-v-ticks, .bx-v-bubble, .bx-v-thick) .bx-range-input::-moz-range-thumb { width: 20px; height: 20px; border: 0; border-radius: 50%; background: var(--bx-brand); box-shadow: var(--bx-shadow-1); }
+/* Material: a state layer round the handle on hover and press (React: @mui/material Slider) */
+.bx-k-slider.bx-v-material .bx-range-input:not(:disabled):hover::-webkit-slider-thumb { box-shadow: 0 0 0 8px color-mix(in srgb, var(--bx-brand) 14%, transparent); }
+.bx-k-slider.bx-v-material .bx-range-input:not(:disabled):active::-webkit-slider-thumb { box-shadow: 0 0 0 12px color-mix(in srgb, var(--bx-brand) 20%, transparent); }
+/* Stepped with ticks: a scale of ticks under the track, the handle snapping between them */
+.bx-k-slider.bx-v-ticks .bx-range-input { background: repeating-linear-gradient(to right, var(--bx-border-strong) 0 2px, transparent 2px 10%) left 10px bottom 1px / calc(100% - 18px) 6px no-repeat; }
+.bx-k-slider.bx-v-ticks .bx-range-input:not(:disabled):active::-webkit-slider-thumb { transform: scale(1.15); }
+/* Value bubble: the value in a brand bubble beside the label, growing while the handle is held */
+.bx-k-slider.bx-v-bubble .bx-slider-value { padding: 2px 10px; border-radius: var(--bx-radius-pill); background: var(--bx-brand); color: var(--bx-on-brand); font-size: 15px;
+  transition: transform var(--bx-dur-base) var(--bx-ease-spring); }
+.bx-k-slider.bx-v-bubble .bx-slider:has(.bx-range-input:active) .bx-slider-value { transform: scale(1.08); }
+/* Thick track: a tall rounded track, as in phone controls; the handle is the end of the fill */
+.bx-k-slider.bx-v-thick .bx-range-input { height: 32px; }
+.bx-k-slider.bx-v-thick .bx-range-input::-webkit-slider-runnable-track { height: 28px; border-radius: var(--bx-radius-control); }
+.bx-k-slider.bx-v-thick .bx-range-input::-moz-range-track { height: 28px; border-radius: var(--bx-radius-control); }
+.bx-k-slider.bx-v-thick .bx-range-input::-moz-range-progress { height: 28px; border-radius: var(--bx-radius-control); }
+.bx-k-slider.bx-v-thick .bx-range-input::-webkit-slider-thumb { width: 8px; height: 20px; margin-top: 4px; border-radius: var(--bx-radius-pill); background: var(--bx-surface); }
+.bx-k-slider.bx-v-thick .bx-range-input::-moz-range-thumb { width: 8px; height: 20px; border-radius: var(--bx-radius-pill); background: var(--bx-surface); }
+/* Chrome and Safari draw no fill on a restyled range: the track fills to --bx-pct, the share the element sets */
+.bx-k-slider:is(.bx-v-material, .bx-v-ticks, .bx-v-bubble, .bx-v-thick) .bx-range-input::-webkit-slider-runnable-track {
+  background: linear-gradient(to right, var(--bx-brand) var(--bx-pct, 0%), var(--bx-track) 0); }
+.bx-k-slider[class*="bx-v-"] .bx-range-input:focus-visible::-webkit-slider-thumb { box-shadow: var(--bx-focus); }
+.bx-k-slider[class*="bx-v-"] .bx-range-input:focus-visible::-moz-range-thumb { box-shadow: var(--bx-focus); }
 .bx-carousel { display: flex; flex-direction: column; gap: 10px; }
 .bx-slides { display: grid; }
 .bx-slide { grid-area: 1 / 1; padding: var(--bx-pad-card); border-radius: var(--bx-radius-lg); background: var(--bx-card); border: var(--bx-bw) solid var(--bx-border); box-shadow: var(--bx-shadow-1);
@@ -811,6 +1079,47 @@ button.bx-payee:hover { background: var(--bx-surface-2); }
 .bx-fx-squish .bx-switch:active::after { transform: scaleX(1.25); }
 .bx-fx-squish .bx-switch[aria-checked="true"]:active::after { transform: translateX(14px) scaleX(1.25); }
 @keyframes bx-ring { 20% { transform: rotate(14deg); } 40% { transform: rotate(-12deg); } 60% { transform: rotate(8deg); } 80% { transform: rotate(-4deg); } }
+/* ---------- Variants (variants.json, wave V1): the element carries bx-k-switch bx-v-<id>; the thumb is .bx-switch::after ---------- */
+/* Material: a wide track with an edge when off; the thumb grows and shows a check when on (React: @mui/material Switch) */
+.bx-k-switch.bx-v-material .bx-switch { width: 52px; height: 32px; background: var(--bx-track); box-shadow: inset 0 0 0 calc(var(--bx-bw) * 2) var(--bx-muted); }
+.bx-k-switch.bx-v-material .bx-switch::after { top: 8px; left: 8px; width: 16px; height: 16px; background: var(--bx-muted); box-shadow: none;
+  transition: transform var(--bx-dur-base) var(--bx-ease-standard), width var(--bx-dur-base) var(--bx-ease-standard), height var(--bx-dur-base) var(--bx-ease-standard), top var(--bx-dur-base) var(--bx-ease-standard), left var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-k-switch.bx-v-material .bx-switch[aria-checked="true"] { background: var(--bx-brand); box-shadow: none; }
+.bx-k-switch.bx-v-material .bx-switch[aria-checked="true"]::after { top: 4px; left: 4px; width: 24px; height: 24px; transform: translateX(20px); background: var(--bx-on-brand); }
+.bx-k-switch.bx-v-material .bx-switch:not(:disabled):active::after { width: 28px; height: 28px; top: 2px; left: 2px; }
+/* iOS: the platform's green track; the thumb stretches while pressed and springs across */
+.bx-k-switch.bx-v-ios .bx-switch { width: 51px; height: 31px; background: var(--bx-track); }
+.bx-k-switch.bx-v-ios .bx-switch::after { top: 2px; left: 2px; width: 27px; height: 27px; box-shadow: var(--bx-shadow-2); transition: transform var(--bx-dur-slow) var(--bx-ease-spring), width var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-k-switch.bx-v-ios .bx-switch[aria-checked="true"] { background: var(--bx-success); }
+.bx-k-switch.bx-v-ios .bx-switch[aria-checked="true"]::after { transform: translateX(20px); }
+.bx-k-switch.bx-v-ios .bx-switch:not(:disabled):active::after { width: 33px; }
+.bx-k-switch.bx-v-ios .bx-switch[aria-checked="true"]:not(:disabled):active::after { transform: translateX(14px); }
+/* Fluent: a slim edged track that fills when on */
+.bx-k-switch.bx-v-fluent .bx-switch { width: 40px; height: 20px; background: transparent; box-shadow: inset 0 0 0 var(--bx-bw) var(--bx-muted); }
+.bx-k-switch.bx-v-fluent .bx-switch::after { top: 4px; left: 4px; width: 12px; height: 12px; background: var(--bx-muted); box-shadow: none; }
+.bx-k-switch.bx-v-fluent .bx-switch[aria-checked="true"] { background: var(--bx-brand); box-shadow: none; }
+.bx-k-switch.bx-v-fluent .bx-switch[aria-checked="true"]::after { transform: translateX(20px); background: var(--bx-on-brand); }
+.bx-k-switch.bx-v-fluent .bx-switch:not(:disabled):hover { box-shadow: inset 0 0 0 var(--bx-bw) var(--bx-text); }
+.bx-k-switch.bx-v-fluent .bx-switch[aria-checked="true"]:not(:disabled):hover { box-shadow: none; }
+/* Labelled: On or Off inside the track (the switch role already announces it) */
+.bx-k-switch.bx-v-labelled .bx-switch { width: 64px; }
+.bx-k-switch.bx-v-labelled .bx-switch::before { content: "Off"; position: absolute; top: 0; bottom: 0; right: 9px; display: flex; align-items: center; font-size: 11px; font-weight: 700; color: var(--bx-text-body); }
+.bx-k-switch.bx-v-labelled .bx-switch[aria-checked="true"]::before { content: "On"; right: auto; left: 10px; color: var(--bx-on-brand); }
+.bx-k-switch.bx-v-labelled .bx-switch[aria-checked="true"]::after { transform: translateX(36px); }
+.bx-k-switch.bx-v-labelled .bx-switch:not(:disabled):active { transform: scale(0.97); }
+/* Squish: a soft thumb that squashes as it travels */
+.bx-k-switch.bx-v-squish .bx-switch { border-radius: calc(var(--bx-radius-control) + 2px); }
+.bx-k-switch.bx-v-squish .bx-switch::after { border-radius: var(--bx-radius-control); transition: transform var(--bx-dur-slow) var(--bx-ease-spring); }
+.bx-k-switch.bx-v-squish .bx-switch:not(:disabled):active::after { transform: scaleX(1.3); }
+.bx-k-switch.bx-v-squish .bx-switch[aria-checked="true"]:not(:disabled):active::after { transform: translateX(13px) scaleX(1.3); }
+.bx-k-switch.bx-v-squish .bx-switch:not(:disabled):hover::after { transform: scale(1.08); }
+.bx-k-switch.bx-v-squish .bx-switch[aria-checked="true"]:not(:disabled):hover::after { transform: translateX(18px) scale(1.08); }
+/* The press toggles of this kind (bell, heart) take the shape */
+.bx-k-switch:is(.bx-v-fluent, .bx-v-labelled) .bx-press-toggle { border-radius: var(--bx-radius-control); }
+.bx-k-switch.bx-v-material .bx-press-toggle.is-on { background: color-mix(in srgb, var(--bx-brand) 14%, var(--bx-fill)); border-color: transparent; }
+/* Every variant keeps the focus ring; Fluent's slim track keeps a 24 px touch target */
+.bx-k-switch[class*="bx-v-"] .bx-switch:focus-visible { box-shadow: var(--bx-focus); }
+.bx-k-switch.bx-v-fluent .bx-switch::before { content: ""; position: absolute; inset: -4px 0; }
 .bx-grid-wrap { overflow-x: auto; border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-1); }
 .bx-grid { width: 100%; border-collapse: collapse; font-size: 14px; color: var(--bx-text); }
 .bx-grid caption { text-align: left; padding: 12px 14px 4px; font-weight: 600; }
@@ -958,6 +1267,25 @@ button.bx-payee:hover { background: var(--bx-surface-2); }
   .bx-motion-scroll-fadeup .bx-drop { animation: bx-in-up linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
 }
 .bx-file { animation: bx-settle var(--bx-dur-base) var(--bx-ease-standard); }
+/* ---------- Variants (variants.json, wave V1): the element carries bx-k-upload bx-v-<id> ---------- */
+/* Material: a tonal Choose files button and the files as chips */
+.bx-k-upload.bx-v-material .bx-drop { min-height: 0; padding: 0; align-items: flex-start; border: 0; background: transparent; }
+.bx-k-upload.bx-v-material .bx-drop-button { border-color: transparent; border-radius: var(--bx-radius-pill); background: color-mix(in srgb, var(--bx-brand) 14%, var(--bx-fill)); color: var(--bx-brand-text); }
+.bx-k-upload.bx-v-material .bx-files { flex-direction: row; flex-wrap: wrap; }
+.bx-k-upload.bx-v-material .bx-file { border-radius: var(--bx-radius-sm); }
+/* Drop zone: a large dashed area to drop files on, the edge taking the brand colour as files come over */
+.bx-k-upload.bx-v-dropzone .bx-drop { min-height: 180px; border-width: calc(var(--bx-bw) * 2); background: var(--bx-track); }
+.bx-k-upload.bx-v-dropzone .bx-drop:hover { border-color: color-mix(in srgb, var(--bx-brand) 55%, var(--bx-border-strong)); }
+/* Compact: one line, the button and the hint side by side */
+.bx-k-upload.bx-v-compact .bx-drop { flex-direction: row; justify-content: flex-start; min-height: var(--bx-height); padding: 4px; border-style: solid; border-width: var(--bx-bw);
+  border-radius: var(--bx-radius-control); background: var(--bx-fill); text-align: left; }
+.bx-k-upload.bx-v-compact .bx-drop-button { min-height: calc(var(--bx-height) - 10px); }
+/* Card: each file a card with its size, rising in */
+.bx-k-upload.bx-v-card .bx-drop { border-style: solid; border-width: var(--bx-bw); border-color: var(--bx-border); background: var(--bx-card); box-shadow: var(--bx-shadow-1); }
+.bx-k-upload.bx-v-card .bx-file { min-height: 56px; border-color: transparent; border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-2); }
+.bx-k-upload.bx-v-card .bx-file:hover { transform: translateY(-1px); transition: transform var(--bx-dur) var(--bx-ease); }
+/* Files dragged over show in every variant */
+.bx-k-upload[class*="bx-v-"] .bx-drop.is-over { border: calc(var(--bx-bw) * 1.5) dashed var(--bx-brand); background: color-mix(in srgb, var(--bx-brand) 6%, var(--bx-fill)); }
 @supports (animation-timeline: view()) {
   .bx-scroll-expand { animation: bx-expand linear both; animation-timeline: view(); animation-range: entry 0% cover 35%; }
 }

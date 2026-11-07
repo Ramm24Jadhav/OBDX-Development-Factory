@@ -89,6 +89,11 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
       var p = self.props.prefix ? self.props.prefix + ' ' : '';
       return { min: p + Number(self.props.min).toLocaleString(), max: p + Number(self.props.max).toLocaleString() };
     });
+    // the filled share, for a variant that draws its own track (--bx-pct)
+    self.pct = ko.pureComputed(function () {
+      var lo = Number(self.props.min), hi = Number(self.props.max);
+      return '--bx-pct: ' + (hi > lo ? Math.min(100, Math.max(0, (Number(self.props.value || 0) - lo) / (hi - lo) * 100)) : 0) + '%';
+    });
     self.onInput = function (event) { self.props.value = Number(event.target.value); };
   }
   kinds.slider = { model: SliderKind,
@@ -96,7 +101,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
       disabled: bool(), helpText: str() },
     view: '<div class="bx-field bx-slider"><div class="bx-slider-head"><label class="bx-label" :for="[[id]]">' + txt('$properties.labelHint') + '</label>'
       + '<output class="bx-slider-value" :for="[[id]]">' + txt('shown') + '</output></div>'
-      + '<input type="range" class="bx-range-input" :id="[[id]]" :min="[[$properties.min]]" :max="[[$properties.max]]" :step="[[$properties.step]]" :value="[[$properties.value]]"'
+      + '<input type="range" class="bx-range-input" :style="[[pct]]" :id="[[id]]" :min="[[$properties.min]]" :max="[[$properties.max]]" :step="[[$properties.step]]" :value="[[$properties.value]]"'
       + ' :disabled="[[$properties.disabled]]" :aria-valuetext="[[shown]]" :aria-describedby="[[$properties.helpText ? id + \'-help\' : null]]" on-input="[[onInput]]"/>'
       + '<div class="bx-slider-scale" aria-hidden="true"><span>' + txt('ends().min') + '</span><span>' + txt('ends().max') + '</span></div>'
       + iff('$properties.helpText', '<span class="bx-help" :id="[[id + \'-help\']]">' + txt('$properties.helpText') + '</span>') + '</div>' };

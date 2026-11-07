@@ -49,7 +49,17 @@
         "pattern": { "type": "string", "description": "The design-system pattern it follows" },
         "source": { "type": "string", "description": "own, or where a ported or inspired variant comes from (a URL)" },
         "licence": { "type": "string", "description": "own, or the source's licence (MIT, Apache-2.0); never a licence that forbids ports" },
-        "built": { "type": "array", "items": { "$ref": "#/$defs/pack" }, "uniqueItems": true, "description": "The packs it is built in" }
+        "built": { "type": "array", "items": { "$ref": "#/$defs/pack" }, "uniqueItems": true, "description": "The packs it is built in" },
+        "motion": {
+          "type": "object",
+          "required": ["enter", "hover", "press", "change", "reduced"],
+          "description": "The variant's own motion in words: on enter, hover, press and a value change (null where it adds none), and what shows under reduced motion",
+          "properties": {
+            "enter": { "type": ["string", "null"] }, "hover": { "type": ["string", "null"] }, "press": { "type": ["string", "null"] },
+            "change": { "type": ["string", "null"] }, "reduced": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
       },
       "additionalProperties": false
     }

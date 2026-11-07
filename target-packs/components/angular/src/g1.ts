@@ -96,7 +96,7 @@ export const SLIDER = `
       <label class="bx-label" [attr.for]="id">{{ name() }}</label>
       <output class="bx-slider-value" [attr.for]="id">{{ shown() }}</output>
     </div>
-    <input type="range" class="bx-range-input" [id]="id" [min]="min()" [max]="top()" [step]="by()" [value]="value()" [disabled]="disabled()"
+    <input type="range" class="bx-range-input" [style.--bx-pct.%]="pct()" [id]="id" [min]="min()" [max]="top()" [step]="by()" [value]="value()" [disabled]="disabled()"
            [attr.aria-valuetext]="shown()" [attr.aria-describedby]="helpText() ? id + '-help' : null" (input)="value.set(+$any($event.target).value)" />
     <div class="bx-slider-scale" aria-hidden="true"><span>{{ ends().min }}</span><span>{{ ends().max }}</span></div>
     @if (helpText()) { <span class="bx-help" [id]="id + '-help'">{{ helpText() }}</span> }
@@ -122,6 +122,8 @@ export abstract class SliderBase extends Part {
   private readonly p = computed(() => (this.prefix() ? `${this.prefix()} ` : ''));
   protected readonly shown = computed(() => this.p() + Number(this.value() || 0).toLocaleString(undefined, { maximumFractionDigits: this.decimals() }));
   protected readonly ends = computed(() => ({ min: this.p() + this.min().toLocaleString(), max: this.p() + this.top().toLocaleString() }));
+  /** The filled share, for a variant that draws its own track (--bx-pct). */
+  protected readonly pct = computed(() => (this.top() > this.min() ? Math.min(100, Math.max(0, ((Number(this.value()) || 0) - this.min()) / (this.top() - this.min()) * 100)) : 0));
 }
 
 /** An amount or a count on a range, the value shown beside the label. */

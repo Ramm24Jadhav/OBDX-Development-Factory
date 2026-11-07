@@ -20,3 +20,30 @@
 .bx-choice-text { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; }
 .bx-choice-meta { font-size: 12.5px; color: var(--bx-muted); }
 .bx-fx-jelly .bx-choice.is-on .bx-choice-mark { animation: bx-jelly 560ms var(--bx-ease-standard); }
+/* ---------- Variants (variants.json, wave V1): the element carries bx-k-choice bx-v-<id> ---------- */
+/* Material: plain rows; a ring whose dot grows when chosen (React: @mui/material Radio) */
+.bx-k-choice.bx-v-material .bx-choice { border-color: transparent; background: transparent; box-shadow: none; padding: 0 4px; }
+.bx-k-choice.bx-v-material .bx-choice:hover { background: color-mix(in srgb, var(--bx-brand) 6%, transparent); }
+.bx-k-choice.bx-v-material .bx-choice-mark { width: 20px; height: 20px; border-width: calc(var(--bx-bw) * 2); }
+.bx-k-choice.bx-v-material .bx-choice.is-on .bx-choice-mark { background: var(--bx-surface); box-shadow: inset 0 0 0 4px var(--bx-surface), inset 0 0 0 10px var(--bx-brand); }
+/* Choice cards: each option a tile with its description; the chosen one takes the brand edge and lifts */
+.bx-k-choice.bx-v-cards .bx-choice { align-items: flex-start; min-height: calc(var(--bx-height) + 16px); padding: 12px var(--bx-pad-card); border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-1); }
+.bx-k-choice.bx-v-cards .bx-choice-mark { margin-top: 2px; }
+.bx-k-choice.bx-v-cards .bx-choice.is-on { box-shadow: var(--bx-shadow-2), inset 0 0 0 var(--bx-bw) var(--bx-brand); }
+/* Toggle chips: one chip fills */
+.bx-k-choice.bx-v-chips .bx-choices { flex-direction: row; flex-wrap: wrap; }
+.bx-k-choice.bx-v-chips .bx-choice { min-height: 36px; border-radius: var(--bx-radius-pill); box-shadow: none; }
+.bx-k-choice.bx-v-chips .bx-choice-mark { display: none; }
+.bx-k-choice.bx-v-chips .bx-choice.is-on { background: color-mix(in srgb, var(--bx-brand) 14%, var(--bx-fill)); }
+.bx-k-choice.bx-v-chips .bx-choice.is-on .bx-choice-label { color: var(--bx-brand-text); font-weight: var(--bx-weight); }
+.bx-k-choice.bx-v-chips .bx-choice:has(.bx-choice-input:focus-visible) { box-shadow: var(--bx-focus); }
+/* List rows: full-width rows split by rules, a check beside the chosen one */
+.bx-k-choice.bx-v-rows .bx-choices { gap: 0; }
+.bx-k-choice.bx-v-rows .bx-choice { flex-direction: row-reverse; justify-content: space-between; border-width: 0 0 var(--bx-bw); border-color: var(--bx-rule); border-radius: 0; background: transparent; box-shadow: none; }
+.bx-k-choice.bx-v-rows .bx-choice-mark { border-color: transparent; background: transparent; }
+.bx-k-choice.bx-v-rows .bx-choice.is-on { background: transparent; }
+.bx-k-choice.bx-v-rows .bx-choice.is-on .bx-choice-mark { border-color: transparent; box-shadow: none; background: var(--bx-brand);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5 5 9l5-6' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / 14px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5 5 9l5-6' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / 14px no-repeat; }
+.bx-k-choice.bx-v-rows .bx-choice.is-on .bx-choice-label { font-weight: var(--bx-weight); }
+.bx-k-choice[class*="bx-v-"] .bx-choice:has(.bx-choice-input:focus-visible) { box-shadow: var(--bx-focus); }

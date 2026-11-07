@@ -1,7 +1,7 @@
 /*
- * Variants (variants/*.json): every component in the variant table takes a variant property. An empty variant keeps the
- * pack's own look; the others wrap the component in a display: contents element with the class bx-<kind>--<variant>,
- * the same class the JET and Angular packs put on their host elements, so one skin serves all three. In this pack the
+ * Variants (variants.json): every component in the variant table takes a variant property. An empty variant keeps the
+ * pack's own look; the others wrap the component in a display: contents element with the classes bx-k-<kind>
+ * bx-v-<variant>, the classes the JET and Angular packs put on their host elements, so one skin serves all three. In this pack the
  * material variant of a foundation component renders @mui/material (material.tsx).
  */
 import { ComponentType, createElement } from 'react';
@@ -11,10 +11,10 @@ import { VARIANTS } from './variants-table';
 
 export { VARIANTS };
 
-/** The variant class for a component, or '' when it does not take that variant. */
+/** The variant classes for a component (bx-k-<kind> bx-v-<variant>), or '' when it does not take that variant. */
 export function variantClass(name: string, variant?: string): string {
   const entry = VARIANTS[name];
-  return entry && variant && entry[1].includes(variant) ? `bx-${entry[0]}--${variant}` : '';
+  return entry && variant && entry[1].includes(variant) ? `bx-k-${entry[0]} bx-v-${variant}` : '';
 }
 
 /** The component with a variant property (see above). */

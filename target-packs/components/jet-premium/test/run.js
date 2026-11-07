@@ -1048,20 +1048,22 @@ test('the skin has the motion tokens, the effects and a reduced-motion rule for 
   eq(toFrames, [], 'keyframes that end away from the element style');
 });
 
-/* ---------- variants (variants/*.json): every element takes each of its variants as bx-<kind>--<variant> ---------- */
-const WAVE1 = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'variants', 'v1.json'), 'utf8'));
-test('the variant tables match variants/*.json', () => {
+/* ---------- variants (variants.json): every V1 element takes each of its variants as bx-k-<kind> bx-v-<variant> ---------- */
+const WAVE1 = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'variants.json'), 'utf8'));
+const NAMES = {};
+JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'catalogue.json'), 'utf8')).categories.forEach((g) => (g.components || []).forEach((x) => { NAMES[x.id] = x.names; }));
+test('the variant tables match variants.json', () => {
   const r = require('child_process').spawnSync(process.execPath, [path.join(__dirname, '..', '..', 'tools', 'gen-variants.js'), '--check'], { encoding: 'utf8' });
   eq(r.status, 0, 'gen-variants --check (' + r.stderr.trim() + ')');
 });
-Object.keys(WAVE1.components).forEach((id) => {
+Object.keys(WAVE1.components).filter((id) => WAVE1.components[id].wave === 'V1').forEach((id) => {
   const c = WAVE1.components[id];
-  const name = c.packs['jet-premium'].name;
-  c.variants.forEach((v) => test(name + ' variant ' + v, () => {
+  const name = NAMES[id]['jet-premium'];
+  c.variants.filter((v) => v.id !== 'default').map((v) => v.id).forEach((v) => test(name + ' variant ' + v, () => {
     const d = registry[name];
     eq(d.metadata.properties.variant.enumValues.indexOf(v) > 0, true, 'listed in the metadata');
     const t = create(name, { variant: v });
-    eq([...t.element.classes], ['bx-' + c.kind + '--' + v], 'classes');
+    eq([...t.element.classes], ['bx-k-' + c.kind, 'bx-v-' + v], 'classes');
     t.vm.propertyChanged({ property: 'variant', value: '' });
     eq([...t.element.classes], [], 'classes with no variant');
   }));
