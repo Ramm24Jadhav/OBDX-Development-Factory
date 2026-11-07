@@ -9,6 +9,12 @@ on:
   push:
   workflow_dispatch:
 
+# A newer push on a side branch replaces its older run (the gates take about two hours); every integration push runs
+# to the end, since each one publishes the release
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/claude/ollama-models-setup-test-05b4a5' }}
+
 permissions:
   contents: write
 
