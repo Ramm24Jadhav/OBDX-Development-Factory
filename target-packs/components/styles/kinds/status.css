@@ -1,0 +1,6 @@
+.bx-success-check { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.bx-check-svg { width: 72px; height: 72px; }
+.bx-check-ring { fill: none; stroke: var(--bx-success); stroke-width: 3; stroke-dasharray: 151; stroke-dashoffset: 0; animation: bx-draw 520ms var(--bx-ease-standard) both; }
+.bx-check-tick { fill: none; stroke: var(--bx-success); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 36; stroke-dashoffset: 0; animation: bx-draw-tick 360ms 420ms var(--bx-ease-standard) both; }
+@keyframes bx-draw { from { stroke-dashoffset: 151; } }
+@keyframes bx-draw-tick { from { stroke-dashoffset: 36; } }

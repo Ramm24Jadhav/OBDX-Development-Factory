@@ -1,0 +1,6 @@
+.bx-challenge { align-items: center; text-align: center; }
+.bx-challenge-icon { width: 64px; height: 64px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: color-mix(in srgb, var(--bx-brand) 12%, var(--bx-surface));
+  color: var(--bx-brand-text); font-size: 30px; }
+.bx-challenge-icon.is-waiting { animation: bx-breathe 1.6s var(--bx-ease-standard) infinite; }
+.bx-challenge .bx-kv-actions { justify-content: center; }
+@keyframes bx-breathe { 50% { transform: scale(1.08); box-shadow: 0 0 0 10px color-mix(in srgb, var(--bx-brand) 10%, transparent); } }

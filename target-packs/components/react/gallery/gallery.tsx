@@ -120,6 +120,7 @@ function Gallery() {
         <div className="gate-row">
           <Card heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</Card>
           <Card heading="Current •••• 0187" subheading="Open the account" onAction={() => undefined} selected={false}>₹12,410.50</Card>
+          <div data-variant="outlined"><Card variant="outlined" heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</Card></div>
         </div>
       </Section>
       <Section id="tabs" title="Tabs">

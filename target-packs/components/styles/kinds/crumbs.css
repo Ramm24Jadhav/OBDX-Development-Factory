@@ -1,0 +1,7 @@
+.bx-crumb:focus-visible { outline: none; box-shadow: var(--bx-focus); }
+.bx-crumbs ol { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: 13.5px; }
+.bx-crumbs li { display: inline-flex; align-items: center; gap: 6px; }
+.bx-crumb { min-height: 24px; padding: 0 2px; border: 0; border-radius: 4px; background: none; color: var(--bx-brand-text); font: inherit; cursor: pointer; }
+.bx-crumb:hover { text-decoration: underline; }
+.bx-crumb.is-here { color: var(--bx-text); font-weight: 600; cursor: default; }
+.bx-crumb-sep { color: var(--bx-muted); }

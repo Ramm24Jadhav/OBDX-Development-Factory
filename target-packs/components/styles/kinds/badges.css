@@ -1,0 +1,14 @@
+.bx-badge { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 10px; border-radius: var(--bx-radius-pill); font-size: 12.5px; font-weight: 600;
+  background: var(--bx-surface-3); color: var(--bx-text-body); animation: bx-pop var(--bx-dur-slow) var(--bx-ease-spring); }
+.bx-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.bx-badge.is-info { background: var(--bx-info-soft); color: var(--bx-info-text); }
+.bx-badge.is-success { background: var(--bx-success-soft); color: var(--bx-success-text); }
+.bx-badge.is-warning { background: var(--bx-warning-soft); color: var(--bx-warning-text); }
+.bx-badge.is-danger { background: var(--bx-danger-soft); color: var(--bx-danger-text); }
+.bx-status-mark { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+.bx-status-mark-icon { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; color: #fff; font-size: 12px; font-weight: 800;
+  background: var(--bx-success); animation: bx-pop var(--bx-dur-slow) var(--bx-ease-spring); }
+.bx-status-mark.is-success .bx-status-mark-icon::after { content: ""; width: 9px; height: 5px; margin-top: -2px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg); }
+.bx-status-mark.is-error .bx-status-mark-icon { background: var(--bx-danger); }
+.bx-status-mark.is-info .bx-status-mark-icon { background: var(--bx-info); }
+.bx-status-mark.is-pending .bx-status-mark-icon { background: transparent; border: 2.5px solid color-mix(in srgb, var(--bx-warning) 30%, transparent); border-top-color: var(--bx-warning); animation: bx-spin 0.9s linear infinite; }

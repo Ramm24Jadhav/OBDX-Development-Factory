@@ -56,6 +56,7 @@
     <section class="gate" data-component="card" aria-labelledby="cd-h"><h2 id="cd-h">Card</h2><div class="gate-body"><div class="gate-row">
       <bx-card heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</bx-card>
       <bx-card heading="Current •••• 0187" subheading="Open the account" interactive="true">₹12,410.50</bx-card>
+      <div data-variant="outlined"><bx-card variant="outlined" heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</bx-card></div>
     </div></div></section>
     <section class="gate" data-component="tabs" aria-labelledby="tb-h"><h2 id="tb-h">Tabs</h2><div class="gate-body">
       <bx-tabs label="Accounts" options="[[tabs]]" selection="{{tab}}"></bx-tabs>
@@ -810,6 +811,17 @@
     // ?look= picks one of the pack's designs (the Liquid glass gates use it); elevated by default
     var look = /^[a-z]+$/.test(params.get('look') || '') ? params.get('look') : 'elevated';
     document.getElementById('gallery').className = 'gallery bx-theme bx-look-' + look + (mode === 'dark' ? ' bx-dark' : '');
+    // ?only=<component id>[&variant=<id>]: that component alone, its first instance or the one marked data-variant (variants.json), as the other packs' galleries
+    var only = params.get('only'), variant = params.get('variant');
+    if (only && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(only)) {
+      var sel = '[data-component="' + only + '"]';
+      var v = variant && variant !== 'default' && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(variant) ? '[data-variant="' + variant + '"]' : '';
+      var only_css = document.createElement('style');
+      only_css.textContent = '.gallery>h1,[data-component]:not(' + sel + '){display:none!important}'
+        + (v ? sel + ' .gate-body *:not(' + v + '):not(:has(' + v + ')):not(' + v + ' *){display:none!important}'
+          : sel + ' .gate-body>:not(:first-child),' + sel + ' .gate-body>.gate-row>:not(:first-child){display:none!important}');
+      document.head.appendChild(only_css);
+    }
     var lib = jet + '/node_modules/';
     var script = document.createElement('script');
     script.src = lib + 'requirejs/require.js';
