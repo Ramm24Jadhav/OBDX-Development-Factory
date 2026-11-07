@@ -37,7 +37,7 @@ export const G7 = ["rolling-digits","count-up","split-flap-board","reveal-digits
 export const VIEWPORTS = { phone: { width: 375, height: 812 }, tablet: { width: 768, height: 1024 }, laptop: { width: 1280, height: 800 } } as const;
 export const THEMES = ['light', 'dark'] as const;
 /** Drawn only in the brand colours (white on the brand gradient), so the same in both themes by design. */
-const BRAND_ONLY: readonly string[] = ['card-tile', 'gradient-text', 'magnetic-button'];
+const BRAND_ONLY: readonly string[] = ['balance-card', 'card-tile', 'gradient-text', 'magnetic-button'];
 
 /** Opens a pack's gallery in a theme and waits until every section is drawn. */
 export async function openGallery(page: Page, url: string, theme: string, query = '') {
