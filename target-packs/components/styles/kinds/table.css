@@ -1,0 +1,25 @@
+.bx-grid-wrap { overflow-x: auto; border: 1px solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-surface); box-shadow: var(--bx-shadow-1); }
+.bx-grid { width: 100%; border-collapse: collapse; font-size: 14px; color: var(--bx-text); }
+.bx-grid caption { text-align: left; padding: 12px 14px 4px; font-weight: 600; }
+.bx-th { position: sticky; top: 0; text-align: left; padding: 10px 14px; background: var(--bx-surface-2); color: var(--bx-muted); font-size: 11.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.04em; border-bottom: 1px solid var(--bx-border); white-space: nowrap; }
+.bx-th.is-end, .bx-td.is-end { text-align: right; font-variant-numeric: tabular-nums; }
+.bx-sort { border: 0; background: none; padding: 0; font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; min-height: 24px; }
+.bx-sort:focus-visible { outline: none; box-shadow: var(--bx-focus); border-radius: 4px; }
+.bx-th.is-sorted { color: var(--bx-brand-text); }
+.bx-td { padding: 12px 14px; border-bottom: 1px solid var(--bx-border); }
+.bx-tr:last-child .bx-td { border-bottom: 0; }
+.bx-tr:hover .bx-td { background: var(--bx-surface-2); }
+.bx-tr.is-selected .bx-td { background: color-mix(in srgb, var(--bx-brand) 8%, var(--bx-surface)); }
+.bx-th-check, .bx-td-check { width: 44px; }
+.bx-grid-empty { padding: 28px; text-align: center; color: var(--bx-muted); font-size: 14px; }
+@supports (animation-timeline: view()) {
+  .bx-motion-scroll-fadeup .bx-grid-wrap { animation: bx-in-up linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+  .bx-motion-scroll-scale .bx-grid-wrap { animation: bx-in-scale linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+  .bx-motion-scroll-slide .bx-grid-wrap { animation: bx-in-slide linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+  .bx-motion-scroll-blur .bx-grid-wrap { animation: bx-in-blur linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+}
+.bx-tr .bx-td { animation: bx-settle var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-tr.is-due .bx-td { font-weight: 650; }
+.bx-tr.is-overdue .bx-td { color: var(--bx-danger-text); font-weight: 650; }
+.bx-tr.is-paid .bx-td { color: var(--bx-muted); }

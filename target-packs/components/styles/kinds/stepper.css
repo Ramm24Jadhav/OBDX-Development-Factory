@@ -1,0 +1,10 @@
+.bx-steps { display: flex; gap: 8px; margin: 0; padding: 0; list-style: none; counter-reset: none; }
+.bx-step-item { position: relative; flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; font-size: 13px; color: var(--bx-muted); }
+.bx-step-item + .bx-step-item::before { content: ""; position: absolute; top: 14px; right: calc(50% + 18px); width: calc(100% - 36px); height: 2px; background: var(--bx-border-strong); }
+.bx-step-item.is-done + .bx-step-item::before, .bx-step-item.is-done + .bx-step-item.is-current::before { background: var(--bx-brand); }
+.bx-step-mark { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 2px solid var(--bx-border-strong); background: var(--bx-surface);
+  font-weight: 700; font-size: 13px; color: var(--bx-muted); transition: all var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-step-item.is-done .bx-step-mark { border-color: var(--bx-brand); background: var(--bx-brand); color: var(--bx-on-brand); }
+.bx-step-item.is-current .bx-step-mark { border-color: var(--bx-brand); color: var(--bx-brand-text); box-shadow: var(--bx-focus); animation: bx-pop var(--bx-dur-slow) var(--bx-ease-spring); }
+.bx-step-item.is-current, .bx-step-item.is-done { color: var(--bx-text); font-weight: 600; }
+.bx-step-item.is-failed .bx-step-mark { border-color: var(--bx-danger); background: var(--bx-danger); color: #fff; }

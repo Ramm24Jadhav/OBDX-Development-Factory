@@ -1,0 +1,10 @@
+.bx-carousel { display: flex; flex-direction: column; gap: 10px; }
+.bx-slides { display: grid; }
+.bx-slide { grid-area: 1 / 1; padding: 18px; border-radius: var(--bx-radius-lg); background: var(--bx-surface); border: 1px solid var(--bx-border); box-shadow: var(--bx-shadow-1);
+  animation: bx-in-slide var(--bx-dur-slow) var(--bx-ease-standard); }
+.bx-slide[hidden] { display: none; }
+.bx-dots { display: inline-flex; gap: 6px; }
+.bx-dot { width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; position: relative; }
+.bx-dot::after { content: ""; position: absolute; left: 8px; top: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--bx-border-strong); transition: all var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-dot.is-on::after { left: 5px; width: 14px; border-radius: 4px; background: var(--bx-brand); }
+.bx-dot:focus-visible { outline: none; box-shadow: var(--bx-focus); }

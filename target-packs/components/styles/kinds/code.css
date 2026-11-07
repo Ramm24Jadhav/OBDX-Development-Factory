@@ -1,0 +1,10 @@
+.bx-code { gap: 10px; }
+.bx-slots { position: relative; display: flex; gap: 8px; }
+.bx-code-input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; padding: 0; border: 0; background: transparent; color: transparent; caret-color: transparent; font-size: 16px; outline: none; }
+.bx-slot { display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 54px; border: 1.5px solid var(--bx-border-strong); border-radius: var(--bx-radius); background: var(--bx-surface);
+  font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; transition: border-color var(--bx-dur-fast) var(--bx-ease-standard), box-shadow var(--bx-dur-fast) var(--bx-ease-standard); }
+.bx-slot.is-filled { border-color: var(--bx-brand); animation: bx-pop var(--bx-dur-base) var(--bx-ease-spring); }
+.bx-slot.is-next { border-color: var(--bx-brand); box-shadow: var(--bx-focus); }
+.bx-code-action { align-self: flex-start; padding: 0; }
+.bx-fx-otp .bx-slot { border-radius: 14px; }
+.bx-fx-otp .bx-slot.is-filled { background: color-mix(in srgb, var(--bx-brand) 8%, var(--bx-surface)); }

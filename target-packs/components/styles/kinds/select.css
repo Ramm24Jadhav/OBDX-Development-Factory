@@ -1,0 +1,6 @@
+.bx-wheel { position: relative; height: 168px; margin: 0; padding: 56px 0; overflow-y: auto; scroll-snap-type: y mandatory; list-style: none; border-radius: var(--bx-radius-lg);
+  background: var(--bx-surface-2); border: 1px solid var(--bx-border); -webkit-mask-image: linear-gradient(transparent, #000 35%, #000 65%, transparent); mask-image: linear-gradient(transparent, #000 35%, #000 65%, transparent); }
+.bx-wheel:focus-visible { outline: none; box-shadow: var(--bx-focus); }
+.bx-wheel-option { height: 56px; display: flex; align-items: center; justify-content: center; scroll-snap-align: center; color: var(--bx-muted); font-size: 16px; cursor: pointer;
+  transition: transform var(--bx-dur-base) var(--bx-ease-standard), color var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-wheel-option.is-on { color: var(--bx-text); font-size: 18px; font-weight: 750; transform: scale(1.08); }
