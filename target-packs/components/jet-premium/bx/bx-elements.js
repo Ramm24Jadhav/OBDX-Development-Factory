@@ -4,7 +4,7 @@
  * on-oj-action, chroming, disabled; dialog-title, cancel-behavior, open(), close(), on-oj-open and on-oj-close; messages;
  * selection and on-selection-changed; data, columns and selection-mode.
  */
-define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
+define(['ojs/ojcomposite', './bx-core', './bx-variants'], function (Composite, bx, variants) {
   'use strict';
   var ko = bx.ko;
 
@@ -131,7 +131,7 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
       self.closed.push(key);
       bx.fire(self.element, 'ojClose', { message: message });
     };
-    self.regionCss = ko.pureComputed(function () { return 'bx-toasts is-' + (self.props.display === 'notification' ? 'notification' : 'general') + ' at-' + (self.props.position && self.props.position.my ? 'custom' : 'top'); });
+    self.regionCss = ko.pureComputed(function () { return 'bx-toasts is-' + (self.props.display === 'notification' ? 'notification' : 'general') + ' at-' + (self.props.position && self.props.position.my ? 'custom' : 'top') + ' ' + variants.vx('toast', self.props.variant); });
   }
   Composite.register('bx-toast', {
     view: '<div :class="[[regionCss]]"><oj-bind-for-each data="[[items]]" as="t"><template><div :class="[[t.data.css]]" :role="[[t.data.role]]">'
@@ -140,7 +140,7 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
       + '<oj-bind-if test="[[t.data.canClose]]"><button type="button" class="bx-btn bx-btn--borderless bx-btn--icon bx-btn--sm" aria-label="Close the message" on-click="[[t.data.close]]"><span aria-hidden="true">×</span></button></oj-bind-if>'
       + '</div></template></oj-bind-for-each></div>',
     viewModel: ToastModel,
-    metadata: { properties: { messages: { type: 'Array<Object>', value: [] }, display: { type: 'string', value: 'general' }, position: { type: 'object', value: {} } },
+    metadata: { properties: { messages: { type: 'Array<Object>', value: [] }, display: { type: 'string', value: 'general' }, position: { type: 'object', value: {} }, variant: { type: 'string', value: 'standard' } },
       events: { ojClose: { bubbles: true } } }
   });
 

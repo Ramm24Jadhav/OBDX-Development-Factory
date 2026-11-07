@@ -30,10 +30,17 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2', './bx-g3'], functi
         return { label: o.label, value: o.display !== undefined ? String(o.display) : figure(v, self.props.unit), css: 'bx-bar-fill bx-' + dir + '-' + step(v, top) + (o.tone ? ' is-' + o.tone : '') };
       });
     });
-    self.css = ko.pureComputed(function () { return 'bx-chart is-' + (self.props.orientation === 'columns' ? 'columns' : 'bars'); });
+    self.css = ko.pureComputed(function () { return 'bx-chart is-' + (self.props.orientation === 'columns' ? 'columns' : 'bars') + ' ' + k.variants.vx('chart', self.props.variant); });
+    /** The meter chart's one bar: each figure's share of the total. */
+    self.segs = ko.pureComputed(function () {
+      var l = list(self.props.items);
+      var total = l.reduce(function (s, o) { return s + Math.max(0, Number(o.value) || 0); }, 0);
+      return l.map(function (o, i) { return { css: 'bx-meter-seg bx-w-' + step(Math.max(0, Number(o.value) || 0), total) + ' bx-seg-' + (i % 6) }; });
+    });
   }
-  kinds.chart = { model: ChartKind, props: { heading: str(), items: arr(), max: { type: 'number', value: 0 }, unit: str(), orientation: str('bars'), note: str() },
+  kinds.chart = { model: ChartKind, props: { heading: str(), items: arr(), max: { type: 'number', value: 0 }, unit: str(), orientation: str('bars'), note: str(), variant: str('standard') },
     view: '<figure :class="[[css]]" :aria-labelledby="[[id]]"><figcaption class="bx-panel-title" :id="[[id]]">' + txt('$properties.heading') + '</figcaption>'
+      + iff('$properties.variant === \'meter\'', '<span class="bx-meter-bar" aria-hidden="true">' + each('segs', 's', '<span :class="[[s.data.css]]"></span>') + '</span>')
       + '<ul class="bx-bars">' + each('bars', 'b', '<li class="bx-bar"><span class="bx-bar-label">' + txt('b.data.label') + '</span><span class="bx-bar-track" aria-hidden="true"><span :class="[[b.data.css]]"></span></span>'
         + '<span class="bx-bar-value">' + txt('b.data.value') + '</span></li>') + '</ul>' + iff('$properties.note', '<p class="bx-help">' + txt('$properties.note') + '</p>') + '</figure>' };
 
@@ -48,16 +55,29 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2', './bx-g3'], functi
         var over = max > 0 && v > max;
         var unit = self.props.unit;
         var text = figure(v, unit) + ' of ' + figure(max, unit) + (over ? ', over by ' + figure(Math.round((v - max) * 100) / 100, unit) : '');
+        var state = over ? ' is-over' : step(v, max) >= self.props.warnAt ? ' is-near' : '';
+        var pct = max > 0 ? Math.round(Math.min(1, Math.max(0, v / max)) * 100) : 0;
+        var segs = [];
+        for (var s = 0; s < 10; s++) { segs.push({ css: s < Math.round(step(v, max) / 10) ? 'is-on' : '' }); }
         return { label: o.label, text: text, now: String(Math.min(v, max)), max: String(max), key: self.id + '-' + o.i, over: over,
-          css: 'bx-meter-fill bx-w-' + step(v, max) + (over ? ' is-over' : step(v, max) >= self.props.warnAt ? ' is-near' : '') };
+          css: 'bx-meter-fill bx-w-' + step(v, max) + state, ring: 'bx-meter-ring' + state, segsCss: 'bx-meter-segs' + state, segs: segs, pct: pct + '%', offset: k.variants.ringOffset(pct / 100, 18) };
       });
     });
+    self.vclass = k.variants.vclass(self, 'progress');
+    /** Which mark each meter draws. */
+    self.mark = ko.pureComputed(function () { var v = self.props.variant; return v === 'linear' || v === 'ring' || v === 'segmented' ? v : 'standard'; });
   }
-  kinds.meters = { model: MetersKind, props: { heading: str(), items: arr(), unit: str(), warnAt: { type: 'number', value: 90 } },
-    view: '<section class="bx-panel bx-meters" :aria-label="[[$properties.heading || null]]">' + iff('$properties.heading', '<h3 class="bx-panel-title">' + txt('$properties.heading') + '</h3>')
+  kinds.meters = { model: MetersKind, props: { heading: str(), items: arr(), unit: str(), warnAt: { type: 'number', value: 90 }, variant: str('standard') },
+    view: '<section :class="[[\'bx-panel bx-meters \' + vclass()]]" :aria-label="[[$properties.heading || null]]">' + iff('$properties.heading', '<h3 class="bx-panel-title">' + txt('$properties.heading') + '</h3>')
       + each('rows', 'm', '<div class="bx-meter"><div class="bx-meter-head"><span :id="[[m.data.key]]">' + txt('m.data.label') + '</span><span :class="[[m.data.over ? \'bx-meter-text is-over\' : \'bx-meter-text\']]">'
         + txt('m.data.text') + '</span></div><div class="bx-meter-track" role="progressbar" aria-valuemin="0" :aria-valuemax="[[m.data.max]]" :aria-valuenow="[[m.data.now]]"'
-        + ' :aria-valuetext="[[m.data.text]]" :aria-labelledby="[[m.data.key]]"><span :class="[[m.data.css]]"></span></div></div>') + '</section>' };
+        + ' :aria-valuetext="[[m.data.text]]" :aria-labelledby="[[m.data.key]]">'
+        + iff('mark() === \'standard\' || mark() === \'linear\'', '<span :class="[[m.data.css]]"></span>')
+        + iff('mark() === \'linear\'', '<span class="bx-meter-stop" aria-hidden="true"></span>')
+        + iff('mark() === \'ring\'', '<span :class="[[m.data.ring]]" aria-hidden="true"><svg viewBox="0 0 44 44" focusable="false"><circle class="bx-ring-track" cx="22" cy="22" r="18"></circle>'
+          + '<circle class="bx-ring-fill" cx="22" cy="22" r="18" stroke-dasharray="113.1" :stroke-dashoffset="[[m.data.offset]]"></circle></svg><span class="bx-meter-pct">' + txt('m.data.pct') + '</span></span>')
+        + iff('mark() === \'segmented\'', '<span :class="[[m.data.segsCss]]" aria-hidden="true">' + each('m.data.segs', 'sg', '<span :class="[[sg.data.css]]"></span>') + '</span>')
+        + '</div></div>') + '</section>' };
 
   /* ---------- group 4 ---------- */
   var g = g1.kinds, h = g2.kinds, c = g3.kinds;

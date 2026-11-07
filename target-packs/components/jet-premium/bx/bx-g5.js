@@ -184,16 +184,19 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2', './bx-g3'], functi
     self.stars = ko.pureComputed(function () {
       var v = self.props.value || 0;
       return [1, 2, 3, 4, 5].map(function (i) {
-        return { key: self.id + '-' + i, label: i + (i === 1 ? ' star, ' : ' stars, ') + WORDS[i], on: i === v, css: 'bx-star' + (i <= v ? ' is-on' : ''),
+        var look = self.props.variant;
+        return { key: self.id + '-' + i, label: i + (i === 1 ? ' star, ' : ' stars, ') + WORDS[i], on: i === v, css: 'bx-star' + (i <= v ? ' is-on' : '') + (i === v ? ' is-chosen' : ''),
+          glyph: look === 'emoji' ? k.variants.FACES[i - 1] : look === 'numbers' ? String(i) : '★',
           pick: function () { self.props.value = i; return true; } };
       });
     });
     self.word = ko.pureComputed(function () { return WORDS[self.props.value || 0] || ''; });
+    self.vclass = k.variants.vclass(self, 'rating');
   }
-  kinds.rating = { model: RatingKind, props: { labelHint: str(), value: { type: 'number', value: 0, writeback: true } },
-    view: '<fieldset class="bx-field bx-rating"><legend class="bx-label">' + txt('$properties.labelHint') + '</legend><div class="bx-stars">'
+  kinds.rating = { model: RatingKind, props: { labelHint: str(), value: { type: 'number', value: 0, writeback: true }, variant: str('standard') },
+    view: '<fieldset :class="[[\'bx-field bx-rating \' + vclass()]]"><legend class="bx-label">' + txt('$properties.labelHint') + '</legend><div class="bx-stars">'
       + each('stars', 's', '<label :class="[[s.data.css]]"><input type="radio" class="bx-visually-hidden" :name="[[id]]" :id="[[s.data.key]]" :checked="[[s.data.on]]" on-change="[[s.data.pick]]"/>'
-        + '<span aria-hidden="true">★</span><span class="bx-visually-hidden">' + txt('s.data.label') + '</span></label>') + iff('word()', '<span class="bx-rating-word" aria-hidden="true">' + txt('word') + '</span>')
+        + '<span aria-hidden="true">' + txt('s.data.glyph') + '</span><span class="bx-visually-hidden">' + txt('s.data.label') + '</span></label>') + iff('word()', '<span class="bx-rating-word" aria-hidden="true">' + txt('word') + '</span>')
       + '</div></fieldset>' };
 
   /* ---------- group 5 ---------- */
