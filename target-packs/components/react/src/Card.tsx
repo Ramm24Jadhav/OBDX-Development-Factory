@@ -8,17 +8,19 @@ export interface CardProps {
   /** Makes the whole card a button (an account to open, a beneficiary to pick). Do not put other buttons in it then. */
   onAction?: () => void;
   selected?: boolean;
+  /** A style variant from variants.json; the default look when left out. */
+  variant?: 'outlined';
   testID?: string;
 }
 
 /** A card: a heading, the content and actions. */
-export function Card({ heading, subheading, children, actions, onAction, selected, testID }: CardProps) {
+export function Card({ heading, subheading, children, actions, onAction, selected, variant, testID }: CardProps) {
   const interactive = !!onAction;
   const key = (e: KeyboardEvent<HTMLDivElement>) => {
     if (interactive && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onAction?.(); }
   };
   return (
-    <div className={'bx-card' + (interactive ? ' is-interactive' : '') + (selected ? ' is-selected' : '')} data-testid={testID}
+    <div className={'bx-card' + (variant ? ' bx-v-' + variant : '') + (interactive ? ' is-interactive' : '') + (selected ? ' is-selected' : '')} data-testid={testID}
          role={interactive ? 'button' : undefined} tabIndex={interactive ? 0 : undefined} aria-pressed={interactive && selected !== undefined ? selected : undefined}
          onClick={onAction} onKeyDown={key}>
       {heading ? (

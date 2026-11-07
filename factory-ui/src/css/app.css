@@ -8883,6 +8883,9 @@ p.factory-rqd-none { margin: 0; font-size: var(--fx-text-sm); }
 .factory-cf-dot::after { content: ""; position: absolute; left: 0; top: 8px; width: 8px; height: 8px; border-radius: var(--fx-radius-pill); background: var(--fx-border-strong); transition: width var(--fx-dur-hover) var(--fx-ease-out); }
 .factory-cf-dot.is-on { width: 20px; }
 .factory-cf-dot.is-on::after { width: 20px; background: var(--fx-primary); }
+/* a variant the pack has not built yet: a hollow dot */
+.factory-cf-dot.is-planned::after { background: transparent; box-shadow: inset 0 0 0 1.5px var(--fx-border-strong); }
+.factory-cf-dot.is-planned.is-on::after { box-shadow: inset 0 0 0 1.5px var(--fx-primary); }
 .factory-cf-look { font-size: var(--fx-text-caption); color: var(--fx-text-body); min-width: 120px; }
 .factory-cf-card-actions { margin-left: auto; display: inline-flex; gap: var(--fx-space-2); }
 .factory-cf-motion { display: flex; flex-direction: column; gap: var(--fx-space-2); padding: var(--fx-space-3); border-radius: var(--fx-radius); background: var(--fx-surface-2); }

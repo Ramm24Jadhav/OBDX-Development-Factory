@@ -1,0 +1,17 @@
+.bx-acc-button:focus-visible { outline: none; box-shadow: var(--bx-focus); }
+.bx-accordion { display: flex; flex-direction: column; border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-1); overflow: hidden; }
+.bx-acc-item + .bx-acc-item { border-top: var(--bx-bw) solid var(--bx-rule); }
+.bx-acc-head { margin: 0; font-size: 15px; }
+.bx-acc-button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 52px; padding: 0 18px; border: 0; background: transparent; color: var(--bx-text);
+  font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+.bx-acc-button:hover { background: var(--bx-surface-2); }
+.bx-acc-icon { width: 8px; height: 8px; flex: none; border-right: 2px solid var(--bx-muted); border-bottom: 2px solid var(--bx-muted); transform: rotate(45deg); transition: transform var(--bx-dur-base) var(--bx-ease-spring); }
+.bx-acc-item.is-open .bx-acc-icon { transform: rotate(-135deg); }
+.bx-acc-panel { padding: 0 18px 16px; color: var(--bx-text-body); font-size: 14.5px; line-height: 1.5; transform-origin: top; animation: bx-drop var(--bx-dur-base) var(--bx-ease-spring); }
+.bx-motion-click-press .bx-acc-button:active { transform: scale(0.97); }
+@supports (animation-timeline: view()) {
+  .bx-motion-scroll-fadeup .bx-accordion { animation: bx-in-up linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+  .bx-motion-scroll-scale .bx-accordion { animation: bx-in-scale linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+  .bx-motion-scroll-slide .bx-accordion { animation: bx-in-slide linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+  .bx-motion-scroll-blur .bx-accordion { animation: bx-in-blur linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+}

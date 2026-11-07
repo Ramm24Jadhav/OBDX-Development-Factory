@@ -1,0 +1,7 @@
+.bx-flap-rows { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.bx-flap-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.bx-flap-label { font-weight: 650; }
+.bx-flap-tiles { display: inline-flex; gap: 2px; }
+.bx-flap-tile { display: inline-flex; align-items: center; justify-content: center; min-width: 1.15em; padding: 4px 2px; border-radius: 4px; background: var(--bx-text); color: var(--bx-surface);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-weight: 700; transform-origin: center; animation: bx-flap 420ms var(--bx-ease-standard) both; }
+@keyframes bx-flap { from { transform: rotateX(90deg); opacity: 0.4; } }

@@ -1,0 +1,5 @@
+.bx-range { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.bx-range .bx-label { font-weight: 500; }
+.bx-range > .bx-field { flex: 1 1 150px; margin: 0; }
+.bx-period { gap: 8px; }
+.bx-period.is-error .bx-control { border-color: var(--bx-danger); }

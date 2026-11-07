@@ -1,0 +1,121 @@
+/*
+ * The premium Oracle JET pack's skin (obdx-jet 0.1.0). Link once. Tokens are --bx-*; set --bx-brand (and --bx-brand-2)
+ * to the bank's colours. Design options and motion are classes on any ancestor (the component style): bx-look-elevated
+ * (the default), bx-look-soft, bx-look-glass, bx-look-outline, bx-look-vivid, bx-look-pill, bx-look-brutal, bx-look-redwood,
+ * bx-look-liquid (Liquid glass);
+ * bx-motion-hover-lift|glow|shine, bx-motion-click-press|ripple|bounce, bx-motion-scroll-fadeup|scale|slide|blur; bx-dark.
+ */
+:root, .bx-theme {
+  --bx-brand: #4f46e5; --bx-brand-2: #7c3aed; --bx-on-brand: #ffffff;
+  --bx-text: #0f172a; --bx-text-body: #334155; --bx-muted: #64748b; --bx-surface: #ffffff; --bx-surface-2: #f8fafc; --bx-surface-3: #f1f5f9;
+  --bx-border: #e2e8f0; --bx-border-strong: #cbd5e1; --bx-danger: #dc2626; --bx-danger-soft: #fef2f2; --bx-success: #059669; --bx-success-soft: #ecfdf5;
+  --bx-danger-text: #b91c1c; --bx-success-text: #047857; --bx-warning-text: #b45309; --bx-info-text: #0369a1;
+  --bx-danger-button: #dc2626; --bx-on-danger: #ffffff; --bx-avatar-text: var(--bx-on-brand); --bx-warning: #d97706; --bx-warning-soft: #fffbeb; --bx-info: #0284c7; --bx-info-soft: #f0f9ff;
+  --bx-radius: 10px; --bx-radius-lg: 14px; --bx-radius-pill: 999px; --bx-height: 44px;
+  --bx-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
+  --bx-shadow-2: 0 4px 14px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --bx-shadow-3: 0 18px 40px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(15, 23, 42, 0.08);
+  --bx-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --bx-dur: 140ms; --bx-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --bx-dur-fast: 120ms; --bx-dur-base: 200ms; --bx-dur-slow: 320ms;
+  --bx-ease-standard: cubic-bezier(0.2, 0, 0, 1); --bx-ease-exit: cubic-bezier(0.4, 0, 1, 1); --bx-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* The shared settings the nine designs drive (designs.css). Every kind reads these and --bx-radius, --bx-radius-lg,
+   --bx-border, --bx-border-strong, --bx-shadow-1..3 and --bx-height instead of fixed values, so a design reaches every
+   component. Set again on a bx-look-* element so a design on a nested element works. Elevated, the default, is these values.
+   radius-control: single-line controls (fields, buttons, choices, tabs); radius-sm: small marks; radius-xl: dialogs, sheets.
+   bw: border width; rule: separators; fill: controls; card: cards, panels, tiles; raised: dialogs, menus, toasts; track:
+   recessed tracks (tabs, bars); blur: the backdrop filter of fill, card and raised; pad: a control's side padding; pad-card:
+   a card's padding; weight: labels and buttons; weight-title: titles; cta-*: the call to action; accent-edge: the rim of a
+   brand-filled surface (balance). */
+:root, .bx-theme, [class*="bx-look-"] {
+  --bx-radius-control: var(--bx-radius); --bx-radius-sm: 6px; --bx-radius-xl: 18px; --bx-bw: 1px; --bx-rule: var(--bx-border);
+  --bx-fill: var(--bx-surface); --bx-card: var(--bx-surface); --bx-raised: var(--bx-surface); --bx-track: var(--bx-surface-3); --bx-blur: none;
+  --bx-pad: 14px; --bx-pad-card: 18px; --bx-weight: 600; --bx-weight-title: 700;
+  --bx-focus: 0 0 0 4px color-mix(in srgb, var(--bx-brand) 22%, transparent);
+  --bx-gradient: linear-gradient(135deg, var(--bx-brand), var(--bx-brand-2)); --bx-brand-text: var(--bx-brand); --bx-avatar-bg: var(--bx-gradient);
+  --bx-cta-bg: var(--bx-gradient); --bx-cta-text: var(--bx-on-brand); --bx-cta-border: transparent;
+  --bx-cta-shadow: 0 6px 16px color-mix(in srgb, var(--bx-brand) 32%, transparent); --bx-accent-edge: transparent;
+}
+.bx-dark, .bx-dark .bx-theme {
+  --bx-danger-text: #f87171; --bx-success-text: #34d399; --bx-warning-text: #fbbf24; --bx-info-text: #38bdf8; --bx-brand-text: color-mix(in srgb, var(--bx-brand) 45%, #ffffff);
+  --bx-danger-button: #f87171; --bx-on-danger: #450a0a; --bx-avatar-bg: color-mix(in srgb, var(--bx-brand) 35%, var(--bx-surface-3)); --bx-avatar-text: #f1f5f9;
+  --bx-text: #f1f5f9; --bx-text-body: #cbd5e1; --bx-muted: #94a3b8; --bx-surface: #111827; --bx-surface-2: #0f172a; --bx-surface-3: #1e293b;
+  --bx-border: #334155; --bx-border-strong: #475569; --bx-danger-soft: rgba(220, 38, 38, 0.14); --bx-success-soft: rgba(5, 150, 105, 0.14);
+  --bx-warning-soft: rgba(217, 119, 6, 0.14); --bx-info-soft: rgba(2, 132, 199, 0.14);
+  --bx-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4); --bx-shadow-2: 0 4px 14px rgba(0, 0, 0, 0.45); --bx-shadow-3: 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+/* the settings above that the dark theme changes, again for a design on an element inside a dark one */
+.bx-dark [class*="bx-look-"] { --bx-brand-text: color-mix(in srgb, var(--bx-brand) 45%, #ffffff); --bx-avatar-bg: color-mix(in srgb, var(--bx-brand) 35%, var(--bx-surface-3)); }
+bx-button, bx-icon-button, bx-text-field, bx-amount, bx-select, bx-checkbox-group, bx-choice-group, bx-date, bx-dialog, bx-toast, bx-card, bx-tabs, bx-data-grid,
+bx-text-area, bx-password, bx-number-input, bx-currency-picker, bx-multi-select, bx-switch, bx-date-range, bx-search, bx-autocomplete, bx-document-upload {
+  display: block; font-family: var(--bx-font); color: var(--bx-text);
+}
+bx-button, bx-icon-button { display: inline-block; }
+.bx-visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.bx-icon { width: 18px; height: 18px; display: inline-block; }
+.bx-icon--more::before { content: "\22EF"; font-size: 18px; line-height: 18px; }
+.bx-icon--close::before { content: "\00D7"; font-size: 18px; line-height: 18px; }
+bx-savings-slider, bx-segmented, bx-filter-chips, bx-accordion, bx-stepper, bx-breadcrumb, bx-side-nav, bx-sheet, bx-grid, bx-divider, bx-pagination, bx-timeline, bx-skeleton,
+bx-empty-state, bx-alert-banner, bx-error-message, bx-success-message, bx-notification-panel { display: block; font-family: var(--bx-font); color: var(--bx-text); }
+bx-secondary-button, bx-danger-button, bx-action-menu, bx-avatar, bx-status-badge, bx-spinner, bx-tooltip { display: inline-block; font-family: var(--bx-font); color: var(--bx-text); }
+bx-account-picker, bx-account-summary, bx-balance-card, bx-account-card, bx-account-details, bx-iban, bx-quick-actions, bx-payee-list, bx-beneficiary-card, bx-payment-form,
+bx-transfer-summary, bx-payment-status, bx-transaction-list, bx-transaction-filter, bx-transaction-details, bx-repeat, bx-receipt, bx-upcoming-bills, bx-td-summary, bx-new-td,
+bx-maturity-instructions, bx-td-topup, bx-td-redemption { display: block; font-family: var(--bx-font); color: var(--bx-text); }
+bx-loan-summary, bx-loan-repayment, bx-loan-schedule, bx-promise-to-pay, bx-disbursement, bx-card-tile, bx-card-list, bx-activate-card, bx-convert-emi, bx-redeem-points,
+bx-spend-limit, bx-card-controls, bx-block-card, bx-reset-pin, bx-raise-dispute, bx-add-on-card, bx-card-statements, bx-otp, bx-biometric, bx-session-timeout,
+bx-secure-confirmation, bx-sensitive, bx-kyc-steps, bx-fraud-alert { display: block; font-family: var(--bx-font); color: var(--bx-text); }
+bx-spending-chart, bx-budget-progress, bx-savings-goal, bx-spend-categories, bx-approval-queue, bx-approval-detail, bx-approval-journey, bx-reroute, bx-modification-requested,
+bx-pending-release, bx-structure-type, bx-account-structure, bx-structure-simulation, bx-intercompany-limits, bx-sweep-monitor, bx-profile, bx-sign-in-options, bx-otp-delivery,
+bx-devices, bx-appearance, bx-language, bx-alerts-subscription, bx-do-not-disturb, bx-consents, bx-transaction-limits, bx-session-summary { display: block; font-family: var(--bx-font); color: var(--bx-text); }
+bx-raise-request, bx-track-requests, bx-mailbox, bx-compose-mail, bx-e-receipts, bx-certificates, bx-statement-request, bx-statement-format, bx-self-register, bx-fatca-crs,
+bx-product-showcase, bx-application-tracker, bx-terms-consent, bx-loan-calculator, bx-eligibility-calculator, bx-td-calculator, bx-currency-converter, bx-goal-calculator,
+bx-locator, bx-live-chat, bx-feedback, bx-nominations, bx-faq { display: block; font-family: var(--bx-font); color: var(--bx-text); }
+bx-overview, bx-quick-insights, bx-recent-transactions, bx-bills-widget, bx-spend-analysis, bx-goals, bx-budgets, bx-calculators, bx-credit-score, bx-rewards, bx-financial-advisor,
+bx-special-offers, bx-credit-cards-overview, bx-loans-overview, bx-delinquency-notice, bx-financial-overview, bx-position-by-currency, bx-credit-line-usage, bx-bills-receivable-payable,
+bx-trade-instruments, bx-reports, bx-accounts-corp, bx-corporate-limits, bx-transactions-widget, bx-last-5-payments, bx-bulk-file-upload, bx-quick-links-corp, bx-work-snapshot,
+bx-notifications-widget, bx-pending-for-action, bx-my-limits, bx-pending-approvals { display: block; font-family: var(--bx-font); color: var(--bx-text); }
+bx-split-flap-board, bx-reveal-digits, bx-blur-in-text, bx-focus-word, bx-scroll-float-text, bx-fade-in-content, bx-scroll-reveal, bx-scroll-expand, bx-edge-blur, bx-glare-hover,
+bx-highlight-border, bx-click-burst, bx-marquee, bx-animated-list, bx-spotlight-card, bx-tilt-card, bx-flip-card, bx-card-stack, bx-glow-border-card, bx-bento-grid, bx-carousel,
+bx-elastic-slider, bx-option-wheel, bx-pill-nav, bx-dock-nav, bx-card-nav, bx-document-folder, bx-scroll-stack, bx-profile-card, bx-glass-panel, bx-gradient-backdrop, bx-soft-aurora,
+bx-silk-backdrop, bx-dot-grid, bx-line-waves, bx-light-beams, bx-topography, bx-particle-backdrop, bx-slide-to-confirm, bx-otp-slots, bx-receipt-tear, bx-success-check, bx-swipe-row,
+bx-swipe-toast, bx-squish-switch, bx-jelly-radio, bx-glide-select, bx-rubber-segment, bx-scrub-field, bx-budget-gauge, bx-peek-rating, bx-prompt-bar { display: block; font-family: var(--bx-font); color: var(--bx-text); }
+bx-rolling-digits, bx-count-up, bx-text-reveal, bx-rotating-text, bx-shimmer-text, bx-gradient-text, bx-typed-text, bx-magnetic-button, bx-staggered-menu, bx-hold-to-confirm,
+bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pill, bx-call-chip, bx-lattice-loader { display: inline-block; font-family: var(--bx-font); color: var(--bx-text); }
+.bx-d-0 { animation-delay: 0ms; }
+.bx-d-1 { animation-delay: 40ms; }
+.bx-d-2 { animation-delay: 80ms; }
+.bx-d-3 { animation-delay: 120ms; }
+.bx-d-4 { animation-delay: 160ms; }
+.bx-d-5 { animation-delay: 200ms; }
+.bx-d-6 { animation-delay: 240ms; }
+.bx-d-7 { animation-delay: 280ms; }
+.bx-d-8 { animation-delay: 320ms; }
+.bx-d-9 { animation-delay: 360ms; }
+.bx-d-10 { animation-delay: 400ms; }
+.bx-d-11 { animation-delay: 440ms; }
+.bx-d-12 { animation-delay: 480ms; }
+.bx-d-13 { animation-delay: 520ms; }
+.bx-d-14 { animation-delay: 560ms; }
+.bx-d-15 { animation-delay: 600ms; }
+.bx-d-16 { animation-delay: 640ms; }
+.bx-d-17 { animation-delay: 680ms; }
+.bx-d-18 { animation-delay: 720ms; }
+.bx-d-19 { animation-delay: 760ms; }
+@keyframes bx-fade { from { opacity: 0; } }
+@keyframes bx-rise { from { opacity: 0; transform: translate(-50%, -46%) scale(0.98); } }
+@keyframes bx-slide { from { opacity: 0; transform: translateY(-6px); } }
+@keyframes bx-bounce { 40% { transform: scale(0.94); } 70% { transform: scale(1.03); } }
+@keyframes bx-in-up { from { opacity: 0; transform: translateY(16px); } }
+@keyframes bx-in-scale { from { opacity: 0; transform: scale(0.94); } }
+@keyframes bx-in-slide { from { opacity: 0; transform: translateX(-24px); } }
+@keyframes bx-in-blur { from { opacity: 0; filter: blur(6px); } }
+@keyframes bx-pop { 0% { transform: scale(0.85); } 60% { transform: scale(1.06); } }
+@keyframes bx-tab-in { from { transform: scale(0.96); } }
+@keyframes bx-settle { from { opacity: 0; transform: translateY(-6px); } }
+@keyframes bx-drop { from { opacity: 0; transform: scaleY(0.92); } }
+@keyframes bx-shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+@keyframes bx-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes bx-roll-in { from { opacity: 0; transform: translateY(40%); } }
+@keyframes bx-grow-x { from { transform: scaleX(0); } }
+@keyframes bx-jelly { 30% { transform: scale(1.25, 0.75); } 45% { transform: scale(0.8, 1.2); } 60% { transform: scale(1.1, 0.9); } 75% { transform: scale(0.95, 1.05); } }

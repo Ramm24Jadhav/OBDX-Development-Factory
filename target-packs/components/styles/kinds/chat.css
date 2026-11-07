@@ -1,0 +1,13 @@
+.bx-chat-log { display: flex; flex-direction: column; gap: 10px; max-height: 360px; margin: 0; padding: 4px 0; overflow-y: auto; list-style: none; }
+.bx-msg { align-self: flex-start; display: flex; flex-direction: column; gap: 2px; max-width: 80%; padding: 8px 12px; border-radius: 14px 14px 14px 4px; background: var(--bx-surface-3);
+  color: var(--bx-text); font-size: 14px; animation: bx-settle var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-msg.is-mine { align-self: flex-end; border-radius: 14px 14px 4px 14px; background: var(--bx-brand); color: var(--bx-on-brand); }
+.bx-msg-who { font-size: 11.5px; font-weight: 650; opacity: 0.8; }
+.bx-chat-typing { margin: 0; color: var(--bx-muted); font-size: 13px; font-style: italic; }
+.bx-chat-compose { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.bx-chat-compose .bx-control { flex: 1 1 auto; }
+.bx-prompt-bar { display: flex; flex-direction: column; gap: 8px; }
+.bx-prompt-row { display: flex; gap: 8px; align-items: center; }
+.bx-prompt-row .bx-control { flex: 1 1 auto; border-radius: var(--bx-radius-pill); }
+.bx-prompt-spark { padding-left: 14px; color: var(--bx-brand-text); }
+.bx-prompt-bar .bx-btn { border-radius: var(--bx-radius-pill); }

@@ -68,3 +68,25 @@ openly licensed sources. Built directly in the Component factory (no separate bo
 V0 is about a day. V1 to V6 run in parallel sessions (about 3 to 5 days, with the one-heavy-job-at-a-time rule on the
 laptop: browser gates run on GitHub). V7 about a day. One release per merged wave, so the user can follow progress on
 8080.
+
+## How a wave adds a variant (set up in V0)
+
+Worked example, built in all four packs: Card · Outlined (search `bx-v-outlined` and `variant="outlined"`).
+
+1. `target-packs/components/variants.json`: in the component's entry (entries are grouped by wave, so waves edit
+   separate parts of the file), refine the variant (`name`, `purpose`, `pattern`, `source`, `licence`) and add the packs
+   to `built` as each is done. A new variant id is lowercase with hyphens; `default` stays first and is never renamed.
+2. Web packs: the style goes in the kind's own file, `target-packs/components/styles/kinds/<kind>.css`, as
+   `.bx-<part>.bx-v-<id>`, reading the shared settings (`--bx-radius*`, `--bx-bw`, `--bx-fill`, `--bx-card`,
+   `--bx-shadow-*` ... see `styles/README.md`) so all nine designs still reach it. Run
+   `node target-packs/components/tools/join-styles.mjs` to write the four bx.css copies; never edit a copy.
+3. Each pack takes a `variant` prop: JET a `variant` string property (the class from `bx.variantClass(variant)`),
+   React and Angular `variant` (a union of the ids), React Native `variant` drawn from the theme's settings.
+4. Galleries: after the default instance in the component's section, add the variant wrapped in
+   `<div data-variant="<id>">` (JET `gates/jet-gallery.html`, React `react/gallery/gallery.tsx`, Angular
+   `angular/gallery/main.ts`) or `<Variant id="<id>">` (React Native `react-native/gates/gallery.tsx`), passing
+   `variant="<id>"`. `?only=<component>&variant=<id>` then shows it alone, and the Component factory card cycles it.
+5. Checks: `VariantsCoverageTest` (server) fails while a pack listed in `built` lacks the class, the prop value or the
+   gallery element; the design gates (`GATES_DESIGN=all`, specs/designs.spec.ts in both gate folders; CI's
+   design-gates job runs one design per runner) check every component and built variant under all nine designs.
+   Motion: `motion` in the entry, effect names from `motion.json`.

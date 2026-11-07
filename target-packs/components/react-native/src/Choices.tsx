@@ -40,10 +40,10 @@ function ChoiceGroup<T extends string | string[]>(props: ChoiceProps<T> & { mult
             <Press key={o.value} testID={`${testID}-option-${o.value}`} accessibilityRole={multiple ? 'checkbox' : 'radio'} accessibilityLabel={o.label}
                        accessibilityState={{ checked: on, disabled: off }} disabled={off} onPress={() => pick(o.value)}
                        style={[{ minHeight: t.minTouch, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14,
-                         borderWidth: on ? 1.5 : t.border, borderColor: on ? t.color.primary : t.color.borderStrong, borderRadius: t.radius.control,
-                         backgroundColor: on ? t.color.primarySoft : t.color.surface, opacity: off ? 0.55 : 1 }, part(t, CHOICES, 'row', { on, multiple })]}>
+                         borderWidth: on ? Math.max(t.border, 1.5) : t.border, borderColor: on ? t.color.primary : t.lineStrong, borderRadius: t.radius.control,
+                         backgroundColor: on ? t.color.primarySoft : t.fill, opacity: off ? 0.55 : 1, ...(t.look === 'soft' ? {} : t.elevation(1)) }, part(t, CHOICES, 'row', { on, multiple })]}>
               <Pop on={on} importantForAccessibility="no-hide-descendants"
-                    style={[{ width: 20, height: 20, borderRadius: multiple ? 6 : 10, borderWidth: 1.5, borderColor: on ? t.color.primary : t.color.borderStrong,
+                    style={[{ width: 20, height: 20, borderRadius: multiple ? t.radius.small : 10, borderWidth: Math.max(t.border, 1.5), borderColor: on ? t.color.primary : t.color.borderStrong,
                       backgroundColor: on ? t.color.primary : t.color.surface, alignItems: 'center', justifyContent: 'center' }, part(t, CHOICES, 'mark', { on, multiple })]}>
                 {on ? <Text style={{ color: t.color.onPrimary, fontSize: 12, fontWeight: '700' }}>{multiple ? '✓' : '•'}</Text> : null}
               </Pop>

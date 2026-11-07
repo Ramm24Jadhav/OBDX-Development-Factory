@@ -1,0 +1,2 @@
+.bx-form-body { display: flex; flex-direction: column; }
+.bx-form-body:empty { display: none; }

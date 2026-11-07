@@ -70,12 +70,12 @@ export function FieldShell({ testID, label, required, error, helpText, children 
 /** The box around an input: the border shows focus, errors and disabled. */
 export function controlStyle(t: Theme, state: { focused?: boolean; error?: string; disabled?: boolean; readOnly?: boolean }) {
   return {
-    minHeight: t.minTouch, flexDirection: 'row' as const, alignItems: 'center' as const, paddingHorizontal: 14,
+    minHeight: t.minTouch, flexDirection: 'row' as const, alignItems: 'center' as const, paddingHorizontal: t.pad,
     borderRadius: t.radius.control, borderWidth: state.focused || state.error ? Math.max(t.border, 1.5) : t.border,
-    borderColor: state.error ? t.color.danger : state.focused ? t.color.primary : t.look === 'soft' ? 'transparent' : t.color.borderStrong,
-    backgroundColor: state.disabled ? t.color.surface3 : state.readOnly || t.look === 'soft' ? t.color.surface2 : t.color.surface,
+    borderColor: state.error ? t.color.danger : state.focused ? t.color.primary : t.lineStrong,
+    backgroundColor: state.disabled ? t.color.surface3 : state.readOnly ? t.color.surface2 : t.fill,
     opacity: state.disabled ? 0.7 : 1,
-    ...(t.shadow && !state.disabled ? { shadowColor: '#0f172a', shadowOpacity: 0.06, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 } : {}),
+    ...(!state.disabled && t.look !== 'soft' ? t.elevation(1) : {}),
     ...part(t, FIELD_KINDS, 'control', state),
   };
 }

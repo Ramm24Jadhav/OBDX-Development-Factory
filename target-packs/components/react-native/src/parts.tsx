@@ -39,14 +39,12 @@ export function maskNumber(n: string): string {
 /** The panel every group uses: a surface with the card radius, border and shadow of the component style. */
 export function panel(t: Theme) {
   return {
-    gap: 12, padding: 16, borderRadius: t.radius.card, backgroundColor: t.color.surface, borderWidth: t.border,
-    borderColor: t.look === 'brutal' ? t.color.text : t.color.border,
-    ...(t.shadow ? { shadowColor: '#0f172a', shadowOpacity: 0.08, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 2 } : {}),
+    gap: 12, padding: t.padCard - 2, borderRadius: t.radius.card, backgroundColor: t.card, borderWidth: t.border, borderColor: t.line, ...t.elevation(2),
   };
 }
 
 export function Heading({ children, t }: { children: ReactNode; t: Theme }) {
-  return <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{children}</Text>;
+  return <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: t.weightTitle, color: t.color.text }}>{children}</Text>;
 }
 
 /** A plain pressable row or button that is at least the touch size. */
@@ -79,9 +77,9 @@ export function Sheet({ testID, open, title, onClose, children, side }: {
         <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: t.color.overlay }]} accessibilityRole="button" accessibilityLabel={`Close ${title}`}
                    onPress={onClose} />
         <Animated.View testID={testID} accessibilityViewIsModal {...panelRole(title)}
-              style={[spring, { backgroundColor: t.color.surface, padding: 16, paddingBottom: 28, gap: 8, ...(start
+              style={[spring, { backgroundColor: t.raised, padding: 16, paddingBottom: 28, gap: 8, ...(start
                 ? { width: '82%', maxWidth: 360, height: '100%' }
-                : { maxHeight: '80%', borderTopLeftRadius: t.radius.card, borderTopRightRadius: t.radius.card }) }]}>
+                : { maxHeight: '80%', borderTopLeftRadius: t.radius.overlay, borderTopRightRadius: t.radius.overlay }) }]}>
           <Heading t={t}>{title}</Heading>
           {children}
         </Animated.View>
@@ -464,7 +462,7 @@ export function ProgressList({ testID, label, items, currency, measure = 'used' 
               <Text style={{ fontSize: 14, color: t.color.text, fontWeight: '500' }}>{m.label}</Text>
               <Text style={{ fontSize: 13, color: over ? t.color.dangerText : t.color.textMuted, fontVariant: ['tabular-nums'] }}>{text}</Text>
             </View>
-            <View style={{ height: 8, borderRadius: 4, backgroundColor: t.color.surface3, overflow: 'hidden' }}>
+            <View style={{ height: 8, borderRadius: 4, backgroundColor: t.track, overflow: 'hidden' }}>
               <Grow testID={`${testID}-${m.label}-fill`} share={Math.min(share, 1)} style={{ height: '100%', borderRadius: 4,
                 backgroundColor: over ? t.color.danger : share > 0.85 && measure === 'used' ? t.color.warning : t.color.primary }} />
             </View>
@@ -548,7 +546,7 @@ export function Segment(props: SegmentProps) {
   return (
     <Enter testID={testID} style={s.field} accessibilityRole="radiogroup" accessibilityLabel={label}>
       <Text style={s.label} importantForAccessibility="no">{label}</Text>
-      <Shake error={error} style={[{ padding: 3, borderRadius: t.radius.control + 2, backgroundColor: t.color.surface3 }, part(t, 'segmented', 'track')]}>
+      <Shake error={error} style={[{ padding: 3, borderRadius: t.radius.control + 2, backgroundColor: t.track, borderWidth: t.look === 'brutal' ? t.border : 0, borderColor: t.line }, part(t, 'segmented', 'track')]}>
       <View style={{ flexDirection: 'row' }}>
         {index >= 0 ? <Animated.View testID={`${testID}-marker`} pointerEvents="none" style={[{ position: 'absolute', top: 0, bottom: 0, width: `${100 / list.length}%`,
           left: at.interpolate({ inputRange: [0, list.length], outputRange: ['0%', '100%'] }), borderRadius: t.radius.control,
@@ -725,8 +723,8 @@ export function SliderControl(props: SliderControlProps) {
             onLayout={(e) => { width.current = Math.max(1, e.nativeEvent.layout.width); }}
             {...(off ? {} : pan.panHandlers)} style={{ height: t.minTouch, justifyContent: 'center', opacity: off ? 0.5 : 1 }}>
         <Shake error={error}>
-        <View style={[{ height: 6, borderRadius: 3, backgroundColor: t.color.surface3 }, part(t, SLIDERS, 'track')]}>
-          <View style={[{ width: `${share * 100}%`, height: 6, borderRadius: 3, backgroundColor: t.color.primary }, part(t, SLIDERS, 'fill')]} />
+        <View style={[{ height: 6, borderRadius: 3, backgroundColor: t.track }, part(t, SLIDERS, 'track')]}>
+          <View style={{ width: `${share * 100}%`, height: 6, borderRadius: 3, backgroundColor: t.color.primary }, part(t, SLIDERS, 'fill')]} />
         </View>
         {/* stepped: a tick at each step, up to 20 */}
         {variantOf(t, SLIDERS) === 'ticks' && (max - min) / step <= 20
