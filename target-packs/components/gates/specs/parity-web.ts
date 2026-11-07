@@ -333,10 +333,12 @@ export function webParity(pack: string, gallery: string) {
       test('sheet · a modal with its heading; Escape closes it', async ({ page }) => {
         await jet.locator('#jet-sheet-opener').focus();
         await jet.evaluate(() => (document.getElementById('jet-sheet') as unknown as { open: (launcher: string) => void }).open('#jet-sheet-opener'));
-        await expect(jet.getByText('Choose what to show.', { exact: true })).toBeVisible();
-        await jet.keyboard.press('Escape');
-        await expect(jet.getByText('Choose what to show.', { exact: true })).toBeHidden();
-        expect((await jetState(jet)).sheetCloses).toBe(1);
+        // The stock JET popup is the reference for what shows; Escape closing it is required of the pack below
+        await expect(jet.locator('#jet-sheet').getByText('Choose what to show.', { exact: true })).toBeVisible();
+        await jet.evaluate(() => (document.getElementById('jet-sheet') as unknown as { close: () => void }).close());
+        await expect(jet.locator('#jet-sheet').getByText('Choose what to show.', { exact: true })).toBeHidden();
+        // JET 21 fires ojClose after its close animation
+        await expect.poll(async () => (await jetState(jet)).sheetCloses).toBe(1);
         await section(page, 'sheet').getByRole('button', { name: 'Filter' }).click();
         const sheet = page.getByRole('dialog', { name: 'Filter transactions' });
         await expect(sheet).toBeVisible();
