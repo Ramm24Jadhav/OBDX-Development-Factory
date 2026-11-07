@@ -4,6 +4,7 @@ import { AccessibilityInfo, Text, View } from 'react-native';
 import { IconButton } from './Button';
 import { Enter } from './motion';
 import { Theme, useTheme } from './theme';
+import { ToastVariant, toastLook } from './variants';
 
 export type Severity = 'error' | 'warning' | 'confirmation' | 'info';
 
@@ -20,6 +21,8 @@ export interface ToastProps {
   messages: ReadonlyArray<Message>;
   onClose: (message: Message) => void;
   testID?: string;
+  /** The style: standard, snackbar, stacked or pill. */
+  variant?: ToastVariant;
 }
 
 const ICON: Record<Severity, string> = { error: '!', warning: '!', confirmation: '✓', info: 'i' };
@@ -29,7 +32,7 @@ const tone = (t: Theme, s: Severity) => (s === 'error' ? t.color.danger : s === 
  * Messages (oj-messages): each new one is announced (errors first and assertively); errors stay until closed, others
  * close after five seconds. The screen owns the list; onClose says which one to remove.
  */
-export function Toast({ messages, onClose, testID }: ToastProps) {
+export function Toast({ messages, onClose, testID, variant = 'standard' }: ToastProps) {
   const t = useTheme();
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const said = useRef(new Set<string>());
@@ -52,14 +55,15 @@ export function Toast({ messages, onClose, testID }: ToastProps) {
   }, [messages]);
   useEffect(() => () => { timers.current.forEach((x) => clearTimeout(x)); timers.current.clear(); }, []);
   return (
-    <View testID={testID} style={{ gap: 10 }} pointerEvents="box-none">
-      {messages.map((m) => {
+    <View testID={testID} style={{ gap: variant === 'stacked' ? 6 : 10 }} pointerEvents="box-none">
+      {messages.map((m, i) => {
         const severity = m.severity ?? 'info';
+        const look = toastLook(t, variant, tone(t, severity));
         return (
           <Enter key={m.id} effect="slide-down" testID={`toast-${m.id}`}
-                style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 12, borderRadius: 14, backgroundColor: t.color.surface,
-                  borderWidth: 1, borderColor: t.color.border, borderLeftWidth: 4, borderLeftColor: tone(t, severity),
-                  shadowColor: '#0f172a', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 3 }}>
+                style={{ flexDirection: 'row', alignItems: variant === 'pill' ? 'center' : 'flex-start', gap: 12, padding: 12, ...look.box,
+                  // the stack: older messages sit a little narrower behind the newest
+                  ...(variant === 'stacked' ? { marginHorizontal: Math.min(i, 2) * 8 } : {}) }}>
             <View importantForAccessibility="no-hide-descendants"
                   style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: tone(t, severity), alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>{ICON[severity]}</Text>
@@ -67,8 +71,8 @@ export function Toast({ messages, onClose, testID }: ToastProps) {
             {/* The message is one stop for a screen reader; the close button stays its own */}
             <View style={{ flex: 1, gap: 2 }} accessible accessibilityRole={severity === 'error' ? 'alert' : undefined}
                   accessibilityLiveRegion={severity === 'error' ? 'assertive' : 'polite'}>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: t.color.text }}>{m.summary}</Text>
-              {m.detail ? <Text style={{ fontSize: 14, color: t.color.textBody }}>{m.detail}</Text> : null}
+              <Text style={{ fontSize: 14, fontWeight: '700', color: look.fg }}>{m.summary}</Text>
+              {m.detail ? <Text style={{ fontSize: 14, color: look.body }}>{m.detail}</Text> : null}
             </View>
             <IconButton label="Close the message" icon="close" onAction={() => onClose(m)} />
           </Enter>

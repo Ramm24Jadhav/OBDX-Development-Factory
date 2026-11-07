@@ -11,7 +11,9 @@ import { formatAmount } from './TextField';
 import { FieldProps, Option, options as toOptions, styles } from './field';
 import { DURATION, Enter, Pop, Press, Shake, useCycle, useOpen, usePop, useProgress, useReducedMotion, useSlide } from './motion';
 import { CodeBoxes, CodeBoxesProps, Tone, Touch, toneColors } from './parts';
+import { ActivityIndicator } from './G1';
 import { useTheme } from './theme';
+import { BadgeVariant, DotRing, FACES, GaugeVariant, OrbState, RatingVariant, SpinnerVariant, StatusVariant, ToastVariant, TooltipVariant, toastLook, tooltipLook } from './variants';
 
 /* ---------- SlideToConfirm ---------- */
 
@@ -116,14 +118,16 @@ export function ReceiptTear({ testID, children }: { testID?: string; children: R
 /* ---------- SuccessCheck and StatusMark ---------- */
 
 /** A tick that draws itself in a circle, with the outcome announced. */
-export function SuccessCheck({ testID, label, size = 64 }: { testID?: string; label: string; size?: number }) {
+export function SuccessCheck({ testID, label, size = 64, variant = 'standard' }: { testID?: string; label: string; size?: number; /** standard, filled (deeper, larger) or soft (on a tinted halo) */ variant?: StatusVariant }) {
   const t = useTheme();
   const ring = useProgress(label, DURATION.slow);
   const tick = useProgress(label, DURATION.slow, DURATION.slow, false);
   useEffect(() => { AccessibilityInfo.announceForAccessibility(label); }, [label]);
   return (
     <View testID={testID} accessible accessibilityRole="summary" accessibilityLabel={label} style={{ alignItems: 'center', gap: 8 }}>
-      <Animated.View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: t.color.success, transform: [{ scale: ring }] }}>
+      <View style={variant === 'soft' ? { padding: size * 0.2, borderRadius: size, backgroundColor: t.color.successSoft } : undefined}>
+      <Animated.View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: variant === 'filled' ? t.color.successText : t.color.success, transform: [{ scale: ring }],
+        ...(variant === 'filled' ? { shadowColor: '#0f172a', shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 4 } : {}) }}>
         <View style={{ position: 'absolute', left: size * 0.28, top: size * 0.5, width: size * 0.2, height: 4, overflow: 'hidden', transform: [{ rotate: '45deg' }] }}>
           <Animated.View style={{ height: 4, borderRadius: 2, backgroundColor: '#fff', width: tick.interpolate({ inputRange: [0, 0.4, 1], outputRange: ['0%', '100%', '100%'] }) }} />
         </View>
@@ -131,6 +135,7 @@ export function SuccessCheck({ testID, label, size = 64 }: { testID?: string; la
           <Animated.View style={{ height: 4, borderRadius: 2, backgroundColor: '#fff', width: tick.interpolate({ inputRange: [0, 0.4, 1], outputRange: ['0%', '0%', '100%'] }) }} />
         </View>
       </Animated.View>
+      </View>
       <Text style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
     </View>
   );
@@ -139,19 +144,23 @@ export function SuccessCheck({ testID, label, size = 64 }: { testID?: string; la
 export type Status = 'pending' | 'success' | 'failed';
 
 /** A mark that turns from waiting into a tick or a cross (a payment's state), and says the state in words. */
-export function StatusMark({ testID, status, label }: { testID?: string; status: Status; label: string }) {
+export function StatusMark({ testID, status, label, variant = 'standard' }: { testID?: string; status: Status; label: string; /** standard, filled, outlined or dot */ variant?: BadgeVariant }) {
   const t = useTheme();
   const spin = useCycle(900, status === 'pending');
   const pop = usePop(status);
   const color = status === 'success' ? t.color.success : status === 'failed' ? t.color.danger : t.color.primary;
   const word = status === 'success' ? 'done' : status === 'failed' ? 'failed' : 'in progress';
   return (
-    <View testID={testID} accessible accessibilityLabel={`${label}, ${word}`} accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+    <View testID={testID} accessible accessibilityLabel={`${label}, ${word}`} accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'center', gap: variant === 'dot' ? 6 : 10,
+      ...(variant === 'filled' ? { alignSelf: 'flex-start', paddingVertical: 4, paddingLeft: 4, paddingRight: 12, borderRadius: 999, backgroundColor: t.color.surface2 }
+        : variant === 'outlined' ? { alignSelf: 'flex-start', paddingVertical: 3, paddingLeft: 3, paddingRight: 12, borderRadius: 999, borderWidth: 1, borderColor: color } : {}) }}>
+      {variant === 'dot' ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: color }} /> : (
       <Animated.View style={[{ width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
         borderWidth: 3, borderColor: color, ...(status === 'pending' ? { borderTopColor: 'transparent' } : { backgroundColor: color }) },
       status === 'pending' ? { transform: [{ rotate: spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] } : pop]}>
         {status === 'pending' ? null : <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>{status === 'success' ? '✓' : '×'}</Text>}
       </Animated.View>
+      )}
       <Text style={{ fontSize: 15, color: t.color.text }}>{label}</Text>
     </View>
   );
@@ -210,9 +219,10 @@ export function SwipeRow({ testID, label, children, actions, onAction }: SwipeRo
 }
 
 /** A message that can be swiped away (or closed with its button). */
-export function SwipeToast({ testID, message, tone = 'info', onDismiss }: { testID?: string; message: string; tone?: Tone; onDismiss: () => void }) {
+export function SwipeToast({ testID, message, tone = 'info', onDismiss, variant = 'standard' }: { testID?: string; message: string; tone?: Tone; onDismiss: () => void; /** standard, snackbar, stacked or pill */ variant?: ToastVariant }) {
   const t = useTheme();
   const c = toneColors(t, tone);
+  const look = toastLook(t, variant, c.line);
   const x = useRef(new Animated.Value(0)).current;
   const gone = useRef(onDismiss);
   gone.current = onDismiss;
@@ -226,12 +236,11 @@ export function SwipeToast({ testID, message, tone = 'info', onDismiss }: { test
   })).current;
   return (
     <Enter effect="slide-down" testID={testID}>
-      <Animated.View {...pan.panHandlers} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 14, backgroundColor: t.color.surface,
-        borderLeftWidth: 4, borderLeftColor: c.line, boxShadow: '0 4px 12px rgba(15, 23, 42, 0.12)',
+      <Animated.View {...pan.panHandlers} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, ...look.box,
         opacity: x.interpolate({ inputRange: [-300, 0, 300], outputRange: [0, 1, 0] }), transform: [{ translateX: x }] }}>
-        <Text style={{ flex: 1, fontSize: 14, color: t.color.text }} accessibilityLiveRegion="polite">{message}</Text>
+        <Text style={{ flex: 1, fontSize: 14, color: look.fg }} accessibilityLiveRegion="polite">{message}</Text>
         <Touch testID={testID ? `${testID}-close` : undefined} label="Close the message" onPress={onDismiss} style={{ width: t.minTouch, alignItems: 'center' }}>
-          <Text style={{ fontSize: 18, color: t.color.textMuted }}>×</Text>
+          <Text style={{ fontSize: 18, color: variant === 'snackbar' ? look.fg : t.color.textMuted }}>×</Text>
         </Touch>
       </Animated.View>
     </Enter>
@@ -440,7 +449,8 @@ export function ScrubField({ testID, label, value, onChange, min = 0, max, step 
 /* ---------- BudgetGauge ---------- */
 
 /** A half-circle gauge of a budget: the needle swings to what is used, and turns red past the limit. */
-export function BudgetGauge({ testID, label, value, max, currency, size = 180 }: { testID?: string; label: string; value: number; max: number; currency?: string; size?: number }) {
+export function BudgetGauge({ testID, label, value, max, currency, size = 180, variant = 'standard' }: { testID?: string; label: string; value: number; max: number; currency?: string; size?: number;
+  /** standard (half circle and needle), ring (dots round the share) or thin */ variant?: GaugeVariant }) {
   const t = useTheme();
   const share = max > 0 ? value / max : 0;
   const swing = useSlide(Math.min(1, share));
@@ -449,12 +459,18 @@ export function BudgetGauge({ testID, label, value, max, currency, size = 180 }:
   return (
     <View testID={testID} accessible accessibilityRole="progressbar" accessibilityLabel={`${label}, ${text}${share > 1 ? ', over the limit' : ''}`}
           accessibilityValue={{ min: 0, max, now: Math.min(value, max) }} style={{ alignItems: 'center', gap: 6 }}>
+      {variant === 'ring' ? (
+        <DotRing share={share} size={size * 0.7} color={tone} track={t.color.surface3} dots={32}>
+          <Text style={{ fontSize: 20, fontWeight: '700', color: t.color.text }}>{Math.round(Math.min(1, Math.max(0, share)) * 100)}%</Text>
+        </DotRing>
+      ) : (
       <View style={{ width: size, height: size / 2, overflow: 'hidden' }}>
-        <View style={{ width: size, height: size, borderRadius: size / 2, borderWidth: 14, borderColor: t.color.surface3 }} />
-        <Animated.View style={{ position: 'absolute', left: size / 2 - 2, bottom: 0, width: 4, height: size / 2 - 10, borderRadius: 2, backgroundColor: tone,
+        <View style={{ width: size, height: size, borderRadius: size / 2, borderWidth: variant === 'thin' ? 5 : 14, borderColor: t.color.surface3 }} />
+        <Animated.View style={{ position: 'absolute', left: size / 2 - (variant === 'thin' ? 1 : 2), bottom: 0, width: variant === 'thin' ? 2 : 4, height: size / 2 - 10, borderRadius: 2, backgroundColor: tone,
           transform: [{ translateY: (size / 2 - 10) / 2 }, { rotate: swing.interpolate({ inputRange: [0, 1], outputRange: ['-90deg', '90deg'] }) },
             { translateY: -(size / 2 - 10) / 2 }] }} />
       </View>
+      )}
       <Text style={{ fontSize: 14, fontWeight: '700', color: t.color.text }}>{label}</Text>
       <Text style={{ fontSize: 13, color: share > 1 ? t.color.dangerText : t.color.textMuted }}>{text}</Text>
     </View>
@@ -463,22 +479,23 @@ export function BudgetGauge({ testID, label, value, max, currency, size = 180 }:
 
 /* ---------- PeekRating ---------- */
 
-function Star({ n, on, onPress, testID }: { n: number; on: boolean; onPress: () => void; testID?: string }) {
+function Star({ n, on, onPress, testID, variant = 'standard', chosen }: { n: number; on: boolean; onPress: () => void; testID?: string; variant?: RatingVariant; chosen?: boolean }) {
   const t = useTheme();
   const lift = useSlide(on ? 1 : 0);
   return (
     <Touch testID={testID} role="radio" label={`${n} star${n > 1 ? 's' : ''}`} selected={on} onPress={onPress} style={{ width: t.minTouch, alignItems: 'center' }}>
-      <Animated.Text style={{ fontSize: 28, color: on ? t.color.warning : t.color.borderStrong,
-        transform: [{ translateY: lift.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }) }] }}>★</Animated.Text>
+      <Animated.Text style={{ fontSize: variant === 'numbers' ? 20 : 28, fontWeight: variant === 'numbers' ? '700' : undefined,
+        color: variant === 'numbers' ? (chosen ? t.color.primaryText : t.color.textMuted) : on ? t.color.warning : t.color.borderStrong, opacity: variant === 'emoji' && !chosen ? 0.45 : 1,
+        transform: [{ translateY: lift.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }) }] }}>{variant === 'emoji' ? FACES[n - 1] : variant === 'numbers' ? String(n) : '★'}</Animated.Text>
     </Touch>
   );
 }
 
 /** Stars that peek up as they are chosen. */
-export function PeekRating({ testID, label, value, onChange }: Pick<FieldProps<number | null>, 'label' | 'value' | 'onChange'> & { testID?: string }) {
+export function PeekRating({ testID, label, value, onChange, variant = 'standard' }: Pick<FieldProps<number | null>, 'label' | 'value' | 'onChange'> & { testID?: string; /** standard (stars), emoji or numbers */ variant?: RatingVariant }) {
   return (
     <View testID={testID} accessibilityRole="radiogroup" accessibilityLabel={label} style={{ flexDirection: 'row' }}>
-      {[1, 2, 3, 4, 5].map((n) => <Star key={n} testID={testID ? `${testID}-${n}` : undefined} n={n} on={!!value && n <= value} onPress={() => onChange?.(n)} />)}
+      {[1, 2, 3, 4, 5].map((n) => <Star key={n} testID={testID ? `${testID}-${n}` : undefined} n={n} on={!!value && n <= value} chosen={value === n} variant={variant} onPress={() => onChange?.(n)} />)}
     </View>
   );
 }
@@ -486,7 +503,7 @@ export function PeekRating({ testID, label, value, onChange }: Pick<FieldProps<n
 /* ---------- WarmTooltip ---------- */
 
 /** A tooltip that grows out of its button in a warm bubble (phones have no hover; the button opens it). */
-export function WarmTooltip({ testID, label, text }: { testID?: string; label: string; text: string }) {
+export function WarmTooltip({ testID, label, text, variant = 'standard' }: { testID?: string; label: string; text: string; /** standard (warm bubble), plain, rich or beak */ variant?: TooltipVariant }) {
   const t = useTheme();
   const [open, setOpen] = useState(false);
   const grow = useOpen(open, 'dialog');
@@ -500,8 +517,9 @@ export function WarmTooltip({ testID, label, text }: { testID?: string; label: s
         </View>
       </Touch>
       {open ? (
-        <Animated.View style={[{ maxWidth: 280, padding: 12, borderRadius: 14, backgroundColor: t.color.warningSoft, borderWidth: 1, borderColor: t.color.warning }, grow]}>
-          <Text style={{ fontSize: 13.5, color: t.color.text }}>{text}</Text>
+        <Animated.View style={[variant === 'standard' ? { maxWidth: 280, padding: 12, borderRadius: 14, backgroundColor: t.color.warningSoft, borderWidth: 1, borderColor: t.color.warning }
+          : { maxWidth: 280, ...tooltipLook(t, variant).bubble }, grow]}>
+          <Text style={{ fontSize: 13.5, color: variant === 'standard' ? t.color.text : tooltipLook(t, variant).fg }}>{text}</Text>
         </Animated.View>
       ) : null}
     </View>
@@ -579,9 +597,10 @@ export function CallChip({ testID, label, number, onCall }: { testID?: string; l
 /* ---------- LatticeLoader ---------- */
 
 /** A loader of nine squares that light in a diagonal wave; still, and still announced, under reduced motion. */
-export function LatticeLoader({ testID, label = 'Loading' }: { testID?: string; label?: string }) {
+export function LatticeLoader({ testID, label = 'Loading', variant = 'standard', orbState }: { testID?: string; label?: string; /** the lattice (standard), or the spinner's material, dots or orbs */ variant?: SpinnerVariant; orbState?: OrbState }) {
   const t = useTheme();
-  const v = useCycle(1200, true, 0.5);
+  const v = useCycle(1200, variant === 'standard', 0.5);
+  if (variant !== 'standard') { return <ActivityIndicator testID={testID} label={label} variant={variant} orbState={orbState} />; }
   return (
     <View testID={testID} accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityState={{ busy: true }}
           style={{ width: 42, flexDirection: 'row', flexWrap: 'wrap', gap: 3 }}>

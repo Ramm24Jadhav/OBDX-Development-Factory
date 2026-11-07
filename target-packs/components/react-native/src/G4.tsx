@@ -35,15 +35,17 @@ export interface SavingsGoalProps {
   currency?: string;
   /** Add money to the goal. */
   onAdd?: () => void;
+  /** The style: standard, linear, ring or segmented. */
+  variant?: ProgressListProps['variant'];
 }
 
 /** Progress towards a goal, with what is left to save. */
-export function SavingsGoal({ testID, label, saved, target, currency, onAdd }: SavingsGoalProps) {
+export function SavingsGoal({ testID, label, saved, target, currency, onAdd, variant }: SavingsGoalProps) {
   const t = useTheme();
   const left = Math.max(0, target - saved);
   return (
     <View testID={testID} style={{ gap: 8 }}>
-      <ProgressList testID={`${testID}-bar`} items={[{ label, value: saved, max: target }]} currency={currency} measure="saved" />
+      <ProgressList testID={`${testID}-bar`} items={[{ label, value: saved, max: target }]} currency={currency} measure="saved" variant={variant} />
       <Text style={{ fontSize: 13.5, color: t.color.textBody }}>
         {left ? `${formatAmount(left, currency)}${currency ? ` ${currency}` : ''} to go.` : 'Goal reached.'}
       </Text>

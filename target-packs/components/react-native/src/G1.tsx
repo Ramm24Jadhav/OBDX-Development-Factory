@@ -9,8 +9,9 @@ import { Button, ButtonProps } from './Button';
 import { Dialog } from './Dialog';
 import { Banner, BannerProps, Chips, ChipsProps, Item, ItemList, ListEntry, Segment, SegmentProps, Sheet, SliderControl, SliderControlProps, Steps, StepsProps,
   TimelineItem, TimelineList, TimelineListProps, Tone, Touch, panel, toItems, toneColors } from './parts';
-import { Enter, useShimmer } from './motion';
+import { Enter, useCycle, useShimmer } from './motion';
 import { useTheme } from './theme';
+import { BadgeVariant, EmptyVariant, Orb, OrbState, PulseDots, SkeletonVariant, SpinnerVariant, TooltipVariant, badgeLook, emptyLook, isDark, skeletonLook, tooltipLook } from './variants';
 
 /* ---------- SecondaryButton and DestructiveButton ---------- */
 
@@ -342,18 +343,20 @@ export interface StatusBadgeProps {
   testID?: string;
   label: string;
   tone?: Tone;
+  /** The style: standard, filled, outlined or dot. */
+  variant?: BadgeVariant;
 }
 
 /** The state of a payment at a glance; the colour is never the only sign, the word is always there. */
-export function StatusBadge({ testID, label, tone = 'neutral' }: StatusBadgeProps) {
+export function StatusBadge({ testID, label, tone = 'neutral', variant = 'standard' }: StatusBadgeProps) {
   const t = useTheme();
   const c = toneColors(t, tone);
+  const look = badgeLook(t, variant, c);
   return (
     <View testID={testID} accessible accessibilityLabel={`Status: ${label}`}
-          style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999,
-            backgroundColor: c.bg }}>
-      <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.line }} />
-      <Text style={{ fontSize: 12.5, fontWeight: '600', color: c.fg }}>{label}</Text>
+          style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, ...look.box }}>
+      {look.dot ? <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.line }} /> : null}
+      <Text style={{ fontSize: 12.5, fontWeight: '600', color: look.fg }}>{label}</Text>
     </View>
   );
 }
@@ -375,18 +378,33 @@ export interface ActivityIndicatorProps {
   /** What is loading, read by screen readers: "Loading transactions". */
   label?: string;
   size?: 'sm' | 'md' | 'lg';
+  /** The style: the platform's ring (standard), material, dots, or orbs (a thinking orb for an AI assistant). */
+  variant?: SpinnerVariant;
+  /** What the orb shows when variant is orbs. */
+  orbState?: OrbState;
 }
 
 /** Shows that something is loading. */
-export function ActivityIndicator({ testID, label = 'Loading', size = 'md' }: ActivityIndicatorProps) {
+export function ActivityIndicator({ testID, label = 'Loading', size = 'md', variant = 'standard', orbState = 'working' }: ActivityIndicatorProps) {
   const t = useTheme();
+  const px = size === 'lg' ? 40 : size === 'sm' ? 16 : 24;
   return (
     <View testID={testID} accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityState={{ busy: true }}
           style={{ alignItems: 'center', gap: 8, padding: 12 }}>
-      <Spin size={size === 'lg' ? 'large' : size === 'sm' ? 18 : 'small'} color={t.color.primary} aria-hidden />
+      {variant === 'material' ? <MaterialArc size={px} color={t.color.primary} />
+        : variant === 'dots' ? <PulseDots color={t.color.primary} size={px / 3} />
+        : variant === 'orbs' ? <Orb state={orbState} size={size === 'lg' ? 64 : 20} dark={isDark(t)} />
+        : <Spin size={size === 'lg' ? 'large' : size === 'sm' ? 18 : 'small'} color={t.color.primary} aria-hidden />}
       <Text style={{ fontSize: 13, color: t.color.textMuted }}>{label}</Text>
     </View>
   );
+}
+
+/** Material's circular indicator: an arc that turns; still under reduced motion. */
+function MaterialArc({ size, color }: { size: number; color: string }) {
+  const spin = useCycle(1100, true);
+  return <Animated.View importantForAccessibility="no-hide-descendants" style={{ width: size, height: size, borderRadius: size / 2, borderWidth: Math.max(2, size / 9), borderColor: color,
+    borderTopColor: 'transparent', borderRightColor: 'transparent', transform: [{ rotate: spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }} />;
 }
 
 export interface SkeletonProps {
@@ -395,19 +413,24 @@ export interface SkeletonProps {
   /** Lines of text to stand in for. */
   lines?: number;
   shape?: 'text' | 'card' | 'circle';
+  /** The style: standard (shimmer), pulse or soft (still, rounder, lighter). */
+  variant?: SkeletonVariant;
 }
 
 /** The shape of the content while it loads, with a soft pulse (still when the device asks for reduced motion). */
-export function Skeleton({ testID, label = 'Loading', lines = 3, shape = 'text' }: SkeletonProps) {
+export function Skeleton({ testID, label = 'Loading', lines = 3, shape = 'text', variant = 'standard' }: SkeletonProps) {
   const t = useTheme();
-  const pulse = useShimmer(true);
+  const shimmer = useShimmer(variant === 'standard');
+  const cycle = useCycle(1500, variant === 'pulse');
+  const pulse = { opacity: cycle.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0.4, 1] }) };
+  const look = skeletonLook(t, variant);
   return (
     <Animated.View testID={testID} accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityState={{ busy: true }}
-                   style={[{ gap: 10 }, pulse]}>
-      {shape === 'circle' ? <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: t.color.surface3 }} />
-        : shape === 'card' ? <View style={{ height: 120, borderRadius: t.radius.card, backgroundColor: t.color.surface3 }} />
+                   style={[{ gap: 10 }, variant === 'pulse' ? pulse : shimmer]}>
+      {shape === 'circle' ? <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: look.fill }} />
+        : shape === 'card' ? <View style={{ height: 120, borderRadius: t.radius.card * look.round, backgroundColor: look.fill }} />
           : Array.from({ length: lines }, (_, i) => (
-            <View key={i} style={{ height: 14, borderRadius: 7, backgroundColor: t.color.surface3, width: i === lines - 1 ? '60%' : '100%' }} />
+            <View key={i} style={{ height: 14, borderRadius: 7 * look.round, backgroundColor: look.fill, width: i === lines - 1 ? '60%' : '100%' }} />
           ))}
     </Animated.View>
   );
@@ -424,19 +447,25 @@ export interface EmptyStateProps {
   onAction?: () => void;
   /** A short symbol above the heading; it is not read. */
   icon?: string;
+  /** The style: standard, illustrated, compact or card. */
+  variant?: EmptyVariant;
 }
 
 /** What to do when there is nothing yet. */
-export function EmptyState({ testID, heading, text, actionLabel, onAction, icon = '○' }: EmptyStateProps) {
+export function EmptyState({ testID, heading, text, actionLabel, onAction, icon = '○', variant = 'standard' }: EmptyStateProps) {
   const t = useTheme();
+  const look = emptyLook(t, variant);
+  const align = look.row ? 'left' : 'center';
   return (
-    <View testID={testID} style={{ alignItems: 'center', gap: 8, padding: 24 }}>
-      <View importantForAccessibility="no" style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: t.color.primarySoft, alignItems: 'center',
+    <View testID={testID} style={look.box}>
+      <View importantForAccessibility="no" style={{ width: look.disc, height: look.disc, borderRadius: look.disc / 2, backgroundColor: t.color.primarySoft, alignItems: 'center',
         justifyContent: 'center' }}>
-        <Text style={{ fontSize: 24, color: t.color.primaryText }}>{icon}</Text>
+        <Text style={{ fontSize: look.disc * 0.43, color: t.color.primaryText }}>{icon}</Text>
       </View>
-      <Text accessibilityRole="header" style={{ fontSize: 17, fontWeight: '700', color: t.color.text, textAlign: 'center' }}>{heading}</Text>
-      {text ? <Text style={{ fontSize: 14, color: t.color.textMuted, textAlign: 'center' }}>{text}</Text> : null}
+      <View style={look.row ? { flex: 1, gap: 2 } : { alignItems: 'center', gap: 8 }}>
+        <Text accessibilityRole="header" style={{ fontSize: look.row ? 15 : 17, fontWeight: '700', color: t.color.text, textAlign: align }}>{heading}</Text>
+        {text ? <Text style={{ fontSize: 14, color: t.color.textMuted, textAlign: align }}>{text}</Text> : null}
+      </View>
       {actionLabel ? <Button testID={testID ? `${testID}-action` : undefined} label={actionLabel} onAction={onAction} /> : null}
     </View>
   );
@@ -450,10 +479,13 @@ export interface TooltipProps {
   label: string;
   text: string;
   children?: ReactNode;
+  /** The style: standard, plain, rich or beak. */
+  variant?: TooltipVariant;
 }
 
 /** A short explanation on demand: phones have no hover, so the i button opens it and announces it. */
-export function Tooltip({ testID, label, text, children }: TooltipProps) {
+export function Tooltip({ testID, label, text, children, variant = 'standard' }: TooltipProps) {
+  const look = tooltipLook(useTheme(), variant);
   const t = useTheme();
   const [open, setOpen] = useState(false);
   const flip = () => { if (!open) { AccessibilityInfo.announceForAccessibility(text); } setOpen(!open); };
@@ -470,9 +502,12 @@ export function Tooltip({ testID, label, text, children }: TooltipProps) {
         </Touch>
       </View>
       {open ? (
-        <View testID={testID ? `${testID}-text` : undefined} role="tooltip" style={{ padding: 10, borderRadius: t.radius.control, backgroundColor: t.color.text, alignSelf: 'flex-start',
-          maxWidth: 280 }}>
-          <Text style={{ fontSize: 13, color: t.color.surface }}>{text}</Text>
+        <View style={{ alignSelf: 'flex-start' }}>
+          {variant === 'beak' ? <View style={{ marginLeft: 14, marginBottom: -6, width: 10, height: 10, backgroundColor: t.color.surface, borderLeftWidth: 1, borderTopWidth: 1,
+            borderColor: t.color.borderStrong, transform: [{ rotate: '45deg' }], zIndex: 1 }} /> : null}
+          <View testID={testID ? `${testID}-text` : undefined} role="tooltip" style={{ ...look.bubble, maxWidth: 280 }}>
+            <Text style={{ fontSize: variant === 'rich' ? 14 : 13, lineHeight: variant === 'rich' ? 20 : undefined, color: look.fg }}>{text}</Text>
+          </View>
         </View>
       ) : null}
     </View>

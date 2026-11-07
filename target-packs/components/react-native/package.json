@@ -14,9 +14,9 @@
     "check": "tsc --noEmit && jest"
   },
   "peerDependencies": {
+    "expo-blur": ">=14",
     "react": ">=19",
-    "react-native": ">=0.78",
-    "expo-blur": ">=14"
+    "react-native": ">=0.78"
   },
   "peerDependenciesMeta": {
     "expo-blur": {
@@ -44,5 +44,8 @@
     "setupFilesAfterEnv": [
       "<rootDir>/test/setup.ts"
     ]
+  },
+  "dependencies": {
+    "thinking-orbs": "^0.3.1"
   }
 }

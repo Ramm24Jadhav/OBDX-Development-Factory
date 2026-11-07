@@ -12,6 +12,7 @@ import { ApprovalQueue, ApprovalQueueProps } from './G4';
 import { CalculatorProps, DepositCalculator, ForexCalculator, LoanCalculator, LoanInputs } from './G5';
 import { Tabs } from './Tabs';
 import { Banner, BannerProps, Bars, BarsProps, InfoCard, InfoCardProps, Item, ItemList, Meter, ProgressList, Tiles, TilesProps, panel } from './parts';
+import { ProgressVariant } from './variants';
 import { Enter } from './motion';
 import { useTheme } from './theme';
 
@@ -102,21 +103,23 @@ export interface ProgressWidgetProps {
   label?: string;
   items: ReadonlyArray<Meter>;
   currency?: string;
+  /** The style: standard, linear, ring or segmented. */
+  variant?: ProgressVariant;
 }
 
 /** Active goals and their progress, with Add goal. */
-export function GoalsWidget({ testID, label = 'Goals', items, currency, onAdd }: ProgressWidgetProps & { onAdd?: () => void }) {
+export function GoalsWidget({ testID, label = 'Goals', items, currency, onAdd, variant }: ProgressWidgetProps & { onAdd?: () => void }) {
   return (
     <View testID={testID} style={{ gap: 8 }}>
-      <ProgressList testID={`${testID}-list`} label={label} items={items} currency={currency} measure="saved" />
+      <ProgressList testID={`${testID}-list`} label={label} items={items} currency={currency} measure="saved" variant={variant} />
       {onAdd ? <Button testID={`${testID}-add`} label="Add goal" chroming="outlined" onAction={onAdd} /> : null}
     </View>
   );
 }
 
 /** Budgets and what is used. */
-export function BudgetsWidget({ testID, label = 'Budgets', items, currency }: ProgressWidgetProps) {
-  return <ProgressList testID={testID} label={label} items={items} currency={currency} measure="used" />;
+export function BudgetsWidget({ testID, label = 'Budgets', items, currency, variant }: ProgressWidgetProps) {
+  return <ProgressList testID={testID} label={label} items={items} currency={currency} measure="used" variant={variant} />;
 }
 
 export interface CreditScoreWidgetProps {
@@ -128,14 +131,16 @@ export interface CreditScoreWidgetProps {
   band?: string;
   /** When the score was last updated. */
   updated?: string;
+  /** The style: standard, linear, ring or segmented. */
+  variant?: ProgressVariant;
 }
 
 /** The current credit status. */
-export function CreditScoreWidget({ testID, label = 'Credit score', score, max, band, updated }: CreditScoreWidgetProps) {
+export function CreditScoreWidget({ testID, label = 'Credit score', score, max, band, updated, variant }: CreditScoreWidgetProps) {
   const t = useTheme();
   return (
     <View testID={testID} style={{ gap: 6 }}>
-      <ProgressList testID={`${testID}-bar`} label={label} items={[{ label: band ?? 'Score', value: score, max }]} measure="score" />
+      <ProgressList testID={`${testID}-bar`} label={label} items={[{ label: band ?? 'Score', value: score, max }]} measure="score" variant={variant} />
       {updated ? <Text style={{ fontSize: 12.5, color: t.color.textMuted }}>Updated {updated}</Text> : null}
     </View>
   );

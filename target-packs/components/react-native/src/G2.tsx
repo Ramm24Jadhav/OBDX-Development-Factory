@@ -12,6 +12,7 @@ import { AmountInput, TextField, formatAmount } from './TextField';
 import { FieldProps, FieldShell, Option, controlStyle, styles, useField } from './field';
 import { Chips, FormProps, ChipsProps, Item, ItemList, KeyValues, KeyValuesProps, Segment, SegmentProps, Steps, Tiles, TilesProps, Touch, maskNumber, panel,
   toneColors } from './parts';
+import type { StepsProps } from './parts';
 import { Enter, Roll } from './motion';
 import { useTheme } from './theme';
 
@@ -391,13 +392,15 @@ export interface PaymentStatusProps {
   steps?: ReadonlyArray<string>;
   /** The index of the step the payment is at; steps.length when it is complete. */
   value: number;
+  /** The style: standard, material, vertical or segmented. */
+  variant?: StepsProps['variant'];
 }
 
 /** Where the payment is now. */
-export function PaymentStatus({ testID, steps = ['Initiated', 'Approved', 'Sent', 'Completed'], label = 'Payment status', value }: PaymentStatusProps) {
+export function PaymentStatus({ testID, steps = ['Initiated', 'Approved', 'Sent', 'Completed'], label = 'Payment status', value, variant }: PaymentStatusProps) {
   // Past the last step the payment is complete: every step done
   const list = value >= steps.length ? steps.map((s) => ({ label: s, state: 'done' as const })) : steps;
-  return <Steps testID={testID} label={label} steps={list} selectedStep={steps[value]} />;
+  return <Steps testID={testID} label={label} steps={list} selectedStep={steps[value]} variant={variant} />;
 }
 
 /* ---------- TransactionHistory ---------- */

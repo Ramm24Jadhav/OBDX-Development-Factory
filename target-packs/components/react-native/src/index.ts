@@ -83,3 +83,6 @@ export type { BackdropProps } from './Backdrops';
 export { BellToggle, BudgetGauge, CallChip, FavouriteHeart, GlideSelect, HoldToConfirm, JellyRadio, LatticeLoader, OtpSlots, PeekRating, PromptBar, ReceiptTear,
   RubberSegment, ScrubField, SlideToConfirm, SquishSwitch, StatusMark, SuccessCheck, SwipeRow, SwipeToast, VoicePill, WarmTooltip } from './Micro';
 export type { ConfirmProps, PickProps, PromptBarProps, ScrubFieldProps, Status, SwipeAction, SwipeRowProps, ToggleProps } from './Micro';
+export { DotRing, FACES, Orb, PulseDots, alertLook, badgeLook, emptyLook, skeletonLook, toastLook, tooltipLook } from './variants';
+export type { AlertVariant, BadgeVariant, ChartVariant, EmptyVariant, GaugeVariant, OrbState, ProgressVariant, RatingVariant, SkeletonVariant, SpinnerVariant,
+  StatusVariant, StepperVariant, TimelineVariant, TimeoutVariant, ToastVariant, TooltipVariant } from './variants';

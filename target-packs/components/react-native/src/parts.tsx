@@ -13,6 +13,7 @@ import type { Severity } from './Toast';
 import { FieldProps, styles, useField } from './field';
 import { Enter, MODAL_FADE, Pop, Press, Roll, Shake, useGrow, useOpen, useSlide } from './motion';
 import { Theme, useTheme } from './theme';
+import { AlertVariant, ChartVariant, DotRing, ProgressVariant, StepperVariant, TimelineVariant, alertLook } from './variants';
 
 /** A form's props: the field props with the heading optional. */
 export type FormProps<T> = Omit<FieldProps<T>, 'label'> & { label?: string };
@@ -124,32 +125,34 @@ export interface BannerProps {
   /** Shows a Dismiss button that hides the message (and calls onClose). */
   dismissible?: boolean;
   onClose?: () => void;
+  /** The style: standard, filled, outlined or banner. */
+  variant?: AlertVariant;
 }
 
 const TONE: Record<Severity, Tone> = { error: 'danger', warning: 'warning', confirmation: 'success', info: 'info' };
 
 /** A message across the screen: errors and warnings are alerts and are announced, the rest are read in turn. */
-export function Banner({ testID, heading, message, severity = 'info', actionLabel, onAction, dismissible, onClose }: BannerProps) {
+export function Banner({ testID, heading, message, severity = 'info', actionLabel, onAction, dismissible, onClose, variant = 'standard' }: BannerProps) {
   const t = useTheme();
   const [gone, setGone] = useState(false);
   if (gone) { return null; }
   const c = toneColors(t, TONE[severity]);
+  const look = alertLook(t, variant, c);
   const urgent = severity === 'error' || severity === 'warning';
   return (
-    <Enter testID={testID} style={{ flexDirection: 'row', gap: 12, padding: 14, borderRadius: t.radius.card, backgroundColor: c.bg, borderLeftWidth: 4,
-      borderLeftColor: c.line, alignItems: 'flex-start' }}>
+    <Enter testID={testID} style={{ flexDirection: 'row', gap: 12, padding: 14, alignItems: 'flex-start', ...look.box }}>
       <View style={{ flex: 1, gap: 4 }} accessible role={urgent ? 'alert' : 'status'} accessibilityLiveRegion={urgent ? 'assertive' : 'polite'}>
-        {heading ? <Text style={{ fontSize: 14, fontWeight: '700', color: c.fg }}>{heading}</Text> : null}
-        <Text style={{ fontSize: 14, fontWeight: heading ? '400' : '600', color: heading ? t.color.textBody : c.fg }}>{message}</Text>
+        {heading ? <Text style={{ fontSize: 14, fontWeight: '700', color: look.fg }}>{heading}</Text> : null}
+        <Text style={{ fontSize: 14, fontWeight: heading ? '400' : '600', color: heading ? look.body : look.fg }}>{message}</Text>
       </View>
       {actionLabel ? (
         <Touch testID={`${testID}-action`} label={actionLabel} onPress={onAction} style={{ paddingHorizontal: 8 }}>
-          <Text style={{ fontSize: 14, fontWeight: '700', color: c.fg }}>{actionLabel}</Text>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: look.fg }}>{actionLabel}</Text>
         </Touch>
       ) : null}
       {dismissible ? (
         <Touch testID={`${testID}-close`} label="Dismiss" onPress={() => { setGone(true); onClose?.(); }} style={{ width: t.minTouch, alignItems: 'center' }}>
-          <Text style={{ fontSize: 18, color: c.fg }} importantForAccessibility="no">×</Text>
+          <Text style={{ fontSize: 18, color: look.fg }} importantForAccessibility="no">×</Text>
         </Touch>
       ) : null}
     </Enter>
@@ -331,10 +334,12 @@ export interface StepsProps {
   steps: ReadonlyArray<string | StepItem>;
   /** The current step's id; the ones before it are done. A step's own state wins. */
   selectedStep?: string;
+  /** The style: standard, material (filled marks, thin lines), vertical or segmented. */
+  variant?: StepperVariant;
 }
 
 /** Where the customer is in a flow: done steps ticked, the current one marked and announced as "Step 2 of 3". */
-export function Steps({ testID, label = 'Progress', steps, selectedStep }: StepsProps) {
+export function Steps({ testID, label = 'Progress', steps, selectedStep, variant = 'standard' }: StepsProps) {
   const t = useTheme();
   const list = toItems(steps);
   const at = list.findIndex((s) => s.id === selectedStep);
@@ -343,11 +348,45 @@ export function Steps({ testID, label = 'Progress', steps, selectedStep }: Steps
   const summary = states.every((s) => s === 'done') ? `All ${list.length} steps done`
     : current >= 0 ? `Step ${current + 1} of ${list.length}: ${list[current].label}` : `${list.length} steps`;
   const failed = states.indexOf('failed');
+  const m3 = variant === 'material';
   return (
     <View testID={testID} accessible accessibilityRole="progressbar"
           accessibilityLabel={`${label}, ${summary}${failed >= 0 ? `, ${list[failed].label} failed` : ''}`}
           accessibilityValue={{ min: 0, max: list.length, now: states.filter((s) => s === 'done').length }} style={{ gap: 8 }}>
       <Text style={{ fontSize: 13, fontWeight: '600', color: t.color.textBody }}>{label}</Text>
+      {variant === 'segmented' ? (
+        <>
+          <View style={{ flexDirection: 'row', gap: 4 }}>
+            {states.map((state, i) => <View key={list[i].id} style={{ flex: 1, height: 6, borderRadius: 3,
+              backgroundColor: state === 'failed' ? t.color.danger : state === 'done' || state === 'current' ? t.color.primary : t.color.surface3 }} />)}
+          </View>
+          <Text style={{ fontSize: 13, color: t.color.text, fontWeight: '600' }}>{summary}</Text>
+        </>
+      ) : variant === 'vertical' ? (
+        <View style={{ gap: 0 }}>
+          {list.map((step, i) => {
+            const state = states[i];
+            const filled = state === 'done' || state === 'failed';
+            const mark = state === 'failed' ? t.color.danger : t.color.primary;
+            return (
+              <View key={step.id} style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ alignItems: 'center', width: 26 }}>
+                  <View style={{ width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', borderWidth: 2,
+                    borderColor: state === 'next' ? t.color.borderStrong : mark, backgroundColor: filled ? mark : t.color.surface }}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: filled ? t.color.onPrimary : state === 'current' ? t.color.primaryText : t.color.textMuted }}>
+                      {state === 'done' ? '✓' : state === 'failed' ? '!' : i + 1}
+                    </Text>
+                  </View>
+                  {i < list.length - 1 ? <View style={{ width: 2, flex: 1, minHeight: 14, backgroundColor: state === 'done' ? t.color.primary : t.color.border }} /> : null}
+                </View>
+                <Text style={{ flex: 1, paddingTop: 4, paddingBottom: 14, fontSize: 14, color: state === 'current' ? t.color.text : t.color.textMuted, fontWeight: state === 'current' ? '700' : '500' }}>
+                  {step.label}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      ) : (
       <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
         {list.map((step, i) => {
           const state = states[i];
@@ -358,20 +397,21 @@ export function Steps({ testID, label = 'Progress', steps, selectedStep }: Steps
           return (
             <View key={step.id} style={{ flex: 1, alignItems: 'center', gap: 6 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch' }}>
-                <View style={{ flex: 1, height: 2, backgroundColor: i === 0 ? 'transparent' : done || on ? t.color.primary : t.color.border }} />
-                <Pop on={on && selectedStep} style={{ width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', borderWidth: 2,
-                  borderColor: done || on || bad ? mark : t.color.borderStrong, backgroundColor: done || bad ? mark : t.color.surface }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: done || bad ? t.color.onPrimary : on ? t.color.primaryText : t.color.textMuted }}>
+                <View style={{ flex: 1, height: m3 ? 1 : 2, backgroundColor: i === 0 ? 'transparent' : done || on ? t.color.primary : t.color.border }} />
+                <Pop on={on && selectedStep} style={{ width: m3 ? 24 : 26, height: m3 ? 24 : 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', borderWidth: m3 ? 0 : 2,
+                  borderColor: done || on || bad ? mark : t.color.borderStrong, backgroundColor: done || bad || (m3 && on) ? mark : m3 ? t.color.surface3 : t.color.surface }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: done || bad || (m3 && on) ? t.color.onPrimary : on ? t.color.primaryText : t.color.textMuted }}>
                     {done ? '✓' : bad ? '!' : i + 1}
                   </Text>
                 </Pop>
-                <View style={{ flex: 1, height: 2, backgroundColor: i === list.length - 1 ? 'transparent' : done ? t.color.primary : t.color.border }} />
+                <View style={{ flex: 1, height: m3 ? 1 : 2, backgroundColor: i === list.length - 1 ? 'transparent' : done ? t.color.primary : t.color.border }} />
               </View>
-              <Text style={{ fontSize: 12, textAlign: 'center', color: on ? t.color.text : t.color.textMuted, fontWeight: on ? '700' : '500' }}>{step.label}</Text>
+              <Text style={{ fontSize: 12, textAlign: 'center', color: on ? (m3 ? t.color.primaryText : t.color.text) : t.color.textMuted, fontWeight: on ? '700' : '500' }}>{step.label}</Text>
             </View>
           );
         })}
       </View>
+      )}
     </View>
   );
 }
@@ -391,33 +431,49 @@ export interface TimelineListProps {
   testID: string;
   label?: string;
   items: ReadonlyArray<TimelineItem>;
+  /** The style: standard, compact, cards or horizontal. */
+  variant?: TimelineVariant;
 }
 
 /** Events in order down a line, each one stop for a screen reader with its state. */
-export function TimelineList({ testID, label, items }: TimelineListProps) {
+export function TimelineList({ testID, label, items, variant = 'standard' }: TimelineListProps) {
   const t = useTheme();
   const said = { done: 'done', current: 'in progress', pending: 'not yet', failed: 'failed' } as const;
+  const across = variant === 'horizontal';
+  const small = variant === 'compact';
+  const card = variant === 'cards';
   return (
-    <Enter testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={small ? { ...panel(t), gap: 4, padding: 12 } : panel(t)}>
       {label ? <Heading t={t}>{label}</Heading> : null}
+      <View style={across ? { flexDirection: 'row' } : card ? { gap: 8 } : undefined}>
       {items.map((e, i) => {
         const state = e.state ?? 'done';
         const dot = state === 'done' ? t.color.success : state === 'current' ? t.color.primary : state === 'failed' ? t.color.danger : t.color.borderStrong;
+        const size = small ? 8 : 12;
+        const mark = <View style={{ width: size, height: size, borderRadius: size / 2, marginTop: across ? 0 : small ? 5 : 4, backgroundColor: state === 'pending' ? t.color.surface : dot, borderWidth: 2, borderColor: dot }} />;
         return (
           <Enter key={e.id ?? `${e.label}-${i}`} effect="settle" accessible accessibilityLabel={`${e.label}${e.meta ? `, ${e.meta}` : ''}, ${said[state]}`}
-                style={{ flexDirection: 'row', gap: 12 }}>
+                style={across ? { flex: 1, gap: 6 } : card ? { flexDirection: 'row', gap: 12, padding: 12, borderRadius: t.radius.control, borderWidth: 1, borderColor: t.color.border, backgroundColor: t.color.surface2 }
+                  : { flexDirection: 'row', gap: small ? 8 : 12 }}>
+            {across ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {mark}
+                {i < items.length - 1 ? <View style={{ flex: 1, height: 2, backgroundColor: t.color.border, marginHorizontal: 4 }} /> : null}
+              </View>
+            ) : (
             <View style={{ alignItems: 'center', width: 14 }}>
-              <View style={{ width: 12, height: 12, borderRadius: 6, marginTop: 4, backgroundColor: state === 'pending' ? t.color.surface : dot, borderWidth: 2,
-                borderColor: dot }} />
-              {i < items.length - 1 ? <View style={{ flex: 1, width: 2, backgroundColor: t.color.border, marginTop: 2 }} /> : null}
+              {mark}
+              {i < items.length - 1 && !card ? <View style={{ flex: 1, width: 2, backgroundColor: t.color.border, marginTop: 2 }} /> : null}
             </View>
-            <View style={{ flex: 1, paddingBottom: 12, gap: 2 }}>
+            )}
+            <View style={small ? { flex: 1, flexDirection: 'row', flexWrap: 'wrap', columnGap: 8, paddingBottom: 4 } : { flex: 1, paddingBottom: card || across ? 0 : 12, paddingRight: across ? 6 : 0, gap: 2 }}>
               <Text style={{ fontSize: 14.5, fontWeight: state === 'current' ? '700' : '600', color: state === 'pending' ? t.color.textMuted : t.color.text }}>{e.label}</Text>
               {e.meta ? <Text style={{ fontSize: 13, color: t.color.textMuted }}>{e.meta}</Text> : null}
             </View>
           </Enter>
         );
       })}
+      </View>
     </Enter>
   );
 }
@@ -438,12 +494,15 @@ export interface ProgressListProps {
   currency?: string;
   /** What the numbers are: "used" for budgets and limits (over max turns red), "saved" for goals. */
   measure?: 'used' | 'saved' | 'score';
+  /** The style: standard, linear (thin with a stop mark), ring or segmented. */
+  variant?: ProgressVariant;
 }
 
 /** Bars of how much is used or saved, each a progress bar with its numbers for screen readers. */
-export function ProgressList({ testID, label, items, currency, measure = 'used' }: ProgressListProps) {
+export function ProgressList({ testID, label, items, currency, measure = 'used', variant = 'standard' }: ProgressListProps) {
   const t = useTheme();
   const show = (n: number) => (currency ? formatAmount(n, currency) : String(n));
+  const fill = (share: number, over: boolean) => (over ? t.color.danger : share > 0.85 && measure === 'used' ? t.color.warning : t.color.primary);
   return (
     <Enter testID={testID} style={panel(t)}>
       {label ? <Heading t={t}>{label}</Heading> : null}
@@ -460,10 +519,22 @@ export function ProgressList({ testID, label, items, currency, measure = 'used' 
               <Text style={{ fontSize: 14, color: t.color.text, fontWeight: '500' }}>{m.label}</Text>
               <Text style={{ fontSize: 13, color: over ? t.color.dangerText : t.color.textMuted, fontVariant: ['tabular-nums'] }}>{text}</Text>
             </View>
-            <View style={{ height: 8, borderRadius: 4, backgroundColor: t.color.surface3, overflow: 'hidden' }}>
-              <Grow testID={`${testID}-${m.label}-fill`} share={Math.min(share, 1)} style={{ height: '100%', borderRadius: 4,
-                backgroundColor: over ? t.color.danger : share > 0.85 && measure === 'used' ? t.color.warning : t.color.primary }} />
+            {variant === 'ring' ? (
+              <DotRing share={share} size={56} color={fill(share, over)} track={t.color.surface3}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: t.color.text }}>{Math.round(Math.min(1, Math.max(0, share)) * 100)}%</Text>
+              </DotRing>
+            ) : variant === 'segmented' ? (
+              <View style={{ flexDirection: 'row', gap: 3 }} importantForAccessibility="no-hide-descendants">
+                {Array.from({ length: 10 }, (_, k) => <View key={k} style={{ flex: 1, height: 8, borderRadius: 2, backgroundColor: k < Math.round(Math.min(1, share) * 10) ? fill(share, over) : t.color.surface3 }} />)}
+              </View>
+            ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: variant === 'linear' ? 4 : 0 }}>
+              <View style={{ flex: 1, height: variant === 'linear' ? 4 : 8, borderRadius: 4, backgroundColor: t.color.surface3, overflow: 'hidden' }}>
+                <Grow testID={`${testID}-${m.label}-fill`} share={Math.min(share, 1)} style={{ height: '100%', borderRadius: 4, backgroundColor: fill(share, over) }} />
+              </View>
+              {variant === 'linear' ? <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: fill(share, over) }} /> : null}
             </View>
+            )}
           </View>
         );
       })}
@@ -488,10 +559,12 @@ export interface BarsProps {
   onChange?: (label: string) => void;
   /** Lays the bars across (modules by count) instead of up (months by amount). */
   horizontal?: boolean;
+  /** The style: standard, rounded, lollipop or meter (one bar split into the figures). */
+  variant?: ChartVariant;
 }
 
 /** A bar chart from plain views (no drawing library): each bar is a button that reads its label and amount. */
-export function Bars({ testID, label, bars, currency, value, onChange, horizontal }: BarsProps) {
+export function Bars({ testID, label, bars, currency, value, onChange, horizontal, variant = 'standard' }: BarsProps) {
   const t = useTheme();
   const [own, setOwn] = useState<string>();
   const picked = value ?? own;
@@ -499,25 +572,41 @@ export function Bars({ testID, label, bars, currency, value, onChange, horizonta
   const show = (n: number) => (currency ? formatAmount(n, currency) : String(n));
   const chosen = bars.find((b) => b.label === picked);
   const pick = (l: string) => { setOwn(l); onChange?.(l); };
+  // the meter chart lists its figures across, under its one bar
+  const across = horizontal || variant === 'meter';
   return (
     <Enter testID={testID} style={panel(t)}>
       <Heading t={t}>{label}</Heading>
       <Text testID={`${testID}-picked`} accessibilityLiveRegion="polite" style={{ fontSize: 13, color: t.color.textMuted }}>
         {chosen ? `${chosen.label}: ${show(chosen.value)}${currency ? ` ${currency}` : ''}` : 'Tap a bar for its amount.'}
       </Text>
-      <View style={horizontal ? { gap: 6 } : { flexDirection: 'row', alignItems: 'flex-end', height: 150, gap: 8 }}>
+      {variant === 'meter' ? (
+        <View style={{ flexDirection: 'row', height: 14, borderRadius: 7, overflow: 'hidden', gap: 2 }} importantForAccessibility="no-hide-descendants">
+          {bars.map((b, i) => <View key={b.label} style={{ flex: Math.max(0.001, b.value), backgroundColor: i % 2 ? t.color.primarySoft : t.color.primary,
+            opacity: b.label === picked || !picked ? 1 : 0.55 }} />)}
+        </View>
+      ) : null}
+      <View style={across ? { gap: 6 } : { flexDirection: 'row', alignItems: 'flex-end', height: 150, gap: 8 }}>
         {bars.map((b) => {
           const on = b.label === picked;
           const size = Math.max(0.04, b.value / top);
-          const bar = <Grow share={size} vertical={!horizontal} style={{ ...(horizontal ? { height: 14 } : { width: '100%' }), borderRadius: 4,
-            backgroundColor: on ? t.color.primary : t.color.primarySoft, borderWidth: 1, borderColor: t.color.primary }} />;
+          const thick = variant === 'rounded';
+          const stem = variant === 'lollipop';
+          const bar = variant === 'meter' ? null : stem
+            ? <View style={across ? { flexDirection: 'row', alignItems: 'center' } : { alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+                {!across ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.color.primary, marginBottom: -2 }} /> : null}
+                <Grow share={size} vertical={!across} style={{ ...(across ? { height: 2 } : { width: 2 }), backgroundColor: on ? t.color.primary : t.color.borderStrong }} />
+                {across ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: t.color.primary, marginLeft: -2 }} /> : null}
+              </View>
+            : <Grow share={size} vertical={!across} style={{ ...(across ? { height: thick ? 18 : 14 } : { width: '100%' }), borderRadius: thick ? 9 : 4,
+                backgroundColor: on ? t.color.primary : t.color.primarySoft, borderWidth: thick ? 0 : 1, borderColor: t.color.primary }} />;
           return (
             <Touch key={b.label} testID={`${testID}-${b.label}`} label={horizontal ? undefined : `${b.label}, ${show(b.value)}`} selected={on} onPress={() => pick(b.label)}
-                   style={horizontal ? { flexDirection: 'row', alignItems: 'center', gap: 8 } : { flex: 1, height: '100%', justifyContent: 'flex-end', gap: 4 }}>
-              {horizontal ? <Text style={{ width: 80, fontSize: 12.5, color: t.color.textBody }}>{b.label}</Text> : null}
+                   style={across ? { flexDirection: 'row', alignItems: 'center', gap: 8 } : { flex: 1, height: '100%', justifyContent: 'flex-end', gap: 4 }}>
+              {across ? <Text style={{ width: 80, fontSize: 12.5, color: t.color.textBody }}>{b.label}</Text> : null}
               {/* Horizontal: the bar's share is of the space left by the label and the value, so the value stays inside the card */}
-              {horizontal ? <View style={{ flex: 1 }}>{bar}</View> : bar}
-              {horizontal ? <Text style={{ fontSize: 12.5, color: t.color.textMuted }}>{show(b.value)}</Text>
+              {across ? <View style={{ flex: 1 }}>{bar}</View> : bar}
+              {across ? <Text style={{ fontSize: 12.5, color: t.color.textMuted }}>{show(b.value)}</Text>
                 : <Text style={{ fontSize: 11.5, textAlign: 'center', color: t.color.textMuted }}>{b.label}</Text>}
             </Touch>
           );

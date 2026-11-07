@@ -18,6 +18,7 @@ import { TimelineItem, FormProps, InfoCard, InfoCardProps, Item, ItemList, Segme
   Touch, panel } from './parts';
 import { Enter, Roll } from './motion';
 import { useTheme } from './theme';
+import { FACES, RatingVariant } from './variants';
 
 const money = (n: number, currency?: string) => `${formatAmount(n, currency)}${currency ? ` ${currency}` : ''}`;
 
@@ -461,6 +462,8 @@ export function LiveChat({ testID, label = 'Chat with us', messages, suggestions
 /* ---------- FeedbackRating ---------- */
 
 export interface FeedbackRatingProps extends FieldProps<number | null> {
+  /** The style: standard (stars), emoji (faces) or numbers. */
+  variant?: RatingVariant;
   /** A comment box under the stars. */
   comment?: string;
   onCommentChange?: (comment: string) => void;
@@ -470,7 +473,7 @@ export interface FeedbackRatingProps extends FieldProps<number | null> {
 const WORDS = ['Very poor', 'Poor', 'All right', 'Good', 'Very good'];
 
 /** Rate the experience from one to five stars, each a radio that says its meaning. */
-export function FeedbackRating({ testID, label, value, onChange, comment, onCommentChange, onSubmit, disabled, readOnly }: FeedbackRatingProps) {
+export function FeedbackRating({ testID, label, value, onChange, comment, onCommentChange, onSubmit, disabled, readOnly, variant = 'standard' }: FeedbackRatingProps) {
   const t = useTheme();
   const s = styles(t);
   return (
@@ -482,7 +485,13 @@ export function FeedbackRating({ testID, label, value, onChange, comment, onComm
           return (
             <Touch key={w} testID={`${testID}-${n}`} role="radio" label={`${n} star${n > 1 ? 's' : ''}, ${w}`} selected={value === n} disabled={disabled || readOnly}
                    onPress={() => onChange?.(n)} style={{ width: t.minTouch, alignItems: 'center' }}>
-              <Text style={{ fontSize: 28, color: value && n <= value ? t.color.warning : t.color.borderStrong }}>★</Text>
+              {variant === 'numbers' ? (
+                <View style={{ width: 40, height: 40, borderRadius: t.radius.control, borderWidth: 1, alignItems: 'center', justifyContent: 'center',
+                  borderColor: value === n ? t.color.primary : t.color.borderStrong, backgroundColor: value === n ? t.color.primary : t.color.surface }}>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: value === n ? t.color.onPrimary : t.color.text }}>{n}</Text>
+                </View>
+              ) : variant === 'emoji' ? <Text style={{ fontSize: 28, opacity: value === n ? 1 : 0.45 }}>{FACES[i]}</Text>
+                : <Text style={{ fontSize: 28, color: value && n <= value ? t.color.warning : t.color.borderStrong }}>★</Text>}
             </Touch>
           );
         })}

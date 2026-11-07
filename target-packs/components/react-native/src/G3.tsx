@@ -18,6 +18,7 @@ import { Banner, FormProps, BannerProps, CodeBoxes, CodeBoxesProps, TimelineItem
   StepsProps, Tiles, TilesProps, TimelineList, Touch, maskNumber, panel } from './parts';
 import { Enter } from './motion';
 import { useTheme } from './theme';
+import { DotRing, TimeoutVariant } from './variants';
 
 const money = (n: number, currency?: string) => `${formatAmount(n, currency)}${currency ? ` ${currency}` : ''}`;
 
@@ -508,10 +509,13 @@ export interface SessionExpiryWarningProps {
   onStay: () => void;
   /** Called when the customer signs out, or when the time runs out. */
   onSignOut: () => void;
+  /** The style: standard (dialog), countdown (a ring that empties) or sheet (from the bottom). */
+  variant?: TimeoutVariant;
 }
 
 /** Warns before the session ends, counting down; it stays until the customer chooses, and signs out at zero. */
-export function SessionExpiryWarning({ testID, open, seconds = 60, heading = 'Are you still there?', onStay, onSignOut }: SessionExpiryWarningProps) {
+export function SessionExpiryWarning({ testID, open, seconds = 60, heading = 'Are you still there?', onStay, onSignOut, variant = 'standard' }: SessionExpiryWarningProps) {
+  const t = useTheme();
   const [left, setLeft] = useState(seconds);
   const out = useRef(onSignOut);
   out.current = onSignOut;
@@ -523,12 +527,20 @@ export function SessionExpiryWarning({ testID, open, seconds = 60, heading = 'Ar
     return () => clearTimeout(timer);
   }, [open, left]);
   return (
-    <Dialog testID={testID} open={open} onOpenChange={() => undefined} cancelBehavior="none" title={heading}
+    <Dialog testID={testID} open={open} onOpenChange={() => undefined} cancelBehavior="none" title={heading} placement={variant === 'sheet' ? 'bottom' : 'center'}
             description={`For your security you will be signed out in ${left} seconds.`}
             footer={<>
               <Button testID={`${testID}-out`} label="Sign out" chroming="outlined" onAction={onSignOut} />
               <Button testID={`${testID}-stay`} label="Stay signed in" onAction={onStay} />
-            </>} />
+            </>}>
+      {variant === 'countdown' ? (
+        <View style={{ alignItems: 'center' }}>
+          <DotRing share={seconds > 0 ? left / seconds : 0} size={88} color={t.color.primary} track={t.color.surface3}>
+            <Text style={{ fontSize: 24, fontWeight: '700', color: t.color.text, fontVariant: ['tabular-nums'] }}>{Math.max(0, left)}</Text>
+          </DotRing>
+        </View>
+      ) : null}
+    </Dialog>
   );
 }
 
