@@ -789,7 +789,9 @@
     var params = new URLSearchParams(location.search);
     var jet = params.get('jet') === '21' ? 'jet21' : 'jet6';
     var mode = params.get('mode') === 'dark' ? 'dark' : 'light';
-    document.getElementById('gallery').className = 'gallery bx-theme bx-look-elevated' + (mode === 'dark' ? ' bx-dark' : '');
+    // ?look= picks one of the pack's designs (the Liquid glass gates use it); elevated by default
+    var look = /^[a-z]+$/.test(params.get('look') || '') ? params.get('look') : 'elevated';
+    document.getElementById('gallery').className = 'gallery bx-theme bx-look-' + look + (mode === 'dark' ? ' bx-dark' : '');
     var lib = jet + '/node_modules/';
     var script = document.createElement('script');
     script.src = lib + 'requirejs/require.js';
@@ -812,7 +814,7 @@
         shim: { jquery: { exports: ['jQuery', '$'] } }
       });
       // Only what JET 6 has: ojcore, ojknockout and ojcomposite (no ojbootstrap before JET 7)
-      require(['knockout', 'ojs/ojcore', 'ojs/ojknockout', 'bx/bx', 'jet-samples'], function (ko, oj, bx, samples) {
+      require(['knockout', 'ojs/ojcore', 'ojs/ojknockout', 'bx/bx', 'jet-samples'], function (ko, oj, ojknockout, bx, samples) {
         var vm = samples(ko);
         window.galleryVm = vm;
         var start = function () {

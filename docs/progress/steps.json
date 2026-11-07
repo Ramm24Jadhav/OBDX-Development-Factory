@@ -349,21 +349,22 @@
       "items": [
         {
           "name": "Contrast on glass",
-          "done": false
+          "done": true
         },
         {
           "name": "Reduced transparency and forced colours",
-          "done": false
+          "done": true
         },
         {
           "name": "Screenshots per browser",
-          "done": false
+          "done": true
         },
         {
           "name": "Frame rate",
-          "done": false
+          "done": true
         }
-      ]
+      ],
+      "note": "gates/specs/liquid.spec.ts: React, Angular and JET 21 in Chromium; contrast in both themes, reduced transparency and forced colours drop the frost, a screenshot per theme, no frame loop while still"
     },
     {
       "id": "AC",

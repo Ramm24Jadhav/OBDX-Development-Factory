@@ -180,14 +180,16 @@ bx-button, bx-icon-button { display: inline-block; }
   --bx-lg-rim: inset 0 0 0 1px rgb(255 255 255 / 0.3), inset 0 1px 1px rgb(255 255 255 / 0.6); --bx-lg-drop: 0 6px 20px rgba(15, 23, 42, 0.12), 0 1px 3px rgba(15, 23, 42, 0.08); }
 .bx-look-liquid.bx-dark, .bx-dark .bx-look-liquid, .bx-look-liquid .bx-dark { --bx-lg-tint: rgb(40 40 40 / 0.62); --bx-lg-hover: rgb(56 56 56 / 0.7);
   --bx-lg-rim: inset 0 0 0 1px rgb(255 255 255 / 0.13), inset 0 1px 1px rgb(255 255 255 / 0.2); --bx-lg-drop: 0 6px 20px rgba(0, 0, 0, 0.45); }
-.bx-look-liquid :is(.bx-btn, .bx-segmented, .bx-tabs, .bx-switch, .bx-control:has(> .bx-search), .bx-menu-list, .bx-listbox, .bx-card, .bx-dialog, .bx-sheet, .bx-toast,
+/* :where keeps this at one class of weight, so the variant colours below (brand, danger) still win */
+.bx-look-liquid :where(.bx-btn, .bx-segmented, .bx-tabs, .bx-switch, .bx-control:has(> .bx-search), .bx-menu-list, .bx-listbox, .bx-card, .bx-dialog, .bx-sheet, .bx-toast,
   .bx-fx-pill-nav .bx-nav ul, .bx-fx-dock .bx-quick ul, .bx-glass-panel) {
   /* muted text reads as body text on glass, so it keeps AA over a busy backdrop */
   --bx-muted: var(--bx-text-body); background: var(--bx-lg-tint); border-color: transparent; box-shadow: var(--bx-lg-rim), var(--bx-lg-drop);
   -webkit-backdrop-filter: blur(var(--bx-lg-blur)) saturate(var(--bx-lg-saturate)); backdrop-filter: blur(var(--bx-lg-blur)) saturate(var(--bx-lg-saturate)); }
 .bx-look-liquid .bx-btn:not(:disabled):hover, .bx-look-liquid .bx-tab:not(.is-on):hover { background: var(--bx-lg-hover); }
 .bx-look-liquid .bx-btn--callToAction, .bx-look-liquid .bx-btn--primary, .bx-look-liquid .bx-btn--solid, .bx-look-liquid .bx-switch[aria-checked="true"] { background: color-mix(in srgb, var(--bx-brand) 88%, transparent); }
-.bx-look-liquid .bx-btn--danger { background: color-mix(in srgb, var(--bx-danger-button) 88%, transparent); }
+/* A destructive action stays solid red (white text keeps AA; see-through red over a light page does not) */
+.bx-look-liquid .bx-btn--danger { background: var(--bx-danger-button); }
 .bx-look-liquid .bx-btn:focus-visible { box-shadow: var(--bx-lg-rim), var(--bx-focus); }
 .bx-look-liquid .bx-btn:not(:disabled):active { transform: scale(1.03, 0.97); }
 .bx-look-liquid .bx-tab.is-on, .bx-look-liquid .bx-segment:has(:checked) { background: var(--bx-lg-hover); box-shadow: var(--bx-lg-rim); }
@@ -208,12 +210,22 @@ bx-button, bx-icon-button { display: inline-block; }
   .bx-look-liquid { --bx-lg-tint: color-mix(in srgb, var(--bx-surface) 92%, transparent); --bx-lg-hover: var(--bx-surface-3); }
 }
 @media (prefers-reduced-transparency: reduce) {
+  /* No frost at all (not a zero blur): no backdrop layer is kept */
+  .bx-look-liquid, .bx-look-liquid * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  /* (one rule per engine: a browser drops a whole rule with a pseudo-element it does not know) */
+  .bx-look-liquid .bx-range-input::-webkit-slider-thumb { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  .bx-look-liquid .bx-range-input::-moz-range-thumb { backdrop-filter: none !important; }
   .bx-look-liquid { --bx-lg-tint: var(--bx-surface); --bx-lg-hover: var(--bx-surface-3); --bx-lg-blur: 0px; --bx-lg-saturate: 1; }
   .bx-look-liquid .bx-btn--callToAction, .bx-look-liquid .bx-btn--primary, .bx-look-liquid .bx-btn--solid, .bx-look-liquid .bx-switch[aria-checked="true"] { background: var(--bx-brand); }
   .bx-look-liquid .bx-btn--danger { background: var(--bx-danger-button); }
   .bx-lens { display: none; }
 }
 @media (forced-colors: active) {
+  /* No frost at all (not a zero blur): no backdrop layer is kept */
+  .bx-look-liquid, .bx-look-liquid * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  /* (one rule per engine: a browser drops a whole rule with a pseudo-element it does not know) */
+  .bx-look-liquid .bx-range-input::-webkit-slider-thumb { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  .bx-look-liquid .bx-range-input::-moz-range-thumb { backdrop-filter: none !important; }
   .bx-look-liquid :is(.bx-btn, .bx-segmented, .bx-tabs, .bx-switch, .bx-control:has(> .bx-search), .bx-menu-list, .bx-listbox, .bx-card, .bx-dialog, .bx-sheet, .bx-toast,
     .bx-fx-pill-nav .bx-nav ul, .bx-fx-dock .bx-quick ul, .bx-glass-panel) { background: Canvas; color: CanvasText; border: 1px solid CanvasText; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
   .bx-look-liquid .bx-btn { background: ButtonFace; color: ButtonText; border-color: ButtonText; }
