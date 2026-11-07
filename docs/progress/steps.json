@@ -225,23 +225,23 @@
       "task": "Full build, push, CI green, 8081 updated for your review",
       "session": "Main",
       "unit": "phases",
-      "note": "One per phase",
+      "note": "Released from the integration branch after the second release candidate passed every GitHub job (run 42330393407)",
       "items": [
         {
           "name": "Screens",
-          "done": false
+          "done": true
         },
         {
           "name": "Catalogue and packs",
-          "done": false
+          "done": true
         },
         {
           "name": "Gates",
-          "done": false
+          "done": true
         },
         {
           "name": "Final",
-          "done": false
+          "done": true
         }
       ]
     },
@@ -316,7 +316,7 @@
           "done": false
         }
       ],
-      "note": "expo-blur BlurView (optional), fill and rim as the fallback"
+      "note": "The iOS 26 system glass needs Xcode (left out on purpose); expo-blur draws the frost on devices"
     },
     {
       "id": "LG4",
@@ -447,7 +447,8 @@
           "name": "iOS built on a Mac",
           "done": false
         }
-      ]
+      ],
+      "note": "iOS is written but not built: it needs a Mac or a macOS job (left out on purpose)"
     }
   ]
 }
