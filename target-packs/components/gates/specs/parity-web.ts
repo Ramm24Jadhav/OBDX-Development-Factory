@@ -247,7 +247,7 @@ export function webParity(pack: string, gallery: string) {
       test('multi-select · an array of values', async ({ page }) => {
         await setJet(jet, 'jet-multi-select', ['S', 'C']);
         await input(page, 'ms1').click();
-        await page.getByRole('option', { name: 'Current •••• 0187' }).click();
+        await field(page, 'ms1').getByRole('option', { name: 'Current •••• 0187' }).click();
         await settle(page);
         expect((await jetState(jet)).picked).toEqual(['C', 'S']);
         for (const label of ['Savings •••• 4521', 'Current •••• 0187']) { await expect(field(page, 'ms1').getByRole('button', { name: `Remove ${label}` })).toHaveCount(1); }
@@ -257,9 +257,10 @@ export function webParity(pack: string, gallery: string) {
       const section = (page: Page, id: string) => page.locator(`[data-component="${id}"]`);
       /** The labels appear in this order in the element's text. */
       const inOrder = async (el: Locator, labels: readonly string[]) => {
+        // Lists draw their rows after the page is ready, so wait for every label first
+        await expect.poll(async () => { const t = await el.innerText(); return labels.filter((l) => !t.includes(l)); }, `${labels.join(', ')} all shown`).toEqual([]);
         const text = await el.innerText();
         const at = labels.map((l) => text.indexOf(l));
-        expect(at.every((p) => p >= 0), `${labels.join(', ')} all shown`).toBe(true);
         expect(at, 'in the same order').toEqual([...at].sort((a, b) => a - b));
       };
       /** A component the pack does not build has nothing to compare. */
@@ -345,7 +346,7 @@ export function webParity(pack: string, gallery: string) {
       });
 
       test('pagination · the next page written back', async ({ page }) => {
-        await jet.locator('#jet-pagination .oj-pagingcontrol-nav-next').click();
+        await jet.locator('#jet-pagination').getByRole('button', { name: 'Next Page', exact: true }).click();
         await settle(jet);
         expect((await jetState(jet)).page).toBe(2);
         const pages = section(page, 'pagination');
@@ -359,8 +360,7 @@ export function webParity(pack: string, gallery: string) {
         await jet.locator('#jet-tooltip-term').focus();
         await jet.evaluate(() => (document.getElementById('jet-tooltip') as unknown as { open: (launcher: string) => void }).open('#jet-tooltip-term'));
         await expect(jet.locator('#jet-tooltip').getByText(note)).toBeVisible();
-        await jet.keyboard.press('Escape');
-        await expect(jet.locator('#jet-tooltip').getByText(note)).toBeHidden();
+        // A stock oj-popup stays open on Escape while focus is on the term; the pack must close (WCAG 1.4.13)
         await section(page, 'tooltip').getByRole('button', { name: 'About Available balance' }).focus();
         await expect(section(page, 'tooltip').getByRole('tooltip')).toHaveText(note);
         await page.keyboard.press('Escape');
@@ -454,12 +454,14 @@ export function webParity(pack: string, gallery: string) {
       });
 
       test('budget-progress · a progressbar with the same name, value and maximum', async ({ page }) => {
-        const jetBar = jet.locator('[data-parity="budget-progress"] [data-side="jet"]').getByRole('progressbar').first();
-        const bar = section(page, 'budget-progress').getByRole('progressbar', { name: 'Groceries' });
+        // JET 6.2's oj-progress sets role="progress", not progressbar, so the JET bar is found by its id and named by its label
+        const jetBar = jet.locator('#jet-budget-progress');
+        await expect(jet.locator(`#${await jetBar.getAttribute('aria-labelledby')}`)).toHaveText('Groceries');
+        const bar = section(page, 'budget-progress').getByRole('progressbar').first();
+        await expect(bar).toHaveAccessibleName('Groceries');
         for (const attr of ['aria-valuenow', 'aria-valuemax']) {
           expect(Number(await bar.getAttribute(attr)), attr).toBe(Number(await jetBar.getAttribute(attr)));
         }
-        await expect(jetBar).toHaveAccessibleName('Groceries');
       });
     });
   }

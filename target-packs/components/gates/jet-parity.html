@@ -177,11 +177,11 @@
       <div data-side="bx"><bx-iban id="bx-iban" label-hint="Account number (IBAN)" value="{{bx.iban}}" valid="{{bx.ibanValid}}"></bx-iban></div>
     </section>
     <section class="pair" data-parity="payee-list"><h2>oj-list-view · bx-payee-list</h2>
-      <div data-side="jet"><oj-list-view id="jet-payee-list" aria-label="Payees" data="[[payeeProvider]]" selection-mode="single" current-item="{{jet.payeePicked}}"><template slot="itemTemplate"><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></template></oj-list-view></div>
+      <div data-side="jet"><oj-list-view id="jet-payee-list" aria-label="Payees" data="[[payeeProvider]]" selection-mode="single" current-item="{{jet.payeePicked}}"><template slot="itemTemplate"><span><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span></template></oj-list-view></div>
       <div data-side="bx"><bx-payee-list id="bx-payee-list" items="[[payeeRows]]" on-oj-action="[[bx.payeeChose]]"></bx-payee-list></div>
     </section>
     <section class="pair" data-parity="transaction-list"><h2>oj-list-view · bx-transaction-list</h2>
-      <div data-side="jet"><oj-list-view id="jet-transaction-list" aria-label="Transactions" data="[[txProvider]]" selection-mode="single" current-item="{{jet.txPicked}}"><template slot="itemTemplate"><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></template></oj-list-view></div>
+      <div data-side="jet"><oj-list-view id="jet-transaction-list" aria-label="Transactions" data="[[txProvider]]" selection-mode="single" current-item="{{jet.txPicked}}"><template slot="itemTemplate"><span><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></span></template></oj-list-view></div>
       <div data-side="bx"><bx-transaction-list id="bx-transaction-list" currency="USD" items="[[txns]]" on-oj-action="[[bx.txChose]]"></bx-transaction-list></div>
     </section>
     <section class="pair" data-parity="repeat"><h2>oj-buttonset-one · bx-repeat</h2>
@@ -334,7 +334,7 @@
         };
         // The later groups' JET modules load one by one: one a release does not have fails its own test, not the whole page
         var extras = ['ojs/ojmenu', 'ojs/ojcollapsible', 'ojs/ojtrain', 'ojs/ojpopup', 'ojs/ojlistview', 'ojs/ojchart', 'ojs/ojpagingcontrol',
-          'ojs/ojpagingdataproviderview', jet === 'jet6' ? 'ojs/ojprogress' : 'ojs/ojprogress-bar'];
+          'ojs/ojpagingtabledatasource', jet === 'jet6' ? 'ojs/ojprogress' : 'ojs/ojprogress-bar'];
         var pending = extras.length;
         var loaded = function () {
           pending -= 1;
@@ -342,12 +342,12 @@
           if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', start); } else { start(); }
         };
         extras.forEach(function (name) {
-          require([name], function (module) {
-            if (name === 'ojs/ojpagingdataproviderview') {
+          // JET 6.2 has no PagingDataProviderView; the table data sources page the same way in both releases
+          require(name === 'ojs/ojpagingtabledatasource' ? ['ojs/ojarraytabledatasource', name] : [name], function () {
+            if (name === 'ojs/ojpagingtabledatasource') {
               var pageRows = [];
               for (var i = 1; i <= 40; i++) { pageRows.push({ id: i }); }
-              vm.pagingView = new module(new ArrayDataProvider(pageRows, { keyAttributes: 'id' }));
-              vm.pagingView.setPage(0, { pageSize: 10 });
+              vm.pagingView = new oj.PagingTableDataSource(new oj.ArrayTableDataSource(pageRows, { idAttribute: 'id' }));
             }
             loaded();
           }, function () { console.warn('Not in this JET release: ' + name); loaded(); });

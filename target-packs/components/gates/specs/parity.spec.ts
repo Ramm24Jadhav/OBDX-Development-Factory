@@ -206,12 +206,13 @@ for (const jet of ['6', '21']) {
     const clickText = (page: Page, id: string, text: string) => async (side: Side) => { await page.locator(`#${side}-${id}`).getByText(text, { exact: true }).first().click(); };
     /** The labels appear in this order in the element's text. */
     const inOrder = async (el: Locator, labels: string[]) => {
+      // Lists draw their rows after the page is ready, so wait for every label first
+      await expect.poll(async () => { const t = await el.innerText(); return labels.filter((l) => !t.includes(l)); }, `${labels.join(', ')} all shown`).toEqual([]);
       const text = await el.innerText();
       const at = labels.map((l) => text.indexOf(l));
-      expect(at.every((p) => p >= 0), `${labels.join(', ')} all shown`).toBe(true);
       expect(at, 'in the same order').toEqual([...at].sort((a, b) => a - b));
     };
-    const shownOnce = (page: Page, text: string) => page.getByText(text, { exact: true }).filter({ visible: true });
+    const shownOnce = (scope: Locator, text: string) => scope.getByText(text, { exact: true }).filter({ visible: true });
 
     for (const [id, name, key] of [['secondary-button', 'Save for later', 'secondaryPresses'], ['danger-button', 'Cancel payment', 'dangerPresses']]) {
       test(`${id} · named by its label, on-oj-action`, async ({ page }) => {
@@ -271,11 +272,12 @@ for (const jet of ['6', '21']) {
           await page.evaluate(() => { (document.getElementById('bx-sheet') as unknown as { open: boolean }).open = true; });
         }
         await page.waitForTimeout(400);
-        await expect(shownOnce(page, 'Choose what to show.')).toHaveCount(1);
-        await expect(shownOnce(page, 'Filter transactions')).toHaveCount(1);
+        const sheet = page.locator(`#${side}-sheet`);
+        await expect(shownOnce(sheet, 'Choose what to show.')).toHaveCount(1);
+        await expect(shownOnce(sheet, 'Filter transactions')).toHaveCount(1);
         await page.keyboard.press('Escape');
         await page.waitForTimeout(400);
-        await expect(shownOnce(page, 'Choose what to show.')).toHaveCount(0);
+        await expect(shownOnce(sheet, 'Choose what to show.')).toHaveCount(0);
       }
       await expect(page.locator('#bx-sheet').getByRole('dialog', { name: 'Filter transactions' })).toHaveCount(0);
       const s = await state(page);
@@ -287,24 +289,22 @@ for (const jet of ['6', '21']) {
     test('pagination · the next page written back', async ({ page }) => {
       expect((await state(page)).jet.page).toBe(1);
       const s = await both(page, async (side) => {
-        await (side === 'jet' ? page.locator('#jet-pagination .oj-pagingcontrol-nav-next') : page.locator('#bx-pagination').getByRole('button', { name: 'Next page' })).click();
+        await (side === 'jet' ? page.locator('#jet-pagination').getByRole('button', { name: 'Next Page', exact: true }) : page.locator('#bx-pagination').getByRole('button', { name: 'Next page' })).click();
       }, ['page']);
       expect(s.bx.page).toBe(2);
     });
 
     test('tooltip · the note shown with focus on the term, hidden by Escape', async ({ page }) => {
       const note = 'What you can spend now: the balance less holds and pending card payments.';
-      for (const side of ['jet', 'bx']) {
-        if (side === 'jet') {
-          await page.locator('#jet-tooltip-term').focus();
-          await page.evaluate(() => (document.getElementById('jet-tooltip') as unknown as { open: (launcher: string) => void }).open('#jet-tooltip-term'));
-        } else {
-          await page.locator('#bx-tooltip').getByRole('button', { name: 'About Available balance' }).focus();
-        }
-        await expect(page.locator(`#${side}-tooltip`).getByText(note)).toBeVisible();
-        await page.keyboard.press('Escape');
-        await expect(page.locator(`#${side}-tooltip`).getByText(note)).toBeHidden();
-      }
+      await page.locator('#jet-tooltip-term').focus();
+      await page.evaluate(() => (document.getElementById('jet-tooltip') as unknown as { open: (launcher: string) => void }).open('#jet-tooltip-term'));
+      await expect(page.locator('#jet-tooltip').getByText(note)).toBeVisible();
+      // A stock oj-popup stays open on Escape while focus is on the term; the bx- tooltip must close (WCAG 1.4.13)
+      await page.evaluate(() => (document.getElementById('jet-tooltip') as unknown as { close: () => void }).close());
+      await page.locator('#bx-tooltip').getByRole('button', { name: 'About Available balance' }).focus();
+      await expect(page.locator('#bx-tooltip').getByText(note)).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#bx-tooltip').getByText(note)).toBeHidden();
       await expect(page.locator('#bx-tooltip').getByRole('tooltip', { includeHidden: true })).toHaveCount(1);
     });
 
@@ -391,12 +391,15 @@ for (const jet of ['6', '21']) {
     });
 
     test('budget-progress · a progressbar with the same name, value and maximum', async ({ page }) => {
-      const bar = (side: Side) => page.locator(`[data-parity="budget-progress"] [data-side="${side}"]`).getByRole('progressbar').first();
+      // JET 6.2's oj-progress sets role="progress", not progressbar, so the JET bar is found by its id and named by its label
+      const jetBar = page.locator('#jet-budget-progress');
+      const bxBar = page.locator('#bx-budget-progress').getByRole('progressbar').first();
       for (const attr of ['aria-valuenow', 'aria-valuemax']) {
-        expect(Number(await bar('bx').getAttribute(attr)), attr).toBe(Number(await bar('jet').getAttribute(attr)));
+        expect(Number(await bxBar.getAttribute(attr)), attr).toBe(Number(await jetBar.getAttribute(attr)));
       }
-      expect(Number(await bar('bx').getAttribute('aria-valuenow'))).toBe(320);
-      for (const side of ['jet', 'bx'] as const) { await expect(bar(side)).toHaveAccessibleName('Groceries'); }
+      expect(Number(await bxBar.getAttribute('aria-valuenow'))).toBe(320);
+      await expect(page.locator(`#${await jetBar.getAttribute('aria-labelledby')}`)).toHaveText('Groceries');
+      await expect(bxBar).toHaveAccessibleName('Groceries');
     });
   });
 }
