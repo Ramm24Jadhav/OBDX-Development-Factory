@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { Locator, Page, expect, test } from '@playwright/test';
 
 /*
@@ -10,6 +11,10 @@ import { Locator, Page, expect, test } from '@playwright/test';
 const JET = 'http://localhost:5183/gates/jet-parity.html';
 
 type JetState = Record<string, unknown>;
+
+/** The catalogue's name for each component per pack; a component a pack has no name for is not built there. */
+const CATALOGUE = JSON.parse(readFileSync(new URL('../../catalogue.json', import.meta.url), 'utf8')) as { categories: { components: { id: string; names?: Record<string, string> }[] }[] };
+const NAMED = new Map(CATALOGUE.categories.flatMap((c) => c.components).map((e) => [e.id, e.names || {}]));
 
 async function openJet(page: Page, release: string) {
   await page.goto(`${JET}?jet=${release}`);
@@ -105,9 +110,13 @@ export function webParity(pack: string, gallery: string) {
         await expect(input(page, 'dp')).toHaveValue('2026-11-20');
       });
 
-      test('button and icon-button · the same roles and names', async ({ page }) => {
+      // One test per component, so record.mjs can put each one's result in packs.json
+      test('button · the same role and name', async ({ page }) => {
         await expect(jet.locator('#jet-button').getByRole('button', { name: 'Pay now' })).toHaveCount(1);
         await expect(page.locator('[data-component="button"]').getByRole('button', { name: 'Pay now' })).toHaveCount(1);
+      });
+
+      test('icon-button · the same role and name', async ({ page }) => {
         await expect(jet.locator('#jet-icon-button').getByRole('button', { name: 'More actions' })).toHaveCount(1);
         await expect(page.locator('[data-component="icon-button"]').getByRole('button', { name: 'More actions' })).toHaveCount(1);
       });
@@ -233,6 +242,228 @@ export function webParity(pack: string, gallery: string) {
         await expect(field(page, 'du1').getByRole('alert')).toBeVisible();
         await expect(field(page, 'du1').getByText('setup.exe', { exact: true })).toHaveCount(0);
         // JET 21's oj-file-picker refuses it the same way (JET 6.2 passes any type: see parity.spec.ts)
+      });
+
+      test('multi-select · an array of values', async ({ page }) => {
+        await setJet(jet, 'jet-multi-select', ['S', 'C']);
+        await input(page, 'ms1').click();
+        await field(page, 'ms1').getByRole('option', { name: 'Current •••• 0187' }).click();
+        await settle(page);
+        expect((await jetState(jet)).picked).toEqual(['C', 'S']);
+        for (const label of ['Savings •••• 4521', 'Current •••• 0187']) { await expect(field(page, 'ms1').getByRole('button', { name: `Remove ${label}` })).toHaveCount(1); }
+      });
+
+      // ---------- Groups 1 to 4: the rest of the components that replace a JET element ----------
+      const section = (page: Page, id: string) => page.locator(`[data-component="${id}"]`);
+      /** The labels appear in this order in the element's text. */
+      const inOrder = async (el: Locator, labels: readonly string[]) => {
+        // Lists draw their rows after the page is ready, so wait for every label first
+        await expect.poll(async () => { const t = await el.innerText(); return labels.filter((l) => !t.includes(l)); }, `${labels.join(', ')} all shown`).toEqual([]);
+        const text = await el.innerText();
+        const at = labels.map((l) => text.indexOf(l));
+        expect(at, 'in the same order').toEqual([...at].sort((a, b) => a - b));
+      };
+      /** A component the pack does not build has nothing to compare. */
+      const built = (id: string) => test.skip(!NAMED.get(id)?.[pack], `${pack} does not build ${id}`);
+
+      for (const [id, name, key] of [['secondary-button', 'Save for later', 'secondaryPresses'], ['danger-button', 'Cancel payment', 'dangerPresses']]) {
+        test(`${id} · the same role and name, enabled`, async ({ page }) => {
+          built(id);
+          await jet.locator(`#jet-${id}`).getByRole('button', { name }).click();
+          await settle(jet);
+          expect((await jetState(jet))[key]).toBe(1);
+          await expect(section(page, id).getByRole('button', { name }).first()).toBeEnabled();
+        });
+      }
+
+      for (const [id, to] of [['segmented', 'Month'], ['repeat', 'Monthly']]) {
+        test(`${id} · one value, picked by its label`, async ({ page }) => {
+          built(id);
+          await jet.locator(`#jet-${id}`).getByText(to, { exact: true }).first().click();
+          await section(page, id).getByRole('radio', { name: to }).click();
+          await settle(jet);
+          expect((await jetState(jet))[id === 'segmented' ? 'show' : 'repeat']).toBe(to);
+          await expect(section(page, id).getByRole('radio', { name: to })).toHaveAttribute('aria-checked', 'true');
+          await expect(section(page, id).getByRole('radio', { checked: true })).toHaveCount(1);
+        });
+      }
+
+      test('action-menu · a menu of actions; picking one closes it', async ({ page }) => {
+        await jet.locator('#jet-action-menu').getByRole('button', { name: 'Account actions' }).click();
+        await jet.getByRole('menuitem', { name: 'Set a nickname' }).click();
+        await settle(jet);
+        expect((await jetState(jet)).menuPicked).toBe('nickname');
+        const menu = section(page, 'action-menu');
+        await menu.getByRole('button', { name: 'More' }).click();
+        await expect(menu.getByRole('menu')).toBeVisible();
+        await menu.getByRole('menuitem', { name: 'Set a nickname' }).click();
+        await expect(menu.getByRole('menuitem')).toHaveCount(0);
+      });
+
+      test('accordion · a section opened, its body shown', async ({ page }) => {
+        built('accordion');
+        await jet.locator('#jet-accordion').getByText('How long does a transfer take?', { exact: true }).click();
+        await settle(jet);
+        expect((await jetState(jet)).faq).toEqual(['a']);
+        await expect(jet.locator('#jet-accordion').getByText('Same day inside the bank', { exact: false })).toBeVisible();
+        const head = section(page, 'accordion').getByRole('button', { name: 'How long does a transfer take?' });
+        await head.click();
+        await expect(head).toHaveAttribute('aria-expanded', 'true');
+        await expect(section(page, 'accordion').getByRole('region', { name: 'How long does a transfer take?' })).toContainText('Same day inside the bank');
+      });
+
+      for (const [id, labels, current] of [['stepper', ['Details', 'Review', 'Done'], 'Review'], ['payment-status', ['Initiated', 'Approved', 'Sent', 'Completed'], 'Sent'],
+        ['kyc-steps', ['ID', 'Selfie', 'Address'], 'Selfie']] as const) {
+        test(`${id} · the same steps in order, the selected one current`, async ({ page }) => {
+          built(id);
+          await inOrder(jet.locator(`#jet-${id}`), labels);
+          await inOrder(section(page, id), labels);
+          await expect(section(page, id).locator('[aria-current="step"]')).toContainText(current);
+        });
+      }
+
+      test('side-nav · the selection written back', async ({ page }) => {
+        await jet.locator('#jet-side-nav').getByText('Payments', { exact: true }).click();
+        await section(page, 'side-nav').getByRole('button', { name: 'Payments' }).click();
+        await settle(jet);
+        expect((await jetState(jet)).nav).toBe('Payments');
+        await expect(section(page, 'side-nav').getByRole('button', { name: 'Payments' })).toHaveAttribute('aria-current', 'page');
+      });
+
+      test('sheet · a modal with its heading; Escape closes it', async ({ page }) => {
+        await jet.locator('#jet-sheet-opener').focus();
+        await jet.evaluate(() => (document.getElementById('jet-sheet') as unknown as { open: (launcher: string) => void }).open('#jet-sheet-opener'));
+        // The stock JET popup is the reference for what shows; Escape closing it is required of the pack below
+        await expect(jet.locator('#jet-sheet').getByText('Choose what to show.', { exact: true })).toBeVisible();
+        await jet.evaluate(() => (document.getElementById('jet-sheet') as unknown as { close: () => void }).close());
+        await expect(jet.locator('#jet-sheet').getByText('Choose what to show.', { exact: true })).toBeHidden();
+        // JET 21 fires ojClose after its close animation
+        await expect.poll(async () => (await jetState(jet)).sheetCloses).toBe(1);
+        await section(page, 'sheet').getByRole('button', { name: 'Filter' }).click();
+        const sheet = page.getByRole('dialog', { name: 'Filter transactions' });
+        await expect(sheet).toBeVisible();
+        await expect(sheet.getByText('Choose what to show.')).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(sheet).toHaveCount(0);
+      });
+
+      test('pagination · the next page written back', async ({ page }) => {
+        await jet.locator('#jet-pagination').getByRole('button', { name: 'Next Page', exact: true }).click();
+        await settle(jet);
+        expect((await jetState(jet)).page).toBe(2);
+        const pages = section(page, 'pagination');
+        const before = Number(await pages.locator('[aria-current="page"]').innerText());
+        await pages.getByRole('button', { name: 'Next page' }).click();
+        await expect(pages.locator('[aria-current="page"]')).toHaveText(String(before + 1));
+      });
+
+      test('tooltip · the note shown with focus on the term, hidden by Escape', async ({ page }) => {
+        const note = 'What you can spend now: the balance less holds and pending card payments.';
+        await jet.locator('#jet-tooltip-term').focus();
+        await jet.evaluate(() => (document.getElementById('jet-tooltip') as unknown as { open: (launcher: string) => void }).open('#jet-tooltip-term'));
+        await expect(jet.locator('#jet-tooltip').getByText(note)).toBeVisible();
+        // A stock oj-popup stays open on Escape while focus is on the term; the pack must close (WCAG 1.4.13)
+        await section(page, 'tooltip').getByRole('button', { name: 'About Available balance' }).focus();
+        await expect(section(page, 'tooltip').getByRole('tooltip')).toHaveText(note);
+        await page.keyboard.press('Escape');
+        await expect(section(page, 'tooltip').getByText(note)).toBeHidden();
+      });
+
+      for (const [id, text, role] of [['alert-banner', 'Transfers after 6 pm arrive the next working day.', 'status'],
+        ['error-message', 'The amount is more than your daily limit of 5,000.00.', 'alert'], ['success-message', 'Payment sent. Reference FX-20391.', 'status']] as const) {
+        test(`${id} · the same message shown`, async ({ page }) => {
+          await expect(jet.locator(`#jet-${id}`).getByText(text)).toBeVisible();
+          await expect(section(page, id).getByRole(role).filter({ hasText: text })).toBeVisible();
+        });
+      }
+
+      test('account-picker · the value chosen', async ({ page }) => {
+        await setJet(jet, 'jet-account-picker', 'C');
+        await input(page, 'ap1').selectOption('C');
+        await settle(page);
+        expect((await jetState(jet)).fromAccount).toBe('C');
+        await expect(input(page, 'ap1')).toHaveValue('C');
+      });
+
+      test('iban · a valid IBAN written back; one that fails the checksum refused with a message', async ({ page }) => {
+        const plain = async () => (await input(page, 'ib1').inputValue()).replace(/\s+/g, '');
+        await type(jet, jet.locator('#jet-iban input').first(), 'GB82WEST12345698765432');
+        await type(page, input(page, 'ib1'), 'GB82 WEST 1234 5698 7654 32');
+        expect((await jetState(jet)).iban).toBe('GB82WEST12345698765432');
+        expect(await plain()).toBe('GB82WEST12345698765432');
+        await type(jet, jet.locator('#jet-iban input').first(), 'GB28NWBK60161331926819');
+        await type(page, input(page, 'ib1'), 'GB28NWBK60161331926819');
+        expect((await jetState(jet)).iban).toBe('GB82WEST12345698765432');
+        expect((await jetState(jet)).ibanValid).toBe('invalidShown');
+        expect(await showsError(field(page, 'ib1'), input(page, 'ib1'))).toBe(true);
+      });
+
+      for (const [id, names, pick, key, value] of [['payee-list', ['A. Rao', 'J. Mehta'], 'J. Mehta', 'payeePicked', 'p2'],
+        ['transaction-list', ['Coffee House', 'Salary', 'Electricity'], 'Salary', 'txPicked', 't2']] as const) {
+        test(`${id} · the same rows in order, each one a control`, async ({ page }) => {
+          await inOrder(jet.locator(`#jet-${id}`), names);
+          await jet.locator(`#jet-${id}`).getByText(pick, { exact: true }).first().click();
+          await settle(jet);
+          expect((await jetState(jet))[key]).toBe(value);
+          const rows = section(page, id).locator('[data-testid]').first();
+          await inOrder(rows, names);
+          if (id === 'payee-list') { await expect(rows.getByRole('button', { name: pick })).toHaveCount(1); }
+        });
+      }
+
+      test('otp · the code written back', async ({ page }) => {
+        await type(jet, jet.locator('#jet-otp input').first(), '123456');
+        await type(page, field(page, 'ot1').locator('input'), '123456');
+        expect((await jetState(jet)).otp).toBe('123456');
+        await expect(field(page, 'ot1').locator('input')).toHaveValue('123456');
+        await expect(field(page, 'ot1').getByLabel('Enter the code')).toHaveCount(1);
+      });
+
+      test('session-timeout · a modal named by its title; Stay signed in closes it', async ({ page }) => {
+        await jet.evaluate(() => (document.getElementById('jet-session-timeout') as unknown as { open: () => void }).open());
+        const jetDialog = jet.getByRole('dialog', { name: 'Are you still there?' });
+        await expect(jetDialog).toBeVisible();
+        await jetDialog.getByRole('button', { name: 'Stay signed in' }).click();
+        await expect.poll(async () => (await jetState(jet)).timeoutOpen).toBe(false);
+        expect((await jetState(jet)).timeoutActions).toEqual(['stay']);
+        await section(page, 'session-timeout').getByRole('button', { name: 'Show the warning' }).click();
+        const dialog = page.locator('[role="dialog"], [role="alertdialog"]').filter({ hasText: 'Are you still there?' });
+        await expect(dialog).toBeVisible();
+        await expect(dialog).toHaveAccessibleName('Are you still there?');
+        await expect(dialog.getByRole('button', { name: 'Sign out' })).toHaveCount(1);
+        await dialog.getByRole('button', { name: 'Stay signed in' }).click();
+        await expect(dialog).toHaveCount(0);
+      });
+
+      test('sensitive · masked until shown, then the same number as the JET field', async ({ page }) => {
+        const full = await jet.evaluate(() => (document.getElementById('jet-sensitive') as unknown as { value: string }).value);
+        const sf = field(page, 'sf1');
+        await expect(sf.getByRole('group', { name: 'Card number' })).toHaveCount(1);
+        await expect(sf.getByText(full)).toHaveCount(0);
+        await sf.getByRole('button', { name: 'Show Card number' }).click();
+        await expect(sf.getByText(full)).toBeVisible();
+      });
+
+      test('spending-chart · the same months and figures as oj-chart', async ({ page }) => {
+        const jetBars = await jet.evaluate(async () => {
+          const c = document.getElementById('jet-spending-chart') as unknown as { getDataItem: (s: number, g: number) => { group: unknown; value: number } | null };
+          for (let i = 0; i < 50 && !(c.getDataItem && c.getDataItem(0, 4)); i++) { await new Promise((r) => setTimeout(r, 100)); }
+          return [0, 1, 2, 3, 4].map((g) => { const d = c.getDataItem(0, g); return d ? { label: String(d.group), value: Number(d.value) } : null; });
+        });
+        const bars = await section(page, 'spending-chart').locator('.bx-bar').evaluateAll((list) => list.map((b) => ({
+          label: (b.querySelector('.bx-bar-label')?.textContent || '').trim(), value: Number((b.querySelector('.bx-bar-value')?.textContent || '').replace(/[^\d.-]/g, '')) })));
+        expect(bars).toEqual(jetBars);
+      });
+
+      test('budget-progress · a progressbar with the same name, value and maximum', async ({ page }) => {
+        // JET 6.2's oj-progress sets role="progress", not progressbar, so the JET bar is found by its id and named by its label
+        const jetBar = jet.locator('#jet-budget-progress');
+        await expect(jet.locator(`#${await jetBar.getAttribute('aria-labelledby')}`)).toHaveText('Groceries');
+        const bar = section(page, 'budget-progress').getByRole('progressbar').first();
+        await expect(bar).toHaveAccessibleName('Groceries');
+        for (const attr of ['aria-valuenow', 'aria-valuemax']) {
+          expect(Number(await bar.getAttribute(attr)), attr).toBe(Number(await jetBar.getAttribute(attr)));
+        }
       });
     });
   }

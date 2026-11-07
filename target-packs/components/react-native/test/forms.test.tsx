@@ -58,10 +58,10 @@ describe('CurrencySelector', () => {
   it('opens a sheet of currencies and shows the chosen code with its name', async () => {
     let seen = '';
     await render(<Controlled initial="">{(v, set) => <CurrencySelector testID="c" label="Currency" value={v} onChange={(x) => { seen = x; set(x); }} />}</Controlled>);
-    await fireEvent.press(screen.getByRole('button', { name: 'Currency, nothing chosen' }));
+    await fireEvent.press(screen.getByRole('button', { name: /, Currency$/ }));
     await fireEvent.press(screen.getByRole('radio', { name: 'EUR, Euro' }));
     expect(seen).toBe('EUR');
-    expect(screen.getByRole('button', { name: 'Currency, EUR · Euro' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'EUR · Euro, Currency' })).toBeTruthy();
     expect(accessibilityProblems()).toEqual([]);
   });
 });
@@ -72,7 +72,7 @@ describe('MultiSelect', () => {
   it('ticks several in the sheet, shows chips and removes them', async () => {
     let seen: string[] = [];
     await render(<Controlled<string[]> initial={[]}>{(v, set) => <MultiSelect testID="m" label="Accounts" options={options} value={v} onChange={(x) => { seen = x; set(x); }} />}</Controlled>);
-    await fireEvent.press(screen.getByRole('button', { name: 'Accounts, nothing chosen' }));
+    await fireEvent.press(screen.getByRole('button', { name: /, Accounts$/ }));
     await fireEvent.press(screen.getByRole('checkbox', { name: 'Savings' }));
     await fireEvent.press(screen.getByRole('checkbox', { name: 'Deposits' }));
     expect(seen).toEqual(['S', 'D']);

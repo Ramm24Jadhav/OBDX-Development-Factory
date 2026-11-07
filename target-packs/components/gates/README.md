@@ -10,6 +10,7 @@ each web pack's gallery. Every foundation component sits in its own `<section da
 | Responsive | at 375, 768 and 1280 px nothing runs past the section or makes the page scroll sideways, and controls are at least 24 by 24 px on a phone (WCAG 2.5.8) |
 | Visual | light and dark screenshots match the accepted ones in `snapshots/<platform>/` |
 | Parity (premium JET) | the JET element and the `bx-` element that replaces it are driven the same way in one JET app, and the screen's view model must see the same values, events and methods |
+| Parity (React, Angular) | `specs/parity-web.ts`: the pack's component in its gallery and the JET element on `jet-parity.html` are driven the same way and show the same values, names and messages; every catalogue component that replaces a JET element (`workspace.kind` is `element`) has a test, skipped where the pack does not build it |
 
 The galleries:
 

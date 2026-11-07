@@ -88,7 +88,7 @@ export function GlareHover({ testID, children, style, onPress, label }: WrapProp
   const sweep = () => { if (r) { return; } x.setValue(0); Animated.timing(x, { toValue: 1, duration: 650, easing: EASING.standard, useNativeDriver: true }).start(); };
   return (
     <Pressable testID={testID} accessibilityRole={onPress ? 'button' : undefined} accessibilityLabel={label} onPressIn={sweep} onPress={onPress}
-               style={[{ overflow: 'hidden', borderRadius: t.radius.card }, style]}>
+               style={[{ overflow: 'hidden', borderRadius: t.radius.card }, onPress ? { minHeight: t.minTouch, justifyContent: 'center' } : null, style]}>
       {children}
       <Animated.View pointerEvents="none" importantForAccessibility="no"
                      style={{ position: 'absolute', top: -20, bottom: -20, width: 80, left: 0, opacity: x.interpolate({ inputRange: [0, 0.1, 0.9, 1], outputRange: [0, 1, 1, 0] }),

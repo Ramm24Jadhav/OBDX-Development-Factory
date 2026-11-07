@@ -422,6 +422,7 @@ export function ScrubField({ testID, label, value, onChange, min = 0, max, step 
       <Text style={s.label} importantForAccessibility="no">{label}</Text>
       <Shake error={error}>
         <View {...pan.panHandlers} accessible accessibilityRole="adjustable" accessibilityLabel={label} accessibilityValue={{ min, max, now: at, text: shown }}
+              aria-valuemin={min} aria-valuemax={max} aria-valuenow={at} aria-valuetext={shown}
               accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]} accessibilityState={{ disabled: !!disabled }}
               onAccessibilityAction={(e) => onChange?.(clamp(at + (e.nativeEvent.actionName === 'increment' ? step : -step)))}
               style={{ minHeight: t.minTouch + 8, borderRadius: t.radius.control, borderWidth: t.border, borderColor: error ? t.color.danger : t.color.borderStrong,
@@ -531,7 +532,7 @@ export function PromptBar({ testID, label = 'Ask the assistant', value, onChange
       backgroundColor: t.color.surface, borderWidth: 1, borderColor: t.color.border }}>
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: 999, borderWidth: 2, borderColor: t.color.primary,
         opacity: busy || focused ? glow.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.35, 1, 0.35] }) : 0 }]} />
-      <TextInput testID={testID ? `${testID}-input` : undefined} style={{ flex: 1, fontSize: 16, color: t.color.text, paddingVertical: 10 }} value={value}
+      <TextInput testID={testID ? `${testID}-input` : undefined} style={{ flex: 1, minHeight: t.minTouch, fontSize: 16, color: t.color.text, paddingVertical: 10 }} value={value}
                  onChangeText={onChange} placeholder={placeholder} placeholderTextColor={t.color.textMuted} accessibilityLabel={label} returnKeyType="send"
                  onSubmitEditing={send} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} />
       <Button testID={testID ? `${testID}-send` : undefined} label="Send" busy={busy} disabled={!value.trim()} onAction={send} />

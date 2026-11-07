@@ -107,6 +107,110 @@
       <div data-side="jet"><oj-file-picker id="jet-document-upload" accept='[".pdf"]' selection-mode="single" on-oj-select="[[jet.chose]]" on-oj-invalid-select="[[jet.refused]]"></oj-file-picker></div>
       <div data-side="bx"><bx-document-upload id="bx-document-upload" label-hint="Proof of address" accept='[".pdf"]' selection-mode="single" on-oj-select="[[bx.chose]]" on-oj-invalid-select="[[bx.refused]]"></bx-document-upload></div>
     </section>
+    <!-- Groups 1 to 4: the rest of the components that replace a JET element -->
+    <section class="pair" data-parity="secondary-button"><h2>oj-button chroming="outlined" · bx-secondary-button</h2>
+      <div data-side="jet"><oj-button id="jet-secondary-button" chroming="outlined" on-oj-action="[[jet.pressSecondary]]">Save for later</oj-button></div>
+      <div data-side="bx"><bx-secondary-button id="bx-secondary-button" label="Save for later" on-oj-action="[[bx.pressSecondary]]"></bx-secondary-button></div>
+    </section>
+    <section class="pair" data-parity="danger-button"><h2>oj-button · bx-danger-button</h2>
+      <div data-side="jet"><oj-button id="jet-danger-button" on-oj-action="[[jet.pressDanger]]">Cancel payment</oj-button></div>
+      <div data-side="bx"><bx-danger-button id="bx-danger-button" label="Cancel payment" on-oj-action="[[bx.pressDanger]]"></bx-danger-button></div>
+    </section>
+    <section class="pair" data-parity="segmented"><h2>oj-buttonset-one · bx-segmented</h2>
+      <div data-side="jet"><oj-buttonset-one id="jet-segmented" aria-label="Show" value="{{jet.show}}"><oj-option value="Day">Day</oj-option><oj-option value="Week">Week</oj-option><oj-option value="Month">Month</oj-option></oj-buttonset-one></div>
+      <div data-side="bx"><bx-segmented id="bx-segmented" label-hint="Show" options='["Day", "Week", "Month"]' value="{{bx.show}}"></bx-segmented></div>
+    </section>
+    <section class="pair" data-parity="action-menu"><h2>oj-menu-button · bx-action-menu</h2>
+      <div data-side="jet"><oj-menu-button id="jet-action-menu">Account actions<oj-menu slot="menu" on-oj-action="[[jet.menuAct]]"><oj-option value="download">Download statement</oj-option><oj-option value="nickname">Set a nickname</oj-option></oj-menu></oj-menu-button></div>
+      <div data-side="bx"><bx-action-menu id="bx-action-menu" label="Account actions" items="[[menuItems]]" on-oj-action="[[bx.menuAct]]"></bx-action-menu></div>
+    </section>
+    <section class="pair" data-parity="accordion"><h2>oj-collapsible · bx-accordion</h2>
+      <div data-side="jet"><oj-collapsible id="jet-accordion" expanded="{{jet.faqOpen}}"><h3 slot="header">How long does a transfer take?</h3><div>Same day inside the bank; up to 2 working days to other banks.</div></oj-collapsible></div>
+      <div data-side="bx"><bx-accordion id="bx-accordion" items="[[faq]]" expanded="{{bx.faq}}"></bx-accordion></div>
+    </section>
+    <section class="pair" data-parity="stepper"><h2>oj-train · bx-stepper</h2>
+      <div data-side="jet"><oj-train id="jet-stepper" aria-label="Progress" steps="[[train.stepper]]" selected-step="Review"></oj-train></div>
+      <div data-side="bx"><bx-stepper id="bx-stepper" label="Progress" steps='["Details", "Review", "Done"]' selected-step="Review"></bx-stepper></div>
+    </section>
+    <section class="pair" data-parity="payment-status"><h2>oj-train · bx-payment-status</h2>
+      <div data-side="jet"><oj-train id="jet-payment-status" aria-label="Payment status" steps="[[train.payment]]" selected-step="Sent"></oj-train></div>
+      <div data-side="bx"><bx-payment-status id="bx-payment-status" steps='["Initiated", "Approved", "Sent", "Completed"]' selected-step="Sent"></bx-payment-status></div>
+    </section>
+    <section class="pair" data-parity="kyc-steps"><h2>oj-train · bx-kyc-steps</h2>
+      <div data-side="jet"><oj-train id="jet-kyc-steps" aria-label="Verify your identity" steps="[[train.kyc]]" selected-step="Selfie"></oj-train></div>
+      <div data-side="bx"><bx-kyc-steps id="bx-kyc-steps" selected-step="Selfie"></bx-kyc-steps></div>
+    </section>
+    <section class="pair" data-parity="side-nav"><h2>oj-navigation-list · bx-side-nav</h2>
+      <div data-side="jet"><oj-navigation-list id="jet-side-nav" aria-label="Main" drill-mode="none" selection="{{jet.nav}}"><ul><li id="Accounts"><a href="#">Accounts</a></li><li id="Payments"><a href="#">Payments</a></li><li id="Cards"><a href="#">Cards</a></li></ul></oj-navigation-list></div>
+      <div data-side="bx"><bx-side-nav id="bx-side-nav" label="Main" items='["Accounts", "Payments", "Cards"]' selection="{{bx.nav}}"></bx-side-nav></div>
+    </section>
+    <section class="pair" data-parity="sheet"><h2>oj-popup modality="modal" · bx-sheet</h2>
+      <div data-side="jet"><button type="button" id="jet-sheet-opener">Filter</button><oj-popup id="jet-sheet" modality="modal" on-oj-close="[[jet.sheetClosed]]"><h2>Filter transactions</h2><p>Choose what to show.</p></oj-popup></div>
+      <div data-side="bx"><bx-sheet id="bx-sheet" heading="Filter transactions" open="{{bx.sheetOpen}}" on-oj-close="[[bx.sheetClosed]]"><p>Choose what to show.</p></bx-sheet></div>
+    </section>
+    <section class="pair" data-parity="pagination"><h2>oj-paging-control · bx-pagination</h2>
+      <div data-side="jet"><oj-bind-if test="[[pagingView]]"><oj-paging-control id="jet-pagination" data="[[pagingView]]" page-size="10"></oj-paging-control></oj-bind-if></div>
+      <div data-side="bx"><bx-pagination id="bx-pagination" page="{{bx.page}}" page-count="4"></bx-pagination></div>
+    </section>
+    <section class="pair" data-parity="tooltip"><h2>oj-popup · bx-tooltip</h2>
+      <div data-side="jet"><span>Available balance</span><button type="button" id="jet-tooltip-term" aria-label="About Available balance">i</button><oj-popup id="jet-tooltip">What you can spend now: the balance less holds and pending card payments.</oj-popup></div>
+      <div data-side="bx"><bx-tooltip id="bx-tooltip" label="Available balance" text="What you can spend now: the balance less holds and pending card payments."></bx-tooltip></div>
+    </section>
+    <section class="pair" data-parity="alert-banner"><h2>oj-messages · bx-alert-banner</h2>
+      <div data-side="jet"><oj-messages id="jet-alert-banner" messages="[[notices.info]]" display="general"></oj-messages></div>
+      <div data-side="bx"><bx-alert-banner id="bx-alert-banner" message="Transfers after 6 pm arrive the next working day."></bx-alert-banner></div>
+    </section>
+    <section class="pair" data-parity="error-message"><h2>oj-messages · bx-error-message</h2>
+      <div data-side="jet"><oj-messages id="jet-error-message" messages="[[notices.error]]" display="general"></oj-messages></div>
+      <div data-side="bx"><bx-error-message id="bx-error-message" message="The amount is more than your daily limit of 5,000.00."></bx-error-message></div>
+    </section>
+    <section class="pair" data-parity="success-message"><h2>oj-messages · bx-success-message</h2>
+      <div data-side="jet"><oj-messages id="jet-success-message" messages="[[notices.success]]" display="general"></oj-messages></div>
+      <div data-side="bx"><bx-success-message id="bx-success-message" message="Payment sent. Reference FX-20391."></bx-success-message></div>
+    </section>
+    <section class="pair" data-parity="account-picker"><h2>oj-select-one · bx-account-picker</h2>
+      <div data-side="jet"><oj-select-one id="jet-account-picker" label-hint="From account" placeholder="Choose" value="{{jet.fromAccount}}"><oj-option value="S">Savings •••• 4521</oj-option><oj-option value="C">Current •••• 0187</oj-option></oj-select-one></div>
+      <div data-side="bx"><bx-account-picker id="bx-account-picker" label-hint="From account" options="[[accounts]]" value="{{bx.fromAccount}}"></bx-account-picker></div>
+    </section>
+    <section class="pair" data-parity="iban"><h2>oj-input-text with an IBAN validator · bx-iban</h2>
+      <div data-side="jet"><oj-input-text id="jet-iban" label-hint="Account number (IBAN)" value="{{jet.iban}}" validators="[[ibanValidators]]" valid="{{jet.ibanValid}}"></oj-input-text></div>
+      <div data-side="bx"><bx-iban id="bx-iban" label-hint="Account number (IBAN)" value="{{bx.iban}}" valid="{{bx.ibanValid}}"></bx-iban></div>
+    </section>
+    <section class="pair" data-parity="payee-list"><h2>oj-list-view · bx-payee-list</h2>
+      <div data-side="jet"><oj-list-view id="jet-payee-list" aria-label="Payees" data="[[payeeProvider]]" selection-mode="single" current-item="{{jet.payeePicked}}"><template slot="itemTemplate"><span><oj-bind-text value="[[$current.data.name]]"></oj-bind-text></span></template></oj-list-view></div>
+      <div data-side="bx"><bx-payee-list id="bx-payee-list" items="[[payeeRows]]" on-oj-action="[[bx.payeeChose]]"></bx-payee-list></div>
+    </section>
+    <section class="pair" data-parity="transaction-list"><h2>oj-list-view · bx-transaction-list</h2>
+      <div data-side="jet"><oj-list-view id="jet-transaction-list" aria-label="Transactions" data="[[txProvider]]" selection-mode="single" current-item="{{jet.txPicked}}"><template slot="itemTemplate"><span><oj-bind-text value="[[$current.data.description]]"></oj-bind-text></span></template></oj-list-view></div>
+      <div data-side="bx"><bx-transaction-list id="bx-transaction-list" currency="USD" items="[[txns]]" on-oj-action="[[bx.txChose]]"></bx-transaction-list></div>
+    </section>
+    <section class="pair" data-parity="repeat"><h2>oj-buttonset-one · bx-repeat</h2>
+      <div data-side="jet"><oj-buttonset-one id="jet-repeat" aria-label="Repeat" value="{{jet.repeat}}"><oj-option value="Once">Once</oj-option><oj-option value="Weekly">Weekly</oj-option><oj-option value="Monthly">Monthly</oj-option></oj-buttonset-one></div>
+      <div data-side="bx"><bx-repeat id="bx-repeat" value="{{bx.repeat}}"></bx-repeat></div>
+    </section>
+    <section class="pair" data-parity="otp"><h2>oj-input-text · bx-otp</h2>
+      <div data-side="jet"><oj-input-text id="jet-otp" label-hint="Enter the code" required="true" value="{{jet.otp}}" valid="{{jet.otpValid}}"></oj-input-text></div>
+      <div data-side="bx"><bx-otp id="bx-otp" label-hint="Enter the code" required="true" value="{{bx.otp}}" valid="{{bx.otpValid}}"></bx-otp></div>
+    </section>
+    <section class="pair" data-parity="session-timeout"><h2>oj-dialog · bx-session-timeout</h2>
+      <div data-side="jet"><oj-dialog id="jet-session-timeout" dialog-title="Are you still there?" cancel-behavior="none"><div slot="body"><p>For your security you will be signed out in 1 minute.</p></div>
+        <div slot="footer"><oj-button on-oj-action="[[jet.signOut]]">Sign out</oj-button><oj-button on-oj-action="[[jet.stay]]">Stay signed in</oj-button></div></oj-dialog></div>
+      <div data-side="bx"><bx-session-timeout id="bx-session-timeout" seconds="60" open="{{bx.timeoutOpen}}" on-oj-action="[[bx.timeoutAction]]"></bx-session-timeout></div>
+    </section>
+    <section class="pair" data-parity="sensitive"><h2>oj-input-text readonly · bx-sensitive</h2>
+      <div data-side="jet"><oj-input-text id="jet-sensitive" label-hint="Card number" readonly="true" value="4111 1111 1111 4821"></oj-input-text></div>
+      <div data-side="bx"><bx-sensitive id="bx-sensitive" label="Card number" value="4111 1111 1111 4821"></bx-sensitive></div>
+    </section>
+    <section class="pair" data-parity="spending-chart"><h2>oj-chart type="bar" · bx-spending-chart</h2>
+      <div data-side="jet"><oj-chart id="jet-spending-chart" type="bar" data="[[spendProvider]]"><template slot="itemTemplate" data-oj-as="item"><oj-chart-item value="[[item.data.value]]" group-id="[[ [item.data.label] ]]" series-id="Spending"></oj-chart-item></template></oj-chart></div>
+      <div data-side="bx"><bx-spending-chart id="bx-spending-chart" items="[[spend]]" unit="USD"></bx-spending-chart></div>
+    </section>
+    <section class="pair" data-parity="budget-progress"><h2>oj-progress (JET 6) or oj-progress-bar · bx-budget-progress</h2>
+      <div data-side="jet"><span id="jet-budget-label">Groceries</span>
+        <oj-bind-if test="[[jet6]]"><oj-progress id="jet-budget-progress" type="bar" value="320" max="400" aria-labelledby="jet-budget-label"></oj-progress></oj-bind-if>
+        <oj-bind-if test="[[!jet6]]"><oj-progress-bar id="jet-budget-progress" value="320" max="400" aria-labelledby="jet-budget-label"></oj-progress-bar></oj-bind-if></div>
+      <div data-side="bx"><bx-budget-progress id="bx-budget-progress" items="[[budgets]]"></bx-budget-progress></div>
+    </section>
   </main>
   <script>
     var params = new URLSearchParams(location.search);
@@ -139,7 +243,22 @@
             presses: 0, iconPresses: 0, closes: 0,
             remarks: ko.observable(''), secret: ko.observable(''), secretValid: ko.observable(''), copies: ko.observable(null), currency: ko.observable(null),
             picked: ko.observableArray([]), paperless: ko.observable(false), from: ko.observable(null), to: ko.observable(null), period: ko.observable({ from: '', to: '' }),
-            query: ko.observable(''), payee: ko.observable(null), files: [], refusals: 0 };
+            query: ko.observable(''), payee: ko.observable(null), files: [], refusals: 0,
+            secondaryPresses: 0, dangerPresses: 0, show: ko.observable('Day'), menuPicked: null, faqOpen: ko.observable(false), faq: ko.observableArray([]),
+            nav: ko.observable('Accounts'), sheetOpen: ko.observable(false), sheetCloses: 0, page: ko.observable(1), fromAccount: ko.observable(null),
+            iban: ko.observable(''), ibanValid: ko.observable(''), payeePicked: ko.observable(null), txPicked: ko.observable(null), repeat: ko.observable('Once'),
+            otp: ko.observable(''), otpValid: ko.observable(''), timeoutOpen: ko.observable(false), timeoutActions: [] };
+          s.pressSecondary = function () { s.secondaryPresses += 1; };
+          s.pressDanger = function () { s.dangerPresses += 1; };
+          // oj-menu's ojAction comes from the oj-option (its value); bx-action-menu's carries the value in detail
+          s.menuAct = function (event) { s.menuPicked = (event.detail && event.detail.value) || event.target.value; };
+          s.sheetClosed = function () { s.sheetCloses += 1; };
+          s.payeeChose = function (event) { s.payeePicked(event.detail.item.id); };
+          s.txChose = function (event) { s.txPicked(event.detail.item.id); };
+          // The JET screen closes its own dialog and records the choice; bx-session-timeout closes itself and says which in ojAction
+          s.stay = function () { document.getElementById('jet-session-timeout').close(); s.timeoutActions.push('stay'); };
+          s.signOut = function () { document.getElementById('jet-session-timeout').close(); s.timeoutActions.push('signOut'); };
+          s.timeoutAction = function (event) { s.timeoutActions.push(event.detail.action); };
           s.chose = function (event) { s.files = Array.prototype.map.call(event.detail.files, function (f) { return f.name; }); };
           s.refused = function () { s.refusals += 1; };
           s.press = function () { s.presses += 1; };
@@ -147,6 +266,23 @@
           s.closed = function () { s.closes += 1; };
           return s;
         };
+        var steps = function (labels) { return labels.map(function (l) { return { id: l, label: l }; }); };
+        // The ISO 13616 checksum, as a bank's JET screen would check an IBAN
+        var ibanOk = function (text) {
+          var t = String(text || '').replace(/\s+/g, '').toUpperCase();
+          if (!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(t)) { return false; }
+          var r = t.slice(4) + t.slice(0, 4);
+          var rest = 0;
+          for (var i = 0; i < r.length; i++) {
+            var d = /[A-Z]/.test(r.charAt(i)) ? String(r.charCodeAt(i) - 55) : r.charAt(i);
+            for (var j = 0; j < d.length; j++) { rest = (rest * 10 + Number(d.charAt(j))) % 97; }
+          }
+          return rest === 1;
+        };
+        var payeeRows = [{ id: 'p1', name: 'A. Rao', meta: 'HSBC ·· 9268' }, { id: 'p2', name: 'J. Mehta', meta: 'Barclays ·· 1180' }];
+        var txns = [{ id: 't1', description: 'Coffee House', date: 'Today 08:14', amount: -4.5 }, { id: 't2', description: 'Salary', date: '31 Dec', amount: 3200 },
+          { id: 't3', description: 'Electricity', date: '28 Dec', amount: -86.2 }];
+        var spend = [{ label: 'Aug', value: 1240 }, { label: 'Sep', value: 980 }, { label: 'Oct', value: 1410 }, { label: 'Nov', value: 1640 }, { label: 'Dec', value: 2120 }];
         var rows = [{ id: 't1', date: '12 Nov', text: 'Electricity bill', amount: '-1,240.00' }, { id: 't2', date: '11 Nov', text: 'Salary', amount: '85,000.00' },
           { id: 't3', date: '09 Nov', text: 'Card payment', amount: '-3,499.00' }];
         var vm = {
@@ -159,15 +295,35 @@
           messages: ko.observableArray([{ severity: 'error', summary: 'Payment failed', detail: 'The account is blocked.', autoTimeout: -1 },
             { severity: 'confirmation', summary: 'Beneficiary added', autoTimeout: -1 }]),
           rowsProvider: new ArrayDataProvider(rows, { keyAttributes: 'id' }),
-          columns: [{ headerText: 'Date', field: 'date' }, { headerText: 'Description', field: 'text' }, { headerText: 'Amount', field: 'amount' }]
+          columns: [{ headerText: 'Date', field: 'date' }, { headerText: 'Description', field: 'text' }, { headerText: 'Amount', field: 'amount' }],
+          jet6: jet === 'jet6',
+          menuItems: [{ value: 'download', label: 'Download statement' }, { value: 'nickname', label: 'Set a nickname' }],
+          faq: [{ id: 'a', title: 'How long does a transfer take?', body: 'Same day inside the bank; up to 2 working days to other banks.' }],
+          train: { stepper: steps(['Details', 'Review', 'Done']), payment: steps(['Initiated', 'Approved', 'Sent', 'Completed']), kyc: steps(['ID', 'Selfie', 'Address']) },
+          pagingView: null,
+          notices: { info: [{ severity: 'info', summary: 'Transfers after 6 pm arrive the next working day.', autoTimeout: -1 }],
+            error: [{ severity: 'error', summary: 'The amount is more than your daily limit of 5,000.00.', autoTimeout: -1 }],
+            success: [{ severity: 'confirmation', summary: 'Payment sent. Reference FX-20391.', autoTimeout: -1 }] },
+          ibanValidators: [{ validate: function (v) { if (v && !ibanOk(v)) { throw new Error('Check the IBAN: it starts with the country code.'); } } }],
+          payeeRows: payeeRows, payeeProvider: new ArrayDataProvider(payeeRows, { keyAttributes: 'id' }),
+          txns: txns, txProvider: new ArrayDataProvider(txns, { keyAttributes: 'id' }),
+          spend: spend, spendProvider: new ArrayDataProvider(spend, { keyAttributes: 'label' }),
+          budgets: [{ label: 'Groceries', value: 320, max: 400 }]
         };
+        var isOpen = function (id) { var el = document.getElementById(id); return !!(el && el.isOpen && el.isOpen()); };
         // What each side's view model sees, for the spec to compare
         window.parityState = function () {
           var view = function (s) { return { text: s.text(), textRaw: s.textRaw(), textValid: s.textValid(), amount: s.amount(), account: s.account(), alerts: s.alerts().slice().sort(),
             speed: s.speed(), day: s.day(), tab: s.tab(), presses: s.presses, iconPresses: s.iconPresses, closes: s.closes,
             remarks: s.remarks(), secret: s.secret(), secretValid: s.secretValid(), copies: s.copies(), currency: s.currency(), picked: s.picked().slice().sort(),
             paperless: s.paperless(), period: s === vm.jet ? { from: s.from() || '', to: s.to() || '' } : s.period(), query: s.query(), payee: s.payee(),
-            files: s.files, refusals: s.refusals }; };
+            files: s.files, refusals: s.refusals,
+            secondaryPresses: s.secondaryPresses, dangerPresses: s.dangerPresses, show: s.show(), menuPicked: s.menuPicked,
+            faq: s === vm.jet ? (s.faqOpen() ? ['a'] : []) : s.faq().slice(), nav: s.nav(),
+            sheetOpen: s === vm.jet ? isOpen('jet-sheet') : s.sheetOpen(), sheetCloses: s.sheetCloses,
+            page: s === vm.jet ? (vm.pagingView ? vm.pagingView.getPage() + 1 : null) : s.page(), fromAccount: s.fromAccount(),
+            iban: s.iban(), ibanValid: s.ibanValid(), payeePicked: s.payeePicked(), txPicked: s.txPicked(), repeat: s.repeat(),
+            otp: s.otp(), otpValid: s.otpValid(), timeoutOpen: s === vm.jet ? isOpen('jet-session-timeout') : s.timeoutOpen(), timeoutActions: s.timeoutActions.slice() }; };
           return { jet: view(vm.jet), bx: view(vm.bx) };
         };
         var start = function () {
@@ -176,7 +332,26 @@
             setTimeout(function () { document.body.setAttribute('data-parity-ready', oj.version); }, 200);
           });
         };
-        if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', start); } else { start(); }
+        // The later groups' JET modules load one by one: one a release does not have fails its own test, not the whole page
+        var extras = ['ojs/ojmenu', 'ojs/ojcollapsible', 'ojs/ojtrain', 'ojs/ojpopup', 'ojs/ojlistview', 'ojs/ojchart', 'ojs/ojpagingcontrol',
+          'ojs/ojpagingtabledatasource', jet === 'jet6' ? 'ojs/ojprogress' : 'ojs/ojprogress-bar'];
+        var pending = extras.length;
+        var loaded = function () {
+          pending -= 1;
+          if (pending > 0) { return; }
+          if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', start); } else { start(); }
+        };
+        extras.forEach(function (name) {
+          // JET 6.2 has no PagingDataProviderView; the table data sources page the same way in both releases
+          require(name === 'ojs/ojpagingtabledatasource' ? ['ojs/ojarraytabledatasource', name] : [name], function () {
+            if (name === 'ojs/ojpagingtabledatasource') {
+              var pageRows = [];
+              for (var i = 1; i <= 40; i++) { pageRows.push({ id: i }); }
+              vm.pagingView = new oj.PagingTableDataSource(new oj.ArrayTableDataSource(pageRows, { idAttribute: 'id' }));
+            }
+            loaded();
+          }, function () { console.warn('Not in this JET release: ' + name); loaded(); });
+        });
       });
     };
     document.head.appendChild(script);

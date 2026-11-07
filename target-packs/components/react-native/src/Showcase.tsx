@@ -221,13 +221,13 @@ export function BentoGrid({ testID, tiles, onSelect }: { testID?: string; tiles:
             {x.content}
           </>
         );
-        const name = [x.title, x.value, x.note].filter(Boolean).join(', ');
+        // Named by its own text, so the name always matches what is shown
         return (
           <Animated.View key={x.id} style={{ flexBasis: x.span === 2 ? '100%' : '47%', flexGrow: 1, opacity: vs[i],
             transform: [{ scale: vs[i].interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }) }] }}>
             {onSelect
-              ? <Touch testID={testID ? `${testID}-${x.id}` : undefined} label={name} onPress={() => onSelect(x.id)} style={[panel(t), { gap: 4 }]}>{body}</Touch>
-              : <View accessible accessibilityLabel={name} style={[panel(t), { gap: 4 }]}>{body}</View>}
+              ? <Touch testID={testID ? `${testID}-${x.id}` : undefined} onPress={() => onSelect(x.id)} style={[panel(t), { gap: 4 }]}>{body}</Touch>
+              : <View accessible style={[panel(t), { gap: 4 }]}>{body}</View>}
           </Animated.View>
         );
       })}
@@ -256,7 +256,8 @@ export function Carousel({ testID, label, slides, value, onChange, width = 320 }
   const go = (i: number) => onChange(slides[(i + slides.length) % slides.length].id);
   return (
     <View testID={testID} style={{ gap: 8 }} accessibilityLabel={`${label}, ${at + 1} of ${slides.length}: ${slides[at]?.label ?? ''}`}>
-      <ScrollView ref={scroll} horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={{ width }}
+      {/* Focusable, so the slides can be scrolled with the keyboard on the web */}
+      <ScrollView ref={scroll} horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={{ width }} focusable accessibilityLabel={label}
                   onMomentumScrollEnd={(e) => { const i = Math.round(e.nativeEvent.contentOffset.x / width); if (i !== at) { go(i); } }}>
         {slides.map((s, i) => (
           <View key={s.id} style={{ width, paddingHorizontal: 4 }} importantForAccessibility={i === at ? 'auto' : 'no-hide-descendants'}>{s.content}</View>
@@ -312,6 +313,7 @@ export function OptionWheel({ testID, label, options, value, onChange }: OptionW
   const pick = (i: number) => { const o = options[Math.max(0, Math.min(options.length - 1, i))]; if (o && o.value !== value) { onChange(o.value); } };
   return (
     <View testID={testID} accessible accessibilityRole="adjustable" accessibilityLabel={label} accessibilityValue={{ text: options[at]?.label }}
+          aria-valuemin={0} aria-valuemax={options.length - 1} aria-valuenow={at} aria-valuetext={options[at]?.label}
           accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
           onAccessibilityAction={(e) => pick(at + (e.nativeEvent.actionName === 'increment' ? 1 : -1))}
           style={{ height: ROW * 5, overflow: 'hidden', borderRadius: t.radius.card, backgroundColor: t.color.surface2 }}>
@@ -450,7 +452,7 @@ export function DocumentFolder({ testID, title, documents, open, onOpenChange, o
   const peek = documents.slice(0, 3);
   return (
     <View testID={testID} style={{ gap: 10 }}>
-      <Touch testID={testID ? `${testID}-folder` : undefined} label={`${title}, ${documents.length} documents`} expanded={open} onPress={() => onOpenChange(!open)}
+      <Touch testID={testID ? `${testID}-folder` : undefined} expanded={open} onPress={() => onOpenChange(!open)}
              style={{ height: 120, justifyContent: 'flex-end' }}>
         {peek.map((d, i) => (
           <Animated.View key={d.id} importantForAccessibility="no-hide-descendants" style={{ position: 'absolute', left: 24 + i * 8, right: 24 - i * 8, bottom: 30, height: 70,

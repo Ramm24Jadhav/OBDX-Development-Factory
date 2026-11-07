@@ -111,8 +111,8 @@ describe('group 1', () => {
     const open = jest.fn();
     await render(<Drawer testID="d" label="Menu" open onOpenChange={open} selection="acc" onSelectionChange={(x) => { page = x; }}
                          items={[{ value: 'acc', label: 'Accounts' }, { value: 'pay', label: 'Payments' }]} />);
-    expect(screen.getByRole('tab', { name: 'Accounts' }).props.accessibilityState.selected).toBe(true);
-    await fireEvent.press(screen.getByRole('tab', { name: 'Payments' }));
+    expect(screen.getByRole('button', { name: 'Accounts' }).props.accessibilityState.selected).toBe(true);
+    await fireEvent.press(screen.getByRole('button', { name: 'Payments' }));
     expect([page, open.mock.calls[0][0]]).toEqual(['pay', false]);
   });
 

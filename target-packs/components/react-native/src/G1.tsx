@@ -199,7 +199,7 @@ export function Drawer({ testID, label = 'Main', items, selection, onSelectionCh
         const on = x.key === selection;
         const badge = (x.source as NavItem).badge;
         return (
-          <Touch key={x.key} testID={`${testID}-${x.key}`} role="tab" label={badge === undefined ? x.label : `${x.label}, ${badge}`} selected={on}
+          <Touch key={x.key} testID={`${testID}-${x.key}`} label={badge === undefined ? x.label : `${x.label}, ${badge}`} current={on}
                  disabled={x.disabled} onPress={() => { onSelectionChange?.(x.key); onOpenChange(false); }}
                  style={{ paddingHorizontal: 12, borderRadius: t.radius.control, backgroundColor: on ? t.color.primarySoft : 'transparent' }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -383,7 +383,7 @@ export function ActivityIndicator({ testID, label = 'Loading', size = 'md' }: Ac
   return (
     <View testID={testID} accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityState={{ busy: true }}
           style={{ alignItems: 'center', gap: 8, padding: 12 }}>
-      <Spin size={size === 'lg' ? 'large' : size === 'sm' ? 18 : 'small'} color={t.color.primary} />
+      <Spin size={size === 'lg' ? 'large' : size === 'sm' ? 18 : 'small'} color={t.color.primary} aria-hidden />
       <Text style={{ fontSize: 13, color: t.color.textMuted }}>{label}</Text>
     </View>
   );
