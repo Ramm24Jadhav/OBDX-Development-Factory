@@ -11,6 +11,12 @@ import {
 import { useTheme } from '../src';
 
 const noop = () => undefined;
+// ?variant= also draws each component's variants (variants/v1.json): the factory card and the variant gates ask for one
+export const variantsShown = typeof location !== 'undefined' && new URLSearchParams(location.search).has('variant');
+/** A variant of the sample's component, marked for ?only=<id>&variant=<id> (react-native-web writes dataSet as data-* attributes). */
+export function Variant({ id, children }: { id: string; children: ReactNode }) {
+  return <View {...({ dataSet: { variant: id } } as object)}>{children}</View>;
+}
 /** Sample text in the theme's colour (the platform default is black in the dark theme). */
 const Line = ({ children }: { children: ReactNode }) => <Text style={{ color: useTheme().color.text }}>{children}</Text>;
 /** A backdrop fills its parent: give it a card-sized one. */
@@ -41,31 +47,75 @@ const tabs_g6 = [{ id: 'cs', label: 'Current and savings', summary: '12 accounts
 export const SAMPLES: Record<string, [string, ReactElement]> = {
   'account-card': ["Account card", <AccountCard testID="account-card" account={accounts_g2[0]} badge="Primary" onAction={noop} />],
   'account-details': ["Account details", <AccountDetails testID="account-details" rows={rows_g2} actionLabel="Download statement" onAction={noop} />],
-  'account-picker': ["Account selector", <AccountSelector testID="account-picker" label="From account" accounts={accounts_g2} value="sav" />],
+  'account-picker': ["Account selector", <><AccountSelector testID="account-picker" label="From account" accounts={accounts_g2} value="sav" />{variantsShown ? <>
+    <Variant id="material"><AccountSelector variant="material" testID="account-picker-material" label="From account" accounts={accounts_g2} value="sav" /></Variant>
+    <Variant id="outlined"><AccountSelector variant="outlined" testID="account-picker-outlined" label="From account" accounts={accounts_g2} value="sav" /></Variant>
+    <Variant id="underlined"><AccountSelector variant="underlined" testID="account-picker-underlined" label="From account" accounts={accounts_g2} value="sav" /></Variant>
+    <Variant id="inline"><AccountSelector variant="inline" testID="account-picker-inline" label="From account" accounts={accounts_g2} value="sav" /></Variant>
+    <Variant id="pill"><AccountSelector variant="pill" testID="account-picker-pill" label="From account" accounts={accounts_g2} value="sav" /></Variant>
+  </> : null}</>],
   'account-summary': ["Account summary", <AccountSummary testID="account-summary" tiles={tiles_g2} value="s" onChange={noop} />],
   'accounts-corp': ["Current and savings, deposits, loans", <AccountsWidget testID="accounts-corp" label="Accounts" tabs={tabs_g6} onOpen={noop} />],
   'action-menu': ["Action menu", <ActionMenu testID="action-menu" items={[{ id: 'a', label: 'Download statement' }]} onAction={noop} />],
-  'activate-card': ["Activate a card", <ActivateCard testID="activate-card" label="Enter the activation code" value="" />],
+  'activate-card': ["Activate a card", <><ActivateCard testID="activate-card" label="Enter the activation code" value="" />{variantsShown ? <>
+    <Variant id="material"><ActivateCard variant="material" testID="activate-card-material" label="Enter the activation code" value="" /></Variant>
+    <Variant id="underline"><ActivateCard variant="underline" testID="activate-card-underline" label="Enter the activation code" value="" /></Variant>
+    <Variant id="rounded"><ActivateCard variant="rounded" testID="activate-card-rounded" label="Enter the activation code" value="" /></Variant>
+    <Variant id="joined"><ActivateCard variant="joined" testID="activate-card-joined" label="Enter the activation code" value="" /></Variant>
+  </> : null}</>],
   'add-on-card': ["Apply for an add-on card", <AddOnCard testID="add-on-card" value={{ name: '', relationship: '', limit: null }} onSubmit={noop} />],
   'alert-banner': ["Alert", <Alert testID="alert-banner" message="Transfers after 6 pm arrive the next working day." dismissible />],
   'animated-list': ["Animated list", <AnimatedList items={['a', 'b']} keyOf={(x) => x} renderItem={(x) => <Line>{x}</Line>} />],
-  'appearance': ["Appearance", <Appearance testID="appearance" label="Theme" value="system" />],
+  'appearance': ["Appearance", <><Appearance testID="appearance" label="Theme" value="system" />{variantsShown ? <>
+    <Variant id="material"><Appearance variant="material" testID="appearance-material" label="Theme" value="system" /></Variant>
+    <Variant id="ios"><Appearance variant="ios" testID="appearance-ios" label="Theme" value="system" /></Variant>
+    <Variant id="underline"><Appearance variant="underline" testID="appearance-underline" label="Theme" value="system" /></Variant>
+    <Variant id="enclosed"><Appearance variant="enclosed" testID="appearance-enclosed" label="Theme" value="system" /></Variant>
+    <Variant id="pill"><Appearance variant="pill" testID="appearance-pill" label="Theme" value="system" /></Variant>
+  </> : null}</>],
   'application-tracker': ["Application tracker", <ApplicationTracker testID="application-tracker" items={[{ label: 'Submitted', meta: '12 Jan' }]} />],
   'approval-detail': ["Approval details", <ApprovalDetail testID="approval-detail" rows={rows_g4} onApprove={noop} onReject={noop} onSendBack={noop} />],
   'approval-journey': ["Approval journey", <ApprovalJourney testID="approval-journey" items={[{ label: 'Initiated', meta: 'A. Rao · 09:12' }, { label: 'Level 2', state: 'current' }]} />],
   'avatar': ["Avatar", <Avatar name="Asha Rao" />],
-  'bell-toggle': ["Bell toggle", <BellToggle label="Payment alerts" value={false} onChange={noop} />],
+  'bell-toggle': ["Bell toggle", <><BellToggle label="Payment alerts" value={false} onChange={noop} />{variantsShown ? <>
+    <Variant id="material"><BellToggle variant="material" label="Payment alerts" value={false} onChange={noop} /></Variant>
+    <Variant id="ios"><BellToggle variant="ios" label="Payment alerts" value={false} onChange={noop} /></Variant>
+    <Variant id="fluent"><BellToggle variant="fluent" label="Payment alerts" value={false} onChange={noop} /></Variant>
+    <Variant id="labelled"><BellToggle variant="labelled" label="Payment alerts" value={false} onChange={noop} /></Variant>
+    <Variant id="squish"><BellToggle variant="squish" label="Payment alerts" value={false} onChange={noop} /></Variant>
+  </> : null}</>],
   'beneficiary-card': ["Beneficiary card", <BeneficiaryCard testID="beneficiary-card" payee={payees_g2[0]} note="added 12 Mar" onPay={noop} />],
   'bento-grid': ["Bento grid", <BentoGrid tiles={[{ id: 'b', title: 'Balance', value: '12,400.00', span: 2 }, { id: 's', title: 'Spent' }]} onSelect={noop} />],
   'bills-widget': ["Bills", <BillsWidget testID="bills-widget" bills={[{ id: 'e', payee: 'Electricity', due: '18 Jan', amount: 86.2 }]} onPay={noop} />],
   'biometric': ["Authentication challenge", <AuthChallenge testID="biometric" label="Approve the payment" authenticate={async () => true} onSuccess={noop} onFallback={noop} />],
-  'block-card': ["Block or unblock", <BlockCard testID="block-card" label="Block the card" value={false} />],
+  'block-card': ["Block or unblock", <><BlockCard testID="block-card" label="Block the card" value={false} />{variantsShown ? <>
+    <Variant id="material"><BlockCard variant="material" testID="block-card-material" label="Block the card" value={false} /></Variant>
+    <Variant id="ios"><BlockCard variant="ios" testID="block-card-ios" label="Block the card" value={false} /></Variant>
+    <Variant id="fluent"><BlockCard variant="fluent" testID="block-card-fluent" label="Block the card" value={false} /></Variant>
+    <Variant id="labelled"><BlockCard variant="labelled" testID="block-card-labelled" label="Block the card" value={false} /></Variant>
+    <Variant id="squish"><BlockCard variant="squish" testID="block-card-squish" label="Block the card" value={false} /></Variant>
+  </> : null}</>],
   'blur-in-text': ["Blur-in text", <BlurInText text="Welcome back, Asha" />],
   'budget-gauge': ["Budget gauge", <BudgetGauge label="Groceries" value={320} max={400} />],
   'budgets': ["Budgets", <BudgetsWidget testID="budgets" items={[{ label: 'Groceries', value: 320, max: 400 }]} />],
   'calculators': ["Calculators", <CalculatorsWidget testID="calculators" loan={loan_g6} onLoanChange={noop} deposit={loan_g6} onDepositChange={noop} />],
-  'call-chip': ["Call chip", <CallChip label="Your bank" number="+44 20 7946 0123" onCall={noop} />],
-  'card-controls': ["Card controls", <CardControls testID="card-controls" label="Allow" value={['online']} />],
+  'call-chip': ["Call chip", <><CallChip label="Your bank" number="+44 20 7946 0123" onCall={noop} />{variantsShown ? <>
+    <Variant id="material"><CallChip variant="material" label="Your bank" number="+44 20 7946 0123" onCall={noop} /></Variant>
+    <Variant id="tonal"><CallChip variant="tonal" label="Your bank" number="+44 20 7946 0123" onCall={noop} /></Variant>
+    <Variant id="outlined"><CallChip variant="outlined" label="Your bank" number="+44 20 7946 0123" onCall={noop} /></Variant>
+    <Variant id="text"><CallChip variant="text" label="Your bank" number="+44 20 7946 0123" onCall={noop} /></Variant>
+    <Variant id="elevated"><CallChip variant="elevated" label="Your bank" number="+44 20 7946 0123" onCall={noop} /></Variant>
+    <Variant id="gradient"><CallChip variant="gradient" label="Your bank" number="+44 20 7946 0123" onCall={noop} /></Variant>
+    <Variant id="glass"><CallChip variant="glass" label="Your bank" number="+44 20 7946 0123" onCall={noop} /></Variant>
+    <Variant id="pill"><CallChip variant="pill" label="Your bank" number="+44 20 7946 0123" onCall={noop} /></Variant>
+  </> : null}</>],
+  'card-controls': ["Card controls", <><CardControls testID="card-controls" label="Allow" value={['online']} />{variantsShown ? <>
+    <Variant id="material"><CardControls variant="material" testID="card-controls-material" label="Allow" value={['online']} /></Variant>
+    <Variant id="cards"><CardControls variant="cards" testID="card-controls-cards" label="Allow" value={['online']} /></Variant>
+    <Variant id="chips"><CardControls variant="chips" testID="card-controls-chips" label="Allow" value={['online']} /></Variant>
+    <Variant id="rows"><CardControls variant="rows" testID="card-controls-rows" label="Allow" value={['online']} /></Variant>
+    <Variant id="round"><CardControls variant="round" testID="card-controls-round" label="Allow" value={['online']} /></Variant>
+  </> : null}</>],
   'card-list': ["Credit cards list", <CardList testID="card-list" tiles={tiles_g3} onChange={noop} />],
   'card-nav': ["Card navigation", <CardNav groups={[{ id: 'p', title: 'Payments', links: [{ id: 't', label: 'Transfer' }] }]} onNavigate={noop} />],
   'card-stack': ["Card stack", <CardStack label="Offers" cards={slides_effects} value="a" onChange={noop} />],
@@ -73,9 +123,21 @@ export const SAMPLES: Record<string, [string, ReactElement]> = {
   'carousel': ["Carousel", <Carousel label="Offers" slides={slides_effects} value="a" onChange={noop} />],
   'certificates': ["Certificates", <Certificates testID="certificates" documents={docs_g5} onDownload={noop} />],
   'click-burst': ["Click burst", <ClickBurst label="Send" onPress={noop}><Line>Send</Line></ClickBurst>],
-  'compose-mail': ["Compose a message", <ComposeMessage testID="compose-mail" subjects={['Cards']} value={{ subject: '', body: '' }} onSend={noop} />],
+  'compose-mail': ["Compose a message", <><ComposeMessage testID="compose-mail" subjects={['Cards']} value={{ subject: '', body: '' }} onSend={noop} />{variantsShown ? <>
+    <Variant id="material"><ComposeMessage variant="material" testID="compose-mail-material" subjects={['Cards']} value={{ subject: '', body: '' }} onSend={noop} /></Variant>
+    <Variant id="outlined"><ComposeMessage variant="outlined" testID="compose-mail-outlined" subjects={['Cards']} value={{ subject: '', body: '' }} onSend={noop} /></Variant>
+    <Variant id="underlined"><ComposeMessage variant="underlined" testID="compose-mail-underlined" subjects={['Cards']} value={{ subject: '', body: '' }} onSend={noop} /></Variant>
+    <Variant id="floating"><ComposeMessage variant="floating" testID="compose-mail-floating" subjects={['Cards']} value={{ subject: '', body: '' }} onSend={noop} /></Variant>
+    <Variant id="inline"><ComposeMessage variant="inline" testID="compose-mail-inline" subjects={['Cards']} value={{ subject: '', body: '' }} onSend={noop} /></Variant>
+  </> : null}</>],
   'consents': ["Access and consent", <Consents testID="consents" consents={[{ id: 'b', title: 'Budget app', meta: 'Granted 02 Jan' }]} onRevoke={noop} />],
-  'convert-emi': ["Convert to EMI", <ConvertToEmi testID="convert-emi" label="Pay 1,200.00 over" value="6" amount={1200} annualRate={14} currency="USD" />],
+  'convert-emi': ["Convert to EMI", <><ConvertToEmi testID="convert-emi" label="Pay 1,200.00 over" value="6" amount={1200} annualRate={14} currency="USD" />{variantsShown ? <>
+    <Variant id="material"><ConvertToEmi variant="material" testID="convert-emi-material" label="Pay 1,200.00 over" value="6" amount={1200} annualRate={14} currency="USD" /></Variant>
+    <Variant id="ios"><ConvertToEmi variant="ios" testID="convert-emi-ios" label="Pay 1,200.00 over" value="6" amount={1200} annualRate={14} currency="USD" /></Variant>
+    <Variant id="underline"><ConvertToEmi variant="underline" testID="convert-emi-underline" label="Pay 1,200.00 over" value="6" amount={1200} annualRate={14} currency="USD" /></Variant>
+    <Variant id="enclosed"><ConvertToEmi variant="enclosed" testID="convert-emi-enclosed" label="Pay 1,200.00 over" value="6" amount={1200} annualRate={14} currency="USD" /></Variant>
+    <Variant id="pill"><ConvertToEmi variant="pill" testID="convert-emi-pill" label="Pay 1,200.00 over" value="6" amount={1200} annualRate={14} currency="USD" /></Variant>
+  </> : null}</>],
   'count-up': ["Count up", <CountUp value={1250} currency="USD" />],
   'credit-cards-overview': ["Credit cards overview", <CreditCardsWidget testID="credit-cards-overview" tiles={tiles_g6} />],
   'credit-score': ["Credit score", <CreditScoreWidget testID="credit-score" score={742} max={900} band="Good" updated="1 Jan" />],
@@ -84,18 +146,40 @@ export const SAMPLES: Record<string, [string, ReactElement]> = {
   'devices': ["Registered devices", <Devices testID="devices" devices={[{ id: 'a', title: 'iPhone 15', current: true }, { id: 'b', title: 'Chrome on Windows' }]} onRemove={noop} />],
   'disbursement': ["Disbursement inquiry", <DisbursementTimeline testID="disbursement" items={[{ label: 'Sanctioned 30,000.00', meta: '02 Jan' }]} />],
   'divider': ["Divider", <Divider label="Older" />],
-  'do-not-disturb': ["Do not disturb", <DoNotDisturb testID="do-not-disturb" label="Quiet hours, 22:00 to 07:00" value />],
+  'do-not-disturb': ["Do not disturb", <><DoNotDisturb testID="do-not-disturb" label="Quiet hours, 22:00 to 07:00" value />{variantsShown ? <>
+    <Variant id="material"><DoNotDisturb variant="material" testID="do-not-disturb-material" label="Quiet hours, 22:00 to 07:00" value /></Variant>
+    <Variant id="ios"><DoNotDisturb variant="ios" testID="do-not-disturb-ios" label="Quiet hours, 22:00 to 07:00" value /></Variant>
+    <Variant id="fluent"><DoNotDisturb variant="fluent" testID="do-not-disturb-fluent" label="Quiet hours, 22:00 to 07:00" value /></Variant>
+    <Variant id="labelled"><DoNotDisturb variant="labelled" testID="do-not-disturb-labelled" label="Quiet hours, 22:00 to 07:00" value /></Variant>
+    <Variant id="squish"><DoNotDisturb variant="squish" testID="do-not-disturb-squish" label="Quiet hours, 22:00 to 07:00" value /></Variant>
+  </> : null}</>],
   'dock-nav': ["Dock navigation", <DockNav label="Main" items={nav_effects} value="home" onChange={noop} />],
   'document-folder': ["Document folder", <DocumentFolder title="Statements" documents={[{ id: 'd', title: 'December' }]} open={false} onOpenChange={noop} onSelect={noop} />],
   'dot-grid': ["Dot grid", <Box><DotGrid /></Box>],
   'e-receipts': ["E-receipts", <EReceipts testID="e-receipts" documents={docs_g5} onDownload={noop} />],
   'edge-blur': ["Edge blur", <EdgeBlur><Line>Hi</Line></EdgeBlur>],
-  'elastic-slider': ["Elastic slider", <ElasticSlider testID="elastic-slider" label="Amount" value={500} max={1000} />],
-  'eligibility-calculator': ["Loan eligibility", <EligibilityCalculator testID="eligibility-calculator" label="Monthly income" value={6000} max={20000} annualRate={9} months={240} currency="USD" />],
+  'elastic-slider': ["Elastic slider", <><ElasticSlider testID="elastic-slider" label="Amount" value={500} max={1000} />{variantsShown ? <>
+    <Variant id="material"><ElasticSlider variant="material" testID="elastic-slider-material" label="Amount" value={500} max={1000} /></Variant>
+    <Variant id="ticks"><ElasticSlider variant="ticks" testID="elastic-slider-ticks" label="Amount" value={500} max={1000} /></Variant>
+    <Variant id="bubble"><ElasticSlider variant="bubble" testID="elastic-slider-bubble" label="Amount" value={500} max={1000} /></Variant>
+    <Variant id="thick"><ElasticSlider variant="thick" testID="elastic-slider-thick" label="Amount" value={500} max={1000} /></Variant>
+  </> : null}</>],
+  'eligibility-calculator': ["Loan eligibility", <><EligibilityCalculator testID="eligibility-calculator" label="Monthly income" value={6000} max={20000} annualRate={9} months={240} currency="USD" />{variantsShown ? <>
+    <Variant id="material"><EligibilityCalculator variant="material" testID="eligibility-calculator-material" label="Monthly income" value={6000} max={20000} annualRate={9} months={240} currency="USD" /></Variant>
+    <Variant id="ticks"><EligibilityCalculator variant="ticks" testID="eligibility-calculator-ticks" label="Monthly income" value={6000} max={20000} annualRate={9} months={240} currency="USD" /></Variant>
+    <Variant id="bubble"><EligibilityCalculator variant="bubble" testID="eligibility-calculator-bubble" label="Monthly income" value={6000} max={20000} annualRate={9} months={240} currency="USD" /></Variant>
+    <Variant id="thick"><EligibilityCalculator variant="thick" testID="eligibility-calculator-thick" label="Monthly income" value={6000} max={20000} annualRate={9} months={240} currency="USD" /></Variant>
+  </> : null}</>],
   'empty-state': ["Empty state", <EmptyState heading="No payees yet" text="Add one to pay faster." actionLabel="Add a payee" onAction={noop} />],
   'fade-in-content': ["Fade-in content", <FadeInContent><Line>Hi</Line></FadeInContent>],
   'fatca-crs': ["FATCA and CRS self-certification", <TaxSelfCertification testID="fatca-crs" steps={['Identity', 'Tax residency']} selectedStep="Identity" />],
-  'favourite-heart': ["Favourite heart", <FavouriteHeart label="Favourite A. Rao" value={false} onChange={noop} />],
+  'favourite-heart': ["Favourite heart", <><FavouriteHeart label="Favourite A. Rao" value={false} onChange={noop} />{variantsShown ? <>
+    <Variant id="material"><FavouriteHeart variant="material" label="Favourite A. Rao" value={false} onChange={noop} /></Variant>
+    <Variant id="ios"><FavouriteHeart variant="ios" label="Favourite A. Rao" value={false} onChange={noop} /></Variant>
+    <Variant id="fluent"><FavouriteHeart variant="fluent" label="Favourite A. Rao" value={false} onChange={noop} /></Variant>
+    <Variant id="labelled"><FavouriteHeart variant="labelled" label="Favourite A. Rao" value={false} onChange={noop} /></Variant>
+    <Variant id="squish"><FavouriteHeart variant="squish" label="Favourite A. Rao" value={false} onChange={noop} /></Variant>
+  </> : null}</>],
   'feedback': ["Feedback", <FeedbackRating testID="feedback" label="How was this payment?" value={4} onSubmit={noop} />],
   'financial-advisor': ["Financial advisor", <FinancialAdvisorWidget testID="financial-advisor" title="Priya Nair" body="Relationship manager" onAction={noop} />],
   'flip-card': ["Flip card", <FlipCard front={<Line>Front</Line>} back={<Line>Back</Line>} backLabel="card details" flipped={false} onFlippedChange={noop} />],
@@ -103,19 +187,57 @@ export const SAMPLES: Record<string, [string, ReactElement]> = {
   'fraud-alert': ["Fraud alert", <FraudAlert testID="fraud-alert" message="We stopped a payment of 899.00 to Unknown Ltd." onAllow={noop} onBlock={noop} />],
   'glare-hover': ["Glare hover", <GlareHover label="Platinum card" onPress={noop}><Line>Card</Line></GlareHover>],
   'glass-panel': ["Glass panel", <GlassPanel><Line>Hi</Line></GlassPanel>],
-  'glide-select': ["Glide select", <GlideSelect testID="glide-select" label="Show" value="d" options={opts_effects} />],
+  'glide-select': ["Glide select", <><GlideSelect testID="glide-select" label="Show" value="d" options={opts_effects} />{variantsShown ? <>
+    <Variant id="material"><GlideSelect variant="material" testID="glide-select-material" label="Show" value="d" options={opts_effects} /></Variant>
+    <Variant id="ios"><GlideSelect variant="ios" testID="glide-select-ios" label="Show" value="d" options={opts_effects} /></Variant>
+    <Variant id="underline"><GlideSelect variant="underline" testID="glide-select-underline" label="Show" value="d" options={opts_effects} /></Variant>
+    <Variant id="enclosed"><GlideSelect variant="enclosed" testID="glide-select-enclosed" label="Show" value="d" options={opts_effects} /></Variant>
+    <Variant id="pill"><GlideSelect variant="pill" testID="glide-select-pill" label="Show" value="d" options={opts_effects} /></Variant>
+  </> : null}</>],
   'glow-border-card': ["Glow border card", <GlowBorderCard><Line>Premium</Line></GlowBorderCard>],
-  'goal-calculator': ["Goal calculator", <GoalCalculator testID="goal-calculator" label="Saving each month" value={400} max={2000} target={3000} currency="USD" />],
+  'goal-calculator': ["Goal calculator", <><GoalCalculator testID="goal-calculator" label="Saving each month" value={400} max={2000} target={3000} currency="USD" />{variantsShown ? <>
+    <Variant id="material"><GoalCalculator variant="material" testID="goal-calculator-material" label="Saving each month" value={400} max={2000} target={3000} currency="USD" /></Variant>
+    <Variant id="ticks"><GoalCalculator variant="ticks" testID="goal-calculator-ticks" label="Saving each month" value={400} max={2000} target={3000} currency="USD" /></Variant>
+    <Variant id="bubble"><GoalCalculator variant="bubble" testID="goal-calculator-bubble" label="Saving each month" value={400} max={2000} target={3000} currency="USD" /></Variant>
+    <Variant id="thick"><GoalCalculator variant="thick" testID="goal-calculator-thick" label="Saving each month" value={400} max={2000} target={3000} currency="USD" /></Variant>
+  </> : null}</>],
   'goals': ["Goals", <GoalsWidget testID="goals" items={[{ label: 'Holiday fund', value: 1800, max: 3000 }]} onAdd={noop} />],
   'gradient-backdrop': ["Gradient backdrop", <Box><GradientBackdrop /></Box>],
   'gradient-text': ["Gradient text", <GradientText text="Platinum" />],
   'grid': ["Grid and stack", <Stack columns={2}><Line>A</Line><Line>B</Line></Stack>],
   'highlight-border': ["Highlight border", <HighlightBorder><Line>Hi</Line></HighlightBorder>],
-  'hold-to-confirm': ["Hold to confirm", <HoldToConfirm label="Hold to pay" onConfirm={noop} />],
-  'iban': ["Masked account number", <AccountNumber testID="iban" label="Account number (IBAN)" value="GB29NWBK60161331926819" />],
-  'jelly-radio': ["Jelly radio", <JellyRadio testID="jelly-radio" label="Show" value="d" options={opts_effects} />],
+  'hold-to-confirm': ["Hold to confirm", <><HoldToConfirm label="Hold to pay" onConfirm={noop} />{variantsShown ? <>
+    <Variant id="material"><HoldToConfirm variant="material" label="Hold to pay" onConfirm={noop} /></Variant>
+    <Variant id="tonal"><HoldToConfirm variant="tonal" label="Hold to pay" onConfirm={noop} /></Variant>
+    <Variant id="outlined"><HoldToConfirm variant="outlined" label="Hold to pay" onConfirm={noop} /></Variant>
+    <Variant id="text"><HoldToConfirm variant="text" label="Hold to pay" onConfirm={noop} /></Variant>
+    <Variant id="elevated"><HoldToConfirm variant="elevated" label="Hold to pay" onConfirm={noop} /></Variant>
+    <Variant id="gradient"><HoldToConfirm variant="gradient" label="Hold to pay" onConfirm={noop} /></Variant>
+    <Variant id="glass"><HoldToConfirm variant="glass" label="Hold to pay" onConfirm={noop} /></Variant>
+    <Variant id="pill"><HoldToConfirm variant="pill" label="Hold to pay" onConfirm={noop} /></Variant>
+  </> : null}</>],
+  'iban': ["Masked account number", <><AccountNumber testID="iban" label="Account number (IBAN)" value="GB29NWBK60161331926819" />{variantsShown ? <>
+    <Variant id="material"><AccountNumber variant="material" testID="iban-material" label="Account number (IBAN)" value="GB29NWBK60161331926819" /></Variant>
+    <Variant id="outlined"><AccountNumber variant="outlined" testID="iban-outlined" label="Account number (IBAN)" value="GB29NWBK60161331926819" /></Variant>
+    <Variant id="underlined"><AccountNumber variant="underlined" testID="iban-underlined" label="Account number (IBAN)" value="GB29NWBK60161331926819" /></Variant>
+    <Variant id="floating"><AccountNumber variant="floating" testID="iban-floating" label="Account number (IBAN)" value="GB29NWBK60161331926819" /></Variant>
+    <Variant id="inline"><AccountNumber variant="inline" testID="iban-inline" label="Account number (IBAN)" value="GB29NWBK60161331926819" /></Variant>
+    <Variant id="pill"><AccountNumber variant="pill" testID="iban-pill" label="Account number (IBAN)" value="GB29NWBK60161331926819" /></Variant>
+  </> : null}</>],
+  'jelly-radio': ["Jelly radio", <><JellyRadio testID="jelly-radio" label="Show" value="d" options={opts_effects} />{variantsShown ? <>
+    <Variant id="material"><JellyRadio variant="material" testID="jelly-radio-material" label="Show" value="d" options={opts_effects} /></Variant>
+    <Variant id="cards"><JellyRadio variant="cards" testID="jelly-radio-cards" label="Show" value="d" options={opts_effects} /></Variant>
+    <Variant id="chips"><JellyRadio variant="chips" testID="jelly-radio-chips" label="Show" value="d" options={opts_effects} /></Variant>
+    <Variant id="rows"><JellyRadio variant="rows" testID="jelly-radio-rows" label="Show" value="d" options={opts_effects} /></Variant>
+  </> : null}</>],
   'kyc-steps': ["Identity check steps", <KycSteps testID="kyc-steps" steps={['ID', 'Selfie', 'Address']} selectedStep="ID" />],
-  'language': ["Language", <LanguagePicker testID="language" label="Language" value="en" />],
+  'language': ["Language", <><LanguagePicker testID="language" label="Language" value="en" />{variantsShown ? <>
+    <Variant id="material"><LanguagePicker variant="material" testID="language-material" label="Language" value="en" /></Variant>
+    <Variant id="outlined"><LanguagePicker variant="outlined" testID="language-outlined" label="Language" value="en" /></Variant>
+    <Variant id="underlined"><LanguagePicker variant="underlined" testID="language-underlined" label="Language" value="en" /></Variant>
+    <Variant id="inline"><LanguagePicker variant="inline" testID="language-inline" label="Language" value="en" /></Variant>
+    <Variant id="pill"><LanguagePicker variant="pill" testID="language-pill" label="Language" value="en" /></Variant>
+  </> : null}</>],
   'lattice-loader': ["Lattice loader", <LatticeLoader />],
   'light-beams': ["Light beams", <Box><LightBeams /></Box>],
   'line-waves': ["Line waves", <Box><LineWaves /></Box>],
@@ -125,18 +247,49 @@ export const SAMPLES: Record<string, [string, ReactElement]> = {
   'loan-summary': ["Loans summary", <LoansSummary testID="loan-summary" tiles={tiles_g3} />],
   'loans-overview': ["Loans and finances overview", <LoansWidget testID="loans-overview" tiles={tiles_g6} />],
   'locator': ["ATM and branch locator", <Locator testID="locator" places={places_g5} onDirections={noop} map={<Line>Map</Line>} />],
-  'magnetic-button': ["Magnetic button", <MagneticButton label="Pay now" onPress={noop} />],
+  'magnetic-button': ["Magnetic button", <><MagneticButton label="Pay now" onPress={noop} />{variantsShown ? <>
+    <Variant id="material"><MagneticButton variant="material" label="Pay now" onPress={noop} /></Variant>
+    <Variant id="tonal"><MagneticButton variant="tonal" label="Pay now" onPress={noop} /></Variant>
+    <Variant id="outlined"><MagneticButton variant="outlined" label="Pay now" onPress={noop} /></Variant>
+    <Variant id="text"><MagneticButton variant="text" label="Pay now" onPress={noop} /></Variant>
+    <Variant id="elevated"><MagneticButton variant="elevated" label="Pay now" onPress={noop} /></Variant>
+    <Variant id="gradient"><MagneticButton variant="gradient" label="Pay now" onPress={noop} /></Variant>
+    <Variant id="glass"><MagneticButton variant="glass" label="Pay now" onPress={noop} /></Variant>
+    <Variant id="pill"><MagneticButton variant="pill" label="Pay now" onPress={noop} /></Variant>
+  </> : null}</>],
   'mailbox': ["Mailbox", <Mailbox testID="mailbox" messages={[{ id: 'm', title: 'Your cheque book is on the way', unread: true }]} onOpen={noop} />],
   'marquee': ["Marquee", <Marquee items={['USD 0.92 EUR', 'GBP 1.27 USD']} />],
-  'maturity-instructions': ["Maturity instructions", <MaturityInstructions testID="maturity-instructions" label="At maturity" value="close" />],
+  'maturity-instructions': ["Maturity instructions", <><MaturityInstructions testID="maturity-instructions" label="At maturity" value="close" />{variantsShown ? <>
+    <Variant id="material"><MaturityInstructions variant="material" testID="maturity-instructions-material" label="At maturity" value="close" /></Variant>
+    <Variant id="cards"><MaturityInstructions variant="cards" testID="maturity-instructions-cards" label="At maturity" value="close" /></Variant>
+    <Variant id="chips"><MaturityInstructions variant="chips" testID="maturity-instructions-chips" label="At maturity" value="close" /></Variant>
+    <Variant id="rows"><MaturityInstructions variant="rows" testID="maturity-instructions-rows" label="At maturity" value="close" /></Variant>
+  </> : null}</>],
   'modification-requested': ["Modification requested", <ModificationNotice testID="modification-requested" message="PAY-4410 was sent back." onAction={noop} />],
   'new-td': ["Open a term deposit", <NewDepositForm testID="new-td" accounts={accounts_g2} value={{ from: '', amount: null, months: null }} onReview={noop} />],
   'nominations': ["Nominations", <Nominations testID="nominations" nominees={[{ id: 's', title: 'S. Rao · spouse', value: '50%' }]} onEdit={noop} />],
   'notification-panel': ["Notification panel", <NotificationPanel testID="notification-panel" items={[{ id: '1', title: 'Card payment due', unread: true }]} onAction={noop} />],
   'notifications-widget': ["Notifications", <NotificationsWidget testID="notifications-widget" items={[{ id: 'n', title: 'USD cut-off moves to 3 pm', unread: true }]} onAction={noop} />],
-  'option-wheel': ["Option wheel", <OptionWheel label="Tenure" options={opts_effects} value="w" onChange={noop} />],
-  'otp-delivery': ["Code delivery", <CodeDelivery testID="otp-delivery" label="Send codes by" value="SMS" />],
-  'otp-slots': ["OTP slots", <OtpSlots testID="otp-slots" label="Enter the code" value="12" />],
+  'option-wheel': ["Option wheel", <><OptionWheel label="Tenure" options={opts_effects} value="w" onChange={noop} />{variantsShown ? <>
+    <Variant id="material"><OptionWheel variant="material" label="Tenure" options={opts_effects} value="w" onChange={noop} /></Variant>
+    <Variant id="outlined"><OptionWheel variant="outlined" label="Tenure" options={opts_effects} value="w" onChange={noop} /></Variant>
+    <Variant id="underlined"><OptionWheel variant="underlined" label="Tenure" options={opts_effects} value="w" onChange={noop} /></Variant>
+    <Variant id="inline"><OptionWheel variant="inline" label="Tenure" options={opts_effects} value="w" onChange={noop} /></Variant>
+    <Variant id="pill"><OptionWheel variant="pill" label="Tenure" options={opts_effects} value="w" onChange={noop} /></Variant>
+  </> : null}</>],
+  'otp-delivery': ["Code delivery", <><CodeDelivery testID="otp-delivery" label="Send codes by" value="SMS" />{variantsShown ? <>
+    <Variant id="material"><CodeDelivery variant="material" testID="otp-delivery-material" label="Send codes by" value="SMS" /></Variant>
+    <Variant id="ios"><CodeDelivery variant="ios" testID="otp-delivery-ios" label="Send codes by" value="SMS" /></Variant>
+    <Variant id="underline"><CodeDelivery variant="underline" testID="otp-delivery-underline" label="Send codes by" value="SMS" /></Variant>
+    <Variant id="enclosed"><CodeDelivery variant="enclosed" testID="otp-delivery-enclosed" label="Send codes by" value="SMS" /></Variant>
+    <Variant id="pill"><CodeDelivery variant="pill" testID="otp-delivery-pill" label="Send codes by" value="SMS" /></Variant>
+  </> : null}</>],
+  'otp-slots': ["OTP slots", <><OtpSlots testID="otp-slots" label="Enter the code" value="12" />{variantsShown ? <>
+    <Variant id="material"><OtpSlots variant="material" testID="otp-slots-material" label="Enter the code" value="12" /></Variant>
+    <Variant id="underline"><OtpSlots variant="underline" testID="otp-slots-underline" label="Enter the code" value="12" /></Variant>
+    <Variant id="rounded"><OtpSlots variant="rounded" testID="otp-slots-rounded" label="Enter the code" value="12" /></Variant>
+    <Variant id="joined"><OtpSlots variant="joined" testID="otp-slots-joined" label="Enter the code" value="12" /></Variant>
+  </> : null}</>],
   'pagination': ["Pagination", <Pagination testID="pagination" page={2} pageCount={4} onPageChange={noop} />],
   'particle-backdrop': ["Particle backdrop", <Box><ParticleBackdrop /></Box>],
   'payee-list': ["Beneficiary selector", <BeneficiarySelector testID="payee-list" label="Pay to" payees={payees_g2} value="" onAdd={noop} />],
@@ -159,43 +312,111 @@ export const SAMPLES: Record<string, [string, ReactElement]> = {
   'receipt': ["Transaction receipt", <TransactionReceipt testID="receipt" amount={1250} currency="USD" rows={rows_g2} onShare={noop} onDownload={noop} />],
   'receipt-tear': ["Torn receipt", <ReceiptTear><Line>Paid</Line></ReceiptTear>],
   'recent-transactions': ["Recent transactions", <RecentTransactionsWidget testID="recent-transactions" transactions={txns_g6} onViewAll={noop} />],
-  'redeem-points': ["Redeem reward points", <RedeemPoints testID="redeem-points" label="Points to redeem" value={5000} max={12400} pointValue={0.01} currency="USD" />],
-  'repeat': ["Payment schedule", <PaymentSchedule testID="repeat" label="Repeat" value="Once" />],
-  'reset-pin': ["Reset PIN", <ResetPin testID="reset-pin" value="" />],
+  'redeem-points': ["Redeem reward points", <><RedeemPoints testID="redeem-points" label="Points to redeem" value={5000} max={12400} pointValue={0.01} currency="USD" />{variantsShown ? <>
+    <Variant id="material"><RedeemPoints variant="material" testID="redeem-points-material" label="Points to redeem" value={5000} max={12400} pointValue={0.01} currency="USD" /></Variant>
+    <Variant id="ticks"><RedeemPoints variant="ticks" testID="redeem-points-ticks" label="Points to redeem" value={5000} max={12400} pointValue={0.01} currency="USD" /></Variant>
+    <Variant id="bubble"><RedeemPoints variant="bubble" testID="redeem-points-bubble" label="Points to redeem" value={5000} max={12400} pointValue={0.01} currency="USD" /></Variant>
+    <Variant id="thick"><RedeemPoints variant="thick" testID="redeem-points-thick" label="Points to redeem" value={5000} max={12400} pointValue={0.01} currency="USD" /></Variant>
+  </> : null}</>],
+  'repeat': ["Payment schedule", <><PaymentSchedule testID="repeat" label="Repeat" value="Once" />{variantsShown ? <>
+    <Variant id="material"><PaymentSchedule variant="material" testID="repeat-material" label="Repeat" value="Once" /></Variant>
+    <Variant id="ios"><PaymentSchedule variant="ios" testID="repeat-ios" label="Repeat" value="Once" /></Variant>
+    <Variant id="underline"><PaymentSchedule variant="underline" testID="repeat-underline" label="Repeat" value="Once" /></Variant>
+    <Variant id="enclosed"><PaymentSchedule variant="enclosed" testID="repeat-enclosed" label="Repeat" value="Once" /></Variant>
+    <Variant id="pill"><PaymentSchedule variant="pill" testID="repeat-pill" label="Repeat" value="Once" /></Variant>
+  </> : null}</>],
+  'reset-pin': ["Reset PIN", <><ResetPin testID="reset-pin" value="" />{variantsShown ? <>
+    <Variant id="material"><ResetPin variant="material" testID="reset-pin-material" value="" /></Variant>
+    <Variant id="underline"><ResetPin variant="underline" testID="reset-pin-underline" value="" /></Variant>
+    <Variant id="rounded"><ResetPin variant="rounded" testID="reset-pin-rounded" value="" /></Variant>
+    <Variant id="joined"><ResetPin variant="joined" testID="reset-pin-joined" value="" /></Variant>
+  </> : null}</>],
   'reveal-digits': ["Reveal digits", <RevealDigits value="0012 0048 21" masked />],
   'rewards': ["Rewards", <RewardsWidget testID="rewards" tiles={tiles_g6} />],
   'rotating-text': ["Rotating text", <RotatingText prefix="Pay your" words={['rent', 'bills']} />],
-  'rubber-segment': ["Rubber segment", <RubberSegment testID="rubber-segment" label="Show" value="d" options={opts_effects} />],
+  'rubber-segment': ["Rubber segment", <><RubberSegment testID="rubber-segment" label="Show" value="d" options={opts_effects} />{variantsShown ? <>
+    <Variant id="material"><RubberSegment variant="material" testID="rubber-segment-material" label="Show" value="d" options={opts_effects} /></Variant>
+    <Variant id="ios"><RubberSegment variant="ios" testID="rubber-segment-ios" label="Show" value="d" options={opts_effects} /></Variant>
+    <Variant id="underline"><RubberSegment variant="underline" testID="rubber-segment-underline" label="Show" value="d" options={opts_effects} /></Variant>
+    <Variant id="enclosed"><RubberSegment variant="enclosed" testID="rubber-segment-enclosed" label="Show" value="d" options={opts_effects} /></Variant>
+    <Variant id="pill"><RubberSegment variant="pill" testID="rubber-segment-pill" label="Show" value="d" options={opts_effects} /></Variant>
+  </> : null}</>],
   'savings-goal': ["Savings goal", <SavingsGoal testID="savings-goal" label="Holiday fund" saved={1800} target={3000} currency="USD" onAdd={noop} />],
-  'savings-slider': ["Slider", <Slider testID="savings-slider" label="Monthly saving" value={1500} max={5000} prefix="USD" decimals={2} />],
+  'savings-slider': ["Slider", <><Slider testID="savings-slider" label="Monthly saving" value={1500} max={5000} prefix="USD" decimals={2} />{variantsShown ? <>
+    <Variant id="material"><Slider variant="material" testID="savings-slider-material" label="Monthly saving" value={1500} max={5000} prefix="USD" decimals={2} /></Variant>
+    <Variant id="ticks"><Slider variant="ticks" testID="savings-slider-ticks" label="Monthly saving" value={1500} max={5000} prefix="USD" decimals={2} /></Variant>
+    <Variant id="bubble"><Slider variant="bubble" testID="savings-slider-bubble" label="Monthly saving" value={1500} max={5000} prefix="USD" decimals={2} /></Variant>
+    <Variant id="thick"><Slider variant="thick" testID="savings-slider-thick" label="Monthly saving" value={1500} max={5000} prefix="USD" decimals={2} /></Variant>
+  </> : null}</>],
   'scroll-expand': ["Scroll expand", <ScrollExpand><Line>Hi</Line></ScrollExpand>],
   'scroll-float-text': ["Scroll float text", <ScrollFloatText text="Plan ahead" />],
   'scroll-reveal': ["Scroll reveal", <ScrollReveal><Line>Hi</Line></ScrollReveal>],
   'scroll-stack': ["Scroll stack", <ScrollStack cards={[{ id: 'a', content: <Line>A</Line> }]} />],
-  'scrub-field': ["Scrub field", <ScrubField testID="scrub-field" label="Amount" value={100} max={1000} currency="USD" />],
+  'scrub-field': ["Scrub field", <><ScrubField testID="scrub-field" label="Amount" value={100} max={1000} currency="USD" />{variantsShown ? <>
+    <Variant id="material"><ScrubField variant="material" testID="scrub-field-material" label="Amount" value={100} max={1000} currency="USD" /></Variant>
+    <Variant id="outlined"><ScrubField variant="outlined" testID="scrub-field-outlined" label="Amount" value={100} max={1000} currency="USD" /></Variant>
+    <Variant id="underlined"><ScrubField variant="underlined" testID="scrub-field-underlined" label="Amount" value={100} max={1000} currency="USD" /></Variant>
+    <Variant id="floating"><ScrubField variant="floating" testID="scrub-field-floating" label="Amount" value={100} max={1000} currency="USD" /></Variant>
+    <Variant id="inline"><ScrubField variant="inline" testID="scrub-field-inline" label="Amount" value={100} max={1000} currency="USD" /></Variant>
+  </> : null}</>],
   'secure-confirmation': ["Secure transaction confirmation", <SecureConfirmation testID="secure-confirmation" rows={[{ label: 'Pay', value: 'A. Rao' }]} code="" onCodeChange={noop} onConfirm={noop} />],
   'self-register': ["Self-registration", <SelfRegister testID="self-register" steps={['Details', 'Verify', 'Password', 'Done']} selectedStep="Verify" />],
-  'sensitive': ["Sensitive information masking", <SensitiveField testID="sensitive" label="Card number" value="4111 1111 1111 4821" />],
+  'sensitive': ["Sensitive information masking", <><SensitiveField testID="sensitive" label="Card number" value="4111 1111 1111 4821" />{variantsShown ? <>
+    <Variant id="material"><SensitiveField variant="material" testID="sensitive-material" label="Card number" value="4111 1111 1111 4821" /></Variant>
+    <Variant id="outlined"><SensitiveField variant="outlined" testID="sensitive-outlined" label="Card number" value="4111 1111 1111 4821" /></Variant>
+    <Variant id="underlined"><SensitiveField variant="underlined" testID="sensitive-underlined" label="Card number" value="4111 1111 1111 4821" /></Variant>
+    <Variant id="floating"><SensitiveField variant="floating" testID="sensitive-floating" label="Card number" value="4111 1111 1111 4821" /></Variant>
+    <Variant id="inline"><SensitiveField variant="inline" testID="sensitive-inline" label="Card number" value="4111 1111 1111 4821" /></Variant>
+  </> : null}</>],
   'session-summary': ["Session summary", <SessionSummary testID="session-summary" items={[{ label: 'Today 08:12', meta: 'iPhone 15 · London' }]} />],
   'session-timeout': ["Session expiry warning", <SessionExpiryWarning testID="session-timeout" open onStay={noop} onSignOut={noop} />],
   'sheet': ["Drawer and sheet", <BottomSheet testID="sheet" heading="Filter transactions" open onOpenChange={noop}><Line>Body</Line></BottomSheet>],
   'shimmer-text': ["Shimmer text", <ShimmerText text="Loading offers" />],
   'side-nav': ["Drawer navigation", <Drawer testID="side-nav" label="Menu" open items={[{ value: 'a', label: 'Accounts' }]} selection="a" onOpenChange={noop} />],
-  'sign-in-options': ["Sign-in options", <SignInOptions testID="sign-in-options" label="Sign in with" value={['Passkey']} options={['Passkey', 'Facial ID']} />],
+  'sign-in-options': ["Sign-in options", <><SignInOptions testID="sign-in-options" label="Sign in with" value={['Passkey']} options={['Passkey', 'Facial ID']} />{variantsShown ? <>
+    <Variant id="material"><SignInOptions variant="material" testID="sign-in-options-material" label="Sign in with" value={['Passkey']} options={['Passkey', 'Facial ID']} /></Variant>
+    <Variant id="cards"><SignInOptions variant="cards" testID="sign-in-options-cards" label="Sign in with" value={['Passkey']} options={['Passkey', 'Facial ID']} /></Variant>
+    <Variant id="chips"><SignInOptions variant="chips" testID="sign-in-options-chips" label="Sign in with" value={['Passkey']} options={['Passkey', 'Facial ID']} /></Variant>
+    <Variant id="rows"><SignInOptions variant="rows" testID="sign-in-options-rows" label="Sign in with" value={['Passkey']} options={['Passkey', 'Facial ID']} /></Variant>
+    <Variant id="round"><SignInOptions variant="round" testID="sign-in-options-round" label="Sign in with" value={['Passkey']} options={['Passkey', 'Facial ID']} /></Variant>
+  </> : null}</>],
   'silk-backdrop': ["Silk backdrop", <Box><SilkBackdrop /></Box>],
   'skeleton': ["Skeleton loader", <Skeleton />],
   'soft-aurora': ["Soft aurora", <Box><SoftAurora /></Box>],
   'special-offers': ["Special offers", <SpecialOffersWidget testID="special-offers" title="Pre-approved personal loan" badge="Offer" onAction={noop} />],
   'spend-analysis': ["Spend analysis", <SpendAnalysisWidget testID="spend-analysis" bars={[{ label: 'Jan', value: 1240 }]} currency="USD" />],
-  'spend-categories': ["Spend categories", <SpendCategories testID="spend-categories" label="Coffee House · 4.50 is" value={['Eating out']} options={['Eating out', 'Groceries']} />],
+  'spend-categories': ["Spend categories", <><SpendCategories testID="spend-categories" label="Coffee House · 4.50 is" value={['Eating out']} options={['Eating out', 'Groceries']} />{variantsShown ? <>
+    <Variant id="material"><SpendCategories variant="material" testID="spend-categories-material" label="Coffee House · 4.50 is" value={['Eating out']} options={['Eating out', 'Groceries']} /></Variant>
+    <Variant id="outlined"><SpendCategories variant="outlined" testID="spend-categories-outlined" label="Coffee House · 4.50 is" value={['Eating out']} options={['Eating out', 'Groceries']} /></Variant>
+    <Variant id="tonal"><SpendCategories variant="tonal" testID="spend-categories-tonal" label="Coffee House · 4.50 is" value={['Eating out']} options={['Eating out', 'Groceries']} /></Variant>
+    <Variant id="square"><SpendCategories variant="square" testID="spend-categories-square" label="Coffee House · 4.50 is" value={['Eating out']} options={['Eating out', 'Groceries']} /></Variant>
+    <Variant id="glass"><SpendCategories variant="glass" testID="spend-categories-glass" label="Coffee House · 4.50 is" value={['Eating out']} options={['Eating out', 'Groceries']} /></Variant>
+  </> : null}</>],
   'spend-limit': ["Card limits", <CardLimits testID="spend-limit" label="Daily limit" value={2000} max={5000} currency="USD" />],
   'spinner': ["Progress indicator", <ActivityIndicator label="Loading transactions" />],
   'split-flap-board': ["Split-flap board", <SplitFlapBoard label="Rates" rows={[{ label: 'USD / EUR', value: '0.9213' }]} />],
   'spotlight-card': ["Spotlight card", <SpotlightCard label="Offer" onPress={noop}><Line>Offer</Line></SpotlightCard>],
-  'squish-switch': ["Squish switch", <SquishSwitch label="Use abroad" value onChange={noop} />],
+  'squish-switch': ["Squish switch", <><SquishSwitch label="Use abroad" value onChange={noop} />{variantsShown ? <>
+    <Variant id="material"><SquishSwitch variant="material" label="Use abroad" value onChange={noop} /></Variant>
+    <Variant id="ios"><SquishSwitch variant="ios" label="Use abroad" value onChange={noop} /></Variant>
+    <Variant id="fluent"><SquishSwitch variant="fluent" label="Use abroad" value onChange={noop} /></Variant>
+    <Variant id="labelled"><SquishSwitch variant="labelled" label="Use abroad" value onChange={noop} /></Variant>
+    <Variant id="squish"><SquishSwitch variant="squish" label="Use abroad" value onChange={noop} /></Variant>
+  </> : null}</>],
   'staggered-menu': ["Staggered menu", <StaggeredMenu open onOpenChange={noop} items={[{ id: 'a', label: 'Accounts' }]} onSelect={noop} />],
-  'statement-format': ["Statement format", <StatementFormat testID="statement-format" label="Format" value="pdf" />],
-  'statement-request': ["Request a statement", <StatementRequest testID="statement-request" label="Statement period" value={{ from: '', to: '' }} onSubmit={noop} />],
+  'statement-format': ["Statement format", <><StatementFormat testID="statement-format" label="Format" value="pdf" />{variantsShown ? <>
+    <Variant id="material"><StatementFormat variant="material" testID="statement-format-material" label="Format" value="pdf" /></Variant>
+    <Variant id="ios"><StatementFormat variant="ios" testID="statement-format-ios" label="Format" value="pdf" /></Variant>
+    <Variant id="underline"><StatementFormat variant="underline" testID="statement-format-underline" label="Format" value="pdf" /></Variant>
+    <Variant id="enclosed"><StatementFormat variant="enclosed" testID="statement-format-enclosed" label="Format" value="pdf" /></Variant>
+    <Variant id="pill"><StatementFormat variant="pill" testID="statement-format-pill" label="Format" value="pdf" /></Variant>
+  </> : null}</>],
+  'statement-request': ["Request a statement", <><StatementRequest testID="statement-request" label="Statement period" value={{ from: '', to: '' }} onSubmit={noop} />{variantsShown ? <>
+    <Variant id="material"><StatementRequest variant="material" testID="statement-request-material" label="Statement period" value={{ from: '', to: '' }} onSubmit={noop} /></Variant>
+    <Variant id="outlined"><StatementRequest variant="outlined" testID="statement-request-outlined" label="Statement period" value={{ from: '', to: '' }} onSubmit={noop} /></Variant>
+    <Variant id="underlined"><StatementRequest variant="underlined" testID="statement-request-underlined" label="Statement period" value={{ from: '', to: '' }} onSubmit={noop} /></Variant>
+    <Variant id="inline"><StatementRequest variant="inline" testID="statement-request-inline" label="Statement period" value={{ from: '', to: '' }} onSubmit={noop} /></Variant>
+  </> : null}</>],
   'status-mark': ["Status mark", <StatusMark status="pending" label="Payment" />],
   'success-message': ["Success message", <SuccessMessage testID="success-message" message="Payment sent." actionLabel="View receipt" onAction={noop} />],
   'swipe-row': ["Swipe row", <SwipeRow label="Coffee House, 4.50" actions={[{ id: 'split', label: 'Split' }]} onAction={noop}><Line>Coffee House</Line></SwipeRow>],
@@ -204,20 +425,41 @@ export const SAMPLES: Record<string, [string, ReactElement]> = {
   'td-redemption': ["Redeem a deposit", <DepositRedemption testID="td-redemption" rows={[{ label: 'Early penalty', value: '-62.50', emphasis: 'negative' }]} onAction={noop} />],
   'td-summary': ["Term deposits summary", <DepositsSummary testID="td-summary" tiles={tiles_g2} />],
   'td-topup': ["Top up a deposit", <DepositTopUp testID="td-topup" rows={rows_g2} onAction={noop} />],
-  'terms-consent': ["Terms and consent", <TermsConsent testID="terms-consent" label="Before you continue" options={terms_g5} mustAccept={['tc']} value={[]} onContinue={noop} />],
+  'terms-consent': ["Terms and consent", <><TermsConsent testID="terms-consent" label="Before you continue" options={terms_g5} mustAccept={['tc']} value={[]} onContinue={noop} />{variantsShown ? <>
+    <Variant id="material"><TermsConsent variant="material" testID="terms-consent-material" label="Before you continue" options={terms_g5} mustAccept={['tc']} value={[]} onContinue={noop} /></Variant>
+    <Variant id="cards"><TermsConsent variant="cards" testID="terms-consent-cards" label="Before you continue" options={terms_g5} mustAccept={['tc']} value={[]} onContinue={noop} /></Variant>
+    <Variant id="chips"><TermsConsent variant="chips" testID="terms-consent-chips" label="Before you continue" options={terms_g5} mustAccept={['tc']} value={[]} onContinue={noop} /></Variant>
+    <Variant id="rows"><TermsConsent variant="rows" testID="terms-consent-rows" label="Before you continue" options={terms_g5} mustAccept={['tc']} value={[]} onContinue={noop} /></Variant>
+    <Variant id="round"><TermsConsent variant="round" testID="terms-consent-round" label="Before you continue" options={terms_g5} mustAccept={['tc']} value={[]} onContinue={noop} /></Variant>
+  </> : null}</>],
   'text-reveal': ["Text reveal", <TextReveal text="Your savings" />],
   'tilt-card': ["Tilt card", <TiltCard label="Card"><Line>Card</Line></TiltCard>],
   'tooltip': ["Tooltip", <Tooltip testID="tooltip" label="Available balance" text="What you can spend now." />],
   'topography': ["Topography", <Box><Topography /></Box>],
   'track-requests': ["Track requests", <TrackRequests testID="track-requests" items={[{ label: 'Received', meta: 'SR-2210' }]} />],
   'transaction-details': ["Transaction details", <TransactionDetails testID="transaction-details" rows={rows_g2} actionLabel="Dispute it" onAction={noop} />],
-  'transaction-filter': ["Transaction filter", <TransactionFilter testID="transaction-filter" label="Show" value={[]} options={['Money in', 'Money out']} />],
+  'transaction-filter': ["Transaction filter", <><TransactionFilter testID="transaction-filter" label="Show" value={[]} options={['Money in', 'Money out']} />{variantsShown ? <>
+    <Variant id="material"><TransactionFilter variant="material" testID="transaction-filter-material" label="Show" value={[]} options={['Money in', 'Money out']} /></Variant>
+    <Variant id="outlined"><TransactionFilter variant="outlined" testID="transaction-filter-outlined" label="Show" value={[]} options={['Money in', 'Money out']} /></Variant>
+    <Variant id="tonal"><TransactionFilter variant="tonal" testID="transaction-filter-tonal" label="Show" value={[]} options={['Money in', 'Money out']} /></Variant>
+    <Variant id="square"><TransactionFilter variant="square" testID="transaction-filter-square" label="Show" value={[]} options={['Money in', 'Money out']} /></Variant>
+    <Variant id="glass"><TransactionFilter variant="glass" testID="transaction-filter-glass" label="Show" value={[]} options={['Money in', 'Money out']} /></Variant>
+  </> : null}</>],
   'transaction-limits': ["Transaction limits", <TransactionLimits testID="transaction-limits" currency="USD" items={[{ label: 'Daily transfers', value: 1200, max: 5000 }]} />],
   'transactions-widget': ["Transactions", <TransactionsWidget testID="transactions-widget" label="Transactions" tabs={tabs_g6} />],
   'transfer-summary': ["Transfer summary", <TransferSummary testID="transfer-summary" rows={rows_g2} onAction={noop} />],
   'typed-text': ["Typed text", <TypedText text="Your balance is 12,400.00." />],
   'upcoming-bills': ["Upcoming bills", <UpcomingBills testID="upcoming-bills" bills={[{ id: 'e', payee: 'Electricity', due: 'Due 18 Jan', amount: 86.2, currency: 'USD' }]} onPay={noop} />],
-  'voice-pill': ["Voice pill", <VoicePill listening={false} onToggle={noop} />],
+  'voice-pill': ["Voice pill", <><VoicePill listening={false} onToggle={noop} />{variantsShown ? <>
+    <Variant id="material"><VoicePill variant="material" listening={false} onToggle={noop} /></Variant>
+    <Variant id="tonal"><VoicePill variant="tonal" listening={false} onToggle={noop} /></Variant>
+    <Variant id="outlined"><VoicePill variant="outlined" listening={false} onToggle={noop} /></Variant>
+    <Variant id="text"><VoicePill variant="text" listening={false} onToggle={noop} /></Variant>
+    <Variant id="elevated"><VoicePill variant="elevated" listening={false} onToggle={noop} /></Variant>
+    <Variant id="gradient"><VoicePill variant="gradient" listening={false} onToggle={noop} /></Variant>
+    <Variant id="glass"><VoicePill variant="glass" listening={false} onToggle={noop} /></Variant>
+    <Variant id="pill"><VoicePill variant="pill" listening={false} onToggle={noop} /></Variant>
+  </> : null}</>],
   'warm-tooltip': ["Warm tooltip", <WarmTooltip label="Available balance" text="What you can spend now." />],
   'work-snapshot': ["Work snapshot for today", <WorkSnapshotWidget testID="work-snapshot" tiles={tiles_g6} />],
 };

@@ -2,10 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, forwardRef, input, signal
 import { NG_VALUE_ACCESSOR } from '@angular/forms';
 
 import { FieldBase, FieldShell } from './field';
+import { VARIANT } from './variant';
 
 /** One line of text (oj-input-text). */
 @Component({
-  selector: 'bx-text-field',
+  selector: 'bx-text-field', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldShell],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => TextField), multi: true }],
@@ -48,7 +49,7 @@ export function formatAmount(value: number | null | undefined, currency?: string
 
 /** A money amount (oj-input-number with a currency): a number, formatted with the currency's decimals when the customer leaves. */
 @Component({
-  selector: 'bx-amount',
+  selector: 'bx-amount', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldShell],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => AmountInput), multi: true }],

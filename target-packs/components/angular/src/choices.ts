@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, Directive, computed, forwardRef, in
 import { NG_VALUE_ACCESSOR } from '@angular/forms';
 
 import { FieldBase, FieldMessage, Option, toOptions } from './field';
+import { VARIANT } from './variant';
 
 // One template for both groups (the compiler needs a plain string): the input's type comes from the class
 const TEMPLATE = `
@@ -39,7 +40,7 @@ abstract class ChoiceBase<T> extends FieldBase<T> {
 
 /** Choose any number of options, shown as cards (oj-checkboxset). The value is the list of chosen values. */
 @Component({
-  selector: 'bx-checkbox-group',
+  selector: 'bx-checkbox-group', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldMessage],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => CheckboxGroup), multi: true }],
@@ -59,7 +60,7 @@ export class CheckboxGroup extends ChoiceBase<string[]> {
 
 /** Choose one of a few options, all visible, shown as cards (oj-radioset). */
 @Component({
-  selector: 'bx-choice-group',
+  selector: 'bx-choice-group', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldMessage],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => RadioGroup), multi: true }],

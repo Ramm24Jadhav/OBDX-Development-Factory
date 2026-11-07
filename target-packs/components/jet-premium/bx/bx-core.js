@@ -3,7 +3,7 @@
  * with ojs/ojcomposite's register(name, {view, viewModel, metadata}), views use only oj-bind-* and :attr bindings, and
  * no CSS or text loader plugin is needed (bx.css is linked once by the app).
  */
-define(['knockout'], function (ko) {
+define(['knockout', './bx-variants'], function (ko, VARIANTS) {
   'use strict';
   var seq = 0;
 
@@ -183,6 +183,41 @@ define(['knockout'], function (ko) {
     element.dispatchEvent(new CustomEvent(name, { bubbles: true, detail: detail || {} }));
   }
 
+  /** Puts bx-<kind>--<variant> on the element for a variant it takes, and takes off the one before. */
+  function applyVariant(element, kind, ids, variant) {
+    if (!element || !element.classList) { return; }
+    ids.forEach(function (v) { element.classList.remove('bx-' + kind + '--' + v); });
+    if (variant && ids.indexOf(variant) >= 0) { element.classList.add('bx-' + kind + '--' + variant); }
+  }
+
+  /**
+   * Wraps ojs/ojcomposite so every element in the variant table (bx-variants, from variants/*.json) takes a variant
+   * property: an empty variant keeps the pack's own look; the others add bx-<kind>--<variant> to the element.
+   */
+  function withVariants(Composite) {
+    return { register: function (name, descriptor) {
+      var entry = VARIANTS[name];
+      if (!entry) { return Composite.register(name, descriptor); }
+      var kind = entry[0];
+      var ids = entry[1];
+      var metadata = Object.assign({}, descriptor.metadata);
+      metadata.properties = Object.assign({}, metadata.properties, { variant: { type: 'string', value: '', enumValues: [''].concat(ids) } });
+      var Model = descriptor.viewModel;
+      var Wrapped = function (context) {
+        var vm = Model ? new Model(context) : {};
+        var changed = vm.propertyChanged;
+        applyVariant(context.element, kind, ids, context.properties.variant);
+        vm.propertyChanged = function (detail) {
+          if (detail.property === 'variant') { applyVariant(context.element, kind, ids, detail.value); }
+          return changed ? changed.apply(vm, arguments) : undefined;
+        };
+        return vm;
+      };
+      return Composite.register(name, Object.assign({}, descriptor, { viewModel: Wrapped, metadata: metadata }));
+    } };
+  }
+
   return { nextId: nextId, options: options, fromData: fromData, validate: validate, customMessage: customMessage, format: format, parse: parse,
-    helpText: helpText, FIELD: FIELD, fieldView: fieldView, fieldState: fieldState, fire: fire, ko: ko };
+    helpText: helpText, FIELD: FIELD, fieldView: fieldView, fieldState: fieldState, fire: fire, ko: ko,
+    variants: VARIANTS, withVariants: withVariants };
 });

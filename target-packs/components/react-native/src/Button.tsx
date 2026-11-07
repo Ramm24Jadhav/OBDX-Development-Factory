@@ -3,6 +3,7 @@ import { ActivityIndicator, Animated, Text, View } from 'react-native';
 
 import { Press, useShimmer } from './motion';
 import { GlassBlur, Theme, useTheme } from './theme';
+import { part } from './variants';
 
 export type Chroming = 'callToAction' | 'solid' | 'outlined' | 'borderless' | 'danger';
 
@@ -32,18 +33,19 @@ export interface ButtonProps {
 export function Button({ testID, label, chroming = 'callToAction', disabled, busy, startIcon, onAction }: ButtonProps) {
   const t = useTheme();
   const l = look(t, chroming);
+  const v = { danger: chroming === 'danger' };
   const off = !!(disabled || busy);
   const shimmer = useShimmer(!!busy);
   return (
     <Press testID={testID} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: off, busy: !!busy }}
                disabled={off} onPress={onAction}
                style={[{ minHeight: t.minTouch, paddingHorizontal: 20, borderRadius: t.radius.control, flexDirection: 'row', alignItems: 'center',
-                 justifyContent: 'center', opacity: off ? 0.5 : 1, overflow: 'hidden' }, l.box]}>
+                 justifyContent: 'center', opacity: off ? 0.5 : 1, overflow: 'hidden' }, l.box, part(t, 'button', 'box', v)]}>
       <GlassBlur />
       {/* the busy button shimmers (motion.json: loading) */}
       <Animated.View style={[{ flexDirection: 'row', alignItems: 'center', gap: 8 }, shimmer]}>
         {busy ? <ActivityIndicator size="small" color={l.text} aria-hidden /> : startIcon}
-        <Text style={{ color: l.text, fontSize: 15, fontWeight: '600' }}>{label}</Text>
+        <Text style={[{ color: l.text, fontSize: 15, fontWeight: '600' }, part(t, 'button', 'text', v)]}>{label}</Text>
       </Animated.View>
     </Press>
   );
@@ -67,10 +69,10 @@ export function IconButton({ testID, label, icon = 'more', chroming = 'borderles
     <Press testID={testID} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!disabled }} disabled={disabled}
            onPress={onAction} hitSlop={4}
            style={[{ width: t.minTouch, height: t.minTouch, borderRadius: t.radius.control, alignItems: 'center', justifyContent: 'center',
-             opacity: disabled ? 0.5 : 1, overflow: 'hidden' }, l.box]}>
+             opacity: disabled ? 0.5 : 1, overflow: 'hidden' }, l.box, part(t, 'iconbtn', 'box')]}>
       <GlassBlur />
       {typeof icon === 'string'
-        ? <Text style={{ color: l.text, fontSize: 20 }} importantForAccessibility="no">{icon === 'close' ? '×' : '⋯'}</Text>
+        ? <Text style={[{ color: l.text, fontSize: 20 }, part(t, 'iconbtn', 'text')]} importantForAccessibility="no">{icon === 'close' ? '×' : '⋯'}</Text>
         : <View importantForAccessibility="no-hide-descendants">{icon}</View>}
     </Press>
   );

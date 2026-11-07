@@ -9,6 +9,7 @@ import { Dialog } from './dialog';
 import { FieldMessage } from './field';
 import { ALERT, AlertBase, Part, ROWS, RowsBase, SEGMENTS, SLIDER, STEPS, SegmentsBase, Severity, SliderBase, StepsBase, TIMELINE, TimelineBase } from './g1';
 import { DETAILS, DetailsBase, FORM, FormBase, TILES, TilesBase } from './g2';
+import { VARIANT } from './variant';
 
 /** The last four digits behind dots, as banks show a card or account number. */
 export function masked(number: string): string {
@@ -102,13 +103,13 @@ export abstract class CodeBase extends Part {
 }
 
 /** A one-time code with Send a new code. */
-@Component({ selector: 'bx-otp', changeDetection: ChangeDetectionStrategy.OnPush, imports: [FieldMessage], template: CODE })
+@Component({ selector: 'bx-otp', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, imports: [FieldMessage], template: CODE })
 export class OtpInput extends CodeBase { protected override readonly defaults = { label: 'Enter the code', actionLabel: 'Send a new code' }; }
 /** The code that activates a new card. */
-@Component({ selector: 'bx-activate-card', changeDetection: ChangeDetectionStrategy.OnPush, imports: [FieldMessage], template: CODE })
+@Component({ selector: 'bx-activate-card', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, imports: [FieldMessage], template: CODE })
 export class ActivateCard extends CodeBase { protected override readonly defaults = { label: 'Enter the activation code' }; }
 /** A new PIN, in dots. */
-@Component({ selector: 'bx-reset-pin', changeDetection: ChangeDetectionStrategy.OnPush, imports: [FieldMessage], template: CODE })
+@Component({ selector: 'bx-reset-pin', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, imports: [FieldMessage], template: CODE })
 export class ResetPin extends CodeBase { protected override readonly defaults = { label: 'Choose a new PIN', length: 4, masked: true }; }
 
 /* ---------- CardTile ---------- */
@@ -200,7 +201,7 @@ export abstract class SettingBase extends Part {
 }
 
 /** Block the card, and what that means. */
-@Component({ selector: 'bx-block-card', changeDetection: ChangeDetectionStrategy.OnPush, template: SETTING })
+@Component({ selector: 'bx-block-card', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: SETTING })
 export class BlockCard extends SettingBase {
   protected override readonly defaults = { label: 'Block the card', onText: 'The card is blocked: payments and withdrawals are refused until you unblock it.', tone: 'danger' };
 }
@@ -267,7 +268,7 @@ export class SessionExpiryWarning extends Part {
 
 /** A number shown masked, in full on request. */
 @Component({
-  selector: 'bx-sensitive',
+  selector: 'bx-sensitive', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="bx-field bx-sensitive" [attr.data-testid]="testID() || null">
@@ -312,10 +313,10 @@ export class SecureConfirmation extends DetailsBase { protected override readonl
 @Component({ selector: 'bx-disbursement', changeDetection: ChangeDetectionStrategy.OnPush, template: TIMELINE })
 export class DisbursementTimeline extends TimelineBase { protected override readonly defaultLabel = 'Disbursements'; }
 /** Pay a purchase over months. [(value)]. */
-@Component({ selector: 'bx-convert-emi', changeDetection: ChangeDetectionStrategy.OnPush, template: SEGMENTS })
+@Component({ selector: 'bx-convert-emi', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: SEGMENTS })
 export class ConvertToEmi extends SegmentsBase { protected override readonly defaults = { label: 'Pay over', options: ['3 months', '6 months', '12 months'] }; }
 /** How many points to redeem. [(value)]. */
-@Component({ selector: 'bx-redeem-points', changeDetection: ChangeDetectionStrategy.OnPush, template: SLIDER })
+@Component({ selector: 'bx-redeem-points', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: SLIDER })
 export class RedeemPoints extends SliderBase { protected override readonly defaults = { label: 'Points to redeem', max: 12400, step: 100 }; }
 /** The card's statements, each to download. */
 @Component({ selector: 'bx-card-statements', changeDetection: ChangeDetectionStrategy.OnPush, template: ROWS })

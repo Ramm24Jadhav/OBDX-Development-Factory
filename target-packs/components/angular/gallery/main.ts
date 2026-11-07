@@ -27,31 +27,91 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       <section class="gate" data-component="button" aria-labelledby="button-h"><h2 id="button-h">Button</h2><div class="gate-body"><div class="gate-row">
         <bx-button label="Pay now" /><bx-button label="Save draft" chroming="solid" /><bx-button label="Cancel" chroming="outlined" />
         <bx-button label="Details" chroming="borderless" /><bx-button label="Delete" chroming="danger" /><bx-button label="Paying" [busy]="true" />
-      </div></div></section>
+      </div>@if (variantsShown) {
+          <div data-variant="material"><bx-button variant="material" label="Pay now" /></div>
+          <div data-variant="tonal"><bx-button variant="tonal" label="Pay now" /></div>
+          <div data-variant="outlined"><bx-button variant="outlined" label="Pay now" /></div>
+          <div data-variant="text"><bx-button variant="text" label="Pay now" /></div>
+          <div data-variant="elevated"><bx-button variant="elevated" label="Pay now" /></div>
+          <div data-variant="gradient"><bx-button variant="gradient" label="Pay now" /></div>
+          <div data-variant="glass"><bx-button variant="glass" label="Pay now" /></div>
+          <div data-variant="pill"><bx-button variant="pill" label="Pay now" /></div>
+        }
+      </div></section>
       <section class="gate" data-component="icon-button" aria-labelledby="ib-h"><h2 id="ib-h">Icon button</h2><div class="gate-body"><div class="gate-row">
         <bx-icon-button label="More actions" /><bx-icon-button label="Close" icon="close" chroming="outlined" /><bx-icon-button label="Disabled action" [disabled]="true" />
-      </div></div></section>
+      </div>@if (variantsShown) {
+          <div data-variant="material"><bx-icon-button variant="material" label="More actions" /></div>
+          <div data-variant="filled"><bx-icon-button variant="filled" label="More actions" /></div>
+          <div data-variant="tonal"><bx-icon-button variant="tonal" label="More actions" /></div>
+          <div data-variant="outlined"><bx-icon-button variant="outlined" label="More actions" /></div>
+          <div data-variant="circular"><bx-icon-button variant="circular" label="More actions" /></div>
+          <div data-variant="square"><bx-icon-button variant="square" label="More actions" /></div>
+        }
+      </div></section>
       <section class="gate" data-component="text-field" aria-labelledby="tf-h"><h2 id="tf-h">Text field</h2><div class="gate-body">
         <bx-text-field testID="tf1" label="Beneficiary name" [(value)]="name" [required]="true" [maxLength]="40" [clearable]="true" helpText="As it appears on the account" />
         <bx-text-field testID="tf2" label="Reference" value="INV 2041" error="Use letters and numbers only." />
         <bx-text-field testID="tf3" label="Customer ID" value="CUST-00921" [readOnly]="true" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-text-field variant="material" testID="tf1-material" label="Beneficiary name" [value]="name" [required]="true" [maxLength]="40" [clearable]="true" helpText="As it appears on the account" /></div>
+          <div data-variant="outlined"><bx-text-field variant="outlined" testID="tf1-outlined" label="Beneficiary name" [value]="name" [required]="true" [maxLength]="40" [clearable]="true" helpText="As it appears on the account" /></div>
+          <div data-variant="underlined"><bx-text-field variant="underlined" testID="tf1-underlined" label="Beneficiary name" [value]="name" [required]="true" [maxLength]="40" [clearable]="true" helpText="As it appears on the account" /></div>
+          <div data-variant="floating"><bx-text-field variant="floating" testID="tf1-floating" label="Beneficiary name" [value]="name" [required]="true" [maxLength]="40" [clearable]="true" helpText="As it appears on the account" /></div>
+          <div data-variant="inline"><bx-text-field variant="inline" testID="tf1-inline" label="Beneficiary name" [value]="name" [required]="true" [maxLength]="40" [clearable]="true" helpText="As it appears on the account" /></div>
+          <div data-variant="pill"><bx-text-field variant="pill" testID="tf1-pill" label="Beneficiary name" [value]="name" [required]="true" [maxLength]="40" [clearable]="true" helpText="As it appears on the account" /></div>
+        }
       </div></section>
       <section class="gate" data-component="amount" aria-labelledby="am-h"><h2 id="am-h">Amount input</h2><div class="gate-body">
         <bx-amount testID="am1" label="Amount" currency="INR" locale="en-IN" [(value)]="amount" [required]="true" helpText="Up to 50,000.00 a day" />
         <bx-amount testID="am2" label="Amount" currency="KWD" locale="en-US" [value]="12.5" error="Enter at most 10.000." />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-amount variant="material" testID="am1-material" label="Amount" currency="INR" locale="en-IN" [value]="amount" [required]="true" helpText="Up to 50,000.00 a day" /></div>
+          <div data-variant="outlined"><bx-amount variant="outlined" testID="am1-outlined" label="Amount" currency="INR" locale="en-IN" [value]="amount" [required]="true" helpText="Up to 50,000.00 a day" /></div>
+          <div data-variant="underlined"><bx-amount variant="underlined" testID="am1-underlined" label="Amount" currency="INR" locale="en-IN" [value]="amount" [required]="true" helpText="Up to 50,000.00 a day" /></div>
+          <div data-variant="floating"><bx-amount variant="floating" testID="am1-floating" label="Amount" currency="INR" locale="en-IN" [value]="amount" [required]="true" helpText="Up to 50,000.00 a day" /></div>
+          <div data-variant="inline"><bx-amount variant="inline" testID="am1-inline" label="Amount" currency="INR" locale="en-IN" [value]="amount" [required]="true" helpText="Up to 50,000.00 a day" /></div>
+          <div data-variant="pill"><bx-amount variant="pill" testID="am1-pill" label="Amount" currency="INR" locale="en-IN" [value]="amount" [required]="true" helpText="Up to 50,000.00 a day" /></div>
+        }
       </div></section>
       <section class="gate" data-component="select" aria-labelledby="dd-h"><h2 id="dd-h">Dropdown</h2><div class="gate-body">
         <bx-select testID="dd1" label="From account" [options]="accounts" [(value)]="account" [required]="true" />
         <bx-select testID="dd2" label="To account" [options]="accounts" value="" [disabled]="true" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-select variant="material" testID="dd1-material" label="From account" [options]="accounts" [value]="account" [required]="true" /></div>
+          <div data-variant="outlined"><bx-select variant="outlined" testID="dd1-outlined" label="From account" [options]="accounts" [value]="account" [required]="true" /></div>
+          <div data-variant="underlined"><bx-select variant="underlined" testID="dd1-underlined" label="From account" [options]="accounts" [value]="account" [required]="true" /></div>
+          <div data-variant="inline"><bx-select variant="inline" testID="dd1-inline" label="From account" [options]="accounts" [value]="account" [required]="true" /></div>
+          <div data-variant="pill"><bx-select variant="pill" testID="dd1-pill" label="From account" [options]="accounts" [value]="account" [required]="true" /></div>
+        }
       </div></section>
       <section class="gate" data-component="checkbox-group" aria-labelledby="cg-h"><h2 id="cg-h">Checkbox group</h2><div class="gate-body">
         <bx-checkbox-group testID="cg" label="Send alerts by" [options]="channels" [(value)]="alerts" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-checkbox-group variant="material" testID="cg-material" label="Send alerts by" [options]="channels" [value]="alerts" /></div>
+          <div data-variant="cards"><bx-checkbox-group variant="cards" testID="cg-cards" label="Send alerts by" [options]="channels" [value]="alerts" /></div>
+          <div data-variant="chips"><bx-checkbox-group variant="chips" testID="cg-chips" label="Send alerts by" [options]="channels" [value]="alerts" /></div>
+          <div data-variant="rows"><bx-checkbox-group variant="rows" testID="cg-rows" label="Send alerts by" [options]="channels" [value]="alerts" /></div>
+          <div data-variant="round"><bx-checkbox-group variant="round" testID="cg-round" label="Send alerts by" [options]="channels" [value]="alerts" /></div>
+        }
       </div></section>
       <section class="gate" data-component="choice-group" aria-labelledby="rg-h"><h2 id="rg-h">Radio group</h2><div class="gate-body">
         <bx-choice-group testID="rg" label="Transfer speed" [horizontal]="true" [options]="speeds" [(value)]="speed" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-choice-group variant="material" testID="rg-material" label="Transfer speed" [horizontal]="true" [options]="speeds" [value]="speed" /></div>
+          <div data-variant="cards"><bx-choice-group variant="cards" testID="rg-cards" label="Transfer speed" [horizontal]="true" [options]="speeds" [value]="speed" /></div>
+          <div data-variant="chips"><bx-choice-group variant="chips" testID="rg-chips" label="Transfer speed" [horizontal]="true" [options]="speeds" [value]="speed" /></div>
+          <div data-variant="rows"><bx-choice-group variant="rows" testID="rg-rows" label="Transfer speed" [horizontal]="true" [options]="speeds" [value]="speed" /></div>
+        }
       </div></section>
       <section class="gate" data-component="date" aria-labelledby="dp-h"><h2 id="dp-h">Date picker</h2><div class="gate-body">
         <bx-date testID="dp" label="Pay on" [(value)]="day" min="2026-11-10" max="2026-12-31" locale="en-GB" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-date variant="material" testID="dp-material" label="Pay on" [value]="day" min="2026-11-10" max="2026-12-31" locale="en-GB" /></div>
+          <div data-variant="outlined"><bx-date variant="outlined" testID="dp-outlined" label="Pay on" [value]="day" min="2026-11-10" max="2026-12-31" locale="en-GB" /></div>
+          <div data-variant="underlined"><bx-date variant="underlined" testID="dp-underlined" label="Pay on" [value]="day" min="2026-11-10" max="2026-12-31" locale="en-GB" /></div>
+          <div data-variant="inline"><bx-date variant="inline" testID="dp-inline" label="Pay on" [value]="day" min="2026-11-10" max="2026-12-31" locale="en-GB" /></div>
+        }
       </div></section>
       <section class="gate" data-component="dialog" aria-labelledby="dl-h"><h2 id="dl-h">Dialog</h2><div class="gate-body"><div class="gate-dialog">
         <bx-dialog [open]="true" dialogTitle="Delete A. Sharma?" description="You can add them again later.">
@@ -76,46 +136,139 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       <section class="gate" data-component="text-area" aria-labelledby="ta-h"><h2 id="ta-h">Text area</h2><div class="gate-body">
         <bx-text-area testID="ta1" label="Remarks" [(value)]="remarks" [maxLength]="140" helpText="Shown on the payee's statement" />
         <bx-text-area testID="ta2" label="Reason" value="" [required]="true" error="Say why you are cancelling." />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-text-area variant="material" testID="ta1-material" label="Remarks" [value]="remarks" [maxLength]="140" helpText="Shown on the payee's statement" /></div>
+          <div data-variant="outlined"><bx-text-area variant="outlined" testID="ta1-outlined" label="Remarks" [value]="remarks" [maxLength]="140" helpText="Shown on the payee's statement" /></div>
+          <div data-variant="underlined"><bx-text-area variant="underlined" testID="ta1-underlined" label="Remarks" [value]="remarks" [maxLength]="140" helpText="Shown on the payee's statement" /></div>
+          <div data-variant="floating"><bx-text-area variant="floating" testID="ta1-floating" label="Remarks" [value]="remarks" [maxLength]="140" helpText="Shown on the payee's statement" /></div>
+          <div data-variant="inline"><bx-text-area variant="inline" testID="ta1-inline" label="Remarks" [value]="remarks" [maxLength]="140" helpText="Shown on the payee's statement" /></div>
+        }
       </div></section>
       <section class="gate" data-component="password" aria-labelledby="pw-h"><h2 id="pw-h">Password</h2><div class="gate-body">
         <bx-password testID="pw1" label="Password" [(value)]="secret" autoComplete="new-password" helpText="At least 8 characters, one number" />
         <bx-password testID="pw2" label="Transaction PIN" value="1234" autoComplete="one-time-code" error="The PIN is wrong. 2 tries left." />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-password variant="material" testID="pw1-material" label="Password" [value]="secret" autoComplete="new-password" helpText="At least 8 characters, one number" /></div>
+          <div data-variant="outlined"><bx-password variant="outlined" testID="pw1-outlined" label="Password" [value]="secret" autoComplete="new-password" helpText="At least 8 characters, one number" /></div>
+          <div data-variant="underlined"><bx-password variant="underlined" testID="pw1-underlined" label="Password" [value]="secret" autoComplete="new-password" helpText="At least 8 characters, one number" /></div>
+          <div data-variant="floating"><bx-password variant="floating" testID="pw1-floating" label="Password" [value]="secret" autoComplete="new-password" helpText="At least 8 characters, one number" /></div>
+          <div data-variant="inline"><bx-password variant="inline" testID="pw1-inline" label="Password" [value]="secret" autoComplete="new-password" helpText="At least 8 characters, one number" /></div>
+        }
       </div></section>
       <section class="gate" data-component="number-input" aria-labelledby="ni-h"><h2 id="ni-h">Number</h2><div class="gate-body">
         <bx-number-input testID="ni1" label="Cheque leaves" [(value)]="copies" [min]="1" [max]="5" helpText="Up to 5 books" />
         <bx-number-input testID="ni2" label="Tenure (months)" [value]="84" error="Enter 60 or less." />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-number-input variant="material" testID="ni1-material" label="Cheque leaves" [value]="copies" [min]="1" [max]="5" helpText="Up to 5 books" /></div>
+          <div data-variant="outlined"><bx-number-input variant="outlined" testID="ni1-outlined" label="Cheque leaves" [value]="copies" [min]="1" [max]="5" helpText="Up to 5 books" /></div>
+          <div data-variant="underlined"><bx-number-input variant="underlined" testID="ni1-underlined" label="Cheque leaves" [value]="copies" [min]="1" [max]="5" helpText="Up to 5 books" /></div>
+          <div data-variant="floating"><bx-number-input variant="floating" testID="ni1-floating" label="Cheque leaves" [value]="copies" [min]="1" [max]="5" helpText="Up to 5 books" /></div>
+          <div data-variant="inline"><bx-number-input variant="inline" testID="ni1-inline" label="Cheque leaves" [value]="copies" [min]="1" [max]="5" helpText="Up to 5 books" /></div>
+          <div data-variant="pill"><bx-number-input variant="pill" testID="ni1-pill" label="Cheque leaves" [value]="copies" [min]="1" [max]="5" helpText="Up to 5 books" /></div>
+        }
       </div></section>
       <section class="gate" data-component="currency-picker" aria-labelledby="cp-h"><h2 id="cp-h">Currency</h2><div class="gate-body">
         <bx-currency-picker testID="cp1" label="Currency" [(value)]="currency" [required]="true" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-currency-picker variant="material" testID="cp1-material" label="Currency" [value]="currency" [required]="true" /></div>
+          <div data-variant="outlined"><bx-currency-picker variant="outlined" testID="cp1-outlined" label="Currency" [value]="currency" [required]="true" /></div>
+          <div data-variant="underlined"><bx-currency-picker variant="underlined" testID="cp1-underlined" label="Currency" [value]="currency" [required]="true" /></div>
+          <div data-variant="inline"><bx-currency-picker variant="inline" testID="cp1-inline" label="Currency" [value]="currency" [required]="true" /></div>
+          <div data-variant="pill"><bx-currency-picker variant="pill" testID="cp1-pill" label="Currency" [value]="currency" [required]="true" /></div>
+        }
       </div></section>
       <section class="gate" data-component="multi-select" aria-labelledby="ms-h"><h2 id="ms-h">Multi select</h2><div class="gate-body">
         <bx-multi-select testID="ms1" label="Accounts on the statement" [options]="accounts" [(value)]="picked" helpText="Choose one or more" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-multi-select variant="material" testID="ms1-material" label="Accounts on the statement" [options]="accounts" [value]="picked" helpText="Choose one or more" /></div>
+          <div data-variant="outlined"><bx-multi-select variant="outlined" testID="ms1-outlined" label="Accounts on the statement" [options]="accounts" [value]="picked" helpText="Choose one or more" /></div>
+          <div data-variant="tonal"><bx-multi-select variant="tonal" testID="ms1-tonal" label="Accounts on the statement" [options]="accounts" [value]="picked" helpText="Choose one or more" /></div>
+          <div data-variant="square"><bx-multi-select variant="square" testID="ms1-square" label="Accounts on the statement" [options]="accounts" [value]="picked" helpText="Choose one or more" /></div>
+          <div data-variant="glass"><bx-multi-select variant="glass" testID="ms1-glass" label="Accounts on the statement" [options]="accounts" [value]="picked" helpText="Choose one or more" /></div>
+        }
       </div></section>
       <section class="gate" data-component="switch" aria-labelledby="sw-h"><h2 id="sw-h">Switch</h2><div class="gate-body">
         <bx-switch testID="sw1" label="Paperless statements" [(value)]="paperless" helpText="We email them on the 1st" />
         <bx-switch testID="sw2" label="International use" [value]="false" [disabled]="true" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-switch variant="material" testID="sw1-material" label="Paperless statements" [value]="paperless" helpText="We email them on the 1st" /></div>
+          <div data-variant="ios"><bx-switch variant="ios" testID="sw1-ios" label="Paperless statements" [value]="paperless" helpText="We email them on the 1st" /></div>
+          <div data-variant="fluent"><bx-switch variant="fluent" testID="sw1-fluent" label="Paperless statements" [value]="paperless" helpText="We email them on the 1st" /></div>
+          <div data-variant="labelled"><bx-switch variant="labelled" testID="sw1-labelled" label="Paperless statements" [value]="paperless" helpText="We email them on the 1st" /></div>
+          <div data-variant="squish"><bx-switch variant="squish" testID="sw1-squish" label="Paperless statements" [value]="paperless" helpText="We email them on the 1st" /></div>
+        }
       </div></section>
       <section class="gate" data-component="date-range" aria-labelledby="dr-h"><h2 id="dr-h">Date range</h2><div class="gate-body">
         <bx-date-range testID="dr1" label="Statement period" [(value)]="period" [maxDays]="92" helpText="Up to 3 months" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-date-range variant="material" testID="dr1-material" label="Statement period" [value]="period" [maxDays]="92" helpText="Up to 3 months" /></div>
+          <div data-variant="outlined"><bx-date-range variant="outlined" testID="dr1-outlined" label="Statement period" [value]="period" [maxDays]="92" helpText="Up to 3 months" /></div>
+          <div data-variant="underlined"><bx-date-range variant="underlined" testID="dr1-underlined" label="Statement period" [value]="period" [maxDays]="92" helpText="Up to 3 months" /></div>
+          <div data-variant="inline"><bx-date-range variant="inline" testID="dr1-inline" label="Statement period" [value]="period" [maxDays]="92" helpText="Up to 3 months" /></div>
+        }
       </div></section>
       <section class="gate" data-component="search" aria-labelledby="se-h"><h2 id="se-h">Search</h2><div class="gate-body">
         <bx-search testID="se1" label="Search transactions" [(value)]="query" placeholder="Payee, amount or reference" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-search variant="material" testID="se1-material" label="Search transactions" [value]="query" placeholder="Payee, amount or reference" /></div>
+          <div data-variant="outlined"><bx-search variant="outlined" testID="se1-outlined" label="Search transactions" [value]="query" placeholder="Payee, amount or reference" /></div>
+          <div data-variant="underlined"><bx-search variant="underlined" testID="se1-underlined" label="Search transactions" [value]="query" placeholder="Payee, amount or reference" /></div>
+          <div data-variant="floating"><bx-search variant="floating" testID="se1-floating" label="Search transactions" [value]="query" placeholder="Payee, amount or reference" /></div>
+          <div data-variant="inline"><bx-search variant="inline" testID="se1-inline" label="Search transactions" [value]="query" placeholder="Payee, amount or reference" /></div>
+          <div data-variant="pill"><bx-search variant="pill" testID="se1-pill" label="Search transactions" [value]="query" placeholder="Payee, amount or reference" /></div>
+        }
       </div></section>
       <section class="gate" data-component="autocomplete" aria-labelledby="ac-h"><h2 id="ac-h">Autocomplete</h2><div class="gate-body">
         <bx-autocomplete testID="ac1" label="Payee" [options]="payees" [(value)]="payee" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-autocomplete variant="material" testID="ac1-material" label="Payee" [options]="payees" [value]="payee" /></div>
+          <div data-variant="outlined"><bx-autocomplete variant="outlined" testID="ac1-outlined" label="Payee" [options]="payees" [value]="payee" /></div>
+          <div data-variant="underlined"><bx-autocomplete variant="underlined" testID="ac1-underlined" label="Payee" [options]="payees" [value]="payee" /></div>
+          <div data-variant="inline"><bx-autocomplete variant="inline" testID="ac1-inline" label="Payee" [options]="payees" [value]="payee" /></div>
+          <div data-variant="pill"><bx-autocomplete variant="pill" testID="ac1-pill" label="Payee" [options]="payees" [value]="payee" /></div>
+        }
       </div></section>
       <section class="gate" data-component="document-upload" aria-labelledby="du-h"><h2 id="du-h">Document upload</h2><div class="gate-body">
         <bx-document-upload testID="du1" label="Proof of address" [(value)]="proof" accept=".pdf,image/*" [maxSize]="5242880" helpText="A utility bill or a statement" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-document-upload variant="material" testID="du1-material" label="Proof of address" [value]="proof" accept=".pdf,image/*" [maxSize]="5242880" helpText="A utility bill or a statement" /></div>
+          <div data-variant="dropzone"><bx-document-upload variant="dropzone" testID="du1-dropzone" label="Proof of address" [value]="proof" accept=".pdf,image/*" [maxSize]="5242880" helpText="A utility bill or a statement" /></div>
+          <div data-variant="compact"><bx-document-upload variant="compact" testID="du1-compact" label="Proof of address" [value]="proof" accept=".pdf,image/*" [maxSize]="5242880" helpText="A utility bill or a statement" /></div>
+          <div data-variant="card"><bx-document-upload variant="card" testID="du1-card" label="Proof of address" [value]="proof" accept=".pdf,image/*" [maxSize]="5242880" helpText="A utility bill or a statement" /></div>
+        }
       </div></section>
       <section class="gate" data-component="secondary-button" aria-labelledby="aw1-0-h"><h2 id="aw1-0-h">Secondary button</h2><div class="gate-body">
         <bx-secondary-button testID="sb1" label="Save for later" />
         <bx-secondary-button testID="sb2" label="Save for later" [disabled]="true" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-secondary-button variant="material" testID="sb1-material" label="Save for later" /></div>
+          <div data-variant="tonal"><bx-secondary-button variant="tonal" testID="sb1-tonal" label="Save for later" /></div>
+          <div data-variant="outlined"><bx-secondary-button variant="outlined" testID="sb1-outlined" label="Save for later" /></div>
+          <div data-variant="text"><bx-secondary-button variant="text" testID="sb1-text" label="Save for later" /></div>
+          <div data-variant="elevated"><bx-secondary-button variant="elevated" testID="sb1-elevated" label="Save for later" /></div>
+          <div data-variant="gradient"><bx-secondary-button variant="gradient" testID="sb1-gradient" label="Save for later" /></div>
+          <div data-variant="glass"><bx-secondary-button variant="glass" testID="sb1-glass" label="Save for later" /></div>
+          <div data-variant="pill"><bx-secondary-button variant="pill" testID="sb1-pill" label="Save for later" /></div>
+        }
       </div></section>
       <section class="gate" data-component="savings-slider" aria-labelledby="aw1-1-h"><h2 id="aw1-1-h">Savings slider</h2><div class="gate-body">
         <bx-savings-slider testID="sl1" label="Monthly saving" [(value)]="saving" prefix="USD" [min]="1500" [max]="20000" [step]="500" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-savings-slider variant="material" testID="sl1-material" label="Monthly saving" [value]="saving" prefix="USD" [min]="1500" [max]="20000" [step]="500" /></div>
+          <div data-variant="ticks"><bx-savings-slider variant="ticks" testID="sl1-ticks" label="Monthly saving" [value]="saving" prefix="USD" [min]="1500" [max]="20000" [step]="500" /></div>
+          <div data-variant="bubble"><bx-savings-slider variant="bubble" testID="sl1-bubble" label="Monthly saving" [value]="saving" prefix="USD" [min]="1500" [max]="20000" [step]="500" /></div>
+          <div data-variant="thick"><bx-savings-slider variant="thick" testID="sl1-thick" label="Monthly saving" [value]="saving" prefix="USD" [min]="1500" [max]="20000" [step]="500" /></div>
+        }
       </div></section>
       <section class="gate" data-component="segmented" aria-labelledby="aw1-2-h"><h2 id="aw1-2-h">Segmented control</h2><div class="gate-body">
         <bx-segmented testID="sg1" label="Show" [options]="['Day', 'Week', 'Month']" [(value)]="show" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-segmented variant="material" testID="sg1-material" label="Show" [options]="['Day', 'Week', 'Month']" [value]="show" /></div>
+          <div data-variant="ios"><bx-segmented variant="ios" testID="sg1-ios" label="Show" [options]="['Day', 'Week', 'Month']" [value]="show" /></div>
+          <div data-variant="underline"><bx-segmented variant="underline" testID="sg1-underline" label="Show" [options]="['Day', 'Week', 'Month']" [value]="show" /></div>
+          <div data-variant="enclosed"><bx-segmented variant="enclosed" testID="sg1-enclosed" label="Show" [options]="['Day', 'Week', 'Month']" [value]="show" /></div>
+          <div data-variant="pill"><bx-segmented variant="pill" testID="sg1-pill" label="Show" [options]="['Day', 'Week', 'Month']" [value]="show" /></div>
+        }
       </div></section>
       <section class="gate" data-component="action-menu" aria-labelledby="aw1-3-h"><h2 id="aw1-3-h">Action menu</h2><div class="gate-body">
         <bx-action-menu testID="am1" [items]="['Download statement', 'Set a nickname', { value: 'close', label: 'Close the account', danger: true }]" />
@@ -178,9 +331,26 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       <section class="gate" data-component="danger-button" aria-labelledby="ap-danger-button-h"><h2 id="ap-danger-button-h">Danger button</h2><div class="gate-body">
         <bx-danger-button testID="db1" label="Cancel payment" />
         <bx-danger-button testID="db2" label="Cancel payment" [busy]="true" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-danger-button variant="material" testID="db1-material" label="Cancel payment" /></div>
+          <div data-variant="tonal"><bx-danger-button variant="tonal" testID="db1-tonal" label="Cancel payment" /></div>
+          <div data-variant="outlined"><bx-danger-button variant="outlined" testID="db1-outlined" label="Cancel payment" /></div>
+          <div data-variant="text"><bx-danger-button variant="text" testID="db1-text" label="Cancel payment" /></div>
+          <div data-variant="elevated"><bx-danger-button variant="elevated" testID="db1-elevated" label="Cancel payment" /></div>
+          <div data-variant="gradient"><bx-danger-button variant="gradient" testID="db1-gradient" label="Cancel payment" /></div>
+          <div data-variant="glass"><bx-danger-button variant="glass" testID="db1-glass" label="Cancel payment" /></div>
+          <div data-variant="pill"><bx-danger-button variant="pill" testID="db1-pill" label="Cancel payment" /></div>
+        }
       </div></section>
       <section class="gate" data-component="filter-chips" aria-labelledby="ap-filter-chips-h"><h2 id="ap-filter-chips-h">Filter chips</h2><div class="gate-body">
         <bx-filter-chips testID="fc1" label="Filter" [options]="['Card', 'Transfer', 'Bills', 'Salary']" [value]="['Card']" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-filter-chips variant="material" testID="fc1-material" label="Filter" [options]="['Card', 'Transfer', 'Bills', 'Salary']" [value]="['Card']" /></div>
+          <div data-variant="outlined"><bx-filter-chips variant="outlined" testID="fc1-outlined" label="Filter" [options]="['Card', 'Transfer', 'Bills', 'Salary']" [value]="['Card']" /></div>
+          <div data-variant="tonal"><bx-filter-chips variant="tonal" testID="fc1-tonal" label="Filter" [options]="['Card', 'Transfer', 'Bills', 'Salary']" [value]="['Card']" /></div>
+          <div data-variant="square"><bx-filter-chips variant="square" testID="fc1-square" label="Filter" [options]="['Card', 'Transfer', 'Bills', 'Salary']" [value]="['Card']" /></div>
+          <div data-variant="glass"><bx-filter-chips variant="glass" testID="fc1-glass" label="Filter" [options]="['Card', 'Transfer', 'Bills', 'Salary']" [value]="['Card']" /></div>
+        }
       </div></section>
       <section class="gate" data-component="accordion" aria-labelledby="ap-accordion-h"><h2 id="ap-accordion-h">Accordion</h2><div class="gate-body">
         <bx-accordion testID="ac1" [items]="[{ id: 'a', title: 'How long does a transfer take?', body: 'Same day inside the bank; up to 2 working days to other banks.' }, { id: 'b', title: 'Can I cancel a payment?', body: 'Yes, until it is sent.' }]" />
@@ -200,12 +370,26 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="repeat" aria-labelledby="ap-repeat-h"><h2 id="ap-repeat-h">Repeat</h2><div class="gate-body">
         <bx-repeat testID="rp1" value="Once" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-repeat variant="material" testID="rp1-material" value="Once" /></div>
+          <div data-variant="ios"><bx-repeat variant="ios" testID="rp1-ios" value="Once" /></div>
+          <div data-variant="underline"><bx-repeat variant="underline" testID="rp1-underline" value="Once" /></div>
+          <div data-variant="enclosed"><bx-repeat variant="enclosed" testID="rp1-enclosed" value="Once" /></div>
+          <div data-variant="pill"><bx-repeat variant="pill" testID="rp1-pill" value="Once" /></div>
+        }
       </div></section>
       <section class="gate" data-component="upcoming-bills" aria-labelledby="ap-upcoming-bills-h"><h2 id="ap-upcoming-bills-h">Upcoming bills</h2><div class="gate-body">
         <bx-upcoming-bills testID="ub1" [items]="[{ id: 'b1', title: 'Electricity', meta: 'Due 20 Jan', value: '86.20' }, { id: 'b2', title: 'Card ·· 4821', meta: 'Due 18 Jan', value: '640.00' }]" />
       </div></section>
       <section class="gate" data-component="account-picker" aria-labelledby="aw2-0-h"><h2 id="aw2-0-h">Account picker</h2><div class="gate-body">
         <bx-account-picker testID="ap1" [options]="accounts" [(value)]="account" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-account-picker variant="material" testID="ap1-material" [options]="accounts" [value]="account" /></div>
+          <div data-variant="outlined"><bx-account-picker variant="outlined" testID="ap1-outlined" [options]="accounts" [value]="account" /></div>
+          <div data-variant="underlined"><bx-account-picker variant="underlined" testID="ap1-underlined" [options]="accounts" [value]="account" /></div>
+          <div data-variant="inline"><bx-account-picker variant="inline" testID="ap1-inline" [options]="accounts" [value]="account" /></div>
+          <div data-variant="pill"><bx-account-picker variant="pill" testID="ap1-pill" [options]="accounts" [value]="account" /></div>
+        }
       </div></section>
       <section class="gate" data-component="account-summary" aria-labelledby="aw2-1-h"><h2 id="aw2-1-h">Account summary</h2><div class="gate-body">
         <bx-account-summary testID="as1" [items]="[{ label: 'Savings', value: '12,400.00', meta: 'Available 12,150.00' }, { label: 'Current', value: '3,210.50', meta: 'Overdraft 1,000.00' }, { label: 'Deposits', value: '25,000.00', meta: 'Matures 14 Mar' }]" />
@@ -223,6 +407,14 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       <section class="gate" data-component="iban" aria-labelledby="aw2-5-h"><h2 id="aw2-5-h">IBAN</h2><div class="gate-body">
         <bx-iban testID="ib1" label="Account number (IBAN)" [(value)]="iban" [required]="true" />
         <bx-iban testID="ib2" label="Account number (IBAN)" value="GB28NWBK60161331926819" error="Check the IBAN: it starts with the country code." />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-iban variant="material" testID="ib1-material" label="Account number (IBAN)" [value]="iban" [required]="true" /></div>
+          <div data-variant="outlined"><bx-iban variant="outlined" testID="ib1-outlined" label="Account number (IBAN)" [value]="iban" [required]="true" /></div>
+          <div data-variant="underlined"><bx-iban variant="underlined" testID="ib1-underlined" label="Account number (IBAN)" [value]="iban" [required]="true" /></div>
+          <div data-variant="floating"><bx-iban variant="floating" testID="ib1-floating" label="Account number (IBAN)" [value]="iban" [required]="true" /></div>
+          <div data-variant="inline"><bx-iban variant="inline" testID="ib1-inline" label="Account number (IBAN)" [value]="iban" [required]="true" /></div>
+          <div data-variant="pill"><bx-iban variant="pill" testID="ib1-pill" label="Account number (IBAN)" [value]="iban" [required]="true" /></div>
+        }
       </div></section>
       <section class="gate" data-component="payee-list" aria-labelledby="aw2-6-h"><h2 id="aw2-6-h">Payee list</h2><div class="gate-body">
         <bx-payee-list testID="pl1" [items]="payeeRows" />
@@ -245,6 +437,13 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="transaction-filter" aria-labelledby="aw2-12-h"><h2 id="aw2-12-h">Transaction filter</h2><div class="gate-body">
         <bx-transaction-filter testID="tf1" [options]="['Money in', 'Money out', 'Cards', 'Transfers']" [(value)]="txFilter" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-transaction-filter variant="material" testID="tf1-material" [options]="['Money in', 'Money out', 'Cards', 'Transfers']" [value]="txFilter" /></div>
+          <div data-variant="outlined"><bx-transaction-filter variant="outlined" testID="tf1-outlined" [options]="['Money in', 'Money out', 'Cards', 'Transfers']" [value]="txFilter" /></div>
+          <div data-variant="tonal"><bx-transaction-filter variant="tonal" testID="tf1-tonal" [options]="['Money in', 'Money out', 'Cards', 'Transfers']" [value]="txFilter" /></div>
+          <div data-variant="square"><bx-transaction-filter variant="square" testID="tf1-square" [options]="['Money in', 'Money out', 'Cards', 'Transfers']" [value]="txFilter" /></div>
+          <div data-variant="glass"><bx-transaction-filter variant="glass" testID="tf1-glass" [options]="['Money in', 'Money out', 'Cards', 'Transfers']" [value]="txFilter" /></div>
+        }
       </div></section>
       <section class="gate" data-component="transaction-details" aria-labelledby="aw2-13-h"><h2 id="aw2-13-h">Transaction details</h2><div class="gate-body">
         <bx-transaction-details [items]="[{ label: 'Description', value: 'Coffee House' }, { label: 'Date', value: 'Today 08:14' }, { label: 'Amount', value: '-4.50 USD' }, { label: 'Card', value: '·· 4821' }, { label: 'Reference', value: 'TX-88211' }]" actionLabel="Dispute it" />
@@ -260,6 +459,12 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="maturity-instructions" aria-labelledby="aw2-17-h"><h2 id="aw2-17-h">Maturity instructions</h2><div class="gate-body">
         <bx-maturity-instructions testID="mi1" [options]="['Renew principal and interest', 'Renew principal, pay out interest', 'Close and pay out']" [(value)]="maturity" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-maturity-instructions variant="material" testID="mi1-material" [options]="['Renew principal and interest', 'Renew principal, pay out interest', 'Close and pay out']" [value]="maturity" /></div>
+          <div data-variant="cards"><bx-maturity-instructions variant="cards" testID="mi1-cards" [options]="['Renew principal and interest', 'Renew principal, pay out interest', 'Close and pay out']" [value]="maturity" /></div>
+          <div data-variant="chips"><bx-maturity-instructions variant="chips" testID="mi1-chips" [options]="['Renew principal and interest', 'Renew principal, pay out interest', 'Close and pay out']" [value]="maturity" /></div>
+          <div data-variant="rows"><bx-maturity-instructions variant="rows" testID="mi1-rows" [options]="['Renew principal and interest', 'Renew principal, pay out interest', 'Close and pay out']" [value]="maturity" /></div>
+        }
       </div></section>
       <section class="gate" data-component="td-topup" aria-labelledby="aw2-18-h"><h2 id="aw2-18-h">Deposit top-up</h2><div class="gate-body">
         <bx-td-topup [items]="[{ label: 'Deposit', value: '·· 9011' }, { label: 'Current amount', value: '25,000.00' }, { label: 'Top-up', value: '5,000.00' }, { label: 'New maturity value', value: '31,950.00', total: true }]" />
@@ -287,12 +492,32 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="convert-emi" aria-labelledby="aw3-6-h"><h2 id="aw3-6-h">Convert to EMI</h2><div class="gate-body">
         <bx-convert-emi testID="ce1" label="Pay 1,200.00 over" [(value)]="emi" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-convert-emi variant="material" testID="ce1-material" label="Pay 1,200.00 over" [value]="emi" /></div>
+          <div data-variant="ios"><bx-convert-emi variant="ios" testID="ce1-ios" label="Pay 1,200.00 over" [value]="emi" /></div>
+          <div data-variant="underline"><bx-convert-emi variant="underline" testID="ce1-underline" label="Pay 1,200.00 over" [value]="emi" /></div>
+          <div data-variant="enclosed"><bx-convert-emi variant="enclosed" testID="ce1-enclosed" label="Pay 1,200.00 over" [value]="emi" /></div>
+          <div data-variant="pill"><bx-convert-emi variant="pill" testID="ce1-pill" label="Pay 1,200.00 over" [value]="emi" /></div>
+        }
       </div></section>
       <section class="gate" data-component="redeem-points" aria-labelledby="aw3-7-h"><h2 id="aw3-7-h">Redeem points</h2><div class="gate-body">
         <bx-redeem-points testID="rd1" [(value)]="points" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-redeem-points variant="material" testID="rd1-material" [value]="points" /></div>
+          <div data-variant="ticks"><bx-redeem-points variant="ticks" testID="rd1-ticks" [value]="points" /></div>
+          <div data-variant="bubble"><bx-redeem-points variant="bubble" testID="rd1-bubble" [value]="points" /></div>
+          <div data-variant="thick"><bx-redeem-points variant="thick" testID="rd1-thick" [value]="points" /></div>
+        }
       </div></section>
       <section class="gate" data-component="block-card" aria-labelledby="aw3-8-h"><h2 id="aw3-8-h">Block card</h2><div class="gate-body">
         <bx-block-card testID="bk1" [(value)]="blocked" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-block-card variant="material" testID="bk1-material" [value]="blocked" /></div>
+          <div data-variant="ios"><bx-block-card variant="ios" testID="bk1-ios" [value]="blocked" /></div>
+          <div data-variant="fluent"><bx-block-card variant="fluent" testID="bk1-fluent" [value]="blocked" /></div>
+          <div data-variant="labelled"><bx-block-card variant="labelled" testID="bk1-labelled" [value]="blocked" /></div>
+          <div data-variant="squish"><bx-block-card variant="squish" testID="bk1-squish" [value]="blocked" /></div>
+        }
       </div></section>
       <section class="gate" data-component="raise-dispute" aria-labelledby="aw3-9-h"><h2 id="aw3-9-h">Raise dispute</h2><div class="gate-body">
         <bx-raise-dispute [items]="[{label: 'Transaction', value: 'Coffee House · 4.50'}, {label: 'Reason', value: 'Charged twice'}]" />
@@ -306,6 +531,12 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       <section class="gate" data-component="otp" aria-labelledby="aw3-12-h"><h2 id="aw3-12-h">One-time code</h2><div class="gate-body">
         <bx-otp testID="ot1" [(value)]="code" helpText="We sent it to •••• 0123" />
         <bx-otp testID="ot2" value="123456" error="That code is not right. Check it, or send a new one." />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-otp variant="material" testID="ot1-material" [value]="code" helpText="We sent it to •••• 0123" /></div>
+          <div data-variant="underline"><bx-otp variant="underline" testID="ot1-underline" [value]="code" helpText="We sent it to •••• 0123" /></div>
+          <div data-variant="rounded"><bx-otp variant="rounded" testID="ot1-rounded" [value]="code" helpText="We sent it to •••• 0123" /></div>
+          <div data-variant="joined"><bx-otp variant="joined" testID="ot1-joined" [value]="code" helpText="We sent it to •••• 0123" /></div>
+        }
       </div></section>
       <section class="gate" data-component="session-timeout" aria-labelledby="aw3-13-h"><h2 id="aw3-13-h">Session timeout</h2><div class="gate-body">
         <bx-secondary-button label="Show the warning" (action)="timeoutOpen.set(true)" />
@@ -316,6 +547,13 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="sensitive" aria-labelledby="aw3-15-h"><h2 id="aw3-15-h">Sensitive field</h2><div class="gate-body">
         <bx-sensitive testID="sf1" value="4111 1111 1111 4821" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-sensitive variant="material" testID="sf1-material" value="4111 1111 1111 4821" /></div>
+          <div data-variant="outlined"><bx-sensitive variant="outlined" testID="sf1-outlined" value="4111 1111 1111 4821" /></div>
+          <div data-variant="underlined"><bx-sensitive variant="underlined" testID="sf1-underlined" value="4111 1111 1111 4821" /></div>
+          <div data-variant="floating"><bx-sensitive variant="floating" testID="sf1-floating" value="4111 1111 1111 4821" /></div>
+          <div data-variant="inline"><bx-sensitive variant="inline" testID="sf1-inline" value="4111 1111 1111 4821" /></div>
+        }
       </div></section>
       <section class="gate" data-component="spending-chart" aria-labelledby="aw4-0-h"><h2 id="aw4-0-h">Spending chart</h2><div class="gate-body">
         <bx-spending-chart [items]="[{label: 'Aug', value: 1240}, {label: 'Sep', value: 980}, {label: 'Oct', value: 1410}, {label: 'Nov', value: 1640}, {label: 'Dec', value: 2120}]" unit="USD" />
@@ -325,6 +563,13 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="spend-categories" aria-labelledby="aw4-2-h"><h2 id="aw4-2-h">Spend categories</h2><div class="gate-body">
         <bx-spend-categories [options]="['Eating out', 'Groceries', 'Travel', 'Shopping']" label="Coffee House · 4.50 is" [(value)]="cats" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-spend-categories variant="material" [options]="['Eating out', 'Groceries', 'Travel', 'Shopping']" label="Coffee House · 4.50 is" [value]="cats" /></div>
+          <div data-variant="outlined"><bx-spend-categories variant="outlined" [options]="['Eating out', 'Groceries', 'Travel', 'Shopping']" label="Coffee House · 4.50 is" [value]="cats" /></div>
+          <div data-variant="tonal"><bx-spend-categories variant="tonal" [options]="['Eating out', 'Groceries', 'Travel', 'Shopping']" label="Coffee House · 4.50 is" [value]="cats" /></div>
+          <div data-variant="square"><bx-spend-categories variant="square" [options]="['Eating out', 'Groceries', 'Travel', 'Shopping']" label="Coffee House · 4.50 is" [value]="cats" /></div>
+          <div data-variant="glass"><bx-spend-categories variant="glass" [options]="['Eating out', 'Groceries', 'Travel', 'Shopping']" label="Coffee House · 4.50 is" [value]="cats" /></div>
+        }
       </div></section>
       <section class="gate" data-component="approval-queue" aria-labelledby="aw4-3-h"><h2 id="aw4-3-h">Approval queue</h2><div class="gate-body">
         <bx-approval-queue [items]="[{title: 'Payroll Feb · prioritized', meta: 'Financial · 182,400.00', value: 'PAY-4410'}, {title: 'Vendor ABC Ltd', meta: 'Financial · 12,000.00', value: 'PAY-4412'}, {title: 'Add payee J. Mehta', meta: 'Non-financial', value: 'BEN-218'}]" />
@@ -337,6 +582,13 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="reroute" aria-labelledby="aw4-6-h"><h2 id="aw4-6-h">Re-route</h2><div class="gate-body">
         <bx-reroute [options]="approvers" [(value)]="reroute" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-reroute variant="material" [options]="approvers" [value]="reroute" /></div>
+          <div data-variant="outlined"><bx-reroute variant="outlined" [options]="approvers" [value]="reroute" /></div>
+          <div data-variant="underlined"><bx-reroute variant="underlined" [options]="approvers" [value]="reroute" /></div>
+          <div data-variant="inline"><bx-reroute variant="inline" [options]="approvers" [value]="reroute" /></div>
+          <div data-variant="pill"><bx-reroute variant="pill" [options]="approvers" [value]="reroute" /></div>
+        }
       </div></section>
       <section class="gate" data-component="modification-requested" aria-labelledby="aw4-7-h"><h2 id="aw4-7-h">Modification requested</h2><div class="gate-body">
         <bx-modification-requested message="PAY-4410 was sent back: change the value date to a working day." />
@@ -346,6 +598,13 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="structure-type" aria-labelledby="aw4-9-h"><h2 id="aw4-9-h">Structure type</h2><div class="gate-body">
         <bx-structure-type [(value)]="structure" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-structure-type variant="material" [value]="structure" /></div>
+          <div data-variant="ios"><bx-structure-type variant="ios" [value]="structure" /></div>
+          <div data-variant="underline"><bx-structure-type variant="underline" [value]="structure" /></div>
+          <div data-variant="enclosed"><bx-structure-type variant="enclosed" [value]="structure" /></div>
+          <div data-variant="pill"><bx-structure-type variant="pill" [value]="structure" /></div>
+        }
       </div></section>
       <section class="gate" data-component="account-structure" aria-labelledby="aw4-10-h"><h2 id="aw4-10-h">Account structure</h2><div class="gate-body">
         <bx-account-structure [items]="[{id: 'h', title: 'Header account ·· 1000', body: 'Sweeps to zero balance daily at 18:00.'}, {id: 'p', title: 'Child: Payroll ·· 1010', body: 'Target balance 5,000.00.'}, {id: 'v', title: 'Child: Vendors ·· 1020', body: 'Sweeps above 2,000.00.'}]" />
@@ -364,24 +623,66 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="sign-in-options" aria-labelledby="aw4-15-h"><h2 id="aw4-15-h">Sign-in options</h2><div class="gate-body">
         <bx-sign-in-options [options]="['Passkey', 'Facial ID', 'Soft token']" [(value)]="signIn" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-sign-in-options variant="material" [options]="['Passkey', 'Facial ID', 'Soft token']" [value]="signIn" /></div>
+          <div data-variant="cards"><bx-sign-in-options variant="cards" [options]="['Passkey', 'Facial ID', 'Soft token']" [value]="signIn" /></div>
+          <div data-variant="chips"><bx-sign-in-options variant="chips" [options]="['Passkey', 'Facial ID', 'Soft token']" [value]="signIn" /></div>
+          <div data-variant="rows"><bx-sign-in-options variant="rows" [options]="['Passkey', 'Facial ID', 'Soft token']" [value]="signIn" /></div>
+          <div data-variant="round"><bx-sign-in-options variant="round" [options]="['Passkey', 'Facial ID', 'Soft token']" [value]="signIn" /></div>
+        }
       </div></section>
       <section class="gate" data-component="otp-delivery" aria-labelledby="aw4-16-h"><h2 id="aw4-16-h">Code delivery</h2><div class="gate-body">
         <bx-otp-delivery [(value)]="codesBy" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-otp-delivery variant="material" [value]="codesBy" /></div>
+          <div data-variant="ios"><bx-otp-delivery variant="ios" [value]="codesBy" /></div>
+          <div data-variant="underline"><bx-otp-delivery variant="underline" [value]="codesBy" /></div>
+          <div data-variant="enclosed"><bx-otp-delivery variant="enclosed" [value]="codesBy" /></div>
+          <div data-variant="pill"><bx-otp-delivery variant="pill" [value]="codesBy" /></div>
+        }
       </div></section>
       <section class="gate" data-component="devices" aria-labelledby="aw4-17-h"><h2 id="aw4-17-h">Devices</h2><div class="gate-body">
         <bx-devices [items]="[{title: 'iPhone 15 · this device', meta: 'Registered 12 Mar', value: 'Active'}, {title: 'Chrome on Windows', meta: 'Last used today', value: 'Web'}]" />
       </div></section>
       <section class="gate" data-component="appearance" aria-labelledby="aw4-18-h"><h2 id="aw4-18-h">Appearance</h2><div class="gate-body">
         <bx-appearance [(value)]="theme" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-appearance variant="material" [value]="theme" /></div>
+          <div data-variant="ios"><bx-appearance variant="ios" [value]="theme" /></div>
+          <div data-variant="underline"><bx-appearance variant="underline" [value]="theme" /></div>
+          <div data-variant="enclosed"><bx-appearance variant="enclosed" [value]="theme" /></div>
+          <div data-variant="pill"><bx-appearance variant="pill" [value]="theme" /></div>
+        }
       </div></section>
       <section class="gate" data-component="language" aria-labelledby="aw4-19-h"><h2 id="aw4-19-h">Language</h2><div class="gate-body">
         <bx-language [options]="languages" [(value)]="lang" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-language variant="material" [options]="languages" [value]="lang" /></div>
+          <div data-variant="outlined"><bx-language variant="outlined" [options]="languages" [value]="lang" /></div>
+          <div data-variant="underlined"><bx-language variant="underlined" [options]="languages" [value]="lang" /></div>
+          <div data-variant="inline"><bx-language variant="inline" [options]="languages" [value]="lang" /></div>
+          <div data-variant="pill"><bx-language variant="pill" [options]="languages" [value]="lang" /></div>
+        }
       </div></section>
       <section class="gate" data-component="alerts-subscription" aria-labelledby="aw4-20-h"><h2 id="aw4-20-h">Alert subscriptions</h2><div class="gate-body">
         <bx-alerts-subscription [options]="['Payments over 500.00', 'Low balance', 'Sign-in from a new device']" [(value)]="alerts" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-alerts-subscription variant="material" [options]="['Payments over 500.00', 'Low balance', 'Sign-in from a new device']" [value]="alerts" /></div>
+          <div data-variant="cards"><bx-alerts-subscription variant="cards" [options]="['Payments over 500.00', 'Low balance', 'Sign-in from a new device']" [value]="alerts" /></div>
+          <div data-variant="chips"><bx-alerts-subscription variant="chips" [options]="['Payments over 500.00', 'Low balance', 'Sign-in from a new device']" [value]="alerts" /></div>
+          <div data-variant="rows"><bx-alerts-subscription variant="rows" [options]="['Payments over 500.00', 'Low balance', 'Sign-in from a new device']" [value]="alerts" /></div>
+          <div data-variant="round"><bx-alerts-subscription variant="round" [options]="['Payments over 500.00', 'Low balance', 'Sign-in from a new device']" [value]="alerts" /></div>
+        }
       </div></section>
       <section class="gate" data-component="do-not-disturb" aria-labelledby="aw4-21-h"><h2 id="aw4-21-h">Do not disturb</h2><div class="gate-body">
         <bx-do-not-disturb [(value)]="quiet" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-do-not-disturb variant="material" [value]="quiet" /></div>
+          <div data-variant="ios"><bx-do-not-disturb variant="ios" [value]="quiet" /></div>
+          <div data-variant="fluent"><bx-do-not-disturb variant="fluent" [value]="quiet" /></div>
+          <div data-variant="labelled"><bx-do-not-disturb variant="labelled" [value]="quiet" /></div>
+          <div data-variant="squish"><bx-do-not-disturb variant="squish" [value]="quiet" /></div>
+        }
       </div></section>
       <section class="gate" data-component="consents" aria-labelledby="aw4-22-h"><h2 id="aw4-22-h">Consents</h2><div class="gate-body">
         <bx-consents [items]="[{title: 'Budget app (open banking)', meta: 'Granted 02 Jan · ends 02 Apr', value: 'Accounts'}, {title: 'Tax filing service', meta: 'Granted 10 Dec · ends 10 Mar', value: 'Statements'}]" />
@@ -403,6 +704,13 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="compose-mail" aria-labelledby="aw5-3-h"><h2 id="aw5-3-h">Compose message</h2><div class="gate-body">
         <bx-compose-mail [(value)]="message" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-compose-mail variant="material" [value]="message" /></div>
+          <div data-variant="outlined"><bx-compose-mail variant="outlined" [value]="message" /></div>
+          <div data-variant="underlined"><bx-compose-mail variant="underlined" [value]="message" /></div>
+          <div data-variant="floating"><bx-compose-mail variant="floating" [value]="message" /></div>
+          <div data-variant="inline"><bx-compose-mail variant="inline" [value]="message" /></div>
+        }
       </div></section>
       <section class="gate" data-component="e-receipts" aria-labelledby="aw5-4-h"><h2 id="aw5-4-h">E-receipts</h2><div class="gate-body">
         <bx-e-receipts [items]="[{title: 'Transfer to A. Rao', meta: '14 Jan · 1,250.00', value: 'PDF'}, {title: 'Electricity bill', meta: '10 Jan · 86.20', value: 'PDF'}]" />
@@ -412,9 +720,22 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="statement-request" aria-labelledby="aw5-6-h"><h2 id="aw5-6-h">Statement request</h2><div class="gate-body">
         <bx-statement-request [(value)]="period" [maxDays]="92" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-statement-request variant="material" [value]="period" [maxDays]="92" /></div>
+          <div data-variant="outlined"><bx-statement-request variant="outlined" [value]="period" [maxDays]="92" /></div>
+          <div data-variant="underlined"><bx-statement-request variant="underlined" [value]="period" [maxDays]="92" /></div>
+          <div data-variant="inline"><bx-statement-request variant="inline" [value]="period" [maxDays]="92" /></div>
+        }
       </div></section>
       <section class="gate" data-component="statement-format" aria-labelledby="aw5-7-h"><h2 id="aw5-7-h">Statement format</h2><div class="gate-body">
         <bx-statement-format [(value)]="format" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-statement-format variant="material" [value]="format" /></div>
+          <div data-variant="ios"><bx-statement-format variant="ios" [value]="format" /></div>
+          <div data-variant="underline"><bx-statement-format variant="underline" [value]="format" /></div>
+          <div data-variant="enclosed"><bx-statement-format variant="enclosed" [value]="format" /></div>
+          <div data-variant="pill"><bx-statement-format variant="pill" [value]="format" /></div>
+        }
       </div></section>
       <section class="gate" data-component="self-register" aria-labelledby="aw5-8-h"><h2 id="aw5-8-h">Self registration</h2><div class="gate-body">
         <bx-self-register selectedStep="Verify" />
@@ -430,15 +751,34 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="terms-consent" aria-labelledby="aw5-12-h"><h2 id="aw5-12-h">Terms consent</h2><div class="gate-body">
         <bx-terms-consent [options]="['I accept the terms and conditions', 'Send me offers by email']" [(value)]="terms" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-terms-consent variant="material" [options]="['I accept the terms and conditions', 'Send me offers by email']" [value]="terms" /></div>
+          <div data-variant="cards"><bx-terms-consent variant="cards" [options]="['I accept the terms and conditions', 'Send me offers by email']" [value]="terms" /></div>
+          <div data-variant="chips"><bx-terms-consent variant="chips" [options]="['I accept the terms and conditions', 'Send me offers by email']" [value]="terms" /></div>
+          <div data-variant="rows"><bx-terms-consent variant="rows" [options]="['I accept the terms and conditions', 'Send me offers by email']" [value]="terms" /></div>
+          <div data-variant="round"><bx-terms-consent variant="round" [options]="['I accept the terms and conditions', 'Send me offers by email']" [value]="terms" /></div>
+        }
       </div></section>
       <section class="gate" data-component="eligibility-calculator" aria-labelledby="aw5-13-h"><h2 id="aw5-13-h">Eligibility calculator</h2><div class="gate-body">
         <bx-eligibility-calculator [(value)]="income" prefix="USD" helpText="You could borrow up to 60,000.00" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-eligibility-calculator variant="material" [value]="income" prefix="USD" helpText="You could borrow up to 60,000.00" /></div>
+          <div data-variant="ticks"><bx-eligibility-calculator variant="ticks" [value]="income" prefix="USD" helpText="You could borrow up to 60,000.00" /></div>
+          <div data-variant="bubble"><bx-eligibility-calculator variant="bubble" [value]="income" prefix="USD" helpText="You could borrow up to 60,000.00" /></div>
+          <div data-variant="thick"><bx-eligibility-calculator variant="thick" [value]="income" prefix="USD" helpText="You could borrow up to 60,000.00" /></div>
+        }
       </div></section>
       <section class="gate" data-component="td-calculator" aria-labelledby="aw5-14-h"><h2 id="aw5-14-h">Deposit calculator</h2><div class="gate-body">
         <bx-td-calculator currency="USD" />
       </div></section>
       <section class="gate" data-component="goal-calculator" aria-labelledby="aw5-15-h"><h2 id="aw5-15-h">Goal calculator</h2><div class="gate-body">
         <bx-goal-calculator [(value)]="saving" prefix="USD" helpText="You reach 3,000.00 in 8 months" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-goal-calculator variant="material" [value]="saving" prefix="USD" helpText="You reach 3,000.00 in 8 months" /></div>
+          <div data-variant="ticks"><bx-goal-calculator variant="ticks" [value]="saving" prefix="USD" helpText="You reach 3,000.00 in 8 months" /></div>
+          <div data-variant="bubble"><bx-goal-calculator variant="bubble" [value]="saving" prefix="USD" helpText="You reach 3,000.00 in 8 months" /></div>
+          <div data-variant="thick"><bx-goal-calculator variant="thick" [value]="saving" prefix="USD" helpText="You reach 3,000.00 in 8 months" /></div>
+        }
       </div></section>
       <section class="gate" data-component="locator" aria-labelledby="aw5-16-h"><h2 id="aw5-16-h">Locator</h2><div class="gate-body">
         <bx-locator [items]="places" />
@@ -461,15 +801,34 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="activate-card" aria-labelledby="ap-activate-card-h"><h2 id="ap-activate-card-h">Activate card</h2><div class="gate-body">
         <bx-activate-card testID="ak1" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-activate-card variant="material" testID="ak1-material" /></div>
+          <div data-variant="underline"><bx-activate-card variant="underline" testID="ak1-underline" /></div>
+          <div data-variant="rounded"><bx-activate-card variant="rounded" testID="ak1-rounded" /></div>
+          <div data-variant="joined"><bx-activate-card variant="joined" testID="ak1-joined" /></div>
+        }
       </div></section>
       <section class="gate" data-component="spend-limit" aria-labelledby="ap-spend-limit-h"><h2 id="ap-spend-limit-h">Card limits</h2><div class="gate-body">
         <bx-spend-limit testID="sl1" [value]="2000" prefix="USD" />
       </div></section>
       <section class="gate" data-component="card-controls" aria-labelledby="ap-card-controls-h"><h2 id="ap-card-controls-h">Card controls</h2><div class="gate-body">
         <bx-card-controls testID="cc1" [options]="['Online payments', 'ATM withdrawals', 'Use abroad']" [value]="['Online payments']" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-card-controls variant="material" testID="cc1-material" [options]="['Online payments', 'ATM withdrawals', 'Use abroad']" [value]="['Online payments']" /></div>
+          <div data-variant="cards"><bx-card-controls variant="cards" testID="cc1-cards" [options]="['Online payments', 'ATM withdrawals', 'Use abroad']" [value]="['Online payments']" /></div>
+          <div data-variant="chips"><bx-card-controls variant="chips" testID="cc1-chips" [options]="['Online payments', 'ATM withdrawals', 'Use abroad']" [value]="['Online payments']" /></div>
+          <div data-variant="rows"><bx-card-controls variant="rows" testID="cc1-rows" [options]="['Online payments', 'ATM withdrawals', 'Use abroad']" [value]="['Online payments']" /></div>
+          <div data-variant="round"><bx-card-controls variant="round" testID="cc1-round" [options]="['Online payments', 'ATM withdrawals', 'Use abroad']" [value]="['Online payments']" /></div>
+        }
       </div></section>
       <section class="gate" data-component="reset-pin" aria-labelledby="ap-reset-pin-h"><h2 id="ap-reset-pin-h">Reset PIN</h2><div class="gate-body">
         <bx-reset-pin testID="pn1" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-reset-pin variant="material" testID="pn1-material" /></div>
+          <div data-variant="underline"><bx-reset-pin variant="underline" testID="pn1-underline" /></div>
+          <div data-variant="rounded"><bx-reset-pin variant="rounded" testID="pn1-rounded" /></div>
+          <div data-variant="joined"><bx-reset-pin variant="joined" testID="pn1-joined" /></div>
+        }
       </div></section>
       <section class="gate" data-component="biometric" aria-labelledby="ap-biometric-h"><h2 id="ap-biometric-h">Biometric</h2><div class="gate-body">
         <bx-biometric testID="bm1" text="Touch the sensor to approve 1,250.00 to A. Rao." />
@@ -522,6 +881,12 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="bulk-file-upload" aria-labelledby="aw6-10-h"><h2 id="aw6-10-h">Bulk file upload</h2><div class="gate-body">
         <bx-bulk-file-upload [(value)]="bulk" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-bulk-file-upload variant="material" [value]="bulk" /></div>
+          <div data-variant="dropzone"><bx-bulk-file-upload variant="dropzone" [value]="bulk" /></div>
+          <div data-variant="compact"><bx-bulk-file-upload variant="compact" [value]="bulk" /></div>
+          <div data-variant="card"><bx-bulk-file-upload variant="card" [value]="bulk" /></div>
+        }
       </div></section>
       <section class="gate" data-component="quick-links-corp" aria-labelledby="aw6-11-h"><h2 id="aw6-11-h">Quick links (corporate)</h2><div class="gate-body">
         <bx-quick-links-corp [items]="[{id: 'own', label: 'Own account', icon: '⇄'}, {id: 'transfer', label: 'Transfer', icon: '↗'}, {id: 'adhoc', label: 'Ad-hoc', icon: '+'}, {id: 'file', label: 'File upload', icon: '⇪'}]" />
@@ -639,6 +1004,16 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="magnetic-button" aria-labelledby="aw7-17-h"><h2 id="aw7-17-h">Magnetic button</h2><div class="gate-body">
         <bx-magnetic-button label="Open an account" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-magnetic-button variant="material" label="Open an account" /></div>
+          <div data-variant="tonal"><bx-magnetic-button variant="tonal" label="Open an account" /></div>
+          <div data-variant="outlined"><bx-magnetic-button variant="outlined" label="Open an account" /></div>
+          <div data-variant="text"><bx-magnetic-button variant="text" label="Open an account" /></div>
+          <div data-variant="elevated"><bx-magnetic-button variant="elevated" label="Open an account" /></div>
+          <div data-variant="gradient"><bx-magnetic-button variant="gradient" label="Open an account" /></div>
+          <div data-variant="glass"><bx-magnetic-button variant="glass" label="Open an account" /></div>
+          <div data-variant="pill"><bx-magnetic-button variant="pill" label="Open an account" /></div>
+        }
       </div></section>
       <section class="gate" data-component="highlight-border" aria-labelledby="aw7-18-h"><h2 id="aw7-18-h">Highlight border</h2><div class="gate-body">
         <bx-highlight-border><p>The screen's own content</p></bx-highlight-border>
@@ -675,9 +1050,22 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="elastic-slider" aria-labelledby="aw7-29-h"><h2 id="aw7-29-h">Elastic slider</h2><div class="gate-body">
         <bx-elastic-slider label="Amount" [value]="500" prefix="USD" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-elastic-slider variant="material" label="Amount" [value]="500" prefix="USD" /></div>
+          <div data-variant="ticks"><bx-elastic-slider variant="ticks" label="Amount" [value]="500" prefix="USD" /></div>
+          <div data-variant="bubble"><bx-elastic-slider variant="bubble" label="Amount" [value]="500" prefix="USD" /></div>
+          <div data-variant="thick"><bx-elastic-slider variant="thick" label="Amount" [value]="500" prefix="USD" /></div>
+        }
       </div></section>
       <section class="gate" data-component="option-wheel" aria-labelledby="aw7-30-h"><h2 id="aw7-30-h">Option wheel</h2><div class="gate-body">
         <bx-option-wheel label="Tenure" [options]="['3 months', '6 months', '12 months']" value="6 months" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-option-wheel variant="material" label="Tenure" [options]="['3 months', '6 months', '12 months']" value="6 months" /></div>
+          <div data-variant="outlined"><bx-option-wheel variant="outlined" label="Tenure" [options]="['3 months', '6 months', '12 months']" value="6 months" /></div>
+          <div data-variant="underlined"><bx-option-wheel variant="underlined" label="Tenure" [options]="['3 months', '6 months', '12 months']" value="6 months" /></div>
+          <div data-variant="inline"><bx-option-wheel variant="inline" label="Tenure" [options]="['3 months', '6 months', '12 months']" value="6 months" /></div>
+          <div data-variant="pill"><bx-option-wheel variant="pill" label="Tenure" [options]="['3 months', '6 months', '12 months']" value="6 months" /></div>
+        }
       </div></section>
       <section class="gate" data-component="pill-nav" aria-labelledby="aw7-31-h"><h2 id="aw7-31-h">Pill navigation</h2><div class="gate-body">
         <bx-pill-nav [items]="['Accounts', 'Payments', 'Cards']" selection="Accounts" />
@@ -729,12 +1117,38 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="slide-to-confirm" aria-labelledby="aw7-47-h"><h2 id="aw7-47-h">Slide to confirm</h2><div class="gate-body">
         <bx-slide-to-confirm label="Slide to pay 1,250.00" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-slide-to-confirm variant="material" label="Slide to pay 1,250.00" /></div>
+          <div data-variant="tonal"><bx-slide-to-confirm variant="tonal" label="Slide to pay 1,250.00" /></div>
+          <div data-variant="outlined"><bx-slide-to-confirm variant="outlined" label="Slide to pay 1,250.00" /></div>
+          <div data-variant="text"><bx-slide-to-confirm variant="text" label="Slide to pay 1,250.00" /></div>
+          <div data-variant="elevated"><bx-slide-to-confirm variant="elevated" label="Slide to pay 1,250.00" /></div>
+          <div data-variant="gradient"><bx-slide-to-confirm variant="gradient" label="Slide to pay 1,250.00" /></div>
+          <div data-variant="glass"><bx-slide-to-confirm variant="glass" label="Slide to pay 1,250.00" /></div>
+          <div data-variant="pill"><bx-slide-to-confirm variant="pill" label="Slide to pay 1,250.00" /></div>
+        }
       </div></section>
       <section class="gate" data-component="hold-to-confirm" aria-labelledby="aw7-48-h"><h2 id="aw7-48-h">Hold to confirm</h2><div class="gate-body">
         <bx-hold-to-confirm label="Hold to close the account" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-hold-to-confirm variant="material" label="Hold to close the account" /></div>
+          <div data-variant="tonal"><bx-hold-to-confirm variant="tonal" label="Hold to close the account" /></div>
+          <div data-variant="outlined"><bx-hold-to-confirm variant="outlined" label="Hold to close the account" /></div>
+          <div data-variant="text"><bx-hold-to-confirm variant="text" label="Hold to close the account" /></div>
+          <div data-variant="elevated"><bx-hold-to-confirm variant="elevated" label="Hold to close the account" /></div>
+          <div data-variant="gradient"><bx-hold-to-confirm variant="gradient" label="Hold to close the account" /></div>
+          <div data-variant="glass"><bx-hold-to-confirm variant="glass" label="Hold to close the account" /></div>
+          <div data-variant="pill"><bx-hold-to-confirm variant="pill" label="Hold to close the account" /></div>
+        }
       </div></section>
       <section class="gate" data-component="otp-slots" aria-labelledby="aw7-49-h"><h2 id="aw7-49-h">OTP slots</h2><div class="gate-body">
         <bx-otp-slots value="12" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-otp-slots variant="material" value="12" /></div>
+          <div data-variant="underline"><bx-otp-slots variant="underline" value="12" /></div>
+          <div data-variant="rounded"><bx-otp-slots variant="rounded" value="12" /></div>
+          <div data-variant="joined"><bx-otp-slots variant="joined" value="12" /></div>
+        }
       </div></section>
       <section class="gate" data-component="receipt-tear" aria-labelledby="aw7-50-h"><h2 id="aw7-50-h">Torn receipt</h2><div class="gate-body">
         <bx-receipt-tear [amount]="1250" currency="USD" reference="FX-20391" />
@@ -750,21 +1164,62 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="bell-toggle" aria-labelledby="aw7-54-h"><h2 id="aw7-54-h">Bell toggle</h2><div class="gate-body">
         <bx-bell-toggle [value]="true" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-bell-toggle variant="material" [value]="true" /></div>
+          <div data-variant="ios"><bx-bell-toggle variant="ios" [value]="true" /></div>
+          <div data-variant="fluent"><bx-bell-toggle variant="fluent" [value]="true" /></div>
+          <div data-variant="labelled"><bx-bell-toggle variant="labelled" [value]="true" /></div>
+          <div data-variant="squish"><bx-bell-toggle variant="squish" [value]="true" /></div>
+        }
       </div></section>
       <section class="gate" data-component="squish-switch" aria-labelledby="aw7-55-h"><h2 id="aw7-55-h">Squish switch</h2><div class="gate-body">
         <bx-squish-switch label="Round up to save" [value]="true" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-squish-switch variant="material" label="Round up to save" [value]="true" /></div>
+          <div data-variant="ios"><bx-squish-switch variant="ios" label="Round up to save" [value]="true" /></div>
+          <div data-variant="fluent"><bx-squish-switch variant="fluent" label="Round up to save" [value]="true" /></div>
+          <div data-variant="labelled"><bx-squish-switch variant="labelled" label="Round up to save" [value]="true" /></div>
+          <div data-variant="squish"><bx-squish-switch variant="squish" label="Round up to save" [value]="true" /></div>
+        }
       </div></section>
       <section class="gate" data-component="jelly-radio" aria-labelledby="aw7-56-h"><h2 id="aw7-56-h">Jelly radio</h2><div class="gate-body">
         <bx-jelly-radio label="Card design" [options]="['Midnight', 'Ocean', 'Sunrise']" value="Ocean" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-jelly-radio variant="material" label="Card design" [options]="['Midnight', 'Ocean', 'Sunrise']" value="Ocean" /></div>
+          <div data-variant="cards"><bx-jelly-radio variant="cards" label="Card design" [options]="['Midnight', 'Ocean', 'Sunrise']" value="Ocean" /></div>
+          <div data-variant="chips"><bx-jelly-radio variant="chips" label="Card design" [options]="['Midnight', 'Ocean', 'Sunrise']" value="Ocean" /></div>
+          <div data-variant="rows"><bx-jelly-radio variant="rows" label="Card design" [options]="['Midnight', 'Ocean', 'Sunrise']" value="Ocean" /></div>
+        }
       </div></section>
       <section class="gate" data-component="glide-select" aria-labelledby="aw7-57-h"><h2 id="aw7-57-h">Glide select</h2><div class="gate-body">
         <bx-glide-select label="Show" [options]="['Day', 'Week', 'Month']" value="Week" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-glide-select variant="material" label="Show" [options]="['Day', 'Week', 'Month']" value="Week" /></div>
+          <div data-variant="ios"><bx-glide-select variant="ios" label="Show" [options]="['Day', 'Week', 'Month']" value="Week" /></div>
+          <div data-variant="underline"><bx-glide-select variant="underline" label="Show" [options]="['Day', 'Week', 'Month']" value="Week" /></div>
+          <div data-variant="enclosed"><bx-glide-select variant="enclosed" label="Show" [options]="['Day', 'Week', 'Month']" value="Week" /></div>
+          <div data-variant="pill"><bx-glide-select variant="pill" label="Show" [options]="['Day', 'Week', 'Month']" value="Week" /></div>
+        }
       </div></section>
       <section class="gate" data-component="rubber-segment" aria-labelledby="aw7-58-h"><h2 id="aw7-58-h">Rubber segment</h2><div class="gate-body">
         <bx-rubber-segment label="Period" [options]="['1M', '3M', '1Y']" value="1M" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-rubber-segment variant="material" label="Period" [options]="['1M', '3M', '1Y']" value="1M" /></div>
+          <div data-variant="ios"><bx-rubber-segment variant="ios" label="Period" [options]="['1M', '3M', '1Y']" value="1M" /></div>
+          <div data-variant="underline"><bx-rubber-segment variant="underline" label="Period" [options]="['1M', '3M', '1Y']" value="1M" /></div>
+          <div data-variant="enclosed"><bx-rubber-segment variant="enclosed" label="Period" [options]="['1M', '3M', '1Y']" value="1M" /></div>
+          <div data-variant="pill"><bx-rubber-segment variant="pill" label="Period" [options]="['1M', '3M', '1Y']" value="1M" /></div>
+        }
       </div></section>
       <section class="gate" data-component="scrub-field" aria-labelledby="aw7-59-h"><h2 id="aw7-59-h">Scrub field</h2><div class="gate-body">
         <bx-scrub-field [value]="250" currency="USD" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-scrub-field variant="material" [value]="250" currency="USD" /></div>
+          <div data-variant="outlined"><bx-scrub-field variant="outlined" [value]="250" currency="USD" /></div>
+          <div data-variant="underlined"><bx-scrub-field variant="underlined" [value]="250" currency="USD" /></div>
+          <div data-variant="floating"><bx-scrub-field variant="floating" [value]="250" currency="USD" /></div>
+          <div data-variant="inline"><bx-scrub-field variant="inline" [value]="250" currency="USD" /></div>
+        }
       </div></section>
       <section class="gate" data-component="budget-gauge" aria-labelledby="aw7-60-h"><h2 id="aw7-60-h">Budget gauge</h2><div class="gate-body">
         <bx-budget-gauge label="Groceries" [value]="320" [max]="400" unit="USD" />
@@ -774,6 +1229,13 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="favourite-heart" aria-labelledby="aw7-62-h"><h2 id="aw7-62-h">Favourite heart</h2><div class="gate-body">
         <bx-favourite-heart name="A. Rao" [value]="true" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-favourite-heart variant="material" name="A. Rao" [value]="true" /></div>
+          <div data-variant="ios"><bx-favourite-heart variant="ios" name="A. Rao" [value]="true" /></div>
+          <div data-variant="fluent"><bx-favourite-heart variant="fluent" name="A. Rao" [value]="true" /></div>
+          <div data-variant="labelled"><bx-favourite-heart variant="labelled" name="A. Rao" [value]="true" /></div>
+          <div data-variant="squish"><bx-favourite-heart variant="squish" name="A. Rao" [value]="true" /></div>
+        }
       </div></section>
       <section class="gate" data-component="peek-rating" aria-labelledby="aw7-63-h"><h2 id="aw7-63-h">Peek rating</h2><div class="gate-body">
         <bx-peek-rating label="How was this payment?" [value]="4" />
@@ -786,9 +1248,29 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="voice-pill" aria-labelledby="aw7-66-h"><h2 id="aw7-66-h">Voice pill</h2><div class="gate-body">
         <bx-voice-pill />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-voice-pill variant="material" /></div>
+          <div data-variant="tonal"><bx-voice-pill variant="tonal" /></div>
+          <div data-variant="outlined"><bx-voice-pill variant="outlined" /></div>
+          <div data-variant="text"><bx-voice-pill variant="text" /></div>
+          <div data-variant="elevated"><bx-voice-pill variant="elevated" /></div>
+          <div data-variant="gradient"><bx-voice-pill variant="gradient" /></div>
+          <div data-variant="glass"><bx-voice-pill variant="glass" /></div>
+          <div data-variant="pill"><bx-voice-pill variant="pill" /></div>
+        }
       </div></section>
       <section class="gate" data-component="call-chip" aria-labelledby="aw7-67-h"><h2 id="aw7-67-h">Call chip</h2><div class="gate-body">
         <bx-call-chip number="+44 20 7946 0000" />
+      @if (variantsShown) {
+          <div data-variant="material"><bx-call-chip variant="material" number="+44 20 7946 0000" /></div>
+          <div data-variant="tonal"><bx-call-chip variant="tonal" number="+44 20 7946 0000" /></div>
+          <div data-variant="outlined"><bx-call-chip variant="outlined" number="+44 20 7946 0000" /></div>
+          <div data-variant="text"><bx-call-chip variant="text" number="+44 20 7946 0000" /></div>
+          <div data-variant="elevated"><bx-call-chip variant="elevated" number="+44 20 7946 0000" /></div>
+          <div data-variant="gradient"><bx-call-chip variant="gradient" number="+44 20 7946 0000" /></div>
+          <div data-variant="glass"><bx-call-chip variant="glass" number="+44 20 7946 0000" /></div>
+          <div data-variant="pill"><bx-call-chip variant="pill" number="+44 20 7946 0000" /></div>
+        }
       </div></section>
       <section class="gate" data-component="lattice-loader" aria-labelledby="aw7-68-h"><h2 id="aw7-68-h">Lattice loader</h2><div class="gate-body">
         <bx-lattice-loader label="Loading your accounts" />
@@ -797,6 +1279,8 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
   `,
 })
 class Gallery {
+  // ?variant= also draws each component's variants (variants/v1.json): the factory card and the variant gates ask for one
+  variantsShown = params.has('variant');
   rootClass = styleClasses({ look, mode, motion }) + ' gallery';
   name = signal('A. Sharma');
   amount = signal<number | null>(1250);

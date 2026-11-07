@@ -13,6 +13,8 @@ const params = new URLSearchParams(location.search);
 const mode = params.get('mode') === 'dark' ? 'dark' : 'light';
 // The factory's Component factory shows one section (?only=id) in the design and motion its card has chosen
 const only = params.get('only');
+// ?variant= also draws each component's variants (variants/v1.json): the factory card and the variant gates ask for one
+const variantsShown = params.has('variant');
 const look = (params.get('look') || 'elevated') as ComponentStyle['look'];
 const motion = { hover: params.get('hover') || undefined, click: params.get('click') || undefined, scroll: params.get('scroll') || undefined } as ComponentStyle['motion'];
 const accounts = [{ value: 'S', label: 'Savings •••• 4521' }, { value: 'C', label: 'Current •••• 0187' }];
@@ -70,33 +72,102 @@ function Gallery() {
           <Button label="Delete" chroming="danger" />
           <Button label="Paying" busy />
         </div>
+        {variantsShown ? <>
+          <div data-variant="material"><Button variant="material" label="Pay now" /></div>
+          <div data-variant="tonal"><Button variant="tonal" label="Pay now" /></div>
+          <div data-variant="outlined"><Button variant="outlined" label="Pay now" /></div>
+          <div data-variant="text"><Button variant="text" label="Pay now" /></div>
+          <div data-variant="elevated"><Button variant="elevated" label="Pay now" /></div>
+          <div data-variant="gradient"><Button variant="gradient" label="Pay now" /></div>
+          <div data-variant="glass"><Button variant="glass" label="Pay now" /></div>
+          <div data-variant="pill"><Button variant="pill" label="Pay now" /></div>
+        </> : null}
       </Section>
       <Section id="icon-button" title="Icon button">
         <div className="gate-row"><IconButton label="More actions" /><IconButton label="Close" icon="close" chroming="outlined" /><IconButton label="Disabled action" disabled /></div>
+        {variantsShown ? <>
+          <div data-variant="material"><IconButton variant="material" label="More actions" /></div>
+          <div data-variant="filled"><IconButton variant="filled" label="More actions" /></div>
+          <div data-variant="tonal"><IconButton variant="tonal" label="More actions" /></div>
+          <div data-variant="outlined"><IconButton variant="outlined" label="More actions" /></div>
+          <div data-variant="circular"><IconButton variant="circular" label="More actions" /></div>
+          <div data-variant="square"><IconButton variant="square" label="More actions" /></div>
+        </> : null}
       </Section>
       <Section id="text-field" title="Text field">
         <TextField testID="tf1" label="Beneficiary name" value={name} onChange={setName} required maxLength={40} clearable helpText="As it appears on the account" />
         <TextField testID="tf2" label="Reference" value="INV 2041" error="Use letters and numbers only." />
         <TextField testID="tf3" label="Customer ID" value="CUST-00921" readOnly />
+        {variantsShown ? <>
+          <div data-variant="material"><TextField variant="material" testID="tf1-material" label="Beneficiary name" value={name} onChange={setName} required maxLength={40} clearable helpText="As it appears on the account" /></div>
+          <div data-variant="outlined"><TextField variant="outlined" testID="tf1-outlined" label="Beneficiary name" value={name} onChange={setName} required maxLength={40} clearable helpText="As it appears on the account" /></div>
+          <div data-variant="underlined"><TextField variant="underlined" testID="tf1-underlined" label="Beneficiary name" value={name} onChange={setName} required maxLength={40} clearable helpText="As it appears on the account" /></div>
+          <div data-variant="floating"><TextField variant="floating" testID="tf1-floating" label="Beneficiary name" value={name} onChange={setName} required maxLength={40} clearable helpText="As it appears on the account" /></div>
+          <div data-variant="inline"><TextField variant="inline" testID="tf1-inline" label="Beneficiary name" value={name} onChange={setName} required maxLength={40} clearable helpText="As it appears on the account" /></div>
+          <div data-variant="pill"><TextField variant="pill" testID="tf1-pill" label="Beneficiary name" value={name} onChange={setName} required maxLength={40} clearable helpText="As it appears on the account" /></div>
+        </> : null}
       </Section>
       <Section id="amount" title="Amount input">
         <AmountInput testID="am1" label="Amount" currency="INR" locale="en-IN" value={amount} onChange={setAmount} required helpText="Up to 50,000.00 a day" />
         <AmountInput testID="am2" label="Amount" currency="KWD" locale="en-US" value={12.5} error="Enter at most 10.000." />
+        {variantsShown ? <>
+          <div data-variant="material"><AmountInput variant="material" testID="am1-material" label="Amount" currency="INR" locale="en-IN" value={amount} onChange={setAmount} required helpText="Up to 50,000.00 a day" /></div>
+          <div data-variant="outlined"><AmountInput variant="outlined" testID="am1-outlined" label="Amount" currency="INR" locale="en-IN" value={amount} onChange={setAmount} required helpText="Up to 50,000.00 a day" /></div>
+          <div data-variant="underlined"><AmountInput variant="underlined" testID="am1-underlined" label="Amount" currency="INR" locale="en-IN" value={amount} onChange={setAmount} required helpText="Up to 50,000.00 a day" /></div>
+          <div data-variant="floating"><AmountInput variant="floating" testID="am1-floating" label="Amount" currency="INR" locale="en-IN" value={amount} onChange={setAmount} required helpText="Up to 50,000.00 a day" /></div>
+          <div data-variant="inline"><AmountInput variant="inline" testID="am1-inline" label="Amount" currency="INR" locale="en-IN" value={amount} onChange={setAmount} required helpText="Up to 50,000.00 a day" /></div>
+          <div data-variant="pill"><AmountInput variant="pill" testID="am1-pill" label="Amount" currency="INR" locale="en-IN" value={amount} onChange={setAmount} required helpText="Up to 50,000.00 a day" /></div>
+        </> : null}
       </Section>
       <Section id="select" title="Dropdown">
         <Dropdown testID="dd1" label="From account" options={accounts} value={account} onChange={setAccount} required />
         <Dropdown testID="dd2" label="To account" options={accounts} value="" disabled />
+        {variantsShown ? <>
+          <div data-variant="material"><Dropdown variant="material" testID="dd1-material" label="From account" options={accounts} value={account} onChange={setAccount} required /></div>
+          <div data-variant="outlined"><Dropdown variant="outlined" testID="dd1-outlined" label="From account" options={accounts} value={account} onChange={setAccount} required /></div>
+          <div data-variant="underlined"><Dropdown variant="underlined" testID="dd1-underlined" label="From account" options={accounts} value={account} onChange={setAccount} required /></div>
+          <div data-variant="inline"><Dropdown variant="inline" testID="dd1-inline" label="From account" options={accounts} value={account} onChange={setAccount} required /></div>
+          <div data-variant="pill"><Dropdown variant="pill" testID="dd1-pill" label="From account" options={accounts} value={account} onChange={setAccount} required /></div>
+        </> : null}
       </Section>
       <Section id="checkbox-group" title="Checkbox group">
         <CheckboxGroup testID="cg" label="Send alerts by" options={[{ value: 'E', label: 'Email' }, { value: 'M', label: 'SMS' }, { value: 'P', label: 'Push', disabled: true }]}
                        value={alerts} onChange={setAlerts} />
+        {variantsShown ? <>
+          <div data-variant="material"><CheckboxGroup variant="material" testID="cg-material" label="Send alerts by" options={[{ value: 'E', label: 'Email' }, { value: 'M', label: 'SMS' }, { value: 'P', label: 'Push', disabled: true }]}
+                       value={alerts} onChange={setAlerts} /></div>
+          <div data-variant="cards"><CheckboxGroup variant="cards" testID="cg-cards" label="Send alerts by" options={[{ value: 'E', label: 'Email' }, { value: 'M', label: 'SMS' }, { value: 'P', label: 'Push', disabled: true }]}
+                       value={alerts} onChange={setAlerts} /></div>
+          <div data-variant="chips"><CheckboxGroup variant="chips" testID="cg-chips" label="Send alerts by" options={[{ value: 'E', label: 'Email' }, { value: 'M', label: 'SMS' }, { value: 'P', label: 'Push', disabled: true }]}
+                       value={alerts} onChange={setAlerts} /></div>
+          <div data-variant="rows"><CheckboxGroup variant="rows" testID="cg-rows" label="Send alerts by" options={[{ value: 'E', label: 'Email' }, { value: 'M', label: 'SMS' }, { value: 'P', label: 'Push', disabled: true }]}
+                       value={alerts} onChange={setAlerts} /></div>
+          <div data-variant="round"><CheckboxGroup variant="round" testID="cg-round" label="Send alerts by" options={[{ value: 'E', label: 'Email' }, { value: 'M', label: 'SMS' }, { value: 'P', label: 'Push', disabled: true }]}
+                       value={alerts} onChange={setAlerts} /></div>
+        </> : null}
       </Section>
       <Section id="choice-group" title="Radio group">
         <RadioGroup testID="rg" label="Transfer speed" horizontal options={[{ value: 'N', label: 'NEFT' }, { value: 'R', label: 'RTGS' }, { value: 'I', label: 'IMPS' }]}
                     value={speed} onChange={setSpeed} />
+        {variantsShown ? <>
+          <div data-variant="material"><RadioGroup variant="material" testID="rg-material" label="Transfer speed" horizontal options={[{ value: 'N', label: 'NEFT' }, { value: 'R', label: 'RTGS' }, { value: 'I', label: 'IMPS' }]}
+                    value={speed} onChange={setSpeed} /></div>
+          <div data-variant="cards"><RadioGroup variant="cards" testID="rg-cards" label="Transfer speed" horizontal options={[{ value: 'N', label: 'NEFT' }, { value: 'R', label: 'RTGS' }, { value: 'I', label: 'IMPS' }]}
+                    value={speed} onChange={setSpeed} /></div>
+          <div data-variant="chips"><RadioGroup variant="chips" testID="rg-chips" label="Transfer speed" horizontal options={[{ value: 'N', label: 'NEFT' }, { value: 'R', label: 'RTGS' }, { value: 'I', label: 'IMPS' }]}
+                    value={speed} onChange={setSpeed} /></div>
+          <div data-variant="rows"><RadioGroup variant="rows" testID="rg-rows" label="Transfer speed" horizontal options={[{ value: 'N', label: 'NEFT' }, { value: 'R', label: 'RTGS' }, { value: 'I', label: 'IMPS' }]}
+                    value={speed} onChange={setSpeed} /></div>
+        </> : null}
       </Section>
       <Section id="date" title="Date picker">
         <DatePicker testID="dp" label="Pay on" value={day} onChange={setDay} min="2026-11-10" max="2026-12-31" locale="en-GB" />
+        {variantsShown ? <>
+          <div data-variant="material"><DatePicker variant="material" testID="dp-material" label="Pay on" value={day} onChange={setDay} min="2026-11-10" max="2026-12-31" locale="en-GB" /></div>
+          <div data-variant="outlined"><DatePicker variant="outlined" testID="dp-outlined" label="Pay on" value={day} onChange={setDay} min="2026-11-10" max="2026-12-31" locale="en-GB" /></div>
+          <div data-variant="underlined"><DatePicker variant="underlined" testID="dp-underlined" label="Pay on" value={day} onChange={setDay} min="2026-11-10" max="2026-12-31" locale="en-GB" /></div>
+          <div data-variant="inline"><DatePicker variant="inline" testID="dp-inline" label="Pay on" value={day} onChange={setDay} min="2026-11-10" max="2026-12-31" locale="en-GB" /></div>
+        </> : null}
       </Section>
       <Section id="dialog" title="Dialog">
         <div className="gate-dialog" ref={setHost}>
@@ -134,54 +205,169 @@ function Gallery() {
       <Section id="text-area" title="Text area">
         <TextArea testID="ta1" label="Remarks" value={remarks} onChange={setRemarks} maxLength={140} helpText="Shown on the payee's statement" />
         <TextArea testID="ta2" label="Reason" value="" required error="Say why you are cancelling." />
+        {variantsShown ? <>
+          <div data-variant="material"><TextArea variant="material" testID="ta1-material" label="Remarks" value={remarks} onChange={setRemarks} maxLength={140} helpText="Shown on the payee's statement" /></div>
+          <div data-variant="outlined"><TextArea variant="outlined" testID="ta1-outlined" label="Remarks" value={remarks} onChange={setRemarks} maxLength={140} helpText="Shown on the payee's statement" /></div>
+          <div data-variant="underlined"><TextArea variant="underlined" testID="ta1-underlined" label="Remarks" value={remarks} onChange={setRemarks} maxLength={140} helpText="Shown on the payee's statement" /></div>
+          <div data-variant="floating"><TextArea variant="floating" testID="ta1-floating" label="Remarks" value={remarks} onChange={setRemarks} maxLength={140} helpText="Shown on the payee's statement" /></div>
+          <div data-variant="inline"><TextArea variant="inline" testID="ta1-inline" label="Remarks" value={remarks} onChange={setRemarks} maxLength={140} helpText="Shown on the payee's statement" /></div>
+        </> : null}
       </Section>
       <Section id="password" title="Password">
         <PasswordField testID="pw1" label="Password" value={secret} onChange={setSecret} autoComplete="new-password" helpText="At least 8 characters, one number" />
         <PasswordField testID="pw2" label="Transaction PIN" value="1234" error="The PIN is wrong. 2 tries left." autoComplete="one-time-code" />
+        {variantsShown ? <>
+          <div data-variant="material"><PasswordField variant="material" testID="pw1-material" label="Password" value={secret} onChange={setSecret} autoComplete="new-password" helpText="At least 8 characters, one number" /></div>
+          <div data-variant="outlined"><PasswordField variant="outlined" testID="pw1-outlined" label="Password" value={secret} onChange={setSecret} autoComplete="new-password" helpText="At least 8 characters, one number" /></div>
+          <div data-variant="underlined"><PasswordField variant="underlined" testID="pw1-underlined" label="Password" value={secret} onChange={setSecret} autoComplete="new-password" helpText="At least 8 characters, one number" /></div>
+          <div data-variant="floating"><PasswordField variant="floating" testID="pw1-floating" label="Password" value={secret} onChange={setSecret} autoComplete="new-password" helpText="At least 8 characters, one number" /></div>
+          <div data-variant="inline"><PasswordField variant="inline" testID="pw1-inline" label="Password" value={secret} onChange={setSecret} autoComplete="new-password" helpText="At least 8 characters, one number" /></div>
+        </> : null}
       </Section>
       <Section id="number-input" title="Number">
         <NumberInput testID="ni1" label="Cheque leaves" value={copies} onChange={setCopies} min={1} max={5} helpText="Up to 5 books" />
         <NumberInput testID="ni2" label="Tenure (months)" value={84} error="Enter 60 or less." />
+        {variantsShown ? <>
+          <div data-variant="material"><NumberInput variant="material" testID="ni1-material" label="Cheque leaves" value={copies} onChange={setCopies} min={1} max={5} helpText="Up to 5 books" /></div>
+          <div data-variant="outlined"><NumberInput variant="outlined" testID="ni1-outlined" label="Cheque leaves" value={copies} onChange={setCopies} min={1} max={5} helpText="Up to 5 books" /></div>
+          <div data-variant="underlined"><NumberInput variant="underlined" testID="ni1-underlined" label="Cheque leaves" value={copies} onChange={setCopies} min={1} max={5} helpText="Up to 5 books" /></div>
+          <div data-variant="floating"><NumberInput variant="floating" testID="ni1-floating" label="Cheque leaves" value={copies} onChange={setCopies} min={1} max={5} helpText="Up to 5 books" /></div>
+          <div data-variant="inline"><NumberInput variant="inline" testID="ni1-inline" label="Cheque leaves" value={copies} onChange={setCopies} min={1} max={5} helpText="Up to 5 books" /></div>
+          <div data-variant="pill"><NumberInput variant="pill" testID="ni1-pill" label="Cheque leaves" value={copies} onChange={setCopies} min={1} max={5} helpText="Up to 5 books" /></div>
+        </> : null}
       </Section>
       <Section id="currency-picker" title="Currency">
         <CurrencySelector testID="cp1" label="Currency" value={currency} onChange={setCurrency} required />
+        {variantsShown ? <>
+          <div data-variant="material"><CurrencySelector variant="material" testID="cp1-material" label="Currency" value={currency} onChange={setCurrency} required /></div>
+          <div data-variant="outlined"><CurrencySelector variant="outlined" testID="cp1-outlined" label="Currency" value={currency} onChange={setCurrency} required /></div>
+          <div data-variant="underlined"><CurrencySelector variant="underlined" testID="cp1-underlined" label="Currency" value={currency} onChange={setCurrency} required /></div>
+          <div data-variant="inline"><CurrencySelector variant="inline" testID="cp1-inline" label="Currency" value={currency} onChange={setCurrency} required /></div>
+          <div data-variant="pill"><CurrencySelector variant="pill" testID="cp1-pill" label="Currency" value={currency} onChange={setCurrency} required /></div>
+        </> : null}
       </Section>
       <Section id="multi-select" title="Multi select">
         <MultiSelect testID="ms1" label="Accounts on the statement" options={accounts} value={picked} onChange={setPicked} helpText="Choose one or more" />
+        {variantsShown ? <>
+          <div data-variant="material"><MultiSelect variant="material" testID="ms1-material" label="Accounts on the statement" options={accounts} value={picked} onChange={setPicked} helpText="Choose one or more" /></div>
+          <div data-variant="outlined"><MultiSelect variant="outlined" testID="ms1-outlined" label="Accounts on the statement" options={accounts} value={picked} onChange={setPicked} helpText="Choose one or more" /></div>
+          <div data-variant="tonal"><MultiSelect variant="tonal" testID="ms1-tonal" label="Accounts on the statement" options={accounts} value={picked} onChange={setPicked} helpText="Choose one or more" /></div>
+          <div data-variant="square"><MultiSelect variant="square" testID="ms1-square" label="Accounts on the statement" options={accounts} value={picked} onChange={setPicked} helpText="Choose one or more" /></div>
+          <div data-variant="glass"><MultiSelect variant="glass" testID="ms1-glass" label="Accounts on the statement" options={accounts} value={picked} onChange={setPicked} helpText="Choose one or more" /></div>
+        </> : null}
       </Section>
       <Section id="switch" title="Switch">
         <Toggle testID="sw1" label="Paperless statements" value={paperless} onChange={setPaperless} helpText="We email them on the 1st" />
         <Toggle testID="sw2" label="International use" value={false} disabled />
+        {variantsShown ? <>
+          <div data-variant="material"><Toggle variant="material" testID="sw1-material" label="Paperless statements" value={paperless} onChange={setPaperless} helpText="We email them on the 1st" /></div>
+          <div data-variant="ios"><Toggle variant="ios" testID="sw1-ios" label="Paperless statements" value={paperless} onChange={setPaperless} helpText="We email them on the 1st" /></div>
+          <div data-variant="fluent"><Toggle variant="fluent" testID="sw1-fluent" label="Paperless statements" value={paperless} onChange={setPaperless} helpText="We email them on the 1st" /></div>
+          <div data-variant="labelled"><Toggle variant="labelled" testID="sw1-labelled" label="Paperless statements" value={paperless} onChange={setPaperless} helpText="We email them on the 1st" /></div>
+          <div data-variant="squish"><Toggle variant="squish" testID="sw1-squish" label="Paperless statements" value={paperless} onChange={setPaperless} helpText="We email them on the 1st" /></div>
+        </> : null}
       </Section>
       <Section id="date-range" title="Date range">
         <DateRangePicker testID="dr1" label="Statement period" value={period} onChange={setPeriod} maxDays={92} helpText="Up to 3 months" />
+        {variantsShown ? <>
+          <div data-variant="material"><DateRangePicker variant="material" testID="dr1-material" label="Statement period" value={period} onChange={setPeriod} maxDays={92} helpText="Up to 3 months" /></div>
+          <div data-variant="outlined"><DateRangePicker variant="outlined" testID="dr1-outlined" label="Statement period" value={period} onChange={setPeriod} maxDays={92} helpText="Up to 3 months" /></div>
+          <div data-variant="underlined"><DateRangePicker variant="underlined" testID="dr1-underlined" label="Statement period" value={period} onChange={setPeriod} maxDays={92} helpText="Up to 3 months" /></div>
+          <div data-variant="inline"><DateRangePicker variant="inline" testID="dr1-inline" label="Statement period" value={period} onChange={setPeriod} maxDays={92} helpText="Up to 3 months" /></div>
+        </> : null}
       </Section>
       <Section id="search" title="Search">
         <SearchField testID="se1" label="Search transactions" value={query} onChange={setQuery} placeholder="Payee, amount or reference" />
+        {variantsShown ? <>
+          <div data-variant="material"><SearchField variant="material" testID="se1-material" label="Search transactions" value={query} onChange={setQuery} placeholder="Payee, amount or reference" /></div>
+          <div data-variant="outlined"><SearchField variant="outlined" testID="se1-outlined" label="Search transactions" value={query} onChange={setQuery} placeholder="Payee, amount or reference" /></div>
+          <div data-variant="underlined"><SearchField variant="underlined" testID="se1-underlined" label="Search transactions" value={query} onChange={setQuery} placeholder="Payee, amount or reference" /></div>
+          <div data-variant="floating"><SearchField variant="floating" testID="se1-floating" label="Search transactions" value={query} onChange={setQuery} placeholder="Payee, amount or reference" /></div>
+          <div data-variant="inline"><SearchField variant="inline" testID="se1-inline" label="Search transactions" value={query} onChange={setQuery} placeholder="Payee, amount or reference" /></div>
+          <div data-variant="pill"><SearchField variant="pill" testID="se1-pill" label="Search transactions" value={query} onChange={setQuery} placeholder="Payee, amount or reference" /></div>
+        </> : null}
       </Section>
       <Section id="autocomplete" title="Autocomplete">
         <Autocomplete testID="ac1" label="Payee" value={payee} onChange={setPayee}
                       options={[{ value: 'P1', label: 'Asha Sharma' }, { value: 'P2', label: 'Ravi Kumar' }, { value: 'P3', label: 'Asha Patel' }]} />
+        {variantsShown ? <>
+          <div data-variant="material"><Autocomplete variant="material" testID="ac1-material" label="Payee" value={payee} onChange={setPayee}
+                      options={[{ value: 'P1', label: 'Asha Sharma' }, { value: 'P2', label: 'Ravi Kumar' }, { value: 'P3', label: 'Asha Patel' }]} /></div>
+          <div data-variant="outlined"><Autocomplete variant="outlined" testID="ac1-outlined" label="Payee" value={payee} onChange={setPayee}
+                      options={[{ value: 'P1', label: 'Asha Sharma' }, { value: 'P2', label: 'Ravi Kumar' }, { value: 'P3', label: 'Asha Patel' }]} /></div>
+          <div data-variant="underlined"><Autocomplete variant="underlined" testID="ac1-underlined" label="Payee" value={payee} onChange={setPayee}
+                      options={[{ value: 'P1', label: 'Asha Sharma' }, { value: 'P2', label: 'Ravi Kumar' }, { value: 'P3', label: 'Asha Patel' }]} /></div>
+          <div data-variant="inline"><Autocomplete variant="inline" testID="ac1-inline" label="Payee" value={payee} onChange={setPayee}
+                      options={[{ value: 'P1', label: 'Asha Sharma' }, { value: 'P2', label: 'Ravi Kumar' }, { value: 'P3', label: 'Asha Patel' }]} /></div>
+          <div data-variant="pill"><Autocomplete variant="pill" testID="ac1-pill" label="Payee" value={payee} onChange={setPayee}
+                      options={[{ value: 'P1', label: 'Asha Sharma' }, { value: 'P2', label: 'Ravi Kumar' }, { value: 'P3', label: 'Asha Patel' }]} /></div>
+        </> : null}
       </Section>
       <Section id="document-upload" title="Document upload">
         <FileUpload testID="du1" label="Proof of address" value={proof} onChange={setProof} accept=".pdf,image/*" maxSize={5242880} helpText="A utility bill or a statement" />
+        {variantsShown ? <>
+          <div data-variant="material"><FileUpload variant="material" testID="du1-material" label="Proof of address" value={proof} onChange={setProof} accept=".pdf,image/*" maxSize={5242880} helpText="A utility bill or a statement" /></div>
+          <div data-variant="dropzone"><FileUpload variant="dropzone" testID="du1-dropzone" label="Proof of address" value={proof} onChange={setProof} accept=".pdf,image/*" maxSize={5242880} helpText="A utility bill or a statement" /></div>
+          <div data-variant="compact"><FileUpload variant="compact" testID="du1-compact" label="Proof of address" value={proof} onChange={setProof} accept=".pdf,image/*" maxSize={5242880} helpText="A utility bill or a statement" /></div>
+          <div data-variant="card"><FileUpload variant="card" testID="du1-card" label="Proof of address" value={proof} onChange={setProof} accept=".pdf,image/*" maxSize={5242880} helpText="A utility bill or a statement" /></div>
+        </> : null}
       </Section>
       <Section id="secondary-button" title="Secondary button">
         <SecondaryButton testID="sb1" label="Save for later" />
         <SecondaryButton testID="sb2" label="Save for later" disabled />
+        {variantsShown ? <>
+          <div data-variant="material"><SecondaryButton variant="material" testID="sb1-material" label="Save for later" /></div>
+          <div data-variant="tonal"><SecondaryButton variant="tonal" testID="sb1-tonal" label="Save for later" /></div>
+          <div data-variant="outlined"><SecondaryButton variant="outlined" testID="sb1-outlined" label="Save for later" /></div>
+          <div data-variant="text"><SecondaryButton variant="text" testID="sb1-text" label="Save for later" /></div>
+          <div data-variant="elevated"><SecondaryButton variant="elevated" testID="sb1-elevated" label="Save for later" /></div>
+          <div data-variant="gradient"><SecondaryButton variant="gradient" testID="sb1-gradient" label="Save for later" /></div>
+          <div data-variant="glass"><SecondaryButton variant="glass" testID="sb1-glass" label="Save for later" /></div>
+          <div data-variant="pill"><SecondaryButton variant="pill" testID="sb1-pill" label="Save for later" /></div>
+        </> : null}
       </Section>
       <Section id="danger-button" title="Danger button">
         <DestructiveButton testID="db1" label="Cancel payment" />
         <DestructiveButton testID="db2" label="Cancel payment" busy />
+        {variantsShown ? <>
+          <div data-variant="material"><DestructiveButton variant="material" testID="db1-material" label="Cancel payment" /></div>
+          <div data-variant="tonal"><DestructiveButton variant="tonal" testID="db1-tonal" label="Cancel payment" /></div>
+          <div data-variant="outlined"><DestructiveButton variant="outlined" testID="db1-outlined" label="Cancel payment" /></div>
+          <div data-variant="text"><DestructiveButton variant="text" testID="db1-text" label="Cancel payment" /></div>
+          <div data-variant="elevated"><DestructiveButton variant="elevated" testID="db1-elevated" label="Cancel payment" /></div>
+          <div data-variant="gradient"><DestructiveButton variant="gradient" testID="db1-gradient" label="Cancel payment" /></div>
+          <div data-variant="glass"><DestructiveButton variant="glass" testID="db1-glass" label="Cancel payment" /></div>
+          <div data-variant="pill"><DestructiveButton variant="pill" testID="db1-pill" label="Cancel payment" /></div>
+        </> : null}
       </Section>
       <Section id="savings-slider" title="Savings slider">
         <Slider testID="sl1" label="Monthly saving" value={saving} onChange={setSaving} prefix="USD" min={1500} max={20000} step={500} />
+        {variantsShown ? <>
+          <div data-variant="material"><Slider variant="material" testID="sl1-material" label="Monthly saving" value={saving} onChange={setSaving} prefix="USD" min={1500} max={20000} step={500} /></div>
+          <div data-variant="ticks"><Slider variant="ticks" testID="sl1-ticks" label="Monthly saving" value={saving} onChange={setSaving} prefix="USD" min={1500} max={20000} step={500} /></div>
+          <div data-variant="bubble"><Slider variant="bubble" testID="sl1-bubble" label="Monthly saving" value={saving} onChange={setSaving} prefix="USD" min={1500} max={20000} step={500} /></div>
+          <div data-variant="thick"><Slider variant="thick" testID="sl1-thick" label="Monthly saving" value={saving} onChange={setSaving} prefix="USD" min={1500} max={20000} step={500} /></div>
+        </> : null}
       </Section>
       <Section id="segmented" title="Segmented control">
         <ToggleGroup testID="sg1" label="Show" options={['Day', 'Week', 'Month']} value={show} onChange={setShow} />
+        {variantsShown ? <>
+          <div data-variant="material"><ToggleGroup variant="material" testID="sg1-material" label="Show" options={['Day', 'Week', 'Month']} value={show} onChange={setShow} /></div>
+          <div data-variant="ios"><ToggleGroup variant="ios" testID="sg1-ios" label="Show" options={['Day', 'Week', 'Month']} value={show} onChange={setShow} /></div>
+          <div data-variant="underline"><ToggleGroup variant="underline" testID="sg1-underline" label="Show" options={['Day', 'Week', 'Month']} value={show} onChange={setShow} /></div>
+          <div data-variant="enclosed"><ToggleGroup variant="enclosed" testID="sg1-enclosed" label="Show" options={['Day', 'Week', 'Month']} value={show} onChange={setShow} /></div>
+          <div data-variant="pill"><ToggleGroup variant="pill" testID="sg1-pill" label="Show" options={['Day', 'Week', 'Month']} value={show} onChange={setShow} /></div>
+        </> : null}
       </Section>
       <Section id="filter-chips" title="Filter chips">
         <FilterChips testID="fc1" label="Filter" options={['Card', 'Transfer', 'Bills', 'Salary']} value={filters} onChange={setFilters} />
+        {variantsShown ? <>
+          <div data-variant="material"><FilterChips variant="material" testID="fc1-material" label="Filter" options={['Card', 'Transfer', 'Bills', 'Salary']} value={filters} onChange={setFilters} /></div>
+          <div data-variant="outlined"><FilterChips variant="outlined" testID="fc1-outlined" label="Filter" options={['Card', 'Transfer', 'Bills', 'Salary']} value={filters} onChange={setFilters} /></div>
+          <div data-variant="tonal"><FilterChips variant="tonal" testID="fc1-tonal" label="Filter" options={['Card', 'Transfer', 'Bills', 'Salary']} value={filters} onChange={setFilters} /></div>
+          <div data-variant="square"><FilterChips variant="square" testID="fc1-square" label="Filter" options={['Card', 'Transfer', 'Bills', 'Salary']} value={filters} onChange={setFilters} /></div>
+          <div data-variant="glass"><FilterChips variant="glass" testID="fc1-glass" label="Filter" options={['Card', 'Transfer', 'Bills', 'Salary']} value={filters} onChange={setFilters} /></div>
+        </> : null}
       </Section>
       <Section id="action-menu" title="Action menu">
         <ActionMenu testID="am1" items={['Download statement', 'Set a nickname', { value: 'close', label: 'Close the account', danger: true }]} />
@@ -256,6 +442,13 @@ function Gallery() {
       </Section>
       <Section id="account-picker" title="Account picker">
         <AccountSelector testID="ap1" options={accounts} value={account} onChange={setAccount} />
+        {variantsShown ? <>
+          <div data-variant="material"><AccountSelector variant="material" testID="ap1-material" options={accounts} value={account} onChange={setAccount} /></div>
+          <div data-variant="outlined"><AccountSelector variant="outlined" testID="ap1-outlined" options={accounts} value={account} onChange={setAccount} /></div>
+          <div data-variant="underlined"><AccountSelector variant="underlined" testID="ap1-underlined" options={accounts} value={account} onChange={setAccount} /></div>
+          <div data-variant="inline"><AccountSelector variant="inline" testID="ap1-inline" options={accounts} value={account} onChange={setAccount} /></div>
+          <div data-variant="pill"><AccountSelector variant="pill" testID="ap1-pill" options={accounts} value={account} onChange={setAccount} /></div>
+        </> : null}
       </Section>
       <Section id="account-summary" title="Account summary">
         <AccountSummary testID="as1" items={[{ label: 'Savings', value: '12,400.00', meta: 'Available 12,150.00' }, { label: 'Current', value: '3,210.50', meta: 'Overdraft 1,000.00' }, { label: 'Deposits', value: '25,000.00', meta: 'Matures 14 Mar' }]} onAction={() => undefined} />
@@ -273,6 +466,14 @@ function Gallery() {
       <Section id="iban" title="IBAN">
         <AccountNumber testID="ib1" value={iban} onChange={setIban} required />
         <AccountNumber testID="ib2" value="GB28NWBK60161331926819" error="Check the IBAN: it starts with the country code." />
+        {variantsShown ? <>
+          <div data-variant="material"><AccountNumber variant="material" testID="ib1-material" value={iban} onChange={setIban} required /></div>
+          <div data-variant="outlined"><AccountNumber variant="outlined" testID="ib1-outlined" value={iban} onChange={setIban} required /></div>
+          <div data-variant="underlined"><AccountNumber variant="underlined" testID="ib1-underlined" value={iban} onChange={setIban} required /></div>
+          <div data-variant="floating"><AccountNumber variant="floating" testID="ib1-floating" value={iban} onChange={setIban} required /></div>
+          <div data-variant="inline"><AccountNumber variant="inline" testID="ib1-inline" value={iban} onChange={setIban} required /></div>
+          <div data-variant="pill"><AccountNumber variant="pill" testID="ib1-pill" value={iban} onChange={setIban} required /></div>
+        </> : null}
       </Section>
       <Section id="quick-actions" title="Quick actions">
         <QuickActions testID="qa1" items={[{ id: 'send', label: 'Send', icon: '↗' }, { id: 'bills', label: 'Pay bills', icon: '≡' }, { id: 'topup', label: 'Top up', icon: '+' }, { id: 'scan', label: 'Scan to pay', icon: '⌗' }]} />
@@ -298,12 +499,26 @@ function Gallery() {
       </Section>
       <Section id="transaction-filter" title="Transaction filter">
         <TransactionFilter testID="tf1" options={['Money in', 'Money out', 'Cards', 'Transfers']} value={txFilter} onChange={setTxFilter} />
+        {variantsShown ? <>
+          <div data-variant="material"><TransactionFilter variant="material" testID="tf1-material" options={['Money in', 'Money out', 'Cards', 'Transfers']} value={txFilter} onChange={setTxFilter} /></div>
+          <div data-variant="outlined"><TransactionFilter variant="outlined" testID="tf1-outlined" options={['Money in', 'Money out', 'Cards', 'Transfers']} value={txFilter} onChange={setTxFilter} /></div>
+          <div data-variant="tonal"><TransactionFilter variant="tonal" testID="tf1-tonal" options={['Money in', 'Money out', 'Cards', 'Transfers']} value={txFilter} onChange={setTxFilter} /></div>
+          <div data-variant="square"><TransactionFilter variant="square" testID="tf1-square" options={['Money in', 'Money out', 'Cards', 'Transfers']} value={txFilter} onChange={setTxFilter} /></div>
+          <div data-variant="glass"><TransactionFilter variant="glass" testID="tf1-glass" options={['Money in', 'Money out', 'Cards', 'Transfers']} value={txFilter} onChange={setTxFilter} /></div>
+        </> : null}
       </Section>
       <Section id="transaction-details" title="Transaction details">
         <TransactionDetails items={[{ label: 'Description', value: 'Coffee House' }, { label: 'Date', value: 'Today 08:14' }, { label: 'Amount', value: '-4.50 USD' }, { label: 'Card', value: '·· 4821' }, { label: 'Reference', value: 'TX-88211' }]} actionLabel="Dispute it" />
       </Section>
       <Section id="repeat" title="Repeat">
         <PaymentSchedule testID="rp1" value={repeat} onChange={setRepeat} />
+        {variantsShown ? <>
+          <div data-variant="material"><PaymentSchedule variant="material" testID="rp1-material" value={repeat} onChange={setRepeat} /></div>
+          <div data-variant="ios"><PaymentSchedule variant="ios" testID="rp1-ios" value={repeat} onChange={setRepeat} /></div>
+          <div data-variant="underline"><PaymentSchedule variant="underline" testID="rp1-underline" value={repeat} onChange={setRepeat} /></div>
+          <div data-variant="enclosed"><PaymentSchedule variant="enclosed" testID="rp1-enclosed" value={repeat} onChange={setRepeat} /></div>
+          <div data-variant="pill"><PaymentSchedule variant="pill" testID="rp1-pill" value={repeat} onChange={setRepeat} /></div>
+        </> : null}
       </Section>
       <Section id="receipt" title="Receipt">
         <TransactionReceipt testID="rc1" amount={1250} currency="USD" reference="FX-20391" items={[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }]}><SecondaryButton label="Download" /></TransactionReceipt>
@@ -319,6 +534,12 @@ function Gallery() {
       </Section>
       <Section id="maturity-instructions" title="Maturity instructions">
         <MaturityInstructions testID="mi1" options={['Renew principal and interest', 'Renew principal, pay out interest', 'Close and pay out']} value={maturity} onChange={setMaturity} />
+        {variantsShown ? <>
+          <div data-variant="material"><MaturityInstructions variant="material" testID="mi1-material" options={['Renew principal and interest', 'Renew principal, pay out interest', 'Close and pay out']} value={maturity} onChange={setMaturity} /></div>
+          <div data-variant="cards"><MaturityInstructions variant="cards" testID="mi1-cards" options={['Renew principal and interest', 'Renew principal, pay out interest', 'Close and pay out']} value={maturity} onChange={setMaturity} /></div>
+          <div data-variant="chips"><MaturityInstructions variant="chips" testID="mi1-chips" options={['Renew principal and interest', 'Renew principal, pay out interest', 'Close and pay out']} value={maturity} onChange={setMaturity} /></div>
+          <div data-variant="rows"><MaturityInstructions variant="rows" testID="mi1-rows" options={['Renew principal and interest', 'Renew principal, pay out interest', 'Close and pay out']} value={maturity} onChange={setMaturity} /></div>
+        </> : null}
       </Section>
       <Section id="td-topup" title="Deposit top-up">
         <DepositTopUp items={[{ label: 'Deposit', value: '·· 9011' }, { label: 'Current amount', value: '25,000.00' }, { label: 'Top-up', value: '5,000.00' }, { label: 'New maturity value', value: '31,950.00', total: true }]} />
@@ -350,24 +571,63 @@ function Gallery() {
       </Section>
       <Section id="activate-card" title="Activate card">
         <ActivateCard testID="ak1" value={code} onChange={setCode} />
+        {variantsShown ? <>
+          <div data-variant="material"><ActivateCard variant="material" testID="ak1-material" value={code} onChange={setCode} /></div>
+          <div data-variant="underline"><ActivateCard variant="underline" testID="ak1-underline" value={code} onChange={setCode} /></div>
+          <div data-variant="rounded"><ActivateCard variant="rounded" testID="ak1-rounded" value={code} onChange={setCode} /></div>
+          <div data-variant="joined"><ActivateCard variant="joined" testID="ak1-joined" value={code} onChange={setCode} /></div>
+        </> : null}
       </Section>
       <Section id="convert-emi" title="Convert to EMI">
         <ConvertToEmi testID="ce1" label="Pay 1,200.00 over" value={emi} onChange={setEmi} />
+        {variantsShown ? <>
+          <div data-variant="material"><ConvertToEmi variant="material" testID="ce1-material" label="Pay 1,200.00 over" value={emi} onChange={setEmi} /></div>
+          <div data-variant="ios"><ConvertToEmi variant="ios" testID="ce1-ios" label="Pay 1,200.00 over" value={emi} onChange={setEmi} /></div>
+          <div data-variant="underline"><ConvertToEmi variant="underline" testID="ce1-underline" label="Pay 1,200.00 over" value={emi} onChange={setEmi} /></div>
+          <div data-variant="enclosed"><ConvertToEmi variant="enclosed" testID="ce1-enclosed" label="Pay 1,200.00 over" value={emi} onChange={setEmi} /></div>
+          <div data-variant="pill"><ConvertToEmi variant="pill" testID="ce1-pill" label="Pay 1,200.00 over" value={emi} onChange={setEmi} /></div>
+        </> : null}
       </Section>
       <Section id="redeem-points" title="Redeem points">
         <RedeemPoints testID="rd1" value={points} onChange={setPoints} />
+        {variantsShown ? <>
+          <div data-variant="material"><RedeemPoints variant="material" testID="rd1-material" value={points} onChange={setPoints} /></div>
+          <div data-variant="ticks"><RedeemPoints variant="ticks" testID="rd1-ticks" value={points} onChange={setPoints} /></div>
+          <div data-variant="bubble"><RedeemPoints variant="bubble" testID="rd1-bubble" value={points} onChange={setPoints} /></div>
+          <div data-variant="thick"><RedeemPoints variant="thick" testID="rd1-thick" value={points} onChange={setPoints} /></div>
+        </> : null}
       </Section>
       <Section id="spend-limit" title="Card limits">
         <CardLimits testID="sl1" value={limit} onChange={setLimit} prefix="USD" />
       </Section>
       <Section id="card-controls" title="Card controls">
         <CardControls testID="cc1" options={['Online payments', 'ATM withdrawals', 'Use abroad']} value={controls} onChange={setControls} />
+        {variantsShown ? <>
+          <div data-variant="material"><CardControls variant="material" testID="cc1-material" options={['Online payments', 'ATM withdrawals', 'Use abroad']} value={controls} onChange={setControls} /></div>
+          <div data-variant="cards"><CardControls variant="cards" testID="cc1-cards" options={['Online payments', 'ATM withdrawals', 'Use abroad']} value={controls} onChange={setControls} /></div>
+          <div data-variant="chips"><CardControls variant="chips" testID="cc1-chips" options={['Online payments', 'ATM withdrawals', 'Use abroad']} value={controls} onChange={setControls} /></div>
+          <div data-variant="rows"><CardControls variant="rows" testID="cc1-rows" options={['Online payments', 'ATM withdrawals', 'Use abroad']} value={controls} onChange={setControls} /></div>
+          <div data-variant="round"><CardControls variant="round" testID="cc1-round" options={['Online payments', 'ATM withdrawals', 'Use abroad']} value={controls} onChange={setControls} /></div>
+        </> : null}
       </Section>
       <Section id="block-card" title="Block card">
         <BlockCard testID="bk1" value={blocked} onChange={setBlocked} />
+        {variantsShown ? <>
+          <div data-variant="material"><BlockCard variant="material" testID="bk1-material" value={blocked} onChange={setBlocked} /></div>
+          <div data-variant="ios"><BlockCard variant="ios" testID="bk1-ios" value={blocked} onChange={setBlocked} /></div>
+          <div data-variant="fluent"><BlockCard variant="fluent" testID="bk1-fluent" value={blocked} onChange={setBlocked} /></div>
+          <div data-variant="labelled"><BlockCard variant="labelled" testID="bk1-labelled" value={blocked} onChange={setBlocked} /></div>
+          <div data-variant="squish"><BlockCard variant="squish" testID="bk1-squish" value={blocked} onChange={setBlocked} /></div>
+        </> : null}
       </Section>
       <Section id="reset-pin" title="Reset PIN">
         <ResetPin testID="rp1" value={pin} onChange={setPin} />
+        {variantsShown ? <>
+          <div data-variant="material"><ResetPin variant="material" testID="rp1-material" value={pin} onChange={setPin} /></div>
+          <div data-variant="underline"><ResetPin variant="underline" testID="rp1-underline" value={pin} onChange={setPin} /></div>
+          <div data-variant="rounded"><ResetPin variant="rounded" testID="rp1-rounded" value={pin} onChange={setPin} /></div>
+          <div data-variant="joined"><ResetPin variant="joined" testID="rp1-joined" value={pin} onChange={setPin} /></div>
+        </> : null}
       </Section>
       <Section id="raise-dispute" title="Raise dispute">
         <RaiseDispute items={[{label: 'Transaction', value: 'Coffee House · 4.50'}, {label: 'Reason', value: 'Charged twice'}]} />
@@ -381,6 +641,12 @@ function Gallery() {
       <Section id="otp" title="One-time code">
         <OtpInput testID="ot1" value={code} onChange={setCode} helpText="We sent it to •••• 0123" />
         <OtpInput testID="ot2" value="123456" error="That code is not right. Check it, or send a new one." />
+        {variantsShown ? <>
+          <div data-variant="material"><OtpInput variant="material" testID="ot1-material" value={code} onChange={setCode} helpText="We sent it to •••• 0123" /></div>
+          <div data-variant="underline"><OtpInput variant="underline" testID="ot1-underline" value={code} onChange={setCode} helpText="We sent it to •••• 0123" /></div>
+          <div data-variant="rounded"><OtpInput variant="rounded" testID="ot1-rounded" value={code} onChange={setCode} helpText="We sent it to •••• 0123" /></div>
+          <div data-variant="joined"><OtpInput variant="joined" testID="ot1-joined" value={code} onChange={setCode} helpText="We sent it to •••• 0123" /></div>
+        </> : null}
       </Section>
       <Section id="biometric" title="Biometric">
         <AuthChallenge testID="bm1" text="Touch the sensor to approve 1,250.00 to A. Rao." />
@@ -395,6 +661,13 @@ function Gallery() {
       </Section>
       <Section id="sensitive" title="Sensitive field">
         <SensitiveField testID="sf1" value="4111 1111 1111 4821" />
+        {variantsShown ? <>
+          <div data-variant="material"><SensitiveField variant="material" testID="sf1-material" value="4111 1111 1111 4821" /></div>
+          <div data-variant="outlined"><SensitiveField variant="outlined" testID="sf1-outlined" value="4111 1111 1111 4821" /></div>
+          <div data-variant="underlined"><SensitiveField variant="underlined" testID="sf1-underlined" value="4111 1111 1111 4821" /></div>
+          <div data-variant="floating"><SensitiveField variant="floating" testID="sf1-floating" value="4111 1111 1111 4821" /></div>
+          <div data-variant="inline"><SensitiveField variant="inline" testID="sf1-inline" value="4111 1111 1111 4821" /></div>
+        </> : null}
       </Section>
       <Section id="kyc-steps" title="KYC steps">
         <KycSteps testID="ky1" selectedStep="Selfie" />
@@ -413,6 +686,13 @@ function Gallery() {
       </Section>
       <Section id="spend-categories" title="Spend categories">
         <SpendCategories options={['Eating out', 'Groceries', 'Travel', 'Shopping']} label="Coffee House · 4.50 is" value={cats} onChange={setCats} />
+        {variantsShown ? <>
+          <div data-variant="material"><SpendCategories variant="material" options={['Eating out', 'Groceries', 'Travel', 'Shopping']} label="Coffee House · 4.50 is" value={cats} onChange={setCats} /></div>
+          <div data-variant="outlined"><SpendCategories variant="outlined" options={['Eating out', 'Groceries', 'Travel', 'Shopping']} label="Coffee House · 4.50 is" value={cats} onChange={setCats} /></div>
+          <div data-variant="tonal"><SpendCategories variant="tonal" options={['Eating out', 'Groceries', 'Travel', 'Shopping']} label="Coffee House · 4.50 is" value={cats} onChange={setCats} /></div>
+          <div data-variant="square"><SpendCategories variant="square" options={['Eating out', 'Groceries', 'Travel', 'Shopping']} label="Coffee House · 4.50 is" value={cats} onChange={setCats} /></div>
+          <div data-variant="glass"><SpendCategories variant="glass" options={['Eating out', 'Groceries', 'Travel', 'Shopping']} label="Coffee House · 4.50 is" value={cats} onChange={setCats} /></div>
+        </> : null}
       </Section>
       <Section id="approval-queue" title="Approval queue">
         <ApprovalQueue items={[{title: 'Payroll Feb · prioritized', meta: 'Financial · 182,400.00', value: 'PAY-4410'}, {title: 'Vendor ABC Ltd', meta: 'Financial · 12,000.00', value: 'PAY-4412'}, {title: 'Add payee J. Mehta', meta: 'Non-financial', value: 'BEN-218'}]} />
@@ -425,6 +705,13 @@ function Gallery() {
       </Section>
       <Section id="reroute" title="Re-route">
         <Reroute testID="rr1" options={approvers} value={reroute} onChange={setReroute} />
+        {variantsShown ? <>
+          <div data-variant="material"><Reroute variant="material" testID="rr1-material" options={approvers} value={reroute} onChange={setReroute} /></div>
+          <div data-variant="outlined"><Reroute variant="outlined" testID="rr1-outlined" options={approvers} value={reroute} onChange={setReroute} /></div>
+          <div data-variant="underlined"><Reroute variant="underlined" testID="rr1-underlined" options={approvers} value={reroute} onChange={setReroute} /></div>
+          <div data-variant="inline"><Reroute variant="inline" testID="rr1-inline" options={approvers} value={reroute} onChange={setReroute} /></div>
+          <div data-variant="pill"><Reroute variant="pill" testID="rr1-pill" options={approvers} value={reroute} onChange={setReroute} /></div>
+        </> : null}
       </Section>
       <Section id="modification-requested" title="Modification requested">
         <ModificationNotice message="PAY-4410 was sent back: change the value date to a working day." />
@@ -434,6 +721,13 @@ function Gallery() {
       </Section>
       <Section id="structure-type" title="Structure type">
         <StructureType value={structure} onChange={setStructure} />
+        {variantsShown ? <>
+          <div data-variant="material"><StructureType variant="material" value={structure} onChange={setStructure} /></div>
+          <div data-variant="ios"><StructureType variant="ios" value={structure} onChange={setStructure} /></div>
+          <div data-variant="underline"><StructureType variant="underline" value={structure} onChange={setStructure} /></div>
+          <div data-variant="enclosed"><StructureType variant="enclosed" value={structure} onChange={setStructure} /></div>
+          <div data-variant="pill"><StructureType variant="pill" value={structure} onChange={setStructure} /></div>
+        </> : null}
       </Section>
       <Section id="account-structure" title="Account structure">
         <AccountStructure items={[{id: 'h', title: 'Header account ·· 1000', body: 'Sweeps to zero balance daily at 18:00.'}, {id: 'p', title: 'Child: Payroll ·· 1010', body: 'Target balance 5,000.00.'}, {id: 'v', title: 'Child: Vendors ·· 1020', body: 'Sweeps above 2,000.00.'}]} />
@@ -452,24 +746,66 @@ function Gallery() {
       </Section>
       <Section id="sign-in-options" title="Sign-in options">
         <SignInOptions options={['Passkey', 'Facial ID', 'Soft token']} value={signIn} onChange={setSignIn} />
+        {variantsShown ? <>
+          <div data-variant="material"><SignInOptions variant="material" options={['Passkey', 'Facial ID', 'Soft token']} value={signIn} onChange={setSignIn} /></div>
+          <div data-variant="cards"><SignInOptions variant="cards" options={['Passkey', 'Facial ID', 'Soft token']} value={signIn} onChange={setSignIn} /></div>
+          <div data-variant="chips"><SignInOptions variant="chips" options={['Passkey', 'Facial ID', 'Soft token']} value={signIn} onChange={setSignIn} /></div>
+          <div data-variant="rows"><SignInOptions variant="rows" options={['Passkey', 'Facial ID', 'Soft token']} value={signIn} onChange={setSignIn} /></div>
+          <div data-variant="round"><SignInOptions variant="round" options={['Passkey', 'Facial ID', 'Soft token']} value={signIn} onChange={setSignIn} /></div>
+        </> : null}
       </Section>
       <Section id="otp-delivery" title="Code delivery">
         <CodeDelivery value={codesBy} onChange={setCodesBy} />
+        {variantsShown ? <>
+          <div data-variant="material"><CodeDelivery variant="material" value={codesBy} onChange={setCodesBy} /></div>
+          <div data-variant="ios"><CodeDelivery variant="ios" value={codesBy} onChange={setCodesBy} /></div>
+          <div data-variant="underline"><CodeDelivery variant="underline" value={codesBy} onChange={setCodesBy} /></div>
+          <div data-variant="enclosed"><CodeDelivery variant="enclosed" value={codesBy} onChange={setCodesBy} /></div>
+          <div data-variant="pill"><CodeDelivery variant="pill" value={codesBy} onChange={setCodesBy} /></div>
+        </> : null}
       </Section>
       <Section id="devices" title="Devices">
         <Devices items={[{title: 'iPhone 15 · this device', meta: 'Registered 12 Mar', value: 'Active'}, {title: 'Chrome on Windows', meta: 'Last used today', value: 'Web'}]} />
       </Section>
       <Section id="appearance" title="Appearance">
         <Appearance value={theme} onChange={setTheme} />
+        {variantsShown ? <>
+          <div data-variant="material"><Appearance variant="material" value={theme} onChange={setTheme} /></div>
+          <div data-variant="ios"><Appearance variant="ios" value={theme} onChange={setTheme} /></div>
+          <div data-variant="underline"><Appearance variant="underline" value={theme} onChange={setTheme} /></div>
+          <div data-variant="enclosed"><Appearance variant="enclosed" value={theme} onChange={setTheme} /></div>
+          <div data-variant="pill"><Appearance variant="pill" value={theme} onChange={setTheme} /></div>
+        </> : null}
       </Section>
       <Section id="language" title="Language">
         <LanguagePicker testID="lg1" options={languages} value={lang} onChange={setLang} />
+        {variantsShown ? <>
+          <div data-variant="material"><LanguagePicker variant="material" testID="lg1-material" options={languages} value={lang} onChange={setLang} /></div>
+          <div data-variant="outlined"><LanguagePicker variant="outlined" testID="lg1-outlined" options={languages} value={lang} onChange={setLang} /></div>
+          <div data-variant="underlined"><LanguagePicker variant="underlined" testID="lg1-underlined" options={languages} value={lang} onChange={setLang} /></div>
+          <div data-variant="inline"><LanguagePicker variant="inline" testID="lg1-inline" options={languages} value={lang} onChange={setLang} /></div>
+          <div data-variant="pill"><LanguagePicker variant="pill" testID="lg1-pill" options={languages} value={lang} onChange={setLang} /></div>
+        </> : null}
       </Section>
       <Section id="alerts-subscription" title="Alert subscriptions">
         <AlertSubscriptions options={['Payments over 500.00', 'Low balance', 'Sign-in from a new device']} value={alerts} onChange={setAlerts} />
+        {variantsShown ? <>
+          <div data-variant="material"><AlertSubscriptions variant="material" options={['Payments over 500.00', 'Low balance', 'Sign-in from a new device']} value={alerts} onChange={setAlerts} /></div>
+          <div data-variant="cards"><AlertSubscriptions variant="cards" options={['Payments over 500.00', 'Low balance', 'Sign-in from a new device']} value={alerts} onChange={setAlerts} /></div>
+          <div data-variant="chips"><AlertSubscriptions variant="chips" options={['Payments over 500.00', 'Low balance', 'Sign-in from a new device']} value={alerts} onChange={setAlerts} /></div>
+          <div data-variant="rows"><AlertSubscriptions variant="rows" options={['Payments over 500.00', 'Low balance', 'Sign-in from a new device']} value={alerts} onChange={setAlerts} /></div>
+          <div data-variant="round"><AlertSubscriptions variant="round" options={['Payments over 500.00', 'Low balance', 'Sign-in from a new device']} value={alerts} onChange={setAlerts} /></div>
+        </> : null}
       </Section>
       <Section id="do-not-disturb" title="Do not disturb">
         <DoNotDisturb value={quiet} onChange={setQuiet} />
+        {variantsShown ? <>
+          <div data-variant="material"><DoNotDisturb variant="material" value={quiet} onChange={setQuiet} /></div>
+          <div data-variant="ios"><DoNotDisturb variant="ios" value={quiet} onChange={setQuiet} /></div>
+          <div data-variant="fluent"><DoNotDisturb variant="fluent" value={quiet} onChange={setQuiet} /></div>
+          <div data-variant="labelled"><DoNotDisturb variant="labelled" value={quiet} onChange={setQuiet} /></div>
+          <div data-variant="squish"><DoNotDisturb variant="squish" value={quiet} onChange={setQuiet} /></div>
+        </> : null}
       </Section>
       <Section id="consents" title="Consents">
         <Consents items={[{title: 'Budget app (open banking)', meta: 'Granted 02 Jan · ends 02 Apr', value: 'Accounts'}, {title: 'Tax filing service', meta: 'Granted 10 Dec · ends 10 Mar', value: 'Statements'}]} />
@@ -491,6 +827,13 @@ function Gallery() {
       </Section>
       <Section id="compose-mail" title="Compose message">
         <ComposeMessage value={message} onChange={setMessage} />
+        {variantsShown ? <>
+          <div data-variant="material"><ComposeMessage variant="material" value={message} onChange={setMessage} /></div>
+          <div data-variant="outlined"><ComposeMessage variant="outlined" value={message} onChange={setMessage} /></div>
+          <div data-variant="underlined"><ComposeMessage variant="underlined" value={message} onChange={setMessage} /></div>
+          <div data-variant="floating"><ComposeMessage variant="floating" value={message} onChange={setMessage} /></div>
+          <div data-variant="inline"><ComposeMessage variant="inline" value={message} onChange={setMessage} /></div>
+        </> : null}
       </Section>
       <Section id="e-receipts" title="E-receipts">
         <EReceipts items={[{title: 'Transfer to A. Rao', meta: '14 Jan · 1,250.00', value: 'PDF'}, {title: 'Electricity bill', meta: '10 Jan · 86.20', value: 'PDF'}]} />
@@ -500,9 +843,22 @@ function Gallery() {
       </Section>
       <Section id="statement-request" title="Statement request">
         <StatementRequest value={period} onChange={setPeriod} maxDays={92} />
+        {variantsShown ? <>
+          <div data-variant="material"><StatementRequest variant="material" value={period} onChange={setPeriod} maxDays={92} /></div>
+          <div data-variant="outlined"><StatementRequest variant="outlined" value={period} onChange={setPeriod} maxDays={92} /></div>
+          <div data-variant="underlined"><StatementRequest variant="underlined" value={period} onChange={setPeriod} maxDays={92} /></div>
+          <div data-variant="inline"><StatementRequest variant="inline" value={period} onChange={setPeriod} maxDays={92} /></div>
+        </> : null}
       </Section>
       <Section id="statement-format" title="Statement format">
         <StatementFormat value={format} onChange={setFormat} />
+        {variantsShown ? <>
+          <div data-variant="material"><StatementFormat variant="material" value={format} onChange={setFormat} /></div>
+          <div data-variant="ios"><StatementFormat variant="ios" value={format} onChange={setFormat} /></div>
+          <div data-variant="underline"><StatementFormat variant="underline" value={format} onChange={setFormat} /></div>
+          <div data-variant="enclosed"><StatementFormat variant="enclosed" value={format} onChange={setFormat} /></div>
+          <div data-variant="pill"><StatementFormat variant="pill" value={format} onChange={setFormat} /></div>
+        </> : null}
       </Section>
       <Section id="self-register" title="Self registration">
         <SelfRegister selectedStep="Verify" />
@@ -518,12 +874,25 @@ function Gallery() {
       </Section>
       <Section id="terms-consent" title="Terms consent">
         <TermsConsent options={['I accept the terms and conditions', 'Send me offers by email']} value={terms} onChange={setTerms} />
+        {variantsShown ? <>
+          <div data-variant="material"><TermsConsent variant="material" options={['I accept the terms and conditions', 'Send me offers by email']} value={terms} onChange={setTerms} /></div>
+          <div data-variant="cards"><TermsConsent variant="cards" options={['I accept the terms and conditions', 'Send me offers by email']} value={terms} onChange={setTerms} /></div>
+          <div data-variant="chips"><TermsConsent variant="chips" options={['I accept the terms and conditions', 'Send me offers by email']} value={terms} onChange={setTerms} /></div>
+          <div data-variant="rows"><TermsConsent variant="rows" options={['I accept the terms and conditions', 'Send me offers by email']} value={terms} onChange={setTerms} /></div>
+          <div data-variant="round"><TermsConsent variant="round" options={['I accept the terms and conditions', 'Send me offers by email']} value={terms} onChange={setTerms} /></div>
+        </> : null}
       </Section>
       <Section id="loan-calculator" title="Loan calculator">
         <LoanCalculator currency="USD" actionLabel="Apply for this loan" />
       </Section>
       <Section id="eligibility-calculator" title="Eligibility calculator">
         <EligibilityCalculator value={income} onChange={setIncome} prefix="USD" helpText="You could borrow up to 60,000.00" />
+        {variantsShown ? <>
+          <div data-variant="material"><EligibilityCalculator variant="material" value={income} onChange={setIncome} prefix="USD" helpText="You could borrow up to 60,000.00" /></div>
+          <div data-variant="ticks"><EligibilityCalculator variant="ticks" value={income} onChange={setIncome} prefix="USD" helpText="You could borrow up to 60,000.00" /></div>
+          <div data-variant="bubble"><EligibilityCalculator variant="bubble" value={income} onChange={setIncome} prefix="USD" helpText="You could borrow up to 60,000.00" /></div>
+          <div data-variant="thick"><EligibilityCalculator variant="thick" value={income} onChange={setIncome} prefix="USD" helpText="You could borrow up to 60,000.00" /></div>
+        </> : null}
       </Section>
       <Section id="td-calculator" title="Deposit calculator">
         <DepositCalculator currency="USD" />
@@ -533,6 +902,12 @@ function Gallery() {
       </Section>
       <Section id="goal-calculator" title="Goal calculator">
         <GoalCalculator value={saving} onChange={setSaving} prefix="USD" helpText="You reach 3,000.00 in 8 months" />
+        {variantsShown ? <>
+          <div data-variant="material"><GoalCalculator variant="material" value={saving} onChange={setSaving} prefix="USD" helpText="You reach 3,000.00 in 8 months" /></div>
+          <div data-variant="ticks"><GoalCalculator variant="ticks" value={saving} onChange={setSaving} prefix="USD" helpText="You reach 3,000.00 in 8 months" /></div>
+          <div data-variant="bubble"><GoalCalculator variant="bubble" value={saving} onChange={setSaving} prefix="USD" helpText="You reach 3,000.00 in 8 months" /></div>
+          <div data-variant="thick"><GoalCalculator variant="thick" value={saving} onChange={setSaving} prefix="USD" helpText="You reach 3,000.00 in 8 months" /></div>
+        </> : null}
       </Section>
       <Section id="locator" title="Locator">
         <Locator items={places} />
@@ -626,6 +1001,12 @@ function Gallery() {
       </Section>
       <Section id="bulk-file-upload" title="Bulk file upload">
         <BulkUploadWidget value={bulk} onChange={setBulk} />
+        {variantsShown ? <>
+          <div data-variant="material"><BulkUploadWidget variant="material" value={bulk} onChange={setBulk} /></div>
+          <div data-variant="dropzone"><BulkUploadWidget variant="dropzone" value={bulk} onChange={setBulk} /></div>
+          <div data-variant="compact"><BulkUploadWidget variant="compact" value={bulk} onChange={setBulk} /></div>
+          <div data-variant="card"><BulkUploadWidget variant="card" value={bulk} onChange={setBulk} /></div>
+        </> : null}
       </Section>
       <Section id="quick-links-corp" title="Quick links (corporate)">
         <QuickLinksWidget items={[{id: 'own', label: 'Own account', icon: '⇄'}, {id: 'transfer', label: 'Transfer', icon: '↗'}, {id: 'adhoc', label: 'Ad-hoc', icon: '+'}, {id: 'file', label: 'File upload', icon: '⇪'}]} />
@@ -698,6 +1079,16 @@ function Gallery() {
       </Section>
       <Section id="magnetic-button" title="Magnetic button">
         <MagneticButton label="Open an account" />
+        {variantsShown ? <>
+          <div data-variant="material"><MagneticButton variant="material" label="Open an account" /></div>
+          <div data-variant="tonal"><MagneticButton variant="tonal" label="Open an account" /></div>
+          <div data-variant="outlined"><MagneticButton variant="outlined" label="Open an account" /></div>
+          <div data-variant="text"><MagneticButton variant="text" label="Open an account" /></div>
+          <div data-variant="elevated"><MagneticButton variant="elevated" label="Open an account" /></div>
+          <div data-variant="gradient"><MagneticButton variant="gradient" label="Open an account" /></div>
+          <div data-variant="glass"><MagneticButton variant="glass" label="Open an account" /></div>
+          <div data-variant="pill"><MagneticButton variant="pill" label="Open an account" /></div>
+        </> : null}
       </Section>
       <Section id="highlight-border" title="Highlight border">
         <HighlightBorder><p>The screen's own content</p></HighlightBorder>
@@ -734,9 +1125,22 @@ function Gallery() {
       </Section>
       <Section id="elastic-slider" title="Elastic slider">
         <ElasticSlider label="Amount" value={500} prefix="USD" />
+        {variantsShown ? <>
+          <div data-variant="material"><ElasticSlider variant="material" label="Amount" value={500} prefix="USD" /></div>
+          <div data-variant="ticks"><ElasticSlider variant="ticks" label="Amount" value={500} prefix="USD" /></div>
+          <div data-variant="bubble"><ElasticSlider variant="bubble" label="Amount" value={500} prefix="USD" /></div>
+          <div data-variant="thick"><ElasticSlider variant="thick" label="Amount" value={500} prefix="USD" /></div>
+        </> : null}
       </Section>
       <Section id="option-wheel" title="Option wheel">
         <OptionWheel label="Tenure" options={['3 months', '6 months', '12 months']} value="6 months" />
+        {variantsShown ? <>
+          <div data-variant="material"><OptionWheel variant="material" label="Tenure" options={['3 months', '6 months', '12 months']} value="6 months" /></div>
+          <div data-variant="outlined"><OptionWheel variant="outlined" label="Tenure" options={['3 months', '6 months', '12 months']} value="6 months" /></div>
+          <div data-variant="underlined"><OptionWheel variant="underlined" label="Tenure" options={['3 months', '6 months', '12 months']} value="6 months" /></div>
+          <div data-variant="inline"><OptionWheel variant="inline" label="Tenure" options={['3 months', '6 months', '12 months']} value="6 months" /></div>
+          <div data-variant="pill"><OptionWheel variant="pill" label="Tenure" options={['3 months', '6 months', '12 months']} value="6 months" /></div>
+        </> : null}
       </Section>
       <Section id="pill-nav" title="Pill navigation">
         <PillNav items={['Accounts', 'Payments', 'Cards']} selection="Accounts" />
@@ -788,12 +1192,38 @@ function Gallery() {
       </Section>
       <Section id="slide-to-confirm" title="Slide to confirm">
         <SlideToConfirm label="Slide to pay 1,250.00" />
+        {variantsShown ? <>
+          <div data-variant="material"><SlideToConfirm variant="material" label="Slide to pay 1,250.00" /></div>
+          <div data-variant="tonal"><SlideToConfirm variant="tonal" label="Slide to pay 1,250.00" /></div>
+          <div data-variant="outlined"><SlideToConfirm variant="outlined" label="Slide to pay 1,250.00" /></div>
+          <div data-variant="text"><SlideToConfirm variant="text" label="Slide to pay 1,250.00" /></div>
+          <div data-variant="elevated"><SlideToConfirm variant="elevated" label="Slide to pay 1,250.00" /></div>
+          <div data-variant="gradient"><SlideToConfirm variant="gradient" label="Slide to pay 1,250.00" /></div>
+          <div data-variant="glass"><SlideToConfirm variant="glass" label="Slide to pay 1,250.00" /></div>
+          <div data-variant="pill"><SlideToConfirm variant="pill" label="Slide to pay 1,250.00" /></div>
+        </> : null}
       </Section>
       <Section id="hold-to-confirm" title="Hold to confirm">
         <HoldToConfirm label="Hold to close the account" />
+        {variantsShown ? <>
+          <div data-variant="material"><HoldToConfirm variant="material" label="Hold to close the account" /></div>
+          <div data-variant="tonal"><HoldToConfirm variant="tonal" label="Hold to close the account" /></div>
+          <div data-variant="outlined"><HoldToConfirm variant="outlined" label="Hold to close the account" /></div>
+          <div data-variant="text"><HoldToConfirm variant="text" label="Hold to close the account" /></div>
+          <div data-variant="elevated"><HoldToConfirm variant="elevated" label="Hold to close the account" /></div>
+          <div data-variant="gradient"><HoldToConfirm variant="gradient" label="Hold to close the account" /></div>
+          <div data-variant="glass"><HoldToConfirm variant="glass" label="Hold to close the account" /></div>
+          <div data-variant="pill"><HoldToConfirm variant="pill" label="Hold to close the account" /></div>
+        </> : null}
       </Section>
       <Section id="otp-slots" title="OTP slots">
         <OtpSlots value="12" />
+        {variantsShown ? <>
+          <div data-variant="material"><OtpSlots variant="material" value="12" /></div>
+          <div data-variant="underline"><OtpSlots variant="underline" value="12" /></div>
+          <div data-variant="rounded"><OtpSlots variant="rounded" value="12" /></div>
+          <div data-variant="joined"><OtpSlots variant="joined" value="12" /></div>
+        </> : null}
       </Section>
       <Section id="receipt-tear" title="Torn receipt">
         <ReceiptTear amount={1250} currency="USD" reference="FX-20391" />
@@ -809,21 +1239,62 @@ function Gallery() {
       </Section>
       <Section id="bell-toggle" title="Bell toggle">
         <BellToggle value />
+        {variantsShown ? <>
+          <div data-variant="material"><BellToggle variant="material" value /></div>
+          <div data-variant="ios"><BellToggle variant="ios" value /></div>
+          <div data-variant="fluent"><BellToggle variant="fluent" value /></div>
+          <div data-variant="labelled"><BellToggle variant="labelled" value /></div>
+          <div data-variant="squish"><BellToggle variant="squish" value /></div>
+        </> : null}
       </Section>
       <Section id="squish-switch" title="Squish switch">
         <SquishSwitch label="Round up to save" value />
+        {variantsShown ? <>
+          <div data-variant="material"><SquishSwitch variant="material" label="Round up to save" value /></div>
+          <div data-variant="ios"><SquishSwitch variant="ios" label="Round up to save" value /></div>
+          <div data-variant="fluent"><SquishSwitch variant="fluent" label="Round up to save" value /></div>
+          <div data-variant="labelled"><SquishSwitch variant="labelled" label="Round up to save" value /></div>
+          <div data-variant="squish"><SquishSwitch variant="squish" label="Round up to save" value /></div>
+        </> : null}
       </Section>
       <Section id="jelly-radio" title="Jelly radio">
         <JellyRadio label="Card design" options={['Midnight', 'Ocean', 'Sunrise']} value="Ocean" />
+        {variantsShown ? <>
+          <div data-variant="material"><JellyRadio variant="material" label="Card design" options={['Midnight', 'Ocean', 'Sunrise']} value="Ocean" /></div>
+          <div data-variant="cards"><JellyRadio variant="cards" label="Card design" options={['Midnight', 'Ocean', 'Sunrise']} value="Ocean" /></div>
+          <div data-variant="chips"><JellyRadio variant="chips" label="Card design" options={['Midnight', 'Ocean', 'Sunrise']} value="Ocean" /></div>
+          <div data-variant="rows"><JellyRadio variant="rows" label="Card design" options={['Midnight', 'Ocean', 'Sunrise']} value="Ocean" /></div>
+        </> : null}
       </Section>
       <Section id="glide-select" title="Glide select">
         <GlideSelect label="Show" options={['Day', 'Week', 'Month']} value="Week" />
+        {variantsShown ? <>
+          <div data-variant="material"><GlideSelect variant="material" label="Show" options={['Day', 'Week', 'Month']} value="Week" /></div>
+          <div data-variant="ios"><GlideSelect variant="ios" label="Show" options={['Day', 'Week', 'Month']} value="Week" /></div>
+          <div data-variant="underline"><GlideSelect variant="underline" label="Show" options={['Day', 'Week', 'Month']} value="Week" /></div>
+          <div data-variant="enclosed"><GlideSelect variant="enclosed" label="Show" options={['Day', 'Week', 'Month']} value="Week" /></div>
+          <div data-variant="pill"><GlideSelect variant="pill" label="Show" options={['Day', 'Week', 'Month']} value="Week" /></div>
+        </> : null}
       </Section>
       <Section id="rubber-segment" title="Rubber segment">
         <RubberSegment label="Period" options={['1M', '3M', '1Y']} value="1M" />
+        {variantsShown ? <>
+          <div data-variant="material"><RubberSegment variant="material" label="Period" options={['1M', '3M', '1Y']} value="1M" /></div>
+          <div data-variant="ios"><RubberSegment variant="ios" label="Period" options={['1M', '3M', '1Y']} value="1M" /></div>
+          <div data-variant="underline"><RubberSegment variant="underline" label="Period" options={['1M', '3M', '1Y']} value="1M" /></div>
+          <div data-variant="enclosed"><RubberSegment variant="enclosed" label="Period" options={['1M', '3M', '1Y']} value="1M" /></div>
+          <div data-variant="pill"><RubberSegment variant="pill" label="Period" options={['1M', '3M', '1Y']} value="1M" /></div>
+        </> : null}
       </Section>
       <Section id="scrub-field" title="Scrub field">
         <ScrubField value={250} currency="USD" />
+        {variantsShown ? <>
+          <div data-variant="material"><ScrubField variant="material" value={250} currency="USD" /></div>
+          <div data-variant="outlined"><ScrubField variant="outlined" value={250} currency="USD" /></div>
+          <div data-variant="underlined"><ScrubField variant="underlined" value={250} currency="USD" /></div>
+          <div data-variant="floating"><ScrubField variant="floating" value={250} currency="USD" /></div>
+          <div data-variant="inline"><ScrubField variant="inline" value={250} currency="USD" /></div>
+        </> : null}
       </Section>
       <Section id="budget-gauge" title="Budget gauge">
         <BudgetGauge label="Groceries" value={320} max={400} unit="USD" />
@@ -833,6 +1304,13 @@ function Gallery() {
       </Section>
       <Section id="favourite-heart" title="Favourite heart">
         <FavouriteHeart name="A. Rao" value />
+        {variantsShown ? <>
+          <div data-variant="material"><FavouriteHeart variant="material" name="A. Rao" value /></div>
+          <div data-variant="ios"><FavouriteHeart variant="ios" name="A. Rao" value /></div>
+          <div data-variant="fluent"><FavouriteHeart variant="fluent" name="A. Rao" value /></div>
+          <div data-variant="labelled"><FavouriteHeart variant="labelled" name="A. Rao" value /></div>
+          <div data-variant="squish"><FavouriteHeart variant="squish" name="A. Rao" value /></div>
+        </> : null}
       </Section>
       <Section id="peek-rating" title="Peek rating">
         <PeekRating label="How was this payment?" value={4} />
@@ -845,9 +1323,29 @@ function Gallery() {
       </Section>
       <Section id="voice-pill" title="Voice pill">
         <VoicePill listening={false} />
+        {variantsShown ? <>
+          <div data-variant="material"><VoicePill variant="material" listening={false} /></div>
+          <div data-variant="tonal"><VoicePill variant="tonal" listening={false} /></div>
+          <div data-variant="outlined"><VoicePill variant="outlined" listening={false} /></div>
+          <div data-variant="text"><VoicePill variant="text" listening={false} /></div>
+          <div data-variant="elevated"><VoicePill variant="elevated" listening={false} /></div>
+          <div data-variant="gradient"><VoicePill variant="gradient" listening={false} /></div>
+          <div data-variant="glass"><VoicePill variant="glass" listening={false} /></div>
+          <div data-variant="pill"><VoicePill variant="pill" listening={false} /></div>
+        </> : null}
       </Section>
       <Section id="call-chip" title="Call chip">
         <CallChip number="+44 20 7946 0000" />
+        {variantsShown ? <>
+          <div data-variant="material"><CallChip variant="material" number="+44 20 7946 0000" /></div>
+          <div data-variant="tonal"><CallChip variant="tonal" number="+44 20 7946 0000" /></div>
+          <div data-variant="outlined"><CallChip variant="outlined" number="+44 20 7946 0000" /></div>
+          <div data-variant="text"><CallChip variant="text" number="+44 20 7946 0000" /></div>
+          <div data-variant="elevated"><CallChip variant="elevated" number="+44 20 7946 0000" /></div>
+          <div data-variant="gradient"><CallChip variant="gradient" number="+44 20 7946 0000" /></div>
+          <div data-variant="glass"><CallChip variant="glass" number="+44 20 7946 0000" /></div>
+          <div data-variant="pill"><CallChip variant="pill" number="+44 20 7946 0000" /></div>
+        </> : null}
       </Section>
       <Section id="lattice-loader" title="Lattice loader">
         <LatticeLoader label="Loading your accounts" />

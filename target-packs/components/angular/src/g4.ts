@@ -9,6 +9,7 @@ import { Dropdown } from './dropdown';
 import { ACCORDION, ALERT, AccordionBase, AlertBase, CHIPS, ChipsBase, Part, ROWS, RowsBase, SEGMENTS, SegmentsBase, Severity, TIMELINE, TimelineBase } from './g1';
 import { DETAILS, DetailsBase, PICKER, PickerBase } from './g2';
 import { SETTING, SettingBase } from './g3';
+import { VARIANT } from './variant';
 
 /** A share in steps of 5% (0 to 100), for the bx-w-* and bx-h-* classes. */
 export function step(part: number, whole: number): number {
@@ -150,19 +151,19 @@ export abstract class ChecksBase extends Part {
 }
 
 /** Ways to sign in, each on or off. [(value)]. */
-@Component({ selector: 'bx-sign-in-options', changeDetection: ChangeDetectionStrategy.OnPush, template: CHECKS })
+@Component({ selector: 'bx-sign-in-options', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: CHECKS })
 export class SignInOptions extends ChecksBase { protected override readonly defaultLabel = 'Sign in with'; }
 /** Where the card can be used, each a switch. [(value)]. */
-@Component({ selector: 'bx-card-controls', changeDetection: ChangeDetectionStrategy.OnPush, template: CHECKS })
+@Component({ selector: 'bx-card-controls', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: CHECKS })
 export class CardControls extends ChecksBase { protected override readonly defaultLabel = 'Allow'; }
 /** Which alerts to get. [(value)]. */
-@Component({ selector: 'bx-alerts-subscription', changeDetection: ChangeDetectionStrategy.OnPush, template: CHECKS })
+@Component({ selector: 'bx-alerts-subscription', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: CHECKS })
 export class AlertSubscriptions extends ChecksBase { protected override readonly defaultLabel = 'Tell me about'; }
 
 /* ---------- reused kinds ---------- */
 
 /** Choose a transaction's category (one). [(value)]. */
-@Component({ selector: 'bx-spend-categories', changeDetection: ChangeDetectionStrategy.OnPush, template: CHIPS })
+@Component({ selector: 'bx-spend-categories', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: CHIPS })
 export class SpendCategories extends ChipsBase { protected override readonly defaultLabel = 'Category'; protected override readonly defaultMultiple = false; }
 /** Payments and requests waiting for this approver. */
 @Component({ selector: 'bx-approval-queue', changeDetection: ChangeDetectionStrategy.OnPush, template: ROWS })
@@ -195,10 +196,10 @@ export class SweepMonitor extends TimelineBase { protected override readonly def
 @Component({ selector: 'bx-session-summary', changeDetection: ChangeDetectionStrategy.OnPush, template: TIMELINE })
 export class SessionSummary extends TimelineBase { protected override readonly defaultLabel = 'Recent sign-ins'; }
 /** Send an approval to someone else. [(value)]. */
-@Component({ selector: 'bx-reroute', changeDetection: ChangeDetectionStrategy.OnPush, imports: [Dropdown], template: PICKER })
+@Component({ selector: 'bx-reroute', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, imports: [Dropdown], template: PICKER })
 export class Reroute extends PickerBase { protected override readonly defaultLabel = 'Re-route to'; }
 /** The language of the app. [(value)]. */
-@Component({ selector: 'bx-language', changeDetection: ChangeDetectionStrategy.OnPush, imports: [Dropdown], template: PICKER })
+@Component({ selector: 'bx-language', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, imports: [Dropdown], template: PICKER })
 export class LanguagePicker extends PickerBase { protected override readonly defaultLabel = 'Language'; }
 /** An item sent back for changes. */
 @Component({ selector: 'bx-modification-requested', changeDetection: ChangeDetectionStrategy.OnPush, template: ALERT })
@@ -207,19 +208,19 @@ export class ModificationNotice extends AlertBase {
   protected override readonly defaults = { heading: 'Sent back for changes', actionLabel: 'Modify it' };
 }
 /** The kind of liquidity structure. [(value)]. */
-@Component({ selector: 'bx-structure-type', changeDetection: ChangeDetectionStrategy.OnPush, template: SEGMENTS })
+@Component({ selector: 'bx-structure-type', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: SEGMENTS })
 export class StructureType extends SegmentsBase { protected override readonly defaults = { label: 'Structure', options: ['Sweep', 'Pool', 'Hybrid'] }; }
 /** Where one-time codes go. [(value)]. */
-@Component({ selector: 'bx-otp-delivery', changeDetection: ChangeDetectionStrategy.OnPush, template: SEGMENTS })
+@Component({ selector: 'bx-otp-delivery', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: SEGMENTS })
 export class CodeDelivery extends SegmentsBase { protected override readonly defaults = { label: 'Send codes by', options: ['SMS', 'Email', 'App'] }; }
 /** Light, dark or the system's. [(value)]. */
-@Component({ selector: 'bx-appearance', changeDetection: ChangeDetectionStrategy.OnPush, template: SEGMENTS })
+@Component({ selector: 'bx-appearance', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: SEGMENTS })
 export class Appearance extends SegmentsBase { protected override readonly defaults = { label: 'Theme', options: ['Light', 'Dark', 'System'] }; }
 /** The header and child accounts of a structure, each with its rule (several open at once). [(expanded)]. */
 @Component({ selector: 'bx-account-structure', changeDetection: ChangeDetectionStrategy.OnPush, template: ACCORDION })
 export class AccountStructure extends AccordionBase { protected override readonly defaultMultiple = true; }
 /** Quiet hours for alerts. [(value)]. */
-@Component({ selector: 'bx-do-not-disturb', changeDetection: ChangeDetectionStrategy.OnPush, template: SETTING })
+@Component({ selector: 'bx-do-not-disturb', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: SETTING })
 export class DoNotDisturb extends SettingBase {
   protected override readonly defaults = { label: 'Quiet hours, 22:00 to 07:00', onText: 'Alerts wait until the quiet hours end; security alerts still come at once.' };
 }

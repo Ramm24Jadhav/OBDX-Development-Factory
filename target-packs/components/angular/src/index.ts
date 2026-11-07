@@ -17,6 +17,7 @@ export type { Tab } from './tabs';
 export { DataTable } from './data-table';
 export type { Column } from './data-table';
 export { EFFECTS, play, reducedMotion } from './motion';
+export { VARIANT, VARIANTS, Variant, variantClass } from './variant';
 export type { Effect } from './motion';
 export { styleClasses } from './style';
 export type { ComponentStyle } from './style';

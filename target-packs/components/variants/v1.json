@@ -1,0 +1,3648 @@
+{
+  "$comment": "Wave V1 of the component variants plan (docs/COMPONENT-VARIANTS-PLAN.md): actions and inputs. kinds lists each kind's variants (id, name, what it is for, the pattern it follows, its source and licence, and its motion: enter, hover, press, change and reduced motion). components lists every catalogue component of those kinds (the text effects are wave V5) with its variants, its base motion (motion.json) and the packs it is built in. The variant property adds the class bx-<kind>--<variant> to the component's host (JET, Angular) or a display: contents wrapper (React); React Native maps it to styles in variants.tsx. An empty variant keeps the pack's own look. In React the material variant of a foundation component renders @mui/material; tools/gen-variants.js writes each pack's table from this file.",
+  "wave": "V1",
+  "kinds": {
+    "button": [
+      {
+        "id": "material",
+        "name": "Material filled",
+        "purpose": "The main action, filled in the brand colour with a ripple from the press point",
+        "pattern": "Material 3 filled button",
+        "source": "React: @mui/material (core). JET, Angular, React Native: drawn from scratch from the Material 3 guidelines",
+        "licence": "MIT (@mui/material core only)",
+        "motion": {
+          "enter": null,
+          "hover": "state layer at 8%",
+          "press": "ripple from the pointer",
+          "change": null,
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "tonal",
+        "name": "Tonal",
+        "purpose": "A secondary action that still needs weight: a light brand tint, no border",
+        "pattern": "Material 3 filled tonal button",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": null,
+          "hover": "tint deepens",
+          "press": "scales to 98%",
+          "change": null,
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "outlined",
+        "name": "Outlined",
+        "purpose": "A medium emphasis action next to a filled one",
+        "pattern": "Fluent 2 outline button",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": null,
+          "hover": "border and text take the brand colour",
+          "press": "scales to 98%",
+          "change": null,
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "text",
+        "name": "Text",
+        "purpose": "The lowest emphasis action: text only, a tint on hover",
+        "pattern": "Carbon ghost button",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": null,
+          "hover": "background tint",
+          "press": "tint deepens",
+          "change": null,
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "elevated",
+        "name": "Elevated",
+        "purpose": "A raised button for actions on busy or image surfaces",
+        "pattern": "Material 3 elevated button",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": null,
+          "hover": "lifts one level",
+          "press": "settles back down",
+          "change": null,
+          "reduced": "No lift: the shadow changes at once"
+        }
+      },
+      {
+        "id": "gradient",
+        "name": "Gradient",
+        "purpose": "A campaign or onboarding action in a brand gradient",
+        "pattern": "Brand gradient call to action",
+        "source": "Written from scratch (inspired by showcase libraries; none copied)",
+        "licence": "original",
+        "motion": {
+          "enter": null,
+          "hover": "gradient shifts across",
+          "press": "scales to 97%",
+          "change": null,
+          "reduced": "The gradient stays still"
+        }
+      },
+      {
+        "id": "glass",
+        "name": "Glass",
+        "purpose": "A translucent button over photos and cards",
+        "pattern": "Apple HIG materials (translucent)",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": null,
+          "hover": "brightens",
+          "press": "scales to 97%",
+          "change": null,
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "pill",
+        "name": "Pill",
+        "purpose": "A fully rounded capsule, for phone-first screens",
+        "pattern": "Apple HIG capsule button",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": null,
+          "hover": "tint deepens",
+          "press": "scales to 96% on a spring",
+          "change": null,
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      }
+    ],
+    "iconbtn": [
+      {
+        "id": "material",
+        "name": "Material standard",
+        "purpose": "A borderless round icon action with a state layer",
+        "pattern": "Material 3 standard icon button",
+        "source": "React: @mui/material (core). JET, Angular, React Native: drawn from scratch from the Material 3 guidelines",
+        "licence": "MIT (@mui/material core only)",
+        "motion": {
+          "enter": null,
+          "hover": "state layer at 8%",
+          "press": "ripple",
+          "change": null,
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "filled",
+        "name": "Filled",
+        "purpose": "The icon action that matters most on a toolbar",
+        "pattern": "Material 3 filled icon button",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": null,
+          "hover": "state layer",
+          "press": "scales to 94%",
+          "change": null,
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "tonal",
+        "name": "Tonal",
+        "purpose": "A soft tinted icon action",
+        "pattern": "Material 3 filled tonal icon button",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": null,
+          "hover": "tint deepens",
+          "press": "scales to 94%",
+          "change": null,
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "outlined",
+        "name": "Outlined",
+        "purpose": "A bordered icon action for secondary tools",
+        "pattern": "Fluent 2 outline icon button",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": null,
+          "hover": "border takes the brand colour",
+          "press": "scales to 94%",
+          "change": null,
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "circular",
+        "name": "Circular",
+        "purpose": "A round filled-grey icon action, as on phone toolbars",
+        "pattern": "Apple HIG circular button",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": null,
+          "hover": "fill darkens",
+          "press": "scales to 92% on a spring",
+          "change": null,
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "square",
+        "name": "Square",
+        "purpose": "A square icon action that lines up in dense tables and toolbars",
+        "pattern": "Carbon icon button",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": null,
+          "hover": "background tint",
+          "press": "tint deepens",
+          "change": null,
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      }
+    ],
+    "text": [
+      {
+        "id": "material",
+        "name": "Material filled",
+        "purpose": "A filled field with an underline that thickens in the brand colour on focus; the label floats up",
+        "pattern": "Material 3 filled text field",
+        "source": "React: @mui/material (core). JET, Angular, React Native: drawn from scratch from the Material 3 guidelines",
+        "licence": "MIT (@mui/material core only)",
+        "motion": {
+          "enter": "fade",
+          "hover": "surface tint deepens",
+          "press": null,
+          "change": "label floats up, active indicator grows from the centre",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "outlined",
+        "name": "Outlined",
+        "purpose": "A quiet bordered field for dense forms; the border takes the brand colour and doubles on focus",
+        "pattern": "Material 3 outlined text field",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "border darkens",
+          "press": null,
+          "change": "border takes the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "underlined",
+        "name": "Underlined",
+        "purpose": "Only a bottom line, for forms on a coloured or image surface",
+        "pattern": "Carbon fluid / underline input",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "line darkens",
+          "press": null,
+          "change": "line grows from the left in the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "floating",
+        "name": "Floating label",
+        "purpose": "The label sits inside the empty field and floats above it once there is a value",
+        "pattern": "Floating label (Material 3, Fluent 2)",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "border darkens",
+          "press": null,
+          "change": "label shrinks and floats up",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "inline",
+        "name": "Inline label",
+        "purpose": "The label sits to the left of the control on one line, for settings and review screens",
+        "pattern": "Fluent 2 horizontal field",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "tint",
+          "press": null,
+          "change": "border takes the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "pill",
+        "name": "Search pill",
+        "purpose": "A rounded capsule field with a soft fill, for search and quick entry",
+        "pattern": "Apple HIG search field",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "fill darkens",
+          "press": null,
+          "change": "fill lightens and a focus ring grows",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      }
+    ],
+    "textarea": [
+      {
+        "id": "material",
+        "name": "Material filled",
+        "purpose": "A filled field with an underline that thickens in the brand colour on focus; the label floats up",
+        "pattern": "Material 3 filled text field",
+        "source": "React: @mui/material (core). JET, Angular, React Native: drawn from scratch from the Material 3 guidelines",
+        "licence": "MIT (@mui/material core only)",
+        "motion": {
+          "enter": "fade",
+          "hover": "surface tint deepens",
+          "press": null,
+          "change": "label floats up, active indicator grows from the centre",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "outlined",
+        "name": "Outlined",
+        "purpose": "A quiet bordered field for dense forms; the border takes the brand colour and doubles on focus",
+        "pattern": "Material 3 outlined text field",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "border darkens",
+          "press": null,
+          "change": "border takes the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "underlined",
+        "name": "Underlined",
+        "purpose": "Only a bottom line, for forms on a coloured or image surface",
+        "pattern": "Carbon fluid / underline input",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "line darkens",
+          "press": null,
+          "change": "line grows from the left in the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "floating",
+        "name": "Floating label",
+        "purpose": "The label sits inside the empty field and floats above it once there is a value",
+        "pattern": "Floating label (Material 3, Fluent 2)",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "border darkens",
+          "press": null,
+          "change": "label shrinks and floats up",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "inline",
+        "name": "Inline label",
+        "purpose": "The label sits to the left of the control on one line, for settings and review screens",
+        "pattern": "Fluent 2 horizontal field",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "tint",
+          "press": null,
+          "change": "border takes the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      }
+    ],
+    "password": [
+      {
+        "id": "material",
+        "name": "Material filled",
+        "purpose": "A filled field with an underline that thickens in the brand colour on focus; the label floats up",
+        "pattern": "Material 3 filled text field",
+        "source": "React: @mui/material (core). JET, Angular, React Native: drawn from scratch from the Material 3 guidelines",
+        "licence": "MIT (@mui/material core only)",
+        "motion": {
+          "enter": "fade",
+          "hover": "surface tint deepens",
+          "press": null,
+          "change": "label floats up, active indicator grows from the centre",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "outlined",
+        "name": "Outlined",
+        "purpose": "A quiet bordered field for dense forms; the border takes the brand colour and doubles on focus",
+        "pattern": "Material 3 outlined text field",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "border darkens",
+          "press": null,
+          "change": "border takes the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "underlined",
+        "name": "Underlined",
+        "purpose": "Only a bottom line, for forms on a coloured or image surface",
+        "pattern": "Carbon fluid / underline input",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "line darkens",
+          "press": null,
+          "change": "line grows from the left in the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "floating",
+        "name": "Floating label",
+        "purpose": "The label sits inside the empty field and floats above it once there is a value",
+        "pattern": "Floating label (Material 3, Fluent 2)",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "border darkens",
+          "press": null,
+          "change": "label shrinks and floats up",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "inline",
+        "name": "Inline label",
+        "purpose": "The label sits to the left of the control on one line, for settings and review screens",
+        "pattern": "Fluent 2 horizontal field",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "tint",
+          "press": null,
+          "change": "border takes the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      }
+    ],
+    "number": [
+      {
+        "id": "material",
+        "name": "Material filled",
+        "purpose": "A filled field with an underline that thickens in the brand colour on focus; the label floats up",
+        "pattern": "Material 3 filled text field",
+        "source": "React: @mui/material (core). JET, Angular, React Native: drawn from scratch from the Material 3 guidelines",
+        "licence": "MIT (@mui/material core only)",
+        "motion": {
+          "enter": "fade",
+          "hover": "surface tint deepens",
+          "press": null,
+          "change": "label floats up, active indicator grows from the centre",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "outlined",
+        "name": "Outlined",
+        "purpose": "A quiet bordered field for dense forms; the border takes the brand colour and doubles on focus",
+        "pattern": "Material 3 outlined text field",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "border darkens",
+          "press": null,
+          "change": "border takes the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "underlined",
+        "name": "Underlined",
+        "purpose": "Only a bottom line, for forms on a coloured or image surface",
+        "pattern": "Carbon fluid / underline input",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "line darkens",
+          "press": null,
+          "change": "line grows from the left in the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "floating",
+        "name": "Floating label",
+        "purpose": "The label sits inside the empty field and floats above it once there is a value",
+        "pattern": "Floating label (Material 3, Fluent 2)",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "border darkens",
+          "press": null,
+          "change": "label shrinks and floats up",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "inline",
+        "name": "Inline label",
+        "purpose": "The label sits to the left of the control on one line, for settings and review screens",
+        "pattern": "Fluent 2 horizontal field",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "tint",
+          "press": null,
+          "change": "border takes the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      }
+    ],
+    "date": [
+      {
+        "id": "material",
+        "name": "Material filled",
+        "purpose": "A filled field with an underline that thickens in the brand colour on focus; the label floats up",
+        "pattern": "Material 3 filled text field",
+        "source": "React: @mui/material (core). JET, Angular, React Native: drawn from scratch from the Material 3 guidelines",
+        "licence": "MIT (@mui/material core only)",
+        "motion": {
+          "enter": "fade",
+          "hover": "surface tint deepens",
+          "press": null,
+          "change": "label floats up, active indicator grows from the centre",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "outlined",
+        "name": "Outlined",
+        "purpose": "A quiet bordered field for dense forms; the border takes the brand colour and doubles on focus",
+        "pattern": "Material 3 outlined text field",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "border darkens",
+          "press": null,
+          "change": "border takes the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "underlined",
+        "name": "Underlined",
+        "purpose": "Only a bottom line, for forms on a coloured or image surface",
+        "pattern": "Carbon fluid / underline input",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "line darkens",
+          "press": null,
+          "change": "line grows from the left in the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "inline",
+        "name": "Inline label",
+        "purpose": "The label sits to the left of the control on one line, for settings and review screens",
+        "pattern": "Fluent 2 horizontal field",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "tint",
+          "press": null,
+          "change": "border takes the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      }
+    ],
+    "daterange": [
+      {
+        "id": "material",
+        "name": "Material filled",
+        "purpose": "A filled field with an underline that thickens in the brand colour on focus; the label floats up",
+        "pattern": "Material 3 filled text field",
+        "source": "React: @mui/material (core). JET, Angular, React Native: drawn from scratch from the Material 3 guidelines",
+        "licence": "MIT (@mui/material core only)",
+        "motion": {
+          "enter": "fade",
+          "hover": "surface tint deepens",
+          "press": null,
+          "change": "label floats up, active indicator grows from the centre",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "outlined",
+        "name": "Outlined",
+        "purpose": "A quiet bordered field for dense forms; the border takes the brand colour and doubles on focus",
+        "pattern": "Material 3 outlined text field",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "border darkens",
+          "press": null,
+          "change": "border takes the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "underlined",
+        "name": "Underlined",
+        "purpose": "Only a bottom line, for forms on a coloured or image surface",
+        "pattern": "Carbon fluid / underline input",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "line darkens",
+          "press": null,
+          "change": "line grows from the left in the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "inline",
+        "name": "Inline label",
+        "purpose": "The label sits to the left of the control on one line, for settings and review screens",
+        "pattern": "Fluent 2 horizontal field",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "tint",
+          "press": null,
+          "change": "border takes the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      }
+    ],
+    "select": [
+      {
+        "id": "material",
+        "name": "Material filled",
+        "purpose": "A filled field with an underline that thickens in the brand colour on focus; the label floats up",
+        "pattern": "Material 3 filled text field",
+        "source": "React: @mui/material (core). JET, Angular, React Native: drawn from scratch from the Material 3 guidelines",
+        "licence": "MIT (@mui/material core only)",
+        "motion": {
+          "enter": "fade",
+          "hover": "surface tint deepens",
+          "press": null,
+          "change": "label floats up, active indicator grows from the centre",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "outlined",
+        "name": "Outlined",
+        "purpose": "A quiet bordered field for dense forms; the border takes the brand colour and doubles on focus",
+        "pattern": "Material 3 outlined text field",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "border darkens",
+          "press": null,
+          "change": "border takes the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "underlined",
+        "name": "Underlined",
+        "purpose": "Only a bottom line, for forms on a coloured or image surface",
+        "pattern": "Carbon fluid / underline input",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "line darkens",
+          "press": null,
+          "change": "line grows from the left in the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "inline",
+        "name": "Inline label",
+        "purpose": "The label sits to the left of the control on one line, for settings and review screens",
+        "pattern": "Fluent 2 horizontal field",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "tint",
+          "press": null,
+          "change": "border takes the brand colour",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "pill",
+        "name": "Search pill",
+        "purpose": "A rounded capsule field with a soft fill, for search and quick entry",
+        "pattern": "Apple HIG search field",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "fill darkens",
+          "press": null,
+          "change": "fill lightens and a focus ring grows",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      }
+    ],
+    "chips": [
+      {
+        "id": "material",
+        "name": "Material filter chips",
+        "purpose": "Chips with a check mark when chosen",
+        "pattern": "Material 3 filter chip",
+        "source": "React: @mui/material (core). JET, Angular, React Native: drawn from scratch from the Material 3 guidelines",
+        "licence": "MIT (@mui/material core only)",
+        "motion": {
+          "enter": "fade",
+          "hover": "state layer",
+          "press": "ripple",
+          "change": "check mark slides in",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "outlined",
+        "name": "Outlined",
+        "purpose": "Bordered chips; the chosen one fills",
+        "pattern": "Fluent 2 tag",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "border darkens",
+          "press": "scales to 96%",
+          "change": "fills",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "tonal",
+        "name": "Tonal",
+        "purpose": "Soft tinted chips; the chosen one is a stronger tint",
+        "pattern": "Material 3 suggestion chip",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "tint deepens",
+          "press": "scales to 96%",
+          "change": "tint deepens",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "square",
+        "name": "Square tags",
+        "purpose": "Small square-cornered tags for dense filters",
+        "pattern": "Carbon tag",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "tint",
+          "press": "tint deepens",
+          "change": "fills",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "glass",
+        "name": "Glass",
+        "purpose": "Translucent chips over a header image or card",
+        "pattern": "Apple HIG materials",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "brightens",
+          "press": "scales to 96%",
+          "change": "fills",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      }
+    ],
+    "check": [
+      {
+        "id": "material",
+        "name": "Material",
+        "purpose": "Square boxes with a check that draws itself",
+        "pattern": "Material 3 checkbox",
+        "source": "React: @mui/material (core). JET, Angular, React Native: drawn from scratch from the Material 3 guidelines",
+        "licence": "MIT (@mui/material core only)",
+        "motion": {
+          "enter": "fade",
+          "hover": "state layer",
+          "press": "ripple",
+          "change": "check draws in",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "cards",
+        "name": "Choice cards",
+        "purpose": "Each option is a tile with its description; the chosen tile takes the brand border",
+        "pattern": "Choice tiles (Carbon selectable tile)",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "rise",
+          "hover": "lifts",
+          "press": "scales to 98%",
+          "change": "border and mark pop",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "chips",
+        "name": "Toggle chips",
+        "purpose": "Options as chips that fill when chosen",
+        "pattern": "Material 3 filter chip",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "tint",
+          "press": "scales to 96%",
+          "change": "fills",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "rows",
+        "name": "List rows",
+        "purpose": "Full-width rows with dividers and the box on the right",
+        "pattern": "Apple HIG list rows",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "row tint",
+          "press": "row tint deepens",
+          "change": "mark pops",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "round",
+        "name": "Round",
+        "purpose": "Circular check marks, as in phone settings",
+        "pattern": "Apple HIG checkmark",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "tint",
+          "press": "scales to 94%",
+          "change": "mark pops on a spring",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      }
+    ],
+    "choice": [
+      {
+        "id": "material",
+        "name": "Material",
+        "purpose": "Round radio buttons with an inner dot that grows",
+        "pattern": "Material 3 radio button",
+        "source": "React: @mui/material (core). JET, Angular, React Native: drawn from scratch from the Material 3 guidelines",
+        "licence": "MIT (@mui/material core only)",
+        "motion": {
+          "enter": "fade",
+          "hover": "state layer",
+          "press": "ripple",
+          "change": "dot grows",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "cards",
+        "name": "Choice cards",
+        "purpose": "Each option is a tile with its description",
+        "pattern": "Choice tiles (Carbon selectable tile)",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "rise",
+          "hover": "lifts",
+          "press": "scales to 98%",
+          "change": "border and dot pop",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "chips",
+        "name": "Toggle chips",
+        "purpose": "Options as chips; one fills",
+        "pattern": "Material 3 filter chip",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "tint",
+          "press": "scales to 96%",
+          "change": "fills",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "rows",
+        "name": "List rows",
+        "purpose": "Full-width rows with a check on the chosen one",
+        "pattern": "Apple HIG list rows",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "row tint",
+          "press": "row tint deepens",
+          "change": "check pops",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      }
+    ],
+    "switch": [
+      {
+        "id": "material",
+        "name": "Material with icon",
+        "purpose": "A wide track with a check icon in the thumb when on",
+        "pattern": "Material 3 switch",
+        "source": "React: @mui/material (core). JET, Angular, React Native: drawn from scratch from the Material 3 guidelines",
+        "licence": "MIT (@mui/material core only)",
+        "motion": {
+          "enter": null,
+          "hover": "state layer on the thumb",
+          "press": "thumb grows",
+          "change": "thumb slides and grows; icon fades in",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "ios",
+        "name": "iOS",
+        "purpose": "A green-on pill with a white thumb that stretches while pressed",
+        "pattern": "Apple HIG toggle",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": null,
+          "hover": null,
+          "press": "thumb stretches",
+          "change": "thumb springs across",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "fluent",
+        "name": "Fluent",
+        "purpose": "A slim outlined track that fills when on",
+        "pattern": "Fluent 2 switch",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": null,
+          "hover": "border darkens",
+          "press": "thumb grows",
+          "change": "thumb slides; track fills",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "labelled",
+        "name": "Labelled on/off",
+        "purpose": "Shows On or Off inside the track, for settings read at a glance",
+        "pattern": "Labelled toggle (Carbon toggle with state text)",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": null,
+          "hover": null,
+          "press": "scales to 97%",
+          "change": "text swaps as the thumb slides",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "squish",
+        "name": "Squish",
+        "purpose": "A soft thumb that squashes as it travels",
+        "pattern": "Playful toggle, written from scratch",
+        "source": "Written from scratch (inspired by showcase libraries; none copied)",
+        "licence": "original",
+        "motion": {
+          "enter": null,
+          "hover": "thumb swells",
+          "press": "thumb squashes",
+          "change": "thumb squashes and springs across",
+          "reduced": "The thumb moves without squash"
+        }
+      }
+    ],
+    "slider": [
+      {
+        "id": "material",
+        "name": "Material",
+        "purpose": "A thin track with a handle and a value label on press",
+        "pattern": "Material 3 slider",
+        "source": "React: @mui/material (core). JET, Angular, React Native: drawn from scratch from the Material 3 guidelines",
+        "licence": "MIT (@mui/material core only)",
+        "motion": {
+          "enter": "fade",
+          "hover": "handle state layer",
+          "press": "value label appears",
+          "change": "track fills",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "ticks",
+        "name": "Stepped with ticks",
+        "purpose": "Tick marks at each step, for amounts chosen in fixed steps",
+        "pattern": "Material 3 discrete slider",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "handle grows",
+          "press": "handle grows",
+          "change": "handle snaps to the next tick",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "bubble",
+        "name": "Value bubble",
+        "purpose": "The value rides above the handle in a bubble",
+        "pattern": "Value indicator (Fluent 2, Material 3)",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "bubble shows",
+          "press": "bubble grows",
+          "change": "bubble follows the handle",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "thick",
+        "name": "Thick track",
+        "purpose": "A tall rounded track filled to the value, as in phone controls",
+        "pattern": "Apple HIG (Control Center) slider",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": null,
+          "press": "track swells slightly",
+          "change": "fill grows",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      }
+    ],
+    "upload": [
+      {
+        "id": "material",
+        "name": "Material",
+        "purpose": "A tonal Choose files button with the files as chips below",
+        "pattern": "Material 3 button with file list",
+        "source": "React: @mui/material (core). JET, Angular, React Native: drawn from scratch from the Material 3 guidelines",
+        "licence": "MIT (@mui/material core only)",
+        "motion": {
+          "enter": "fade",
+          "hover": "state layer",
+          "press": "ripple",
+          "change": "files settle in",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "dropzone",
+        "name": "Drop zone",
+        "purpose": "A large dashed area to drop files on, with a button inside",
+        "pattern": "Carbon file uploader (drop container)",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "border takes the brand colour",
+          "press": "tint",
+          "change": "files settle in",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "compact",
+        "name": "Compact",
+        "purpose": "One line: a button and the file name, for forms short on space",
+        "pattern": "Fluent 2 compact file input",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "tint",
+          "press": "scales to 98%",
+          "change": "name fades in",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "card",
+        "name": "Card",
+        "purpose": "Each file shows as a card with its size and status",
+        "pattern": "File cards (Apple HIG document thumbnails)",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "rise",
+          "hover": "lifts",
+          "press": "scales to 98%",
+          "change": "cards settle in",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      }
+    ],
+    "code": [
+      {
+        "id": "material",
+        "name": "Material outlined boxes",
+        "purpose": "One outlined box per digit; the active box takes the brand border",
+        "pattern": "Material 3 outlined field, one per digit",
+        "source": "React: @mui/material (core). JET, Angular, React Native: drawn from scratch from the Material 3 guidelines",
+        "licence": "MIT (@mui/material core only)",
+        "motion": {
+          "enter": "fade",
+          "hover": "border darkens",
+          "press": null,
+          "change": "digit pops",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "underline",
+        "name": "Underlined",
+        "purpose": "A line under each digit, for a quiet security screen",
+        "pattern": "Underlined code input",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": null,
+          "press": null,
+          "change": "line grows under the next digit",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "rounded",
+        "name": "Rounded",
+        "purpose": "Soft filled round-cornered cells, as on phone sign-in",
+        "pattern": "Apple HIG one-time code",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "fill darkens",
+          "press": null,
+          "change": "digit pops on a spring",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "joined",
+        "name": "Joined",
+        "purpose": "One field split by thin dividers, for a compact layout",
+        "pattern": "Carbon segmented input",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": "fade",
+          "hover": "border darkens",
+          "press": null,
+          "change": "divider tints",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      }
+    ],
+    "segmented": [
+      {
+        "id": "material",
+        "name": "Material segmented buttons",
+        "purpose": "Outlined segments; the chosen one fills tonal with a check",
+        "pattern": "Material 3 segmented button",
+        "source": "React: @mui/material (core). JET, Angular, React Native: drawn from scratch from the Material 3 guidelines",
+        "licence": "MIT (@mui/material core only)",
+        "motion": {
+          "enter": null,
+          "hover": "state layer",
+          "press": "ripple",
+          "change": "check slides in; fill fades",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "ios",
+        "name": "iOS segmented control",
+        "purpose": "A grey track with a white thumb that slides to the choice",
+        "pattern": "Apple HIG segmented control",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": null,
+          "hover": null,
+          "press": "thumb shrinks to 96%",
+          "change": "thumb slides on a spring",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "underline",
+        "name": "Underline",
+        "purpose": "Text segments with a line under the chosen one, like tabs",
+        "pattern": "Carbon content switcher (underline)",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": null,
+          "hover": "text darkens",
+          "press": null,
+          "change": "line slides across",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "enclosed",
+        "name": "Enclosed",
+        "purpose": "Bordered boxes joined edge to edge; the chosen one fills",
+        "pattern": "Fluent 2 toggle button group",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": null,
+          "hover": "tint",
+          "press": "tint deepens",
+          "change": "fill fades",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      },
+      {
+        "id": "pill",
+        "name": "Pill",
+        "purpose": "Rounded pills on a tinted track; the chosen one fills in the brand colour",
+        "pattern": "Pill toggle",
+        "source": "Drawn from scratch from the published guidelines; no code copied",
+        "licence": "pattern only",
+        "motion": {
+          "enter": null,
+          "hover": "tint",
+          "press": "scales to 96%",
+          "change": "pill slides",
+          "reduced": "No movement: the end state shows at once; colour and focus changes stay"
+        }
+      }
+    ]
+  },
+  "components": {
+    "button": {
+      "kind": "button",
+      "variants": [
+        "material",
+        "tonal",
+        "outlined",
+        "text",
+        "elevated",
+        "gradient",
+        "glass",
+        "pill"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "style",
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-button",
+          "built": true
+        },
+        "react": {
+          "name": "Button",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-button",
+          "built": true
+        },
+        "react-native": {
+          "name": "Button",
+          "built": true
+        }
+      }
+    },
+    "icon-button": {
+      "kind": "iconbtn",
+      "variants": [
+        "material",
+        "filled",
+        "tonal",
+        "outlined",
+        "circular",
+        "square"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "style",
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-icon-button",
+          "built": true
+        },
+        "react": {
+          "name": "IconButton",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-icon-button",
+          "built": true
+        },
+        "react-native": {
+          "name": "IconButton",
+          "built": true
+        }
+      }
+    },
+    "secondary-button": {
+      "kind": "button",
+      "variants": [
+        "material",
+        "tonal",
+        "outlined",
+        "text",
+        "elevated",
+        "gradient",
+        "glass",
+        "pill"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "style",
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-secondary-button",
+          "built": true
+        },
+        "react": {
+          "name": "SecondaryButton",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-secondary-button",
+          "built": true
+        },
+        "react-native": {
+          "name": "SecondaryButton",
+          "built": true
+        }
+      }
+    },
+    "danger-button": {
+      "kind": "button",
+      "variants": [
+        "material",
+        "tonal",
+        "outlined",
+        "text",
+        "elevated",
+        "gradient",
+        "glass",
+        "pill"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "style",
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-danger-button",
+          "built": true
+        },
+        "react": {
+          "name": "DestructiveButton",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-danger-button",
+          "built": true
+        },
+        "react-native": {
+          "name": "DestructiveButton",
+          "built": true
+        }
+      }
+    },
+    "text-field": {
+      "kind": "text",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "floating",
+        "inline",
+        "pill"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-text-field",
+          "built": true
+        },
+        "react": {
+          "name": "TextField",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-text-field",
+          "built": true
+        },
+        "react-native": {
+          "name": "TextField",
+          "built": true
+        }
+      }
+    },
+    "text-area": {
+      "kind": "textarea",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "floating",
+        "inline"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-text-area",
+          "built": true
+        },
+        "react": {
+          "name": "TextArea",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-text-area",
+          "built": true
+        },
+        "react-native": {
+          "name": "TextArea",
+          "built": true
+        }
+      }
+    },
+    "password": {
+      "kind": "password",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "floating",
+        "inline"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-password",
+          "built": true
+        },
+        "react": {
+          "name": "PasswordField",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-password",
+          "built": true
+        },
+        "react-native": {
+          "name": "PasswordField",
+          "built": true
+        }
+      }
+    },
+    "number-input": {
+      "kind": "text",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "floating",
+        "inline",
+        "pill"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": "style",
+        "change": "roll",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-number-input",
+          "built": true
+        },
+        "react": {
+          "name": "NumberInput",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-number-input",
+          "built": true
+        },
+        "react-native": {
+          "name": "NumberInput",
+          "built": true
+        }
+      }
+    },
+    "amount": {
+      "kind": "text",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "floating",
+        "inline",
+        "pill"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-amount",
+          "built": true
+        },
+        "react": {
+          "name": "AmountInput",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-amount",
+          "built": true
+        },
+        "react-native": {
+          "name": "AmountInput",
+          "built": true
+        }
+      }
+    },
+    "currency-picker": {
+      "kind": "select",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "inline",
+        "pill"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-currency-picker",
+          "built": true
+        },
+        "react": {
+          "name": "CurrencySelector",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-currency-picker",
+          "built": true
+        },
+        "react-native": {
+          "name": "CurrencySelector",
+          "built": true
+        }
+      }
+    },
+    "select": {
+      "kind": "select",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "inline",
+        "pill"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-select",
+          "built": true
+        },
+        "react": {
+          "name": "Dropdown",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-select",
+          "built": true
+        },
+        "react-native": {
+          "name": "Dropdown",
+          "built": true
+        }
+      }
+    },
+    "multi-select": {
+      "kind": "chips",
+      "variants": [
+        "material",
+        "outlined",
+        "tonal",
+        "square",
+        "glass"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": "pop",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-multi-select",
+          "built": true
+        },
+        "react": {
+          "name": "MultiSelect",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-multi-select",
+          "built": true
+        },
+        "react-native": {
+          "name": "MultiSelect",
+          "built": true
+        }
+      }
+    },
+    "autocomplete": {
+      "kind": "select",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "inline",
+        "pill"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": "pop",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-autocomplete",
+          "built": true
+        },
+        "react": {
+          "name": "Autocomplete",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-autocomplete",
+          "built": true
+        },
+        "react-native": {
+          "name": "Autocomplete",
+          "built": true
+        }
+      }
+    },
+    "search": {
+      "kind": "text",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "floating",
+        "inline",
+        "pill"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-search",
+          "built": true
+        },
+        "react": {
+          "name": "SearchField",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-search",
+          "built": true
+        },
+        "react-native": {
+          "name": "SearchField",
+          "built": true
+        }
+      }
+    },
+    "checkbox-group": {
+      "kind": "check",
+      "variants": [
+        "material",
+        "cards",
+        "chips",
+        "rows",
+        "round"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "style",
+        "press": "style",
+        "change": "pop",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-checkbox-group",
+          "built": true
+        },
+        "react": {
+          "name": "CheckboxGroup",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-checkbox-group",
+          "built": true
+        },
+        "react-native": {
+          "name": "CheckboxGroup",
+          "built": true
+        }
+      }
+    },
+    "choice-group": {
+      "kind": "choice",
+      "variants": [
+        "material",
+        "cards",
+        "chips",
+        "rows"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "style",
+        "press": "style",
+        "change": "pop",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-choice-group",
+          "built": true
+        },
+        "react": {
+          "name": "RadioGroup",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-choice-group",
+          "built": true
+        },
+        "react-native": {
+          "name": "RadioGroup",
+          "built": true
+        }
+      }
+    },
+    "switch": {
+      "kind": "switch",
+      "variants": [
+        "material",
+        "ios",
+        "fluent",
+        "labelled",
+        "squish"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": null,
+        "press": "style",
+        "change": "spring",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-switch",
+          "built": true
+        },
+        "react": {
+          "name": "Toggle",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-switch",
+          "built": true
+        },
+        "react-native": {
+          "name": "Toggle",
+          "built": true
+        }
+      }
+    },
+    "date": {
+      "kind": "date",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "inline"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-date",
+          "built": true
+        },
+        "react": {
+          "name": "DatePicker",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-date",
+          "built": true
+        },
+        "react-native": {
+          "name": "DatePicker",
+          "built": true
+        }
+      }
+    },
+    "date-range": {
+      "kind": "daterange",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "inline"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-date-range",
+          "built": true
+        },
+        "react": {
+          "name": "DateRangePicker",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-date-range",
+          "built": true
+        },
+        "react-native": {
+          "name": "DateRangePicker",
+          "built": true
+        }
+      }
+    },
+    "savings-slider": {
+      "kind": "slider",
+      "variants": [
+        "material",
+        "ticks",
+        "bubble",
+        "thick"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": null,
+        "press": "style",
+        "change": "roll",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-savings-slider",
+          "built": true
+        },
+        "react": {
+          "name": "Slider",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-savings-slider",
+          "built": true
+        },
+        "react-native": {
+          "name": "Slider",
+          "built": true
+        }
+      }
+    },
+    "segmented": {
+      "kind": "segmented",
+      "variants": [
+        "material",
+        "ios",
+        "underline",
+        "enclosed",
+        "pill"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "style",
+        "change": "slide",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-segmented",
+          "built": true
+        },
+        "react": {
+          "name": "ToggleGroup",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-segmented",
+          "built": true
+        },
+        "react-native": {
+          "name": "ToggleGroup",
+          "built": true
+        }
+      }
+    },
+    "filter-chips": {
+      "kind": "chips",
+      "variants": [
+        "material",
+        "outlined",
+        "tonal",
+        "square",
+        "glass"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "style",
+        "change": "pop",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-filter-chips",
+          "built": true
+        },
+        "react": {
+          "name": "FilterChips",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-filter-chips",
+          "built": true
+        },
+        "react-native": {
+          "name": "FilterChips",
+          "built": true
+        }
+      }
+    },
+    "document-upload": {
+      "kind": "upload",
+      "variants": [
+        "material",
+        "dropzone",
+        "compact",
+        "card"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": "style",
+        "change": "settle",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-document-upload",
+          "built": true
+        },
+        "react": {
+          "name": "FileUpload",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-document-upload",
+          "built": true
+        },
+        "react-native": {
+          "name": "FileUpload",
+          "built": true
+        }
+      }
+    },
+    "account-picker": {
+      "kind": "select",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "inline",
+        "pill"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-account-picker",
+          "built": true
+        },
+        "react": {
+          "name": "AccountSelector",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-account-picker",
+          "built": true
+        },
+        "react-native": {
+          "name": "AccountSelector",
+          "built": true
+        }
+      }
+    },
+    "iban": {
+      "kind": "text",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "floating",
+        "inline",
+        "pill"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-iban",
+          "built": true
+        },
+        "react": {
+          "name": "AccountNumber",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-iban",
+          "built": true
+        },
+        "react-native": {
+          "name": "AccountNumber",
+          "built": true
+        }
+      }
+    },
+    "transaction-filter": {
+      "kind": "chips",
+      "variants": [
+        "material",
+        "outlined",
+        "tonal",
+        "square",
+        "glass"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "style",
+        "change": "pop",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-transaction-filter",
+          "built": true
+        },
+        "react": {
+          "name": "TransactionFilter",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-transaction-filter",
+          "built": true
+        },
+        "react-native": {
+          "name": "TransactionFilter",
+          "built": true
+        }
+      }
+    },
+    "repeat": {
+      "kind": "segmented",
+      "variants": [
+        "material",
+        "ios",
+        "underline",
+        "enclosed",
+        "pill"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "style",
+        "change": "slide",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-repeat",
+          "built": true
+        },
+        "react": {
+          "name": "PaymentSchedule",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-repeat",
+          "built": true
+        },
+        "react-native": {
+          "name": "PaymentSchedule",
+          "built": true
+        }
+      }
+    },
+    "maturity-instructions": {
+      "kind": "choice",
+      "variants": [
+        "material",
+        "cards",
+        "chips",
+        "rows"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "style",
+        "press": "style",
+        "change": "pop",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-maturity-instructions",
+          "built": true
+        },
+        "react": {
+          "name": "MaturityInstructions",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-maturity-instructions",
+          "built": true
+        },
+        "react-native": {
+          "name": "MaturityInstructions",
+          "built": true
+        }
+      }
+    },
+    "activate-card": {
+      "kind": "code",
+      "variants": [
+        "material",
+        "underline",
+        "rounded",
+        "joined"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": "pop",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-activate-card",
+          "built": true
+        },
+        "react": {
+          "name": "ActivateCard",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-activate-card",
+          "built": true
+        },
+        "react-native": {
+          "name": "ActivateCard",
+          "built": true
+        }
+      }
+    },
+    "convert-emi": {
+      "kind": "segmented",
+      "variants": [
+        "material",
+        "ios",
+        "underline",
+        "enclosed",
+        "pill"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "style",
+        "change": "slide",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-convert-emi",
+          "built": true
+        },
+        "react": {
+          "name": "ConvertToEmi",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-convert-emi",
+          "built": true
+        },
+        "react-native": {
+          "name": "ConvertToEmi",
+          "built": true
+        }
+      }
+    },
+    "redeem-points": {
+      "kind": "slider",
+      "variants": [
+        "material",
+        "ticks",
+        "bubble",
+        "thick"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": null,
+        "press": "style",
+        "change": "roll",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-redeem-points",
+          "built": true
+        },
+        "react": {
+          "name": "RedeemPoints",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-redeem-points",
+          "built": true
+        },
+        "react-native": {
+          "name": "RedeemPoints",
+          "built": true
+        }
+      }
+    },
+    "card-controls": {
+      "kind": "check",
+      "variants": [
+        "material",
+        "cards",
+        "chips",
+        "rows",
+        "round"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": null,
+        "press": "style",
+        "change": "spring",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-card-controls",
+          "built": true
+        },
+        "react": {
+          "name": "CardControls",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-card-controls",
+          "built": true
+        },
+        "react-native": {
+          "name": "CardControls",
+          "built": true
+        }
+      }
+    },
+    "block-card": {
+      "kind": "switch",
+      "variants": [
+        "material",
+        "ios",
+        "fluent",
+        "labelled",
+        "squish"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": null,
+        "press": "style",
+        "change": "spring",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-block-card",
+          "built": true
+        },
+        "react": {
+          "name": "BlockCard",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-block-card",
+          "built": true
+        },
+        "react-native": {
+          "name": "BlockCard",
+          "built": true
+        }
+      }
+    },
+    "reset-pin": {
+      "kind": "code",
+      "variants": [
+        "material",
+        "underline",
+        "rounded",
+        "joined"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": "pop",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-reset-pin",
+          "built": true
+        },
+        "react": {
+          "name": "ResetPin",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-reset-pin",
+          "built": true
+        },
+        "react-native": {
+          "name": "ResetPin",
+          "built": true
+        }
+      }
+    },
+    "otp": {
+      "kind": "code",
+      "variants": [
+        "material",
+        "underline",
+        "rounded",
+        "joined"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": "pop",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-otp",
+          "built": true
+        },
+        "react": {
+          "name": "OtpInput",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-otp",
+          "built": true
+        },
+        "react-native": {
+          "name": "OtpInput",
+          "built": true
+        }
+      }
+    },
+    "sensitive": {
+      "kind": "password",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "floating",
+        "inline"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-sensitive",
+          "built": true
+        },
+        "react": {
+          "name": "SensitiveField",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-sensitive",
+          "built": true
+        },
+        "react-native": {
+          "name": "SensitiveField",
+          "built": true
+        }
+      }
+    },
+    "spend-categories": {
+      "kind": "chips",
+      "variants": [
+        "material",
+        "outlined",
+        "tonal",
+        "square",
+        "glass"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "style",
+        "change": "pop",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-spend-categories",
+          "built": true
+        },
+        "react": {
+          "name": "SpendCategories",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-spend-categories",
+          "built": true
+        },
+        "react-native": {
+          "name": "SpendCategories",
+          "built": true
+        }
+      }
+    },
+    "reroute": {
+      "kind": "select",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "inline",
+        "pill"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-reroute",
+          "built": true
+        },
+        "react": {
+          "name": "Reroute",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-reroute",
+          "built": true
+        }
+      }
+    },
+    "structure-type": {
+      "kind": "segmented",
+      "variants": [
+        "material",
+        "ios",
+        "underline",
+        "enclosed",
+        "pill"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "style",
+        "change": "slide",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-structure-type",
+          "built": true
+        },
+        "react": {
+          "name": "StructureType",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-structure-type",
+          "built": true
+        }
+      }
+    },
+    "sign-in-options": {
+      "kind": "check",
+      "variants": [
+        "material",
+        "cards",
+        "chips",
+        "rows",
+        "round"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": null,
+        "press": "style",
+        "change": "spring",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-sign-in-options",
+          "built": true
+        },
+        "react": {
+          "name": "SignInOptions",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-sign-in-options",
+          "built": true
+        },
+        "react-native": {
+          "name": "SignInOptions",
+          "built": true
+        }
+      }
+    },
+    "otp-delivery": {
+      "kind": "segmented",
+      "variants": [
+        "material",
+        "ios",
+        "underline",
+        "enclosed",
+        "pill"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "style",
+        "change": "slide",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-otp-delivery",
+          "built": true
+        },
+        "react": {
+          "name": "CodeDelivery",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-otp-delivery",
+          "built": true
+        },
+        "react-native": {
+          "name": "CodeDelivery",
+          "built": true
+        }
+      }
+    },
+    "appearance": {
+      "kind": "segmented",
+      "variants": [
+        "material",
+        "ios",
+        "underline",
+        "enclosed",
+        "pill"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "style",
+        "change": "slide",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-appearance",
+          "built": true
+        },
+        "react": {
+          "name": "Appearance",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-appearance",
+          "built": true
+        },
+        "react-native": {
+          "name": "Appearance",
+          "built": true
+        }
+      }
+    },
+    "language": {
+      "kind": "select",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "inline",
+        "pill"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-language",
+          "built": true
+        },
+        "react": {
+          "name": "LanguagePicker",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-language",
+          "built": true
+        },
+        "react-native": {
+          "name": "LanguagePicker",
+          "built": true
+        }
+      }
+    },
+    "alerts-subscription": {
+      "kind": "check",
+      "variants": [
+        "material",
+        "cards",
+        "chips",
+        "rows",
+        "round"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": null,
+        "press": "style",
+        "change": "spring",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-alerts-subscription",
+          "built": true
+        },
+        "react": {
+          "name": "AlertSubscriptions",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-alerts-subscription",
+          "built": true
+        },
+        "react-native": {
+          "name": "AlertSubscriptions",
+          "built": true
+        }
+      }
+    },
+    "do-not-disturb": {
+      "kind": "switch",
+      "variants": [
+        "material",
+        "ios",
+        "fluent",
+        "labelled",
+        "squish"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": null,
+        "press": "style",
+        "change": "spring",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-do-not-disturb",
+          "built": true
+        },
+        "react": {
+          "name": "DoNotDisturb",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-do-not-disturb",
+          "built": true
+        },
+        "react-native": {
+          "name": "DoNotDisturb",
+          "built": true
+        }
+      }
+    },
+    "compose-mail": {
+      "kind": "textarea",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "floating",
+        "inline"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": null,
+        "press": "style",
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-compose-mail",
+          "built": true
+        },
+        "react": {
+          "name": "ComposeMessage",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-compose-mail",
+          "built": true
+        },
+        "react-native": {
+          "name": "ComposeMessage",
+          "built": true
+        }
+      }
+    },
+    "statement-request": {
+      "kind": "daterange",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "inline"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": null,
+        "press": "style",
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-statement-request",
+          "built": true
+        },
+        "react": {
+          "name": "StatementRequest",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-statement-request",
+          "built": true
+        },
+        "react-native": {
+          "name": "StatementRequest",
+          "built": true
+        }
+      }
+    },
+    "statement-format": {
+      "kind": "segmented",
+      "variants": [
+        "material",
+        "ios",
+        "underline",
+        "enclosed",
+        "pill"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "style",
+        "change": "slide",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-statement-format",
+          "built": true
+        },
+        "react": {
+          "name": "StatementFormat",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-statement-format",
+          "built": true
+        },
+        "react-native": {
+          "name": "StatementFormat",
+          "built": true
+        }
+      }
+    },
+    "terms-consent": {
+      "kind": "check",
+      "variants": [
+        "material",
+        "cards",
+        "chips",
+        "rows",
+        "round"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "style",
+        "press": "style",
+        "change": "pop",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-terms-consent",
+          "built": true
+        },
+        "react": {
+          "name": "TermsConsent",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-terms-consent",
+          "built": true
+        },
+        "react-native": {
+          "name": "TermsConsent",
+          "built": true
+        }
+      }
+    },
+    "eligibility-calculator": {
+      "kind": "slider",
+      "variants": [
+        "material",
+        "ticks",
+        "bubble",
+        "thick"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": null,
+        "press": "style",
+        "change": "roll",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-eligibility-calculator",
+          "built": true
+        },
+        "react": {
+          "name": "EligibilityCalculator",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-eligibility-calculator",
+          "built": true
+        },
+        "react-native": {
+          "name": "EligibilityCalculator",
+          "built": true
+        }
+      }
+    },
+    "goal-calculator": {
+      "kind": "slider",
+      "variants": [
+        "material",
+        "ticks",
+        "bubble",
+        "thick"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": null,
+        "press": "style",
+        "change": "roll",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-goal-calculator",
+          "built": true
+        },
+        "react": {
+          "name": "GoalCalculator",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-goal-calculator",
+          "built": true
+        },
+        "react-native": {
+          "name": "GoalCalculator",
+          "built": true
+        }
+      }
+    },
+    "bulk-file-upload": {
+      "kind": "upload",
+      "variants": [
+        "material",
+        "dropzone",
+        "compact",
+        "card"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": "style",
+        "change": "settle",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-bulk-file-upload",
+          "built": true
+        },
+        "react": {
+          "name": "BulkUploadWidget",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-bulk-file-upload",
+          "built": true
+        }
+      }
+    },
+    "magnetic-button": {
+      "kind": "button",
+      "variants": [
+        "material",
+        "tonal",
+        "outlined",
+        "text",
+        "elevated",
+        "gradient",
+        "glass",
+        "pill"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "effect",
+        "press": null,
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-magnetic-button",
+          "built": true
+        },
+        "react": {
+          "name": "MagneticButton",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-magnetic-button",
+          "built": true
+        },
+        "react-native": {
+          "name": "MagneticButton",
+          "built": true
+        }
+      }
+    },
+    "elastic-slider": {
+      "kind": "slider",
+      "variants": [
+        "material",
+        "ticks",
+        "bubble",
+        "thick"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": null,
+        "press": "style",
+        "change": "roll",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-elastic-slider",
+          "built": true
+        },
+        "react": {
+          "name": "ElasticSlider",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-elastic-slider",
+          "built": true
+        },
+        "react-native": {
+          "name": "ElasticSlider",
+          "built": true
+        }
+      }
+    },
+    "option-wheel": {
+      "kind": "select",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "inline",
+        "pill"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "style",
+        "change": "slide",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-option-wheel",
+          "built": true
+        },
+        "react": {
+          "name": "OptionWheel",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-option-wheel",
+          "built": true
+        },
+        "react-native": {
+          "name": "OptionWheel",
+          "built": true
+        }
+      }
+    },
+    "slide-to-confirm": {
+      "kind": "button",
+      "variants": [
+        "material",
+        "tonal",
+        "outlined",
+        "text",
+        "elevated",
+        "gradient",
+        "glass",
+        "pill"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "effect",
+        "change": "effect",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-slide-to-confirm",
+          "built": true
+        },
+        "react": {
+          "name": "SlideToConfirm",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-slide-to-confirm",
+          "built": true
+        },
+        "react-native": {
+          "name": "SlideToConfirm",
+          "built": true
+        }
+      }
+    },
+    "hold-to-confirm": {
+      "kind": "button",
+      "variants": [
+        "material",
+        "tonal",
+        "outlined",
+        "text",
+        "elevated",
+        "gradient",
+        "glass",
+        "pill"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "effect",
+        "change": "effect",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-hold-to-confirm",
+          "built": true
+        },
+        "react": {
+          "name": "HoldToConfirm",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-hold-to-confirm",
+          "built": true
+        },
+        "react-native": {
+          "name": "HoldToConfirm",
+          "built": true
+        }
+      }
+    },
+    "otp-slots": {
+      "kind": "code",
+      "variants": [
+        "material",
+        "underline",
+        "rounded",
+        "joined"
+      ],
+      "motion": {
+        "enter": "style",
+        "hover": "border",
+        "press": null,
+        "change": "pop",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-otp-slots",
+          "built": true
+        },
+        "react": {
+          "name": "OtpSlots",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-otp-slots",
+          "built": true
+        },
+        "react-native": {
+          "name": "OtpSlots",
+          "built": true
+        }
+      }
+    },
+    "bell-toggle": {
+      "kind": "switch",
+      "variants": [
+        "material",
+        "ios",
+        "fluent",
+        "labelled",
+        "squish"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "effect",
+        "change": "effect",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-bell-toggle",
+          "built": true
+        },
+        "react": {
+          "name": "BellToggle",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-bell-toggle",
+          "built": true
+        },
+        "react-native": {
+          "name": "BellToggle",
+          "built": true
+        }
+      }
+    },
+    "squish-switch": {
+      "kind": "switch",
+      "variants": [
+        "material",
+        "ios",
+        "fluent",
+        "labelled",
+        "squish"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "effect",
+        "change": "effect",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-squish-switch",
+          "built": true
+        },
+        "react": {
+          "name": "SquishSwitch",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-squish-switch",
+          "built": true
+        },
+        "react-native": {
+          "name": "SquishSwitch",
+          "built": true
+        }
+      }
+    },
+    "jelly-radio": {
+      "kind": "choice",
+      "variants": [
+        "material",
+        "cards",
+        "chips",
+        "rows"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "effect",
+        "change": "effect",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-jelly-radio",
+          "built": true
+        },
+        "react": {
+          "name": "JellyRadio",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-jelly-radio",
+          "built": true
+        },
+        "react-native": {
+          "name": "JellyRadio",
+          "built": true
+        }
+      }
+    },
+    "glide-select": {
+      "kind": "segmented",
+      "variants": [
+        "material",
+        "ios",
+        "underline",
+        "enclosed",
+        "pill"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "effect",
+        "change": "effect",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-glide-select",
+          "built": true
+        },
+        "react": {
+          "name": "GlideSelect",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-glide-select",
+          "built": true
+        },
+        "react-native": {
+          "name": "GlideSelect",
+          "built": true
+        }
+      }
+    },
+    "rubber-segment": {
+      "kind": "segmented",
+      "variants": [
+        "material",
+        "ios",
+        "underline",
+        "enclosed",
+        "pill"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "effect",
+        "change": "effect",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-rubber-segment",
+          "built": true
+        },
+        "react": {
+          "name": "RubberSegment",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-rubber-segment",
+          "built": true
+        },
+        "react-native": {
+          "name": "RubberSegment",
+          "built": true
+        }
+      }
+    },
+    "scrub-field": {
+      "kind": "number",
+      "variants": [
+        "material",
+        "outlined",
+        "underlined",
+        "floating",
+        "inline"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "effect",
+        "change": "effect",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-scrub-field",
+          "built": true
+        },
+        "react": {
+          "name": "ScrubField",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-scrub-field",
+          "built": true
+        },
+        "react-native": {
+          "name": "ScrubField",
+          "built": true
+        }
+      }
+    },
+    "favourite-heart": {
+      "kind": "switch",
+      "variants": [
+        "material",
+        "ios",
+        "fluent",
+        "labelled",
+        "squish"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "effect",
+        "change": "effect",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-favourite-heart",
+          "built": true
+        },
+        "react": {
+          "name": "FavouriteHeart",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-favourite-heart",
+          "built": true
+        },
+        "react-native": {
+          "name": "FavouriteHeart",
+          "built": true
+        }
+      }
+    },
+    "voice-pill": {
+      "kind": "button",
+      "variants": [
+        "material",
+        "tonal",
+        "outlined",
+        "text",
+        "elevated",
+        "gradient",
+        "glass",
+        "pill"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "effect",
+        "change": "effect",
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-voice-pill",
+          "built": true
+        },
+        "react": {
+          "name": "VoicePill",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-voice-pill",
+          "built": true
+        },
+        "react-native": {
+          "name": "VoicePill",
+          "built": true
+        }
+      }
+    },
+    "call-chip": {
+      "kind": "button",
+      "variants": [
+        "material",
+        "tonal",
+        "outlined",
+        "text",
+        "elevated",
+        "gradient",
+        "glass",
+        "pill"
+      ],
+      "motion": {
+        "enter": null,
+        "hover": "style",
+        "press": "style",
+        "change": null,
+        "reduced": "Follows each variant: under reduced motion the end state shows at once"
+      },
+      "packs": {
+        "jet-premium": {
+          "name": "bx-call-chip",
+          "built": true
+        },
+        "react": {
+          "name": "CallChip",
+          "built": true
+        },
+        "angular": {
+          "name": "bx-call-chip",
+          "built": true
+        },
+        "react-native": {
+          "name": "CallChip",
+          "built": true
+        }
+      }
+    }
+  }
+}

@@ -10,6 +10,7 @@ import { Dropdown } from './dropdown';
 import { FieldBase, FieldShell } from './field';
 import { CHIPS, ChipsBase, Part, ROWS, RowsBase, SEGMENTS, STEPS, SegmentsBase, StepsBase, initials } from './g1';
 import { decimalsOf } from './text-field';
+import { VARIANT } from './variant';
 
 /** An amount with its currency's decimals and the code after it; text is shown as given. */
 export function money(amount: number | string | null | undefined, currency?: string): string {
@@ -66,7 +67,7 @@ export abstract class PickerBase extends Part {
 }
 
 /** Choose an account (oj-select-single); the chosen one's detail, such as its available balance, is the help line. [(value)]. */
-@Component({ selector: 'bx-account-picker', changeDetection: ChangeDetectionStrategy.OnPush, imports: [Dropdown], template: PICKER })
+@Component({ selector: 'bx-account-picker', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, imports: [Dropdown], template: PICKER })
 export class AccountSelector extends PickerBase { protected override readonly defaultLabel = 'From account'; }
 
 /* ---------- tiles ---------- */
@@ -209,7 +210,7 @@ export class DepositRedemption extends DetailsBase { protected override readonly
 
 /** An account number in groups of four, checked with the ISO checksum when the customer leaves it; the value has no spaces. */
 @Component({
-  selector: 'bx-iban',
+  selector: 'bx-iban', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldShell],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => AccountNumber), multi: true }],
@@ -425,7 +426,7 @@ export abstract class ChoiceBase extends Part {
 }
 
 /** What happens to a deposit when it matures. [(value)]. */
-@Component({ selector: 'bx-maturity-instructions', changeDetection: ChangeDetectionStrategy.OnPush, template: CHOICE })
+@Component({ selector: 'bx-maturity-instructions', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: CHOICE })
 export class MaturityInstructions extends ChoiceBase { protected override readonly defaultLabel = 'At maturity'; }
 
 /* ---------- reused kinds ---------- */
@@ -434,10 +435,10 @@ export class MaturityInstructions extends ChoiceBase { protected override readon
 @Component({ selector: 'bx-payment-status', changeDetection: ChangeDetectionStrategy.OnPush, template: STEPS })
 export class PaymentStatus extends StepsBase { protected override readonly defaultLabel = 'Payment status'; }
 /** What kind of transactions to show. [(value)]. */
-@Component({ selector: 'bx-transaction-filter', changeDetection: ChangeDetectionStrategy.OnPush, template: CHIPS })
+@Component({ selector: 'bx-transaction-filter', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: CHIPS })
 export class TransactionFilter extends ChipsBase { protected override readonly defaultLabel = 'Show'; }
 /** How often a payment goes. [(value)]. */
-@Component({ selector: 'bx-repeat', changeDetection: ChangeDetectionStrategy.OnPush, template: SEGMENTS })
+@Component({ selector: 'bx-repeat', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: SEGMENTS })
 export class PaymentSchedule extends SegmentsBase { protected override readonly defaults = { label: 'Repeat', options: ['Once', 'Weekly', 'Monthly'] }; }
 /** Bills due soon, each with Pay. */
 @Component({ selector: 'bx-upcoming-bills', changeDetection: ChangeDetectionStrategy.OnPush, template: ROWS })

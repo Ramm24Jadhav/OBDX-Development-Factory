@@ -10,6 +10,7 @@
  */
 define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx, motion) {
   'use strict';
+  Composite = bx.withVariants(Composite);
   var ko = bx.ko;
 
   /* ---------- the kit: view helpers, lists and registration ---------- */

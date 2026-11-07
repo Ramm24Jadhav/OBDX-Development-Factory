@@ -8,6 +8,7 @@ import { ChangeDetectionStrategy, Component, Directive, ElementRef, computed, ef
 
 import { Button } from './button';
 import { nextId } from './field';
+import { VARIANT } from './variant';
 
 /* ---------- items: strings or objects, each with an id and a label ---------- */
 
@@ -59,7 +60,7 @@ export abstract class Part {
 
 /** A second, quieter action (oj-button chroming outlined). */
 @Component({
-  selector: 'bx-secondary-button',
+  selector: 'bx-secondary-button', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Button],
   template: `<bx-button [label]="label()" chroming="outlined" [disabled]="disabled()" [busy]="busy()" [testID]="testID()" (action)="action.emit($event)" />`,
@@ -74,7 +75,7 @@ export class SecondaryButton {
 
 /** An action that deletes or cancels (oj-button chroming danger). */
 @Component({
-  selector: 'bx-danger-button',
+  selector: 'bx-danger-button', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Button],
   template: `<bx-button [label]="label()" chroming="danger" [disabled]="disabled()" [busy]="busy()" [testID]="testID()" (action)="action.emit($event)" />`,
@@ -124,7 +125,7 @@ export abstract class SliderBase extends Part {
 }
 
 /** An amount or a count on a range, the value shown beside the label. */
-@Component({ selector: 'bx-savings-slider', changeDetection: ChangeDetectionStrategy.OnPush, template: SLIDER })
+@Component({ selector: 'bx-savings-slider', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: SLIDER })
 export class Slider extends SliderBase { protected override readonly defaults = { max: 20000, step: 500 }; }
 
 /* ---------- ToggleGroup (segmented) ---------- */
@@ -169,7 +170,7 @@ export abstract class SegmentsBase extends Part {
 }
 
 /** One of a few options (oj-buttonset-one), as radios that look like a segmented control; arrow keys move. */
-@Component({ selector: 'bx-segmented', changeDetection: ChangeDetectionStrategy.OnPush, template: SEGMENTS })
+@Component({ selector: 'bx-segmented', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: SEGMENTS })
 export class ToggleGroup extends SegmentsBase {}
 
 /* ---------- chips (filters that turn on and off) ---------- */
@@ -207,7 +208,7 @@ export abstract class ChipsBase extends Part {
 }
 
 /** Filters that turn on and off. [(value)]. */
-@Component({ selector: 'bx-filter-chips', changeDetection: ChangeDetectionStrategy.OnPush, template: CHIPS })
+@Component({ selector: 'bx-filter-chips', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: CHIPS })
 export class FilterChips extends ChipsBase {}
 
 /* ---------- ActionMenu ---------- */

@@ -6,6 +6,7 @@
  */
 define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
   'use strict';
+  Composite = bx.withVariants(Composite);
   var ko = bx.ko;
 
   /* ---------- bx-button: chroming callToAction (primary), solid, outlined, borderless (ghost) or danger ---------- */

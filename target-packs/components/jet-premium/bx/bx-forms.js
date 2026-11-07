@@ -7,6 +7,7 @@
  */
 define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx, motion) {
   'use strict';
+  Composite = bx.withVariants(Composite);
   var ko = bx.ko;
   var extend = function (a, b) { var o = {}; Object.keys(a).forEach(function (k) { o[k] = a[k]; }); Object.keys(b).forEach(function (k) { o[k] = b[k]; }); return o; };
   var METHODS = { validate: {}, reset: {}, showMessages: {} };

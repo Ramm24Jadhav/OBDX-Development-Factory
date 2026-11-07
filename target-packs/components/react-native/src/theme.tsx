@@ -31,6 +31,8 @@ export interface Theme {
   glass: { fill: string; rim: string; tint: 'light' | 'dark' } | null;
   /** The click and entrance effects of the component style (see motion.tsx); none when the style sets none. */
   motion: { click: 'press' | 'ripple' | 'bounce' | 'none'; scroll: 'fadeup' | 'scale' | 'slide' | 'blur' | 'none' };
+  /** The variant a component was given (variants.tsx): its kind and id. */
+  variant?: { kind: string; id: string };
 }
 
 /** Builds the theme from the bank tokens, the bank's brand colour and the component style. */
@@ -55,7 +57,7 @@ export function makeTheme(style: ComponentStyle = {}, brand?: string, reduceTran
   };
 }
 
-const ThemeContext = createContext<Theme>(makeTheme());
+export const ThemeContext = createContext<Theme>(makeTheme());
 
 /** Gives every component below it the bank's theme. Without it the components use the neutral bank tokens. */
 export function ThemeProvider({ style, brand, children }: { style?: ComponentStyle; brand?: string; children: ReactNode }) {

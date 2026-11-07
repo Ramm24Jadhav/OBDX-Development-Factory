@@ -56,9 +56,11 @@ function create(name, props) {
   });
   Object.keys(properties).forEach((k) => { backed[k] = properties[k]; });
   const events = [];
-  const element = { dispatchEvent: (e) => { events.push(e); return !e.defaultPrevented; }, querySelector: () => null, querySelectorAll: () => [] };
+  const classes = new Set();
+  const element = { dispatchEvent: (e) => { events.push(e); return !e.defaultPrevented; }, querySelector: () => null, querySelectorAll: () => [],
+    classList: { add: (c) => classes.add(c), remove: (c) => classes.delete(c), contains: (c) => classes.has(c) }, classes };
   const vm = new d.viewModel({ properties: backed, element: element });
-  return { vm, props: backed, events, view: d.view };
+  return { vm, props: backed, events, view: d.view, element };
 }
 
 let passed = 0;
@@ -1045,6 +1047,26 @@ test('the skin has the motion tokens, the effects and a reduced-motion rule for 
   const toFrames = (css.match(/@keyframes [\w-]+ \{[^}]*\bto\b/g) || []).map((k) => k.split(' ')[1]).filter((k) => !['bx-ripple', 'bx-shimmer', 'bx-spin', 'bx-skel'].includes(k));
   eq(toFrames, [], 'keyframes that end away from the element style');
 });
+
+/* ---------- variants (variants/*.json): every element takes each of its variants as bx-<kind>--<variant> ---------- */
+const WAVE1 = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'variants', 'v1.json'), 'utf8'));
+test('the variant tables match variants/*.json', () => {
+  const r = require('child_process').spawnSync(process.execPath, [path.join(__dirname, '..', '..', 'tools', 'gen-variants.js'), '--check'], { encoding: 'utf8' });
+  eq(r.status, 0, 'gen-variants --check (' + r.stderr.trim() + ')');
+});
+Object.keys(WAVE1.components).forEach((id) => {
+  const c = WAVE1.components[id];
+  const name = c.packs['jet-premium'].name;
+  c.variants.forEach((v) => test(name + ' variant ' + v, () => {
+    const d = registry[name];
+    eq(d.metadata.properties.variant.enumValues.indexOf(v) > 0, true, 'listed in the metadata');
+    const t = create(name, { variant: v });
+    eq([...t.element.classes], ['bx-' + c.kind + '--' + v], 'classes');
+    t.vm.propertyChanged({ property: 'variant', value: '' });
+    eq([...t.element.classes], [], 'classes with no variant');
+  }));
+});
+test('an element outside the variant tables takes no variant property', () => eq(registry['bx-dialog'].metadata.properties.variant, undefined, 'variant'));
 
 console.log('Premium JET pack: ' + passed + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : '') + '.');
 failures.forEach((f) => console.log('  FAILED ' + f));

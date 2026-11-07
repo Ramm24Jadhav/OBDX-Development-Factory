@@ -8,12 +8,13 @@ import { NG_VALUE_ACCESSOR } from '@angular/forms';
 
 import { FieldBase, FieldMessage, FieldShell, Option, isEmpty, nextId, toOptions } from './field';
 import { play } from './motion';
+import { VARIANT } from './variant';
 
 /* ---------- TextArea (oj-text-area) ---------- */
 
 /** Several lines of text, with a counter when there is a limit. */
 @Component({
-  selector: 'bx-text-area',
+  selector: 'bx-text-area', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldShell],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => TextArea), multi: true }],
@@ -38,7 +39,7 @@ export class TextArea extends FieldBase<string> {
 
 /** A secret: masked, never filled from the browser's history, with Show and Hide. */
 @Component({
-  selector: 'bx-password',
+  selector: 'bx-password', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldShell],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => PasswordField), multi: true }],
@@ -67,7 +68,7 @@ export class PasswordField extends FieldBase<string> {
 
 /** A number, with - and + steppers and the arrow keys; the value is a number or null when empty. */
 @Component({
-  selector: 'bx-number-input',
+  selector: 'bx-number-input', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldShell],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => NumberInput), multi: true }],
@@ -145,7 +146,7 @@ export const CURRENCIES: ReadonlyArray<Option> = [
 
 /** One currency, shown by its code with its name beside it. */
 @Component({
-  selector: 'bx-currency-picker',
+  selector: 'bx-currency-picker', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldShell],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => CurrencySelector), multi: true }],
@@ -205,7 +206,7 @@ class Listbox {
 
 /** Several values from a list: the chosen ones as chips (each with Remove), the rest in a list to filter and pick. */
 @Component({
-  selector: 'bx-multi-select',
+  selector: 'bx-multi-select', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldMessage],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => MultiSelect), multi: true }],
@@ -276,7 +277,7 @@ export class MultiSelect extends FieldBase<string[]> {
 
 /** On or off, as a switch the screen reader announces as on or off. */
 @Component({
-  selector: 'bx-switch',
+  selector: 'bx-switch', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldMessage],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => Toggle), multi: true }],
@@ -307,7 +308,7 @@ const days = (from: string, to: string) => Math.round((Date.parse(to) - Date.par
 
 /** A period: from and to (ISO dates), the to day not before the from day, within min, max and maxDays. */
 @Component({
-  selector: 'bx-date-range',
+  selector: 'bx-date-range', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldMessage],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => DateRangePicker), multi: true }],
@@ -364,7 +365,7 @@ export class DateRangePicker extends FieldBase<DateRange> {
 
 /** A search box in a search landmark: Enter searches (search), Escape or the clear button empties it. */
 @Component({
-  selector: 'bx-search',
+  selector: 'bx-search', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldShell],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => SearchField), multi: true }],
@@ -396,7 +397,7 @@ export class SearchField extends FieldBase<string> {
 
 /** One value with suggestions as the customer types (the ARIA combobox pattern): arrows move, Enter picks, Escape closes. */
 @Component({
-  selector: 'bx-autocomplete',
+  selector: 'bx-autocomplete', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldMessage],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => Autocomplete), multi: true }],
@@ -473,7 +474,7 @@ export function fileSize(bytes: number): string {
 
 /** Documents to send: a button (or drop on the area) to add them, the list with each file's size and Remove. */
 @Component({
-  selector: 'bx-document-upload',
+  selector: 'bx-document-upload', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldMessage],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => FileUpload), multi: true }],

@@ -8,6 +8,7 @@ import { ChangeDetectionStrategy, Component, Directive, computed, input, model, 
 import { ACCORDION, AccordionBase, Part, ROWS, RowsBase, SEGMENTS, SLIDER, STEPS, SegmentsBase, SliderBase, StepsBase, TIMELINE, TimelineBase } from './g1';
 import { FORM, FormBase, THING, ThingBase, money } from './g2';
 import { CHECKS, ChecksBase } from './g4';
+import { VARIANT } from './variant';
 
 /** The monthly instalment of a loan: principal, yearly rate in %, months. */
 export function instalment(principal: number, rate: number, months: number): number {
@@ -28,7 +29,7 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 
 /** A message to the bank, with a counter and Send. [(value)], (send). */
 @Component({
-  selector: 'bx-compose-mail',
+  selector: 'bx-compose-mail', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="bx-field bx-compose" [attr.data-testid]="testID() || null">
@@ -59,7 +60,7 @@ export interface Period { from: string; to: string }
 
 /** The first and last day, checked when the customer asks (both, in order, within maxDays), then (request). [(value)]. */
 @Component({
-  selector: 'bx-statement-request',
+  selector: 'bx-statement-request', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <fieldset [class]="problem() ? 'bx-field bx-period is-error' : 'bx-field bx-period'" [attr.aria-describedby]="problem() ? id + '-err' : null" [attr.data-testid]="testID() || null">
@@ -310,7 +311,7 @@ export class Certificates extends RowsBase { protected override readonly default
 @Component({ selector: 'bx-nominations', changeDetection: ChangeDetectionStrategy.OnPush, template: ROWS })
 export class Nominations extends RowsBase { protected override readonly defaults = { heading: 'Nominees', actionLabel: 'Edit' }; }
 /** The statement's file format. [(value)]. */
-@Component({ selector: 'bx-statement-format', changeDetection: ChangeDetectionStrategy.OnPush, template: SEGMENTS })
+@Component({ selector: 'bx-statement-format', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: SEGMENTS })
 export class StatementFormat extends SegmentsBase { protected override readonly defaults = { label: 'Format', options: ['PDF', 'CSV', 'Both'] }; }
 /** The steps of registering online. */
 @Component({ selector: 'bx-self-register', changeDetection: ChangeDetectionStrategy.OnPush, template: STEPS })
@@ -328,16 +329,16 @@ export class TaxSelfCertification extends StepsBase {
 @Component({ selector: 'bx-product-showcase', changeDetection: ChangeDetectionStrategy.OnPush, template: THING })
 export class ProductCard extends ThingBase { protected override readonly defaultAction = 'Apply now'; }
 /** The terms and other consents, as checkboxes. [(value)]. */
-@Component({ selector: 'bx-terms-consent', changeDetection: ChangeDetectionStrategy.OnPush, template: CHECKS })
+@Component({ selector: 'bx-terms-consent', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: CHECKS })
 export class TermsConsent extends ChecksBase {
   protected override readonly defaultLabel = 'Before you continue';
   protected override readonly defaultControl = 'checkbox' as const;
 }
 /** The income the customer earns, for an eligibility check. [(value)]. */
-@Component({ selector: 'bx-eligibility-calculator', changeDetection: ChangeDetectionStrategy.OnPush, template: SLIDER })
+@Component({ selector: 'bx-eligibility-calculator', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: SLIDER })
 export class EligibilityCalculator extends SliderBase { protected override readonly defaults = { label: 'Monthly income', max: 20000, step: 500 }; }
 /** How much to save each month for a goal. [(value)]. */
-@Component({ selector: 'bx-goal-calculator', changeDetection: ChangeDetectionStrategy.OnPush, template: SLIDER })
+@Component({ selector: 'bx-goal-calculator', hostDirectives: VARIANT, changeDetection: ChangeDetectionStrategy.OnPush, template: SLIDER })
 export class GoalCalculator extends SliderBase { protected override readonly defaults = { label: 'Saving each month', max: 5000, step: 50 }; }
 /** Questions and answers. [(expanded)]. */
 @Component({ selector: 'bx-faq', changeDetection: ChangeDetectionStrategy.OnPush, template: ACCORDION })

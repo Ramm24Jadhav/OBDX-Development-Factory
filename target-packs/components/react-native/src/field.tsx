@@ -3,6 +3,7 @@ import { StyleSheet, Text } from 'react-native';
 
 import { Enter, Shake } from './motion';
 import { Theme, useTheme } from './theme';
+import { FIELD_KINDS, part } from './variants';
 
 /** Props every field takes, the same as the web pack and the starter's components. */
 export interface FieldProps<T> {
@@ -53,15 +54,15 @@ export function FieldShell({ testID, label, required, error, helpText, children 
   const t = useTheme();
   const s = styles(t);
   return (
-    <Enter testID={testID} style={s.field}>
-      <Text style={s.label} importantForAccessibility="no">
+    <Enter testID={testID} style={[s.field, part(t, FIELD_KINDS, 'shell')]}>
+      <Text style={[s.label, part(t, FIELD_KINDS, 'label')]} importantForAccessibility="no">
         {label}
         {required ? <Text style={s.req}> *</Text> : null}
       </Text>
-      <Shake testID={`${testID}-control`} error={error}>{children}</Shake>
+      <Shake testID={`${testID}-control`} error={error} style={part(t, FIELD_KINDS, 'body')}>{children}</Shake>
       {error
-        ? <Text testID={`${testID}-error`} style={s.error} accessibilityRole="alert" accessibilityLiveRegion="assertive">{error}</Text>
-        : helpText ? <Text testID={`${testID}-help`} style={s.help}>{helpText}</Text> : null}
+        ? <Text testID={`${testID}-error`} style={[s.error, part(t, FIELD_KINDS, 'message')]} accessibilityRole="alert" accessibilityLiveRegion="assertive">{error}</Text>
+        : helpText ? <Text testID={`${testID}-help`} style={[s.help, part(t, FIELD_KINDS, 'message')]}>{helpText}</Text> : null}
     </Enter>
   );
 }
@@ -75,6 +76,7 @@ export function controlStyle(t: Theme, state: { focused?: boolean; error?: strin
     backgroundColor: state.disabled ? t.color.surface3 : state.readOnly || t.look === 'soft' ? t.color.surface2 : t.color.surface,
     opacity: state.disabled ? 0.7 : 1,
     ...(t.shadow && !state.disabled ? { shadowColor: '#0f172a', shadowOpacity: 0.06, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 } : {}),
+    ...part(t, FIELD_KINDS, 'control', state),
   };
 }
 

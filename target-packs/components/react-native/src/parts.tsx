@@ -13,6 +13,10 @@ import type { Severity } from './Toast';
 import { FieldProps, styles, useField } from './field';
 import { Enter, MODAL_FADE, Pop, Press, Roll, Shake, useGrow, useOpen, useSlide } from './motion';
 import { Theme, useTheme } from './theme';
+import { part, variantOf } from './variants';
+
+/** The kinds whose variants style the slider. */
+const SLIDERS = 'slider';
 
 /** A form's props: the field props with the heading optional. */
 export type FormProps<T> = Omit<FieldProps<T>, 'label'> & { label?: string };
@@ -544,18 +548,18 @@ export function Segment(props: SegmentProps) {
   return (
     <Enter testID={testID} style={s.field} accessibilityRole="radiogroup" accessibilityLabel={label}>
       <Text style={s.label} importantForAccessibility="no">{label}</Text>
-      <Shake error={error} style={{ padding: 3, borderRadius: t.radius.control + 2, backgroundColor: t.color.surface3 }}>
+      <Shake error={error} style={[{ padding: 3, borderRadius: t.radius.control + 2, backgroundColor: t.color.surface3 }, part(t, 'segmented', 'track')]}>
       <View style={{ flexDirection: 'row' }}>
-        {index >= 0 ? <Animated.View testID={`${testID}-marker`} pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, width: `${100 / list.length}%`,
+        {index >= 0 ? <Animated.View testID={`${testID}-marker`} pointerEvents="none" style={[{ position: 'absolute', top: 0, bottom: 0, width: `${100 / list.length}%`,
           left: at.interpolate({ inputRange: [0, list.length], outputRange: ['0%', '100%'] }), borderRadius: t.radius.control,
-          backgroundColor: t.color.surface }} /> : null}
+          backgroundColor: t.color.surface }, part(t, 'segmented', 'marker')]} /> : null}
         {list.map((o) => {
           const on = o.key === value;
           return (
             <Touch key={o.key} testID={`${testID}-option-${o.key}`} role="radio" label={o.label} selected={on} disabled={disabled || readOnly || o.disabled}
-                   onPress={() => onChange?.(o.key)} style={{ flex: 1, alignItems: 'center', paddingHorizontal: 8, borderRadius: t.radius.control,
-                     minHeight: t.minTouch - 4 }}>
-              <Text style={{ fontSize: 14, textAlign: 'center', fontWeight: on ? '700' : '500', color: on ? t.color.primaryText : t.color.textBody }}>{o.label}</Text>
+                   onPress={() => onChange?.(o.key)} style={[{ flex: 1, alignItems: 'center', paddingHorizontal: 8, borderRadius: t.radius.control,
+                     minHeight: t.minTouch - 4 }, part(t, 'segmented', 'option')]}>
+              <Text style={[{ fontSize: 14, textAlign: 'center', fontWeight: on ? '700' : '500', color: on ? t.color.primaryText : t.color.textBody }, part(t, 'segmented', 'text', { on })]}>{o.label}</Text>
             </Touch>
           );
         })}
@@ -591,11 +595,11 @@ export function Chips(props: ChipsProps) {
           return (
             <Press key={o.key} testID={`${testID}-option-${o.key}`} accessibilityRole={single ? 'radio' : 'checkbox'} accessibilityLabel={o.label}
                        accessibilityState={{ checked: on, disabled: off }} disabled={off} onPress={() => flip(o.key)}
-                       style={{ minHeight: t.minTouch - 4, paddingHorizontal: 14, justifyContent: 'center', borderRadius: 999,
+                       style={[{ minHeight: t.minTouch - 4, paddingHorizontal: 14, justifyContent: 'center', borderRadius: 999,
                          borderWidth: 1, borderColor: on ? t.color.primary : t.color.borderStrong, backgroundColor: on ? t.color.primarySoft : t.color.surface,
-                         opacity: off ? 0.5 : 1 }} hitSlop={4}>
+                         opacity: off ? 0.5 : 1 }, part(t, 'chips', 'chip', { on })]} hitSlop={4}>
               <Pop on={on}>
-                <Text style={{ fontSize: 14, fontWeight: on ? '600' : '500', color: on ? t.color.primaryText : t.color.textBody }}>{on ? '✓ ' : ''}{o.label}</Text>
+                <Text style={[{ fontSize: 14, fontWeight: on ? '600' : '500', color: on ? t.color.primaryText : t.color.textBody }, part(t, 'chips', 'text', { on })]}>{on ? '✓ ' : ''}{o.label}</Text>
               </Pop>
             </Press>
           );
@@ -637,12 +641,13 @@ export function CodeBoxes(props: CodeBoxesProps) {
     <View testID={testID} style={s.field}>
       <Text style={s.label} importantForAccessibility="no">{label}{required ? <Text style={s.req}> *</Text> : null}</Text>
       <Shake error={f.error}>
-      <Pressable accessible={false} onPress={() => input.current?.focus()} style={{ flexDirection: 'row', gap: 8 }}>
+      <Pressable accessible={false} onPress={() => input.current?.focus()} style={[{ flexDirection: 'row', gap: 8 }, part(t, 'code', 'cells')]}>
         {Array.from({ length }, (_, i) => (
           <Pop key={i} on={code[i] ?? ''} importantForAccessibility="no-hide-descendants"
-                style={{ flex: 1, maxWidth: 52, minHeight: t.minTouch + 4, alignItems: 'center', justifyContent: 'center', borderRadius: t.radius.control,
+                style={[{ flex: 1, maxWidth: 52, minHeight: t.minTouch + 4, alignItems: 'center', justifyContent: 'center', borderRadius: t.radius.control,
                   borderWidth: f.focused && i === code.length ? 2 : t.border, backgroundColor: disabled ? t.color.surface3 : t.color.surface,
-                  borderColor: f.error ? t.color.danger : f.focused && i === code.length ? t.color.primary : t.color.borderStrong }}>
+                  borderColor: f.error ? t.color.danger : f.focused && i === code.length ? t.color.primary : t.color.borderStrong },
+                  part(t, 'code', 'cell', { focused: f.focused && i === code.length })]}>
             <Text style={{ fontSize: 22, fontWeight: '700', color: t.color.text, fontVariant: ['tabular-nums'] }}>{code[i] ? (secure ? '•' : code[i]) : ''}</Text>
           </Pop>
         ))}
@@ -720,11 +725,22 @@ export function SliderControl(props: SliderControlProps) {
             onLayout={(e) => { width.current = Math.max(1, e.nativeEvent.layout.width); }}
             {...(off ? {} : pan.panHandlers)} style={{ height: t.minTouch, justifyContent: 'center', opacity: off ? 0.5 : 1 }}>
         <Shake error={error}>
-        <View style={{ height: 6, borderRadius: 3, backgroundColor: t.color.surface3 }}>
-          <View style={{ width: `${share * 100}%`, height: 6, borderRadius: 3, backgroundColor: t.color.primary }} />
+        <View style={[{ height: 6, borderRadius: 3, backgroundColor: t.color.surface3 }, part(t, SLIDERS, 'track')]}>
+          <View style={[{ width: `${share * 100}%`, height: 6, borderRadius: 3, backgroundColor: t.color.primary }, part(t, SLIDERS, 'fill')]} />
         </View>
-        <View pointerEvents="none" style={{ position: 'absolute', top: -9, left: `${share * 100}%`, marginLeft: -12, width: 24, height: 24, borderRadius: 12,
-          backgroundColor: t.color.surface, borderWidth: 2, borderColor: t.color.primary }} />
+        {/* stepped: a tick at each step, up to 20 */}
+        {variantOf(t, SLIDERS) === 'ticks' && (max - min) / step <= 20
+          ? <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: -1, flexDirection: 'row', justifyContent: 'space-between' }}>
+            {Array.from({ length: Math.round((max - min) / step) + 1 }, (_, i) => <View key={i} style={{ width: 2, height: 8, borderRadius: 1, backgroundColor: t.color.borderStrong }} />)}
+          </View> : null}
+        <View pointerEvents="none" style={[{ position: 'absolute', top: -9, left: `${share * 100}%`, marginLeft: -12, width: 24, height: 24, borderRadius: 12,
+          backgroundColor: t.color.surface, borderWidth: 2, borderColor: t.color.primary }, part(t, SLIDERS, 'thumb')]} />
+        {/* the value rides above the thumb */}
+        {variantOf(t, SLIDERS) === 'bubble'
+          ? <View pointerEvents="none" importantForAccessibility="no-hide-descendants" style={{ position: 'absolute', bottom: 16, left: `${share * 100}%`, transform: [{ translateX: '-50%' }],
+            paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: t.color.primary }}>
+            <Text style={{ color: t.color.onPrimary, fontSize: 12, fontWeight: '700' }}>{show(current)}</Text>
+          </View> : null}
         </Shake>
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }} importantForAccessibility="no-hide-descendants">

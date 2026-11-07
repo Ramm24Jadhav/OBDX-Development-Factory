@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { VARIANT } from './variant';
 
 export type Chroming = 'callToAction' | 'solid' | 'outlined' | 'borderless' | 'danger';
 
@@ -13,7 +14,7 @@ function ripple(event: MouseEvent): void {
 
 /** A button (oj-button): callToAction is the screen's main action. Icons go in the startIcon and endIcon slots. */
 @Component({
-  selector: 'bx-button',
+  selector: 'bx-button', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { style: 'display: inline-block' },
   template: `
@@ -43,7 +44,7 @@ export class Button {
 
 /** A button with only an icon (oj-button display="icons"); the label names it for screen readers and shows as the tooltip. */
 @Component({
-  selector: 'bx-icon-button',
+  selector: 'bx-icon-button', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { style: 'display: inline-block' },
   template: `

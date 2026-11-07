@@ -2,10 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, forwardRef, input } from 
 import { NG_VALUE_ACCESSOR } from '@angular/forms';
 
 import { FieldBase, FieldShell, Option, toOptions } from './field';
+import { VARIANT } from './variant';
 
 /** Choose one option from a list (oj-select-single, oj-select-one): the native select, so every screen reader and phone knows it. */
 @Component({
-  selector: 'bx-select',
+  selector: 'bx-select', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldShell],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => Dropdown), multi: true }],

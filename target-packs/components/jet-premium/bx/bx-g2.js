@@ -9,6 +9,7 @@
  */
 define(['ojs/ojcomposite', './bx-core', './bx-g1'], function (Composite, bx, g1) {
   'use strict';
+  Composite = bx.withVariants(Composite);
   var ko = bx.ko;
   var k = g1.kit;
   var txt = k.txt, iff = k.iff, each = k.each, list = k.list, base = k.base, register = k.register, str = k.str, bool = k.bool, arr = k.arr;

@@ -18,31 +18,91 @@
     <section class="gate" data-component="button" aria-labelledby="button-h"><h2 id="button-h">Button</h2><div class="gate-body"><div class="gate-row">
       <bx-button label="Pay now"></bx-button><bx-button label="Save draft" chroming="solid"></bx-button><bx-button label="Cancel" chroming="outlined"></bx-button>
       <bx-button label="Details" chroming="borderless"></bx-button><bx-button label="Delete" chroming="danger"></bx-button><bx-button label="Paying" disabled="true"></bx-button>
-    </div></div></section>
+    </div><template data-variants>
+          <div data-variant="material"><bx-button variant="material" label="Pay now"></bx-button></div>
+          <div data-variant="tonal"><bx-button variant="tonal" label="Pay now"></bx-button></div>
+          <div data-variant="outlined"><bx-button variant="outlined" label="Pay now"></bx-button></div>
+          <div data-variant="text"><bx-button variant="text" label="Pay now"></bx-button></div>
+          <div data-variant="elevated"><bx-button variant="elevated" label="Pay now"></bx-button></div>
+          <div data-variant="gradient"><bx-button variant="gradient" label="Pay now"></bx-button></div>
+          <div data-variant="glass"><bx-button variant="glass" label="Pay now"></bx-button></div>
+          <div data-variant="pill"><bx-button variant="pill" label="Pay now"></bx-button></div>
+      </template>
+    </div></section>
     <section class="gate" data-component="icon-button" aria-labelledby="ib-h"><h2 id="ib-h">Icon button</h2><div class="gate-body"><div class="gate-row">
       <bx-icon-button label="More actions"></bx-icon-button><bx-icon-button label="Close" icon="close" chroming="outlined"></bx-icon-button><bx-icon-button label="Disabled action" disabled="true"></bx-icon-button>
-    </div></div></section>
+    </div><template data-variants>
+          <div data-variant="material"><bx-icon-button variant="material" label="More actions"></bx-icon-button></div>
+          <div data-variant="filled"><bx-icon-button variant="filled" label="More actions"></bx-icon-button></div>
+          <div data-variant="tonal"><bx-icon-button variant="tonal" label="More actions"></bx-icon-button></div>
+          <div data-variant="outlined"><bx-icon-button variant="outlined" label="More actions"></bx-icon-button></div>
+          <div data-variant="circular"><bx-icon-button variant="circular" label="More actions"></bx-icon-button></div>
+          <div data-variant="square"><bx-icon-button variant="square" label="More actions"></bx-icon-button></div>
+      </template>
+    </div></section>
     <section class="gate" data-component="text-field" aria-labelledby="tf-h"><h2 id="tf-h">Text field</h2><div class="gate-body">
       <bx-text-field label-hint="Beneficiary name" value="{{name}}" required="true" length.max="40" clear-icon="always" help.instruction="As it appears on the account"></bx-text-field>
       <bx-text-field label-hint="Reference" value="INV 2041" messages-custom="[[refError]]"></bx-text-field>
       <bx-text-field label-hint="Customer ID" value="CUST-00921" readonly="true"></bx-text-field>
+    <template data-variants>
+          <div data-variant="material"><bx-text-field variant="material" label-hint="Beneficiary name" value="{{name}}" required="true" length.max="40" clear-icon="always" help.instruction="As it appears on the account"></bx-text-field></div>
+          <div data-variant="outlined"><bx-text-field variant="outlined" label-hint="Beneficiary name" value="{{name}}" required="true" length.max="40" clear-icon="always" help.instruction="As it appears on the account"></bx-text-field></div>
+          <div data-variant="underlined"><bx-text-field variant="underlined" label-hint="Beneficiary name" value="{{name}}" required="true" length.max="40" clear-icon="always" help.instruction="As it appears on the account"></bx-text-field></div>
+          <div data-variant="floating"><bx-text-field variant="floating" label-hint="Beneficiary name" value="{{name}}" required="true" length.max="40" clear-icon="always" help.instruction="As it appears on the account"></bx-text-field></div>
+          <div data-variant="inline"><bx-text-field variant="inline" label-hint="Beneficiary name" value="{{name}}" required="true" length.max="40" clear-icon="always" help.instruction="As it appears on the account"></bx-text-field></div>
+          <div data-variant="pill"><bx-text-field variant="pill" label-hint="Beneficiary name" value="{{name}}" required="true" length.max="40" clear-icon="always" help.instruction="As it appears on the account"></bx-text-field></div>
+      </template>
     </div></section>
     <section class="gate" data-component="amount" aria-labelledby="am-h"><h2 id="am-h">Amount input</h2><div class="gate-body">
       <bx-amount label-hint="Amount" currency="INR" value="{{amount}}" required="true" help.instruction="Up to 50,000.00 a day"></bx-amount>
       <bx-amount label-hint="Amount in KWD" currency="KWD" value="12.5" messages-custom="[[kwdError]]"></bx-amount>
+    <template data-variants>
+          <div data-variant="material"><bx-amount variant="material" label-hint="Amount" currency="INR" value="{{amount}}" required="true" help.instruction="Up to 50,000.00 a day"></bx-amount></div>
+          <div data-variant="outlined"><bx-amount variant="outlined" label-hint="Amount" currency="INR" value="{{amount}}" required="true" help.instruction="Up to 50,000.00 a day"></bx-amount></div>
+          <div data-variant="underlined"><bx-amount variant="underlined" label-hint="Amount" currency="INR" value="{{amount}}" required="true" help.instruction="Up to 50,000.00 a day"></bx-amount></div>
+          <div data-variant="floating"><bx-amount variant="floating" label-hint="Amount" currency="INR" value="{{amount}}" required="true" help.instruction="Up to 50,000.00 a day"></bx-amount></div>
+          <div data-variant="inline"><bx-amount variant="inline" label-hint="Amount" currency="INR" value="{{amount}}" required="true" help.instruction="Up to 50,000.00 a day"></bx-amount></div>
+          <div data-variant="pill"><bx-amount variant="pill" label-hint="Amount" currency="INR" value="{{amount}}" required="true" help.instruction="Up to 50,000.00 a day"></bx-amount></div>
+      </template>
     </div></section>
     <section class="gate" data-component="select" aria-labelledby="dd-h"><h2 id="dd-h">Dropdown</h2><div class="gate-body">
       <bx-select label-hint="From account" options="[[accounts]]" value="{{account}}" required="true"></bx-select>
       <bx-select label-hint="To account" options="[[accounts]]" disabled="true"></bx-select>
+    <template data-variants>
+          <div data-variant="material"><bx-select variant="material" label-hint="From account" options="[[accounts]]" value="{{account}}" required="true"></bx-select></div>
+          <div data-variant="outlined"><bx-select variant="outlined" label-hint="From account" options="[[accounts]]" value="{{account}}" required="true"></bx-select></div>
+          <div data-variant="underlined"><bx-select variant="underlined" label-hint="From account" options="[[accounts]]" value="{{account}}" required="true"></bx-select></div>
+          <div data-variant="inline"><bx-select variant="inline" label-hint="From account" options="[[accounts]]" value="{{account}}" required="true"></bx-select></div>
+          <div data-variant="pill"><bx-select variant="pill" label-hint="From account" options="[[accounts]]" value="{{account}}" required="true"></bx-select></div>
+      </template>
     </div></section>
     <section class="gate" data-component="checkbox-group" aria-labelledby="cg-h"><h2 id="cg-h">Checkbox group</h2><div class="gate-body">
       <bx-checkbox-group label-hint="Send alerts by" options="[[channels]]" value="{{alerts}}"></bx-checkbox-group>
+    <template data-variants>
+          <div data-variant="material"><bx-checkbox-group variant="material" label-hint="Send alerts by" options="[[channels]]" value="{{alerts}}"></bx-checkbox-group></div>
+          <div data-variant="cards"><bx-checkbox-group variant="cards" label-hint="Send alerts by" options="[[channels]]" value="{{alerts}}"></bx-checkbox-group></div>
+          <div data-variant="chips"><bx-checkbox-group variant="chips" label-hint="Send alerts by" options="[[channels]]" value="{{alerts}}"></bx-checkbox-group></div>
+          <div data-variant="rows"><bx-checkbox-group variant="rows" label-hint="Send alerts by" options="[[channels]]" value="{{alerts}}"></bx-checkbox-group></div>
+          <div data-variant="round"><bx-checkbox-group variant="round" label-hint="Send alerts by" options="[[channels]]" value="{{alerts}}"></bx-checkbox-group></div>
+      </template>
     </div></section>
     <section class="gate" data-component="choice-group" aria-labelledby="rg-h"><h2 id="rg-h">Radio group</h2><div class="gate-body">
       <bx-choice-group label-hint="Transfer speed" layout="horizontal" options="[[speeds]]" value="{{speed}}"></bx-choice-group>
+    <template data-variants>
+          <div data-variant="material"><bx-choice-group variant="material" label-hint="Transfer speed" layout="horizontal" options="[[speeds]]" value="{{speed}}"></bx-choice-group></div>
+          <div data-variant="cards"><bx-choice-group variant="cards" label-hint="Transfer speed" layout="horizontal" options="[[speeds]]" value="{{speed}}"></bx-choice-group></div>
+          <div data-variant="chips"><bx-choice-group variant="chips" label-hint="Transfer speed" layout="horizontal" options="[[speeds]]" value="{{speed}}"></bx-choice-group></div>
+          <div data-variant="rows"><bx-choice-group variant="rows" label-hint="Transfer speed" layout="horizontal" options="[[speeds]]" value="{{speed}}"></bx-choice-group></div>
+      </template>
     </div></section>
     <section class="gate" data-component="date" aria-labelledby="dp-h"><h2 id="dp-h">Date picker</h2><div class="gate-body">
       <bx-date label-hint="Pay on" value="{{day}}" min="2026-11-10" max="2026-12-31"></bx-date>
+    <template data-variants>
+          <div data-variant="material"><bx-date variant="material" label-hint="Pay on" value="{{day}}" min="2026-11-10" max="2026-12-31"></bx-date></div>
+          <div data-variant="outlined"><bx-date variant="outlined" label-hint="Pay on" value="{{day}}" min="2026-11-10" max="2026-12-31"></bx-date></div>
+          <div data-variant="underlined"><bx-date variant="underlined" label-hint="Pay on" value="{{day}}" min="2026-11-10" max="2026-12-31"></bx-date></div>
+          <div data-variant="inline"><bx-date variant="inline" label-hint="Pay on" value="{{day}}" min="2026-11-10" max="2026-12-31"></bx-date></div>
+      </template>
     </div></section>
     <section class="gate" data-component="dialog" aria-labelledby="dl-h"><h2 id="dl-h">Dialog</h2><div class="gate-body"><div class="gate-dialog">
       <bx-dialog id="dlg" dialog-title="Delete A. Sharma?">
@@ -66,53 +126,163 @@
     <section class="gate" data-component="text-area" aria-labelledby="ta-h"><h2 id="ta-h">Text area</h2><div class="gate-body">
       <bx-text-area label-hint="Remarks" value="{{remarks}}" length.max="140" help.instruction="Shown on the payee's statement"></bx-text-area>
       <bx-text-area label-hint="Reason" required="true" messages-custom="[[reasonError]]"></bx-text-area>
+    <template data-variants>
+          <div data-variant="material"><bx-text-area variant="material" label-hint="Remarks" value="{{remarks}}" length.max="140" help.instruction="Shown on the payee's statement"></bx-text-area></div>
+          <div data-variant="outlined"><bx-text-area variant="outlined" label-hint="Remarks" value="{{remarks}}" length.max="140" help.instruction="Shown on the payee's statement"></bx-text-area></div>
+          <div data-variant="underlined"><bx-text-area variant="underlined" label-hint="Remarks" value="{{remarks}}" length.max="140" help.instruction="Shown on the payee's statement"></bx-text-area></div>
+          <div data-variant="floating"><bx-text-area variant="floating" label-hint="Remarks" value="{{remarks}}" length.max="140" help.instruction="Shown on the payee's statement"></bx-text-area></div>
+          <div data-variant="inline"><bx-text-area variant="inline" label-hint="Remarks" value="{{remarks}}" length.max="140" help.instruction="Shown on the payee's statement"></bx-text-area></div>
+      </template>
     </div></section>
     <section class="gate" data-component="password" aria-labelledby="pw-h"><h2 id="pw-h">Password</h2><div class="gate-body">
       <bx-password label-hint="Password" value="{{secret}}" autocomplete="new-password" help.instruction="At least 8 characters, one number"></bx-password>
       <bx-password label-hint="Transaction PIN" value="1234" autocomplete="one-time-code" messages-custom="[[pinError]]"></bx-password>
+    <template data-variants>
+          <div data-variant="material"><bx-password variant="material" label-hint="Password" value="{{secret}}" autocomplete="new-password" help.instruction="At least 8 characters, one number"></bx-password></div>
+          <div data-variant="outlined"><bx-password variant="outlined" label-hint="Password" value="{{secret}}" autocomplete="new-password" help.instruction="At least 8 characters, one number"></bx-password></div>
+          <div data-variant="underlined"><bx-password variant="underlined" label-hint="Password" value="{{secret}}" autocomplete="new-password" help.instruction="At least 8 characters, one number"></bx-password></div>
+          <div data-variant="floating"><bx-password variant="floating" label-hint="Password" value="{{secret}}" autocomplete="new-password" help.instruction="At least 8 characters, one number"></bx-password></div>
+          <div data-variant="inline"><bx-password variant="inline" label-hint="Password" value="{{secret}}" autocomplete="new-password" help.instruction="At least 8 characters, one number"></bx-password></div>
+      </template>
     </div></section>
     <section class="gate" data-component="number-input" aria-labelledby="ni-h"><h2 id="ni-h">Number</h2><div class="gate-body">
       <bx-number-input label-hint="Cheque leaves" value="{{copies}}" min="1" max="5" help.instruction="Up to 5 books"></bx-number-input>
       <bx-number-input label-hint="Tenure (months)" value="84" messages-custom="[[tenureError]]"></bx-number-input>
+    <template data-variants>
+          <div data-variant="material"><bx-number-input variant="material" label-hint="Cheque leaves" value="{{copies}}" min="1" max="5" help.instruction="Up to 5 books"></bx-number-input></div>
+          <div data-variant="outlined"><bx-number-input variant="outlined" label-hint="Cheque leaves" value="{{copies}}" min="1" max="5" help.instruction="Up to 5 books"></bx-number-input></div>
+          <div data-variant="underlined"><bx-number-input variant="underlined" label-hint="Cheque leaves" value="{{copies}}" min="1" max="5" help.instruction="Up to 5 books"></bx-number-input></div>
+          <div data-variant="floating"><bx-number-input variant="floating" label-hint="Cheque leaves" value="{{copies}}" min="1" max="5" help.instruction="Up to 5 books"></bx-number-input></div>
+          <div data-variant="inline"><bx-number-input variant="inline" label-hint="Cheque leaves" value="{{copies}}" min="1" max="5" help.instruction="Up to 5 books"></bx-number-input></div>
+          <div data-variant="pill"><bx-number-input variant="pill" label-hint="Cheque leaves" value="{{copies}}" min="1" max="5" help.instruction="Up to 5 books"></bx-number-input></div>
+      </template>
     </div></section>
     <section class="gate" data-component="currency-picker" aria-labelledby="cp-h"><h2 id="cp-h">Currency</h2><div class="gate-body">
       <bx-currency-picker label-hint="Currency" value="{{currency}}" required="true"></bx-currency-picker>
+    <template data-variants>
+          <div data-variant="material"><bx-currency-picker variant="material" label-hint="Currency" value="{{currency}}" required="true"></bx-currency-picker></div>
+          <div data-variant="outlined"><bx-currency-picker variant="outlined" label-hint="Currency" value="{{currency}}" required="true"></bx-currency-picker></div>
+          <div data-variant="underlined"><bx-currency-picker variant="underlined" label-hint="Currency" value="{{currency}}" required="true"></bx-currency-picker></div>
+          <div data-variant="inline"><bx-currency-picker variant="inline" label-hint="Currency" value="{{currency}}" required="true"></bx-currency-picker></div>
+          <div data-variant="pill"><bx-currency-picker variant="pill" label-hint="Currency" value="{{currency}}" required="true"></bx-currency-picker></div>
+      </template>
     </div></section>
     <section class="gate" data-component="multi-select" aria-labelledby="ms-h"><h2 id="ms-h">Multi select</h2><div class="gate-body">
       <bx-multi-select label-hint="Accounts on the statement" options="[[accounts]]" value="{{picked}}" help.instruction="Choose one or more"></bx-multi-select>
+    <template data-variants>
+          <div data-variant="material"><bx-multi-select variant="material" label-hint="Accounts on the statement" options="[[accounts]]" value="{{picked}}" help.instruction="Choose one or more"></bx-multi-select></div>
+          <div data-variant="outlined"><bx-multi-select variant="outlined" label-hint="Accounts on the statement" options="[[accounts]]" value="{{picked}}" help.instruction="Choose one or more"></bx-multi-select></div>
+          <div data-variant="tonal"><bx-multi-select variant="tonal" label-hint="Accounts on the statement" options="[[accounts]]" value="{{picked}}" help.instruction="Choose one or more"></bx-multi-select></div>
+          <div data-variant="square"><bx-multi-select variant="square" label-hint="Accounts on the statement" options="[[accounts]]" value="{{picked}}" help.instruction="Choose one or more"></bx-multi-select></div>
+          <div data-variant="glass"><bx-multi-select variant="glass" label-hint="Accounts on the statement" options="[[accounts]]" value="{{picked}}" help.instruction="Choose one or more"></bx-multi-select></div>
+      </template>
     </div></section>
     <section class="gate" data-component="switch" aria-labelledby="sw-h"><h2 id="sw-h">Switch</h2><div class="gate-body">
       <bx-switch label-hint="Paperless statements" value="{{paperless}}" help.instruction="We email them on the 1st"></bx-switch>
       <bx-switch label-hint="International use" disabled="true"></bx-switch>
+    <template data-variants>
+          <div data-variant="material"><bx-switch variant="material" label-hint="Paperless statements" value="{{paperless}}" help.instruction="We email them on the 1st"></bx-switch></div>
+          <div data-variant="ios"><bx-switch variant="ios" label-hint="Paperless statements" value="{{paperless}}" help.instruction="We email them on the 1st"></bx-switch></div>
+          <div data-variant="fluent"><bx-switch variant="fluent" label-hint="Paperless statements" value="{{paperless}}" help.instruction="We email them on the 1st"></bx-switch></div>
+          <div data-variant="labelled"><bx-switch variant="labelled" label-hint="Paperless statements" value="{{paperless}}" help.instruction="We email them on the 1st"></bx-switch></div>
+          <div data-variant="squish"><bx-switch variant="squish" label-hint="Paperless statements" value="{{paperless}}" help.instruction="We email them on the 1st"></bx-switch></div>
+      </template>
     </div></section>
     <section class="gate" data-component="date-range" aria-labelledby="dr-h"><h2 id="dr-h">Date range</h2><div class="gate-body">
       <bx-date-range label-hint="Statement period" value="{{period}}" max-days="92" help.instruction="Up to 3 months"></bx-date-range>
+    <template data-variants>
+          <div data-variant="material"><bx-date-range variant="material" label-hint="Statement period" value="{{period}}" max-days="92" help.instruction="Up to 3 months"></bx-date-range></div>
+          <div data-variant="outlined"><bx-date-range variant="outlined" label-hint="Statement period" value="{{period}}" max-days="92" help.instruction="Up to 3 months"></bx-date-range></div>
+          <div data-variant="underlined"><bx-date-range variant="underlined" label-hint="Statement period" value="{{period}}" max-days="92" help.instruction="Up to 3 months"></bx-date-range></div>
+          <div data-variant="inline"><bx-date-range variant="inline" label-hint="Statement period" value="{{period}}" max-days="92" help.instruction="Up to 3 months"></bx-date-range></div>
+      </template>
     </div></section>
     <section class="gate" data-component="search" aria-labelledby="se-h"><h2 id="se-h">Search</h2><div class="gate-body">
       <bx-search label-hint="Search transactions" value="{{query}}" placeholder="Payee, amount or reference"></bx-search>
+    <template data-variants>
+          <div data-variant="material"><bx-search variant="material" label-hint="Search transactions" value="{{query}}" placeholder="Payee, amount or reference"></bx-search></div>
+          <div data-variant="outlined"><bx-search variant="outlined" label-hint="Search transactions" value="{{query}}" placeholder="Payee, amount or reference"></bx-search></div>
+          <div data-variant="underlined"><bx-search variant="underlined" label-hint="Search transactions" value="{{query}}" placeholder="Payee, amount or reference"></bx-search></div>
+          <div data-variant="floating"><bx-search variant="floating" label-hint="Search transactions" value="{{query}}" placeholder="Payee, amount or reference"></bx-search></div>
+          <div data-variant="inline"><bx-search variant="inline" label-hint="Search transactions" value="{{query}}" placeholder="Payee, amount or reference"></bx-search></div>
+          <div data-variant="pill"><bx-search variant="pill" label-hint="Search transactions" value="{{query}}" placeholder="Payee, amount or reference"></bx-search></div>
+      </template>
     </div></section>
     <section class="gate" data-component="autocomplete" aria-labelledby="ac-h"><h2 id="ac-h">Autocomplete</h2><div class="gate-body">
       <bx-autocomplete label-hint="Payee" options="[[payees]]" value="{{payee}}"></bx-autocomplete>
+    <template data-variants>
+          <div data-variant="material"><bx-autocomplete variant="material" label-hint="Payee" options="[[payees]]" value="{{payee}}"></bx-autocomplete></div>
+          <div data-variant="outlined"><bx-autocomplete variant="outlined" label-hint="Payee" options="[[payees]]" value="{{payee}}"></bx-autocomplete></div>
+          <div data-variant="underlined"><bx-autocomplete variant="underlined" label-hint="Payee" options="[[payees]]" value="{{payee}}"></bx-autocomplete></div>
+          <div data-variant="inline"><bx-autocomplete variant="inline" label-hint="Payee" options="[[payees]]" value="{{payee}}"></bx-autocomplete></div>
+          <div data-variant="pill"><bx-autocomplete variant="pill" label-hint="Payee" options="[[payees]]" value="{{payee}}"></bx-autocomplete></div>
+      </template>
     </div></section>
     <section class="gate" data-component="document-upload" aria-labelledby="du-h"><h2 id="du-h">Document upload</h2><div class="gate-body">
       <bx-document-upload label-hint="Proof of address" accept='[".pdf", "image/*"]' max-size="5242880" value="{{proof}}" help.instruction="A utility bill or a statement"></bx-document-upload>
+    <template data-variants>
+          <div data-variant="material"><bx-document-upload variant="material" label-hint="Proof of address" accept='[".pdf", "image/*"]' max-size="5242880" value="{{proof}}" help.instruction="A utility bill or a statement"></bx-document-upload></div>
+          <div data-variant="dropzone"><bx-document-upload variant="dropzone" label-hint="Proof of address" accept='[".pdf", "image/*"]' max-size="5242880" value="{{proof}}" help.instruction="A utility bill or a statement"></bx-document-upload></div>
+          <div data-variant="compact"><bx-document-upload variant="compact" label-hint="Proof of address" accept='[".pdf", "image/*"]' max-size="5242880" value="{{proof}}" help.instruction="A utility bill or a statement"></bx-document-upload></div>
+          <div data-variant="card"><bx-document-upload variant="card" label-hint="Proof of address" accept='[".pdf", "image/*"]' max-size="5242880" value="{{proof}}" help.instruction="A utility bill or a statement"></bx-document-upload></div>
+      </template>
     </div></section>
     <section class="gate" data-component="secondary-button" aria-labelledby="w1-0-h"><h2 id="w1-0-h">Secondary button</h2><div class="gate-body">
       <bx-secondary-button label="Save for later"></bx-secondary-button>
       <bx-secondary-button label="Save for later" disabled="true"></bx-secondary-button>
+    <template data-variants>
+          <div data-variant="material"><bx-secondary-button variant="material" label="Save for later"></bx-secondary-button></div>
+          <div data-variant="tonal"><bx-secondary-button variant="tonal" label="Save for later"></bx-secondary-button></div>
+          <div data-variant="outlined"><bx-secondary-button variant="outlined" label="Save for later"></bx-secondary-button></div>
+          <div data-variant="text"><bx-secondary-button variant="text" label="Save for later"></bx-secondary-button></div>
+          <div data-variant="elevated"><bx-secondary-button variant="elevated" label="Save for later"></bx-secondary-button></div>
+          <div data-variant="gradient"><bx-secondary-button variant="gradient" label="Save for later"></bx-secondary-button></div>
+          <div data-variant="glass"><bx-secondary-button variant="glass" label="Save for later"></bx-secondary-button></div>
+          <div data-variant="pill"><bx-secondary-button variant="pill" label="Save for later"></bx-secondary-button></div>
+      </template>
     </div></section>
     <section class="gate" data-component="danger-button" aria-labelledby="w1-1-h"><h2 id="w1-1-h">Danger button</h2><div class="gate-body">
       <bx-danger-button label="Cancel payment"></bx-danger-button>
       <bx-danger-button label="Cancel payment" busy="true"></bx-danger-button>
+    <template data-variants>
+          <div data-variant="material"><bx-danger-button variant="material" label="Cancel payment"></bx-danger-button></div>
+          <div data-variant="tonal"><bx-danger-button variant="tonal" label="Cancel payment"></bx-danger-button></div>
+          <div data-variant="outlined"><bx-danger-button variant="outlined" label="Cancel payment"></bx-danger-button></div>
+          <div data-variant="text"><bx-danger-button variant="text" label="Cancel payment"></bx-danger-button></div>
+          <div data-variant="elevated"><bx-danger-button variant="elevated" label="Cancel payment"></bx-danger-button></div>
+          <div data-variant="gradient"><bx-danger-button variant="gradient" label="Cancel payment"></bx-danger-button></div>
+          <div data-variant="glass"><bx-danger-button variant="glass" label="Cancel payment"></bx-danger-button></div>
+          <div data-variant="pill"><bx-danger-button variant="pill" label="Cancel payment"></bx-danger-button></div>
+      </template>
     </div></section>
     <section class="gate" data-component="savings-slider" aria-labelledby="w1-2-h"><h2 id="w1-2-h">Savings slider</h2><div class="gate-body">
       <bx-savings-slider label-hint="Monthly saving" value="{{saving}}" prefix="USD" min="1500" max="20000" step="500"></bx-savings-slider>
+    <template data-variants>
+          <div data-variant="material"><bx-savings-slider variant="material" label-hint="Monthly saving" value="{{saving}}" prefix="USD" min="1500" max="20000" step="500"></bx-savings-slider></div>
+          <div data-variant="ticks"><bx-savings-slider variant="ticks" label-hint="Monthly saving" value="{{saving}}" prefix="USD" min="1500" max="20000" step="500"></bx-savings-slider></div>
+          <div data-variant="bubble"><bx-savings-slider variant="bubble" label-hint="Monthly saving" value="{{saving}}" prefix="USD" min="1500" max="20000" step="500"></bx-savings-slider></div>
+          <div data-variant="thick"><bx-savings-slider variant="thick" label-hint="Monthly saving" value="{{saving}}" prefix="USD" min="1500" max="20000" step="500"></bx-savings-slider></div>
+      </template>
     </div></section>
     <section class="gate" data-component="segmented" aria-labelledby="w1-3-h"><h2 id="w1-3-h">Segmented control</h2><div class="gate-body">
       <bx-segmented label-hint="Show" options='["Day", "Week", "Month"]' value="{{show}}"></bx-segmented>
+    <template data-variants>
+          <div data-variant="material"><bx-segmented variant="material" label-hint="Show" options='["Day", "Week", "Month"]' value="{{show}}"></bx-segmented></div>
+          <div data-variant="ios"><bx-segmented variant="ios" label-hint="Show" options='["Day", "Week", "Month"]' value="{{show}}"></bx-segmented></div>
+          <div data-variant="underline"><bx-segmented variant="underline" label-hint="Show" options='["Day", "Week", "Month"]' value="{{show}}"></bx-segmented></div>
+          <div data-variant="enclosed"><bx-segmented variant="enclosed" label-hint="Show" options='["Day", "Week", "Month"]' value="{{show}}"></bx-segmented></div>
+          <div data-variant="pill"><bx-segmented variant="pill" label-hint="Show" options='["Day", "Week", "Month"]' value="{{show}}"></bx-segmented></div>
+      </template>
     </div></section>
     <section class="gate" data-component="filter-chips" aria-labelledby="w1-4-h"><h2 id="w1-4-h">Filter chips</h2><div class="gate-body">
       <bx-filter-chips label-hint="Filter" options='["Card", "Transfer", "Bills", "Salary"]' value="{{filters}}"></bx-filter-chips>
+    <template data-variants>
+          <div data-variant="material"><bx-filter-chips variant="material" label-hint="Filter" options='["Card", "Transfer", "Bills", "Salary"]' value="{{filters}}"></bx-filter-chips></div>
+          <div data-variant="outlined"><bx-filter-chips variant="outlined" label-hint="Filter" options='["Card", "Transfer", "Bills", "Salary"]' value="{{filters}}"></bx-filter-chips></div>
+          <div data-variant="tonal"><bx-filter-chips variant="tonal" label-hint="Filter" options='["Card", "Transfer", "Bills", "Salary"]' value="{{filters}}"></bx-filter-chips></div>
+          <div data-variant="square"><bx-filter-chips variant="square" label-hint="Filter" options='["Card", "Transfer", "Bills", "Salary"]' value="{{filters}}"></bx-filter-chips></div>
+          <div data-variant="glass"><bx-filter-chips variant="glass" label-hint="Filter" options='["Card", "Transfer", "Bills", "Salary"]' value="{{filters}}"></bx-filter-chips></div>
+      </template>
     </div></section>
     <section class="gate" data-component="action-menu" aria-labelledby="w1-5-h"><h2 id="w1-5-h">Action menu</h2><div class="gate-body">
       <bx-action-menu items='["Download statement", "Set a nickname", {"value": "close", "label": "Close the account", "danger": true}]'></bx-action-menu>
@@ -187,6 +357,13 @@
     </div></section>
     <section class="gate" data-component="account-picker" aria-labelledby="w2-0-h"><h2 id="w2-0-h">Account picker</h2><div class="gate-body">
       <bx-account-picker options="[[accounts]]" value="{{account}}"></bx-account-picker>
+    <template data-variants>
+          <div data-variant="material"><bx-account-picker variant="material" options="[[accounts]]" value="{{account}}"></bx-account-picker></div>
+          <div data-variant="outlined"><bx-account-picker variant="outlined" options="[[accounts]]" value="{{account}}"></bx-account-picker></div>
+          <div data-variant="underlined"><bx-account-picker variant="underlined" options="[[accounts]]" value="{{account}}"></bx-account-picker></div>
+          <div data-variant="inline"><bx-account-picker variant="inline" options="[[accounts]]" value="{{account}}"></bx-account-picker></div>
+          <div data-variant="pill"><bx-account-picker variant="pill" options="[[accounts]]" value="{{account}}"></bx-account-picker></div>
+      </template>
     </div></section>
     <section class="gate" data-component="account-summary" aria-labelledby="w2-1-h"><h2 id="w2-1-h">Account summary</h2><div class="gate-body">
       <bx-account-summary items='[{"label":"Savings","value":"12,400.00","meta":"Available 12,150.00"},{"label":"Current","value":"3,210.50","meta":"Overdraft 1,000.00"},{"label":"Deposits","value":"25,000.00","meta":"Matures 14 Mar"}]'></bx-account-summary>
@@ -204,6 +381,14 @@
     <section class="gate" data-component="iban" aria-labelledby="w2-5-h"><h2 id="w2-5-h">IBAN</h2><div class="gate-body">
       <bx-iban value="{{iban}}" required="true"></bx-iban>
       <bx-iban value="GB28NWBK60161331926819" messages-custom='[{"severity": "error", "summary": "Check the IBAN: it starts with the country code."}]'></bx-iban>
+    <template data-variants>
+          <div data-variant="material"><bx-iban variant="material" value="{{iban}}" required="true"></bx-iban></div>
+          <div data-variant="outlined"><bx-iban variant="outlined" value="{{iban}}" required="true"></bx-iban></div>
+          <div data-variant="underlined"><bx-iban variant="underlined" value="{{iban}}" required="true"></bx-iban></div>
+          <div data-variant="floating"><bx-iban variant="floating" value="{{iban}}" required="true"></bx-iban></div>
+          <div data-variant="inline"><bx-iban variant="inline" value="{{iban}}" required="true"></bx-iban></div>
+          <div data-variant="pill"><bx-iban variant="pill" value="{{iban}}" required="true"></bx-iban></div>
+      </template>
     </div></section>
     <section class="gate" data-component="quick-actions" aria-labelledby="w2-6-h"><h2 id="w2-6-h">Quick actions</h2><div class="gate-body">
       <bx-quick-actions items='[{"id": "send", "label": "Send", "icon": "↗"}, {"id": "bills", "label": "Pay bills", "icon": "≡"}, {"id": "topup", "label": "Top up", "icon": "+"}, {"id": "scan", "label": "Scan to pay", "icon": "⌗"}]'></bx-quick-actions>
@@ -229,12 +414,26 @@
     </div></section>
     <section class="gate" data-component="transaction-filter" aria-labelledby="w2-13-h"><h2 id="w2-13-h">Transaction filter</h2><div class="gate-body">
       <bx-transaction-filter options='["Money in", "Money out", "Cards", "Transfers"]' value="{{txFilter}}"></bx-transaction-filter>
+    <template data-variants>
+          <div data-variant="material"><bx-transaction-filter variant="material" options='["Money in", "Money out", "Cards", "Transfers"]' value="{{txFilter}}"></bx-transaction-filter></div>
+          <div data-variant="outlined"><bx-transaction-filter variant="outlined" options='["Money in", "Money out", "Cards", "Transfers"]' value="{{txFilter}}"></bx-transaction-filter></div>
+          <div data-variant="tonal"><bx-transaction-filter variant="tonal" options='["Money in", "Money out", "Cards", "Transfers"]' value="{{txFilter}}"></bx-transaction-filter></div>
+          <div data-variant="square"><bx-transaction-filter variant="square" options='["Money in", "Money out", "Cards", "Transfers"]' value="{{txFilter}}"></bx-transaction-filter></div>
+          <div data-variant="glass"><bx-transaction-filter variant="glass" options='["Money in", "Money out", "Cards", "Transfers"]' value="{{txFilter}}"></bx-transaction-filter></div>
+      </template>
     </div></section>
     <section class="gate" data-component="transaction-details" aria-labelledby="w2-14-h"><h2 id="w2-14-h">Transaction details</h2><div class="gate-body">
       <bx-transaction-details items='[{"label":"Description","value":"Coffee House"},{"label":"Date","value":"Today 08:14"},{"label":"Amount","value":"-4.50 USD"},{"label":"Card","value":"·· 4821"},{"label":"Reference","value":"TX-88211"}]' action-label="Dispute it"></bx-transaction-details>
     </div></section>
     <section class="gate" data-component="repeat" aria-labelledby="w2-15-h"><h2 id="w2-15-h">Repeat</h2><div class="gate-body">
       <bx-repeat value="{{repeat}}"></bx-repeat>
+    <template data-variants>
+          <div data-variant="material"><bx-repeat variant="material" value="{{repeat}}"></bx-repeat></div>
+          <div data-variant="ios"><bx-repeat variant="ios" value="{{repeat}}"></bx-repeat></div>
+          <div data-variant="underline"><bx-repeat variant="underline" value="{{repeat}}"></bx-repeat></div>
+          <div data-variant="enclosed"><bx-repeat variant="enclosed" value="{{repeat}}"></bx-repeat></div>
+          <div data-variant="pill"><bx-repeat variant="pill" value="{{repeat}}"></bx-repeat></div>
+      </template>
     </div></section>
     <section class="gate" data-component="receipt" aria-labelledby="w2-16-h"><h2 id="w2-16-h">Receipt</h2><div class="gate-body">
       <bx-receipt amount="[[1250]]" currency="USD" reference="FX-20391" items='[{"label":"From","value":"Savings ·· 4821"},{"label":"To","value":"A. Rao · HSBC"}]'><bx-secondary-button label="Download"></bx-secondary-button></bx-receipt>
@@ -250,6 +449,12 @@
     </div></section>
     <section class="gate" data-component="maturity-instructions" aria-labelledby="w2-20-h"><h2 id="w2-20-h">Maturity instructions</h2><div class="gate-body">
       <bx-maturity-instructions options='["Renew principal and interest", "Renew principal, pay out interest", "Close and pay out"]' value="{{maturity}}"></bx-maturity-instructions>
+    <template data-variants>
+          <div data-variant="material"><bx-maturity-instructions variant="material" options='["Renew principal and interest", "Renew principal, pay out interest", "Close and pay out"]' value="{{maturity}}"></bx-maturity-instructions></div>
+          <div data-variant="cards"><bx-maturity-instructions variant="cards" options='["Renew principal and interest", "Renew principal, pay out interest", "Close and pay out"]' value="{{maturity}}"></bx-maturity-instructions></div>
+          <div data-variant="chips"><bx-maturity-instructions variant="chips" options='["Renew principal and interest", "Renew principal, pay out interest", "Close and pay out"]' value="{{maturity}}"></bx-maturity-instructions></div>
+          <div data-variant="rows"><bx-maturity-instructions variant="rows" options='["Renew principal and interest", "Renew principal, pay out interest", "Close and pay out"]' value="{{maturity}}"></bx-maturity-instructions></div>
+      </template>
     </div></section>
     <section class="gate" data-component="td-topup" aria-labelledby="w2-21-h"><h2 id="w2-21-h">Deposit top-up</h2><div class="gate-body">
       <bx-td-topup items='[{"label":"Deposit","value":"·· 9011"},{"label":"Current amount","value":"25,000.00"},{"label":"Top-up","value":"5,000.00"},{"label":"New maturity value","value":"31,950.00","total":true}]'></bx-td-topup>
@@ -281,24 +486,63 @@
     </div></section>
     <section class="gate" data-component="activate-card" aria-labelledby="w3-7-h"><h2 id="w3-7-h">Activate card</h2><div class="gate-body">
       <bx-activate-card value="{{code}}"></bx-activate-card>
+    <template data-variants>
+          <div data-variant="material"><bx-activate-card variant="material" value="{{code}}"></bx-activate-card></div>
+          <div data-variant="underline"><bx-activate-card variant="underline" value="{{code}}"></bx-activate-card></div>
+          <div data-variant="rounded"><bx-activate-card variant="rounded" value="{{code}}"></bx-activate-card></div>
+          <div data-variant="joined"><bx-activate-card variant="joined" value="{{code}}"></bx-activate-card></div>
+      </template>
     </div></section>
     <section class="gate" data-component="convert-emi" aria-labelledby="w3-8-h"><h2 id="w3-8-h">Convert to EMI</h2><div class="gate-body">
       <bx-convert-emi label-hint="Pay 1,200.00 over" value="{{emi}}"></bx-convert-emi>
+    <template data-variants>
+          <div data-variant="material"><bx-convert-emi variant="material" label-hint="Pay 1,200.00 over" value="{{emi}}"></bx-convert-emi></div>
+          <div data-variant="ios"><bx-convert-emi variant="ios" label-hint="Pay 1,200.00 over" value="{{emi}}"></bx-convert-emi></div>
+          <div data-variant="underline"><bx-convert-emi variant="underline" label-hint="Pay 1,200.00 over" value="{{emi}}"></bx-convert-emi></div>
+          <div data-variant="enclosed"><bx-convert-emi variant="enclosed" label-hint="Pay 1,200.00 over" value="{{emi}}"></bx-convert-emi></div>
+          <div data-variant="pill"><bx-convert-emi variant="pill" label-hint="Pay 1,200.00 over" value="{{emi}}"></bx-convert-emi></div>
+      </template>
     </div></section>
     <section class="gate" data-component="redeem-points" aria-labelledby="w3-9-h"><h2 id="w3-9-h">Redeem points</h2><div class="gate-body">
       <bx-redeem-points value="{{points}}"></bx-redeem-points>
+    <template data-variants>
+          <div data-variant="material"><bx-redeem-points variant="material" value="{{points}}"></bx-redeem-points></div>
+          <div data-variant="ticks"><bx-redeem-points variant="ticks" value="{{points}}"></bx-redeem-points></div>
+          <div data-variant="bubble"><bx-redeem-points variant="bubble" value="{{points}}"></bx-redeem-points></div>
+          <div data-variant="thick"><bx-redeem-points variant="thick" value="{{points}}"></bx-redeem-points></div>
+      </template>
     </div></section>
     <section class="gate" data-component="spend-limit" aria-labelledby="w3-10-h"><h2 id="w3-10-h">Card limits</h2><div class="gate-body">
       <bx-spend-limit value="{{limit}}" prefix="USD"></bx-spend-limit>
     </div></section>
     <section class="gate" data-component="card-controls" aria-labelledby="w3-11-h"><h2 id="w3-11-h">Card controls</h2><div class="gate-body">
       <bx-card-controls options='["Online payments","ATM withdrawals","Use abroad"]' value="{{controls}}"></bx-card-controls>
+    <template data-variants>
+          <div data-variant="material"><bx-card-controls variant="material" options='["Online payments","ATM withdrawals","Use abroad"]' value="{{controls}}"></bx-card-controls></div>
+          <div data-variant="cards"><bx-card-controls variant="cards" options='["Online payments","ATM withdrawals","Use abroad"]' value="{{controls}}"></bx-card-controls></div>
+          <div data-variant="chips"><bx-card-controls variant="chips" options='["Online payments","ATM withdrawals","Use abroad"]' value="{{controls}}"></bx-card-controls></div>
+          <div data-variant="rows"><bx-card-controls variant="rows" options='["Online payments","ATM withdrawals","Use abroad"]' value="{{controls}}"></bx-card-controls></div>
+          <div data-variant="round"><bx-card-controls variant="round" options='["Online payments","ATM withdrawals","Use abroad"]' value="{{controls}}"></bx-card-controls></div>
+      </template>
     </div></section>
     <section class="gate" data-component="block-card" aria-labelledby="w3-12-h"><h2 id="w3-12-h">Block card</h2><div class="gate-body">
       <bx-block-card value="{{blocked}}"></bx-block-card>
+    <template data-variants>
+          <div data-variant="material"><bx-block-card variant="material" value="{{blocked}}"></bx-block-card></div>
+          <div data-variant="ios"><bx-block-card variant="ios" value="{{blocked}}"></bx-block-card></div>
+          <div data-variant="fluent"><bx-block-card variant="fluent" value="{{blocked}}"></bx-block-card></div>
+          <div data-variant="labelled"><bx-block-card variant="labelled" value="{{blocked}}"></bx-block-card></div>
+          <div data-variant="squish"><bx-block-card variant="squish" value="{{blocked}}"></bx-block-card></div>
+      </template>
     </div></section>
     <section class="gate" data-component="reset-pin" aria-labelledby="w3-13-h"><h2 id="w3-13-h">Reset PIN</h2><div class="gate-body">
       <bx-reset-pin value="{{pin}}"></bx-reset-pin>
+    <template data-variants>
+          <div data-variant="material"><bx-reset-pin variant="material" value="{{pin}}"></bx-reset-pin></div>
+          <div data-variant="underline"><bx-reset-pin variant="underline" value="{{pin}}"></bx-reset-pin></div>
+          <div data-variant="rounded"><bx-reset-pin variant="rounded" value="{{pin}}"></bx-reset-pin></div>
+          <div data-variant="joined"><bx-reset-pin variant="joined" value="{{pin}}"></bx-reset-pin></div>
+      </template>
     </div></section>
     <section class="gate" data-component="raise-dispute" aria-labelledby="w3-14-h"><h2 id="w3-14-h">Raise dispute</h2><div class="gate-body">
       <bx-raise-dispute items='[{"label":"Transaction","value":"Coffee House · 4.50"},{"label":"Reason","value":"Charged twice"}]'></bx-raise-dispute>
@@ -312,6 +556,12 @@
     <section class="gate" data-component="otp" aria-labelledby="w3-17-h"><h2 id="w3-17-h">One-time code</h2><div class="gate-body">
       <bx-otp value="{{code}}" help.instruction="We sent it to •••• 0123"></bx-otp>
       <bx-otp value="123456" messages-custom='[{"severity": "error", "summary": "That code is not right. Check it, or send a new one."}]'></bx-otp>
+    <template data-variants>
+          <div data-variant="material"><bx-otp variant="material" value="{{code}}" help.instruction="We sent it to •••• 0123"></bx-otp></div>
+          <div data-variant="underline"><bx-otp variant="underline" value="{{code}}" help.instruction="We sent it to •••• 0123"></bx-otp></div>
+          <div data-variant="rounded"><bx-otp variant="rounded" value="{{code}}" help.instruction="We sent it to •••• 0123"></bx-otp></div>
+          <div data-variant="joined"><bx-otp variant="joined" value="{{code}}" help.instruction="We sent it to •••• 0123"></bx-otp></div>
+      </template>
     </div></section>
     <section class="gate" data-component="biometric" aria-labelledby="w3-18-h"><h2 id="w3-18-h">Biometric</h2><div class="gate-body">
       <bx-biometric text="Touch the sensor to approve 1,250.00 to A. Rao."></bx-biometric>
@@ -326,6 +576,13 @@
     </div></section>
     <section class="gate" data-component="sensitive" aria-labelledby="w3-21-h"><h2 id="w3-21-h">Sensitive field</h2><div class="gate-body">
       <bx-sensitive value="4111 1111 1111 4821"></bx-sensitive>
+    <template data-variants>
+          <div data-variant="material"><bx-sensitive variant="material" value="4111 1111 1111 4821"></bx-sensitive></div>
+          <div data-variant="outlined"><bx-sensitive variant="outlined" value="4111 1111 1111 4821"></bx-sensitive></div>
+          <div data-variant="underlined"><bx-sensitive variant="underlined" value="4111 1111 1111 4821"></bx-sensitive></div>
+          <div data-variant="floating"><bx-sensitive variant="floating" value="4111 1111 1111 4821"></bx-sensitive></div>
+          <div data-variant="inline"><bx-sensitive variant="inline" value="4111 1111 1111 4821"></bx-sensitive></div>
+      </template>
     </div></section>
     <section class="gate" data-component="kyc-steps" aria-labelledby="w3-22-h"><h2 id="w3-22-h">KYC steps</h2><div class="gate-body">
       <bx-kyc-steps selected-step="Selfie"></bx-kyc-steps>
@@ -344,6 +601,13 @@
     </div></section>
     <section class="gate" data-component="spend-categories" aria-labelledby="w4-3-h"><h2 id="w4-3-h">Spend categories</h2><div class="gate-body">
       <bx-spend-categories options='["Eating out","Groceries","Travel","Shopping"]' label-hint="Coffee House · 4.50 is" value="{{cats}}"></bx-spend-categories>
+    <template data-variants>
+          <div data-variant="material"><bx-spend-categories variant="material" options='["Eating out","Groceries","Travel","Shopping"]' label-hint="Coffee House · 4.50 is" value="{{cats}}"></bx-spend-categories></div>
+          <div data-variant="outlined"><bx-spend-categories variant="outlined" options='["Eating out","Groceries","Travel","Shopping"]' label-hint="Coffee House · 4.50 is" value="{{cats}}"></bx-spend-categories></div>
+          <div data-variant="tonal"><bx-spend-categories variant="tonal" options='["Eating out","Groceries","Travel","Shopping"]' label-hint="Coffee House · 4.50 is" value="{{cats}}"></bx-spend-categories></div>
+          <div data-variant="square"><bx-spend-categories variant="square" options='["Eating out","Groceries","Travel","Shopping"]' label-hint="Coffee House · 4.50 is" value="{{cats}}"></bx-spend-categories></div>
+          <div data-variant="glass"><bx-spend-categories variant="glass" options='["Eating out","Groceries","Travel","Shopping"]' label-hint="Coffee House · 4.50 is" value="{{cats}}"></bx-spend-categories></div>
+      </template>
     </div></section>
     <section class="gate" data-component="approval-queue" aria-labelledby="w4-4-h"><h2 id="w4-4-h">Approval queue</h2><div class="gate-body">
       <bx-approval-queue items='[{"title":"Payroll Feb · prioritized","meta":"Financial · 182,400.00","value":"PAY-4410"},{"title":"Vendor ABC Ltd","meta":"Financial · 12,000.00","value":"PAY-4412"},{"title":"Add payee J. Mehta","meta":"Non-financial","value":"BEN-218"}]'></bx-approval-queue>
@@ -356,6 +620,13 @@
     </div></section>
     <section class="gate" data-component="reroute" aria-labelledby="w4-7-h"><h2 id="w4-7-h">Re-route</h2><div class="gate-body">
       <bx-reroute options="[[approvers]]" value="{{reroute}}"></bx-reroute>
+    <template data-variants>
+          <div data-variant="material"><bx-reroute variant="material" options="[[approvers]]" value="{{reroute}}"></bx-reroute></div>
+          <div data-variant="outlined"><bx-reroute variant="outlined" options="[[approvers]]" value="{{reroute}}"></bx-reroute></div>
+          <div data-variant="underlined"><bx-reroute variant="underlined" options="[[approvers]]" value="{{reroute}}"></bx-reroute></div>
+          <div data-variant="inline"><bx-reroute variant="inline" options="[[approvers]]" value="{{reroute}}"></bx-reroute></div>
+          <div data-variant="pill"><bx-reroute variant="pill" options="[[approvers]]" value="{{reroute}}"></bx-reroute></div>
+      </template>
     </div></section>
     <section class="gate" data-component="modification-requested" aria-labelledby="w4-8-h"><h2 id="w4-8-h">Modification requested</h2><div class="gate-body">
       <bx-modification-requested message="PAY-4410 was sent back: change the value date to a working day."></bx-modification-requested>
@@ -365,6 +636,13 @@
     </div></section>
     <section class="gate" data-component="structure-type" aria-labelledby="w4-10-h"><h2 id="w4-10-h">Structure type</h2><div class="gate-body">
       <bx-structure-type value="{{structure}}"></bx-structure-type>
+    <template data-variants>
+          <div data-variant="material"><bx-structure-type variant="material" value="{{structure}}"></bx-structure-type></div>
+          <div data-variant="ios"><bx-structure-type variant="ios" value="{{structure}}"></bx-structure-type></div>
+          <div data-variant="underline"><bx-structure-type variant="underline" value="{{structure}}"></bx-structure-type></div>
+          <div data-variant="enclosed"><bx-structure-type variant="enclosed" value="{{structure}}"></bx-structure-type></div>
+          <div data-variant="pill"><bx-structure-type variant="pill" value="{{structure}}"></bx-structure-type></div>
+      </template>
     </div></section>
     <section class="gate" data-component="account-structure" aria-labelledby="w4-11-h"><h2 id="w4-11-h">Account structure</h2><div class="gate-body">
       <bx-account-structure items='[{"id":"h","title":"Header account ·· 1000","body":"Sweeps to zero balance daily at 18:00."},{"id":"p","title":"Child: Payroll ·· 1010","body":"Target balance 5,000.00."},{"id":"v","title":"Child: Vendors ·· 1020","body":"Sweeps above 2,000.00."}]'></bx-account-structure>
@@ -383,24 +661,66 @@
     </div></section>
     <section class="gate" data-component="sign-in-options" aria-labelledby="w4-16-h"><h2 id="w4-16-h">Sign-in options</h2><div class="gate-body">
       <bx-sign-in-options options='["Passkey","Facial ID","Soft token"]' value="{{signIn}}"></bx-sign-in-options>
+    <template data-variants>
+          <div data-variant="material"><bx-sign-in-options variant="material" options='["Passkey","Facial ID","Soft token"]' value="{{signIn}}"></bx-sign-in-options></div>
+          <div data-variant="cards"><bx-sign-in-options variant="cards" options='["Passkey","Facial ID","Soft token"]' value="{{signIn}}"></bx-sign-in-options></div>
+          <div data-variant="chips"><bx-sign-in-options variant="chips" options='["Passkey","Facial ID","Soft token"]' value="{{signIn}}"></bx-sign-in-options></div>
+          <div data-variant="rows"><bx-sign-in-options variant="rows" options='["Passkey","Facial ID","Soft token"]' value="{{signIn}}"></bx-sign-in-options></div>
+          <div data-variant="round"><bx-sign-in-options variant="round" options='["Passkey","Facial ID","Soft token"]' value="{{signIn}}"></bx-sign-in-options></div>
+      </template>
     </div></section>
     <section class="gate" data-component="otp-delivery" aria-labelledby="w4-17-h"><h2 id="w4-17-h">Code delivery</h2><div class="gate-body">
       <bx-otp-delivery value="{{codesBy}}"></bx-otp-delivery>
+    <template data-variants>
+          <div data-variant="material"><bx-otp-delivery variant="material" value="{{codesBy}}"></bx-otp-delivery></div>
+          <div data-variant="ios"><bx-otp-delivery variant="ios" value="{{codesBy}}"></bx-otp-delivery></div>
+          <div data-variant="underline"><bx-otp-delivery variant="underline" value="{{codesBy}}"></bx-otp-delivery></div>
+          <div data-variant="enclosed"><bx-otp-delivery variant="enclosed" value="{{codesBy}}"></bx-otp-delivery></div>
+          <div data-variant="pill"><bx-otp-delivery variant="pill" value="{{codesBy}}"></bx-otp-delivery></div>
+      </template>
     </div></section>
     <section class="gate" data-component="devices" aria-labelledby="w4-18-h"><h2 id="w4-18-h">Devices</h2><div class="gate-body">
       <bx-devices items='[{"title":"iPhone 15 · this device","meta":"Registered 12 Mar","value":"Active"},{"title":"Chrome on Windows","meta":"Last used today","value":"Web"}]'></bx-devices>
     </div></section>
     <section class="gate" data-component="appearance" aria-labelledby="w4-19-h"><h2 id="w4-19-h">Appearance</h2><div class="gate-body">
       <bx-appearance value="{{theme}}"></bx-appearance>
+    <template data-variants>
+          <div data-variant="material"><bx-appearance variant="material" value="{{theme}}"></bx-appearance></div>
+          <div data-variant="ios"><bx-appearance variant="ios" value="{{theme}}"></bx-appearance></div>
+          <div data-variant="underline"><bx-appearance variant="underline" value="{{theme}}"></bx-appearance></div>
+          <div data-variant="enclosed"><bx-appearance variant="enclosed" value="{{theme}}"></bx-appearance></div>
+          <div data-variant="pill"><bx-appearance variant="pill" value="{{theme}}"></bx-appearance></div>
+      </template>
     </div></section>
     <section class="gate" data-component="language" aria-labelledby="w4-20-h"><h2 id="w4-20-h">Language</h2><div class="gate-body">
       <bx-language options="[[languages]]" value="{{lang}}"></bx-language>
+    <template data-variants>
+          <div data-variant="material"><bx-language variant="material" options="[[languages]]" value="{{lang}}"></bx-language></div>
+          <div data-variant="outlined"><bx-language variant="outlined" options="[[languages]]" value="{{lang}}"></bx-language></div>
+          <div data-variant="underlined"><bx-language variant="underlined" options="[[languages]]" value="{{lang}}"></bx-language></div>
+          <div data-variant="inline"><bx-language variant="inline" options="[[languages]]" value="{{lang}}"></bx-language></div>
+          <div data-variant="pill"><bx-language variant="pill" options="[[languages]]" value="{{lang}}"></bx-language></div>
+      </template>
     </div></section>
     <section class="gate" data-component="alerts-subscription" aria-labelledby="w4-21-h"><h2 id="w4-21-h">Alert subscriptions</h2><div class="gate-body">
       <bx-alerts-subscription options='["Payments over 500.00","Low balance","Sign-in from a new device"]' value="{{alerts}}"></bx-alerts-subscription>
+    <template data-variants>
+          <div data-variant="material"><bx-alerts-subscription variant="material" options='["Payments over 500.00","Low balance","Sign-in from a new device"]' value="{{alerts}}"></bx-alerts-subscription></div>
+          <div data-variant="cards"><bx-alerts-subscription variant="cards" options='["Payments over 500.00","Low balance","Sign-in from a new device"]' value="{{alerts}}"></bx-alerts-subscription></div>
+          <div data-variant="chips"><bx-alerts-subscription variant="chips" options='["Payments over 500.00","Low balance","Sign-in from a new device"]' value="{{alerts}}"></bx-alerts-subscription></div>
+          <div data-variant="rows"><bx-alerts-subscription variant="rows" options='["Payments over 500.00","Low balance","Sign-in from a new device"]' value="{{alerts}}"></bx-alerts-subscription></div>
+          <div data-variant="round"><bx-alerts-subscription variant="round" options='["Payments over 500.00","Low balance","Sign-in from a new device"]' value="{{alerts}}"></bx-alerts-subscription></div>
+      </template>
     </div></section>
     <section class="gate" data-component="do-not-disturb" aria-labelledby="w4-22-h"><h2 id="w4-22-h">Do not disturb</h2><div class="gate-body">
       <bx-do-not-disturb value="{{quiet}}"></bx-do-not-disturb>
+    <template data-variants>
+          <div data-variant="material"><bx-do-not-disturb variant="material" value="{{quiet}}"></bx-do-not-disturb></div>
+          <div data-variant="ios"><bx-do-not-disturb variant="ios" value="{{quiet}}"></bx-do-not-disturb></div>
+          <div data-variant="fluent"><bx-do-not-disturb variant="fluent" value="{{quiet}}"></bx-do-not-disturb></div>
+          <div data-variant="labelled"><bx-do-not-disturb variant="labelled" value="{{quiet}}"></bx-do-not-disturb></div>
+          <div data-variant="squish"><bx-do-not-disturb variant="squish" value="{{quiet}}"></bx-do-not-disturb></div>
+      </template>
     </div></section>
     <section class="gate" data-component="consents" aria-labelledby="w4-23-h"><h2 id="w4-23-h">Consents</h2><div class="gate-body">
       <bx-consents items='[{"title":"Budget app (open banking)","meta":"Granted 02 Jan · ends 02 Apr","value":"Accounts"},{"title":"Tax filing service","meta":"Granted 10 Dec · ends 10 Mar","value":"Statements"}]'></bx-consents>
@@ -422,6 +742,13 @@
     </div></section>
     <section class="gate" data-component="compose-mail" aria-labelledby="w5-3-h"><h2 id="w5-3-h">Compose message</h2><div class="gate-body">
       <bx-compose-mail value="{{message}}"></bx-compose-mail>
+    <template data-variants>
+          <div data-variant="material"><bx-compose-mail variant="material" value="{{message}}"></bx-compose-mail></div>
+          <div data-variant="outlined"><bx-compose-mail variant="outlined" value="{{message}}"></bx-compose-mail></div>
+          <div data-variant="underlined"><bx-compose-mail variant="underlined" value="{{message}}"></bx-compose-mail></div>
+          <div data-variant="floating"><bx-compose-mail variant="floating" value="{{message}}"></bx-compose-mail></div>
+          <div data-variant="inline"><bx-compose-mail variant="inline" value="{{message}}"></bx-compose-mail></div>
+      </template>
     </div></section>
     <section class="gate" data-component="e-receipts" aria-labelledby="w5-4-h"><h2 id="w5-4-h">E-receipts</h2><div class="gate-body">
       <bx-e-receipts items='[{"title":"Transfer to A. Rao","meta":"14 Jan · 1,250.00","value":"PDF"},{"title":"Electricity bill","meta":"10 Jan · 86.20","value":"PDF"}]'></bx-e-receipts>
@@ -431,9 +758,22 @@
     </div></section>
     <section class="gate" data-component="statement-request" aria-labelledby="w5-6-h"><h2 id="w5-6-h">Statement request</h2><div class="gate-body">
       <bx-statement-request value="{{period}}" max-days="92"></bx-statement-request>
+    <template data-variants>
+          <div data-variant="material"><bx-statement-request variant="material" value="{{period}}" max-days="92"></bx-statement-request></div>
+          <div data-variant="outlined"><bx-statement-request variant="outlined" value="{{period}}" max-days="92"></bx-statement-request></div>
+          <div data-variant="underlined"><bx-statement-request variant="underlined" value="{{period}}" max-days="92"></bx-statement-request></div>
+          <div data-variant="inline"><bx-statement-request variant="inline" value="{{period}}" max-days="92"></bx-statement-request></div>
+      </template>
     </div></section>
     <section class="gate" data-component="statement-format" aria-labelledby="w5-7-h"><h2 id="w5-7-h">Statement format</h2><div class="gate-body">
       <bx-statement-format value="{{format}}"></bx-statement-format>
+    <template data-variants>
+          <div data-variant="material"><bx-statement-format variant="material" value="{{format}}"></bx-statement-format></div>
+          <div data-variant="ios"><bx-statement-format variant="ios" value="{{format}}"></bx-statement-format></div>
+          <div data-variant="underline"><bx-statement-format variant="underline" value="{{format}}"></bx-statement-format></div>
+          <div data-variant="enclosed"><bx-statement-format variant="enclosed" value="{{format}}"></bx-statement-format></div>
+          <div data-variant="pill"><bx-statement-format variant="pill" value="{{format}}"></bx-statement-format></div>
+      </template>
     </div></section>
     <section class="gate" data-component="self-register" aria-labelledby="w5-8-h"><h2 id="w5-8-h">Self registration</h2><div class="gate-body">
       <bx-self-register selected-step="Verify"></bx-self-register>
@@ -449,12 +789,25 @@
     </div></section>
     <section class="gate" data-component="terms-consent" aria-labelledby="w5-12-h"><h2 id="w5-12-h">Terms consent</h2><div class="gate-body">
       <bx-terms-consent options='["I accept the terms and conditions","Send me offers by email"]' value="{{terms}}"></bx-terms-consent>
+    <template data-variants>
+          <div data-variant="material"><bx-terms-consent variant="material" options='["I accept the terms and conditions","Send me offers by email"]' value="{{terms}}"></bx-terms-consent></div>
+          <div data-variant="cards"><bx-terms-consent variant="cards" options='["I accept the terms and conditions","Send me offers by email"]' value="{{terms}}"></bx-terms-consent></div>
+          <div data-variant="chips"><bx-terms-consent variant="chips" options='["I accept the terms and conditions","Send me offers by email"]' value="{{terms}}"></bx-terms-consent></div>
+          <div data-variant="rows"><bx-terms-consent variant="rows" options='["I accept the terms and conditions","Send me offers by email"]' value="{{terms}}"></bx-terms-consent></div>
+          <div data-variant="round"><bx-terms-consent variant="round" options='["I accept the terms and conditions","Send me offers by email"]' value="{{terms}}"></bx-terms-consent></div>
+      </template>
     </div></section>
     <section class="gate" data-component="loan-calculator" aria-labelledby="w5-13-h"><h2 id="w5-13-h">Loan calculator</h2><div class="gate-body">
       <bx-loan-calculator currency="USD" action-label="Apply for this loan"></bx-loan-calculator>
     </div></section>
     <section class="gate" data-component="eligibility-calculator" aria-labelledby="w5-14-h"><h2 id="w5-14-h">Eligibility calculator</h2><div class="gate-body">
       <bx-eligibility-calculator value="{{income}}" prefix="USD" help-text="You could borrow up to 60,000.00"></bx-eligibility-calculator>
+    <template data-variants>
+          <div data-variant="material"><bx-eligibility-calculator variant="material" value="{{income}}" prefix="USD" help-text="You could borrow up to 60,000.00"></bx-eligibility-calculator></div>
+          <div data-variant="ticks"><bx-eligibility-calculator variant="ticks" value="{{income}}" prefix="USD" help-text="You could borrow up to 60,000.00"></bx-eligibility-calculator></div>
+          <div data-variant="bubble"><bx-eligibility-calculator variant="bubble" value="{{income}}" prefix="USD" help-text="You could borrow up to 60,000.00"></bx-eligibility-calculator></div>
+          <div data-variant="thick"><bx-eligibility-calculator variant="thick" value="{{income}}" prefix="USD" help-text="You could borrow up to 60,000.00"></bx-eligibility-calculator></div>
+      </template>
     </div></section>
     <section class="gate" data-component="td-calculator" aria-labelledby="w5-15-h"><h2 id="w5-15-h">Deposit calculator</h2><div class="gate-body">
       <bx-td-calculator currency="USD"></bx-td-calculator>
@@ -464,6 +817,12 @@
     </div></section>
     <section class="gate" data-component="goal-calculator" aria-labelledby="w5-17-h"><h2 id="w5-17-h">Goal calculator</h2><div class="gate-body">
       <bx-goal-calculator value="{{saving}}" prefix="USD" help-text="You reach 3,000.00 in 8 months"></bx-goal-calculator>
+    <template data-variants>
+          <div data-variant="material"><bx-goal-calculator variant="material" value="{{saving}}" prefix="USD" help-text="You reach 3,000.00 in 8 months"></bx-goal-calculator></div>
+          <div data-variant="ticks"><bx-goal-calculator variant="ticks" value="{{saving}}" prefix="USD" help-text="You reach 3,000.00 in 8 months"></bx-goal-calculator></div>
+          <div data-variant="bubble"><bx-goal-calculator variant="bubble" value="{{saving}}" prefix="USD" help-text="You reach 3,000.00 in 8 months"></bx-goal-calculator></div>
+          <div data-variant="thick"><bx-goal-calculator variant="thick" value="{{saving}}" prefix="USD" help-text="You reach 3,000.00 in 8 months"></bx-goal-calculator></div>
+      </template>
     </div></section>
     <section class="gate" data-component="locator" aria-labelledby="w5-18-h"><h2 id="w5-18-h">Locator</h2><div class="gate-body">
       <bx-locator items="[[places]]"></bx-locator>
@@ -557,6 +916,12 @@
     </div></section>
     <section class="gate" data-component="bulk-file-upload" aria-labelledby="w6-25-h"><h2 id="w6-25-h">Bulk file upload</h2><div class="gate-body">
       <bx-bulk-file-upload value="{{bulk}}"></bx-bulk-file-upload>
+    <template data-variants>
+          <div data-variant="material"><bx-bulk-file-upload variant="material" value="{{bulk}}"></bx-bulk-file-upload></div>
+          <div data-variant="dropzone"><bx-bulk-file-upload variant="dropzone" value="{{bulk}}"></bx-bulk-file-upload></div>
+          <div data-variant="compact"><bx-bulk-file-upload variant="compact" value="{{bulk}}"></bx-bulk-file-upload></div>
+          <div data-variant="card"><bx-bulk-file-upload variant="card" value="{{bulk}}"></bx-bulk-file-upload></div>
+      </template>
     </div></section>
     <section class="gate" data-component="quick-links-corp" aria-labelledby="w6-26-h"><h2 id="w6-26-h">Quick links (corporate)</h2><div class="gate-body">
       <bx-quick-links-corp items='[{"id":"own","label":"Own account","icon":"⇄"},{"id":"transfer","label":"Transfer","icon":"↗"},{"id":"adhoc","label":"Ad-hoc","icon":"+"},{"id":"file","label":"File upload","icon":"⇪"}]'></bx-quick-links-corp>
@@ -629,6 +994,16 @@
     </div></section>
     <section class="gate" data-component="magnetic-button" aria-labelledby="w7-17-h"><h2 id="w7-17-h">Magnetic button</h2><div class="gate-body">
       <bx-magnetic-button label="Open an account"></bx-magnetic-button>
+    <template data-variants>
+          <div data-variant="material"><bx-magnetic-button variant="material" label="Open an account"></bx-magnetic-button></div>
+          <div data-variant="tonal"><bx-magnetic-button variant="tonal" label="Open an account"></bx-magnetic-button></div>
+          <div data-variant="outlined"><bx-magnetic-button variant="outlined" label="Open an account"></bx-magnetic-button></div>
+          <div data-variant="text"><bx-magnetic-button variant="text" label="Open an account"></bx-magnetic-button></div>
+          <div data-variant="elevated"><bx-magnetic-button variant="elevated" label="Open an account"></bx-magnetic-button></div>
+          <div data-variant="gradient"><bx-magnetic-button variant="gradient" label="Open an account"></bx-magnetic-button></div>
+          <div data-variant="glass"><bx-magnetic-button variant="glass" label="Open an account"></bx-magnetic-button></div>
+          <div data-variant="pill"><bx-magnetic-button variant="pill" label="Open an account"></bx-magnetic-button></div>
+      </template>
     </div></section>
     <section class="gate" data-component="highlight-border" aria-labelledby="w7-18-h"><h2 id="w7-18-h">Highlight border</h2><div class="gate-body">
       <bx-highlight-border><p>The screen's own content</p></bx-highlight-border>
@@ -665,9 +1040,22 @@
     </div></section>
     <section class="gate" data-component="elastic-slider" aria-labelledby="w7-29-h"><h2 id="w7-29-h">Elastic slider</h2><div class="gate-body">
       <bx-elastic-slider label-hint="Amount" value="500" prefix="USD"></bx-elastic-slider>
+    <template data-variants>
+          <div data-variant="material"><bx-elastic-slider variant="material" label-hint="Amount" value="500" prefix="USD"></bx-elastic-slider></div>
+          <div data-variant="ticks"><bx-elastic-slider variant="ticks" label-hint="Amount" value="500" prefix="USD"></bx-elastic-slider></div>
+          <div data-variant="bubble"><bx-elastic-slider variant="bubble" label-hint="Amount" value="500" prefix="USD"></bx-elastic-slider></div>
+          <div data-variant="thick"><bx-elastic-slider variant="thick" label-hint="Amount" value="500" prefix="USD"></bx-elastic-slider></div>
+      </template>
     </div></section>
     <section class="gate" data-component="option-wheel" aria-labelledby="w7-30-h"><h2 id="w7-30-h">Option wheel</h2><div class="gate-body">
       <bx-option-wheel label-hint="Tenure" options='["3 months","6 months","12 months"]' value="6 months"></bx-option-wheel>
+    <template data-variants>
+          <div data-variant="material"><bx-option-wheel variant="material" label-hint="Tenure" options='["3 months","6 months","12 months"]' value="6 months"></bx-option-wheel></div>
+          <div data-variant="outlined"><bx-option-wheel variant="outlined" label-hint="Tenure" options='["3 months","6 months","12 months"]' value="6 months"></bx-option-wheel></div>
+          <div data-variant="underlined"><bx-option-wheel variant="underlined" label-hint="Tenure" options='["3 months","6 months","12 months"]' value="6 months"></bx-option-wheel></div>
+          <div data-variant="inline"><bx-option-wheel variant="inline" label-hint="Tenure" options='["3 months","6 months","12 months"]' value="6 months"></bx-option-wheel></div>
+          <div data-variant="pill"><bx-option-wheel variant="pill" label-hint="Tenure" options='["3 months","6 months","12 months"]' value="6 months"></bx-option-wheel></div>
+      </template>
     </div></section>
     <section class="gate" data-component="pill-nav" aria-labelledby="w7-31-h"><h2 id="w7-31-h">Pill navigation</h2><div class="gate-body">
       <bx-pill-nav items='["Accounts","Payments","Cards"]' selection="Accounts"></bx-pill-nav>
@@ -719,12 +1107,38 @@
     </div></section>
     <section class="gate" data-component="slide-to-confirm" aria-labelledby="w7-47-h"><h2 id="w7-47-h">Slide to confirm</h2><div class="gate-body">
       <bx-slide-to-confirm label="Slide to pay 1,250.00"></bx-slide-to-confirm>
+    <template data-variants>
+          <div data-variant="material"><bx-slide-to-confirm variant="material" label="Slide to pay 1,250.00"></bx-slide-to-confirm></div>
+          <div data-variant="tonal"><bx-slide-to-confirm variant="tonal" label="Slide to pay 1,250.00"></bx-slide-to-confirm></div>
+          <div data-variant="outlined"><bx-slide-to-confirm variant="outlined" label="Slide to pay 1,250.00"></bx-slide-to-confirm></div>
+          <div data-variant="text"><bx-slide-to-confirm variant="text" label="Slide to pay 1,250.00"></bx-slide-to-confirm></div>
+          <div data-variant="elevated"><bx-slide-to-confirm variant="elevated" label="Slide to pay 1,250.00"></bx-slide-to-confirm></div>
+          <div data-variant="gradient"><bx-slide-to-confirm variant="gradient" label="Slide to pay 1,250.00"></bx-slide-to-confirm></div>
+          <div data-variant="glass"><bx-slide-to-confirm variant="glass" label="Slide to pay 1,250.00"></bx-slide-to-confirm></div>
+          <div data-variant="pill"><bx-slide-to-confirm variant="pill" label="Slide to pay 1,250.00"></bx-slide-to-confirm></div>
+      </template>
     </div></section>
     <section class="gate" data-component="hold-to-confirm" aria-labelledby="w7-48-h"><h2 id="w7-48-h">Hold to confirm</h2><div class="gate-body">
       <bx-hold-to-confirm label="Hold to close the account"></bx-hold-to-confirm>
+    <template data-variants>
+          <div data-variant="material"><bx-hold-to-confirm variant="material" label="Hold to close the account"></bx-hold-to-confirm></div>
+          <div data-variant="tonal"><bx-hold-to-confirm variant="tonal" label="Hold to close the account"></bx-hold-to-confirm></div>
+          <div data-variant="outlined"><bx-hold-to-confirm variant="outlined" label="Hold to close the account"></bx-hold-to-confirm></div>
+          <div data-variant="text"><bx-hold-to-confirm variant="text" label="Hold to close the account"></bx-hold-to-confirm></div>
+          <div data-variant="elevated"><bx-hold-to-confirm variant="elevated" label="Hold to close the account"></bx-hold-to-confirm></div>
+          <div data-variant="gradient"><bx-hold-to-confirm variant="gradient" label="Hold to close the account"></bx-hold-to-confirm></div>
+          <div data-variant="glass"><bx-hold-to-confirm variant="glass" label="Hold to close the account"></bx-hold-to-confirm></div>
+          <div data-variant="pill"><bx-hold-to-confirm variant="pill" label="Hold to close the account"></bx-hold-to-confirm></div>
+      </template>
     </div></section>
     <section class="gate" data-component="otp-slots" aria-labelledby="w7-49-h"><h2 id="w7-49-h">OTP slots</h2><div class="gate-body">
       <bx-otp-slots value="12"></bx-otp-slots>
+    <template data-variants>
+          <div data-variant="material"><bx-otp-slots variant="material" value="12"></bx-otp-slots></div>
+          <div data-variant="underline"><bx-otp-slots variant="underline" value="12"></bx-otp-slots></div>
+          <div data-variant="rounded"><bx-otp-slots variant="rounded" value="12"></bx-otp-slots></div>
+          <div data-variant="joined"><bx-otp-slots variant="joined" value="12"></bx-otp-slots></div>
+      </template>
     </div></section>
     <section class="gate" data-component="receipt-tear" aria-labelledby="w7-50-h"><h2 id="w7-50-h">Torn receipt</h2><div class="gate-body">
       <bx-receipt-tear amount="1250" currency="USD" reference="FX-20391"></bx-receipt-tear>
@@ -740,21 +1154,62 @@
     </div></section>
     <section class="gate" data-component="bell-toggle" aria-labelledby="w7-54-h"><h2 id="w7-54-h">Bell toggle</h2><div class="gate-body">
       <bx-bell-toggle value="true"></bx-bell-toggle>
+    <template data-variants>
+          <div data-variant="material"><bx-bell-toggle variant="material" value="true"></bx-bell-toggle></div>
+          <div data-variant="ios"><bx-bell-toggle variant="ios" value="true"></bx-bell-toggle></div>
+          <div data-variant="fluent"><bx-bell-toggle variant="fluent" value="true"></bx-bell-toggle></div>
+          <div data-variant="labelled"><bx-bell-toggle variant="labelled" value="true"></bx-bell-toggle></div>
+          <div data-variant="squish"><bx-bell-toggle variant="squish" value="true"></bx-bell-toggle></div>
+      </template>
     </div></section>
     <section class="gate" data-component="squish-switch" aria-labelledby="w7-55-h"><h2 id="w7-55-h">Squish switch</h2><div class="gate-body">
       <bx-squish-switch label-hint="Round up to save" value="true"></bx-squish-switch>
+    <template data-variants>
+          <div data-variant="material"><bx-squish-switch variant="material" label-hint="Round up to save" value="true"></bx-squish-switch></div>
+          <div data-variant="ios"><bx-squish-switch variant="ios" label-hint="Round up to save" value="true"></bx-squish-switch></div>
+          <div data-variant="fluent"><bx-squish-switch variant="fluent" label-hint="Round up to save" value="true"></bx-squish-switch></div>
+          <div data-variant="labelled"><bx-squish-switch variant="labelled" label-hint="Round up to save" value="true"></bx-squish-switch></div>
+          <div data-variant="squish"><bx-squish-switch variant="squish" label-hint="Round up to save" value="true"></bx-squish-switch></div>
+      </template>
     </div></section>
     <section class="gate" data-component="jelly-radio" aria-labelledby="w7-56-h"><h2 id="w7-56-h">Jelly radio</h2><div class="gate-body">
       <bx-jelly-radio label-hint="Card design" options='["Midnight","Ocean","Sunrise"]' value="Ocean"></bx-jelly-radio>
+    <template data-variants>
+          <div data-variant="material"><bx-jelly-radio variant="material" label-hint="Card design" options='["Midnight","Ocean","Sunrise"]' value="Ocean"></bx-jelly-radio></div>
+          <div data-variant="cards"><bx-jelly-radio variant="cards" label-hint="Card design" options='["Midnight","Ocean","Sunrise"]' value="Ocean"></bx-jelly-radio></div>
+          <div data-variant="chips"><bx-jelly-radio variant="chips" label-hint="Card design" options='["Midnight","Ocean","Sunrise"]' value="Ocean"></bx-jelly-radio></div>
+          <div data-variant="rows"><bx-jelly-radio variant="rows" label-hint="Card design" options='["Midnight","Ocean","Sunrise"]' value="Ocean"></bx-jelly-radio></div>
+      </template>
     </div></section>
     <section class="gate" data-component="glide-select" aria-labelledby="w7-57-h"><h2 id="w7-57-h">Glide select</h2><div class="gate-body">
       <bx-glide-select label-hint="Show" options='["Day","Week","Month"]' value="Week"></bx-glide-select>
+    <template data-variants>
+          <div data-variant="material"><bx-glide-select variant="material" label-hint="Show" options='["Day","Week","Month"]' value="Week"></bx-glide-select></div>
+          <div data-variant="ios"><bx-glide-select variant="ios" label-hint="Show" options='["Day","Week","Month"]' value="Week"></bx-glide-select></div>
+          <div data-variant="underline"><bx-glide-select variant="underline" label-hint="Show" options='["Day","Week","Month"]' value="Week"></bx-glide-select></div>
+          <div data-variant="enclosed"><bx-glide-select variant="enclosed" label-hint="Show" options='["Day","Week","Month"]' value="Week"></bx-glide-select></div>
+          <div data-variant="pill"><bx-glide-select variant="pill" label-hint="Show" options='["Day","Week","Month"]' value="Week"></bx-glide-select></div>
+      </template>
     </div></section>
     <section class="gate" data-component="rubber-segment" aria-labelledby="w7-58-h"><h2 id="w7-58-h">Rubber segment</h2><div class="gate-body">
       <bx-rubber-segment label-hint="Period" options='["1M","3M","1Y"]' value="1M"></bx-rubber-segment>
+    <template data-variants>
+          <div data-variant="material"><bx-rubber-segment variant="material" label-hint="Period" options='["1M","3M","1Y"]' value="1M"></bx-rubber-segment></div>
+          <div data-variant="ios"><bx-rubber-segment variant="ios" label-hint="Period" options='["1M","3M","1Y"]' value="1M"></bx-rubber-segment></div>
+          <div data-variant="underline"><bx-rubber-segment variant="underline" label-hint="Period" options='["1M","3M","1Y"]' value="1M"></bx-rubber-segment></div>
+          <div data-variant="enclosed"><bx-rubber-segment variant="enclosed" label-hint="Period" options='["1M","3M","1Y"]' value="1M"></bx-rubber-segment></div>
+          <div data-variant="pill"><bx-rubber-segment variant="pill" label-hint="Period" options='["1M","3M","1Y"]' value="1M"></bx-rubber-segment></div>
+      </template>
     </div></section>
     <section class="gate" data-component="scrub-field" aria-labelledby="w7-59-h"><h2 id="w7-59-h">Scrub field</h2><div class="gate-body">
       <bx-scrub-field value="250" currency="USD"></bx-scrub-field>
+    <template data-variants>
+          <div data-variant="material"><bx-scrub-field variant="material" value="250" currency="USD"></bx-scrub-field></div>
+          <div data-variant="outlined"><bx-scrub-field variant="outlined" value="250" currency="USD"></bx-scrub-field></div>
+          <div data-variant="underlined"><bx-scrub-field variant="underlined" value="250" currency="USD"></bx-scrub-field></div>
+          <div data-variant="floating"><bx-scrub-field variant="floating" value="250" currency="USD"></bx-scrub-field></div>
+          <div data-variant="inline"><bx-scrub-field variant="inline" value="250" currency="USD"></bx-scrub-field></div>
+      </template>
     </div></section>
     <section class="gate" data-component="budget-gauge" aria-labelledby="w7-60-h"><h2 id="w7-60-h">Budget gauge</h2><div class="gate-body">
       <bx-budget-gauge label="Groceries" value="320" max="400" unit="USD"></bx-budget-gauge>
@@ -764,6 +1219,13 @@
     </div></section>
     <section class="gate" data-component="favourite-heart" aria-labelledby="w7-62-h"><h2 id="w7-62-h">Favourite heart</h2><div class="gate-body">
       <bx-favourite-heart name="A. Rao" value="true"></bx-favourite-heart>
+    <template data-variants>
+          <div data-variant="material"><bx-favourite-heart variant="material" name="A. Rao" value="true"></bx-favourite-heart></div>
+          <div data-variant="ios"><bx-favourite-heart variant="ios" name="A. Rao" value="true"></bx-favourite-heart></div>
+          <div data-variant="fluent"><bx-favourite-heart variant="fluent" name="A. Rao" value="true"></bx-favourite-heart></div>
+          <div data-variant="labelled"><bx-favourite-heart variant="labelled" name="A. Rao" value="true"></bx-favourite-heart></div>
+          <div data-variant="squish"><bx-favourite-heart variant="squish" name="A. Rao" value="true"></bx-favourite-heart></div>
+      </template>
     </div></section>
     <section class="gate" data-component="peek-rating" aria-labelledby="w7-63-h"><h2 id="w7-63-h">Peek rating</h2><div class="gate-body">
       <bx-peek-rating label-hint="How was this payment?" value="4"></bx-peek-rating>
@@ -776,9 +1238,29 @@
     </div></section>
     <section class="gate" data-component="voice-pill" aria-labelledby="w7-66-h"><h2 id="w7-66-h">Voice pill</h2><div class="gate-body">
       <bx-voice-pill></bx-voice-pill>
+    <template data-variants>
+          <div data-variant="material"><bx-voice-pill variant="material"></bx-voice-pill></div>
+          <div data-variant="tonal"><bx-voice-pill variant="tonal"></bx-voice-pill></div>
+          <div data-variant="outlined"><bx-voice-pill variant="outlined"></bx-voice-pill></div>
+          <div data-variant="text"><bx-voice-pill variant="text"></bx-voice-pill></div>
+          <div data-variant="elevated"><bx-voice-pill variant="elevated"></bx-voice-pill></div>
+          <div data-variant="gradient"><bx-voice-pill variant="gradient"></bx-voice-pill></div>
+          <div data-variant="glass"><bx-voice-pill variant="glass"></bx-voice-pill></div>
+          <div data-variant="pill"><bx-voice-pill variant="pill"></bx-voice-pill></div>
+      </template>
     </div></section>
     <section class="gate" data-component="call-chip" aria-labelledby="w7-67-h"><h2 id="w7-67-h">Call chip</h2><div class="gate-body">
       <bx-call-chip number="+44 20 7946 0000"></bx-call-chip>
+    <template data-variants>
+          <div data-variant="material"><bx-call-chip variant="material" number="+44 20 7946 0000"></bx-call-chip></div>
+          <div data-variant="tonal"><bx-call-chip variant="tonal" number="+44 20 7946 0000"></bx-call-chip></div>
+          <div data-variant="outlined"><bx-call-chip variant="outlined" number="+44 20 7946 0000"></bx-call-chip></div>
+          <div data-variant="text"><bx-call-chip variant="text" number="+44 20 7946 0000"></bx-call-chip></div>
+          <div data-variant="elevated"><bx-call-chip variant="elevated" number="+44 20 7946 0000"></bx-call-chip></div>
+          <div data-variant="gradient"><bx-call-chip variant="gradient" number="+44 20 7946 0000"></bx-call-chip></div>
+          <div data-variant="glass"><bx-call-chip variant="glass" number="+44 20 7946 0000"></bx-call-chip></div>
+          <div data-variant="pill"><bx-call-chip variant="pill" number="+44 20 7946 0000"></bx-call-chip></div>
+      </template>
     </div></section>
     <section class="gate" data-component="lattice-loader" aria-labelledby="w7-68-h"><h2 id="w7-68-h">Lattice loader</h2><div class="gate-body">
       <bx-lattice-loader label="Loading your accounts"></bx-lattice-loader>
@@ -792,6 +1274,10 @@
     // ?look= picks one of the pack's designs (the Liquid glass gates use it); elevated by default
     var look = /^[a-z]+$/.test(params.get('look') || '') ? params.get('look') : 'elevated';
     document.getElementById('gallery').className = 'gallery bx-theme bx-look-' + look + (mode === 'dark' ? ' bx-dark' : '');
+    // ?variant= also draws each component's variants (variants/v1.json): the factory card and the variant gates ask for one; they wait in templates otherwise
+    if (params.has('variant')) {
+      Array.prototype.forEach.call(document.querySelectorAll('template[data-variants]'), function (t) { t.parentNode.replaceChild(t.content, t); });
+    }
     var lib = jet + '/node_modules/';
     var script = document.createElement('script');
     script.src = lib + 'requirejs/require.js';

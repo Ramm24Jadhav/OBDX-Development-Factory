@@ -12,6 +12,7 @@ import { CHOICE, ChoiceBase, Detail, TransactionReceipt, money } from './g2';
 import { OtpInput, SETTING, SettingBase, masked } from './g3';
 import { QuickItem, QuickLinksWidget } from './g6';
 import { reducedMotion } from './motion';
+import { VARIANT } from './variant';
 
 /** A stagger step class (bx-d-0 to bx-d-19), so delays need no inline style. */
 export const stagger = (i: number): string => `bx-d-${Math.min(i, 19)}`;
@@ -270,7 +271,7 @@ export class GlassPanel extends Wrap { protected override readonly look = 'bx-gl
 
 /** A primary button that leans toward the pointer. */
 @Component({
-  selector: 'bx-magnetic-button', changeDetection: OnPush,
+  selector: 'bx-magnetic-button', hostDirectives: VARIANT, changeDetection: OnPush,
   template: `<button type="button" class="bx-btn bx-btn--callToAction bx-magnetic" [attr.data-testid]="testID() || null" [disabled]="disabled()" (pointermove)="move($event)" (pointerleave)="leave($event)"
     (click)="action.emit()"><span class="bx-btn-label">{{ label() }}</span></button>`,
 })
@@ -429,12 +430,12 @@ export class Carousel extends Part {
 }
 
 /** An amount on a range whose thumb stretches as it moves. [(value)]. */
-@Component({ selector: 'bx-elastic-slider', changeDetection: OnPush, template: `<div class="bx-fx-elastic">${SLIDER}</div>` })
+@Component({ selector: 'bx-elastic-slider', hostDirectives: VARIANT, changeDetection: OnPush, template: `<div class="bx-fx-elastic">${SLIDER}</div>` })
 export class ElasticSlider extends SliderBase { protected override readonly defaults = { label: 'Amount', max: 10000, step: 50 }; }
 
 /** A picker that turns like a wheel (a listbox): arrow keys move, the chosen option is in the middle. [(value)]. */
 @Component({
-  selector: 'bx-option-wheel', changeDetection: OnPush,
+  selector: 'bx-option-wheel', hostDirectives: VARIANT, changeDetection: OnPush,
   template: `<div class="bx-field bx-option-wheel" [attr.data-testid]="testID() || null"><span class="bx-label" [id]="id">{{ label() }}</span>
     <ul class="bx-wheel" role="listbox" tabindex="0" [attr.aria-labelledby]="id" [attr.aria-activedescendant]="active()" (keydown)="key($event)">@for (o of options(); track o; let i = $index) {
       <li role="option" [id]="id + '-o' + i" [class]="o === value() ? 'bx-wheel-option is-on' : 'bx-wheel-option'" [attr.aria-selected]="o === value()" (click)="value.set(o)">{{ o }}</li>}</ul></div>`,
@@ -594,7 +595,7 @@ export class ParticleBackdrop extends Fx {
 
 /** Slide the handle to the end to confirm; pressing it (or Enter) confirms too, so no one has to drag. (confirmed). */
 @Component({
-  selector: 'bx-slide-to-confirm', changeDetection: OnPush,
+  selector: 'bx-slide-to-confirm', hostDirectives: VARIANT, changeDetection: OnPush,
   template: `<div [class]="'bx-slide-confirm' + (done() ? ' is-done' : '') + (dragging() ? ' is-dragging' : '')" [attr.data-testid]="testID() || null">
     <span class="bx-slide-text" aria-hidden="true">{{ done() ? doneLabel() : label() }}</span>
     <button type="button" class="bx-slide-handle" [attr.aria-label]="done() ? doneLabel() : label() + ': slide, or press to confirm'" [disabled]="disabled()"
@@ -636,7 +637,7 @@ export class SlideToConfirm extends Part {
 
 /** Press and hold (or hold Space or Enter) for the duration to confirm; letting go early cancels. (confirmed). */
 @Component({
-  selector: 'bx-hold-to-confirm', changeDetection: OnPush,
+  selector: 'bx-hold-to-confirm', hostDirectives: VARIANT, changeDetection: OnPush,
   template: `<button type="button" [class]="'bx-btn bx-btn--callToAction bx-hold' + (holding() ? ' is-holding' : '') + (done() ? ' is-done' : '')" [attr.data-testid]="testID() || null" [disabled]="disabled()"
     [attr.aria-describedby]="id" [style.--bx-hold]="duration() + 'ms'" (pointerdown)="start()" (pointerup)="cancel()" (pointerleave)="cancel()" (keydown)="key($event)" (keyup)="keyUp($event)">
     <span class="bx-hold-fill" aria-hidden="true"></span><span class="bx-btn-label">{{ done() ? doneLabel() : label() }}</span></button>
@@ -663,7 +664,7 @@ export class HoldToConfirm extends Fx {
 }
 
 /** A one-time code in rounded slots that pop as they fill. [(value)]. */
-@Component({ selector: 'bx-otp-slots', changeDetection: OnPush, imports: [OtpInput], template: `<div class="bx-fx-otp"><bx-otp [testID]="testID()" [label]="label()" [(value)]="value" [length]="length()" (completed)="completed.emit($event)" /></div>` })
+@Component({ selector: 'bx-otp-slots', hostDirectives: VARIANT, changeDetection: OnPush, imports: [OtpInput], template: `<div class="bx-fx-otp"><bx-otp [testID]="testID()" [label]="label()" [(value)]="value" [length]="length()" (completed)="completed.emit($event)" /></div>` })
 export class OtpSlots extends Part {
   readonly label = input('Enter the code');
   readonly value = model('');
@@ -742,28 +743,28 @@ abstract class PressToggle extends Part {
   protected readonly fullName = computed(() => [this.label() ?? this.defaultLabel, this.name()].filter(Boolean).join(' '));
 }
 /** Alerts on or off; the bell rings when they go on. [(value)]. */
-@Component({ selector: 'bx-bell-toggle', changeDetection: OnPush, template: PRESS })
+@Component({ selector: 'bx-bell-toggle', hostDirectives: VARIANT, changeDetection: OnPush, template: PRESS })
 export class BellToggle extends PressToggle { protected override readonly look = 'bx-bell'; protected override readonly glyph = '🔔'; protected override readonly defaultLabel = 'Alerts'; }
 /** A payee as a favourite; the heart pops. [(value)]. */
-@Component({ selector: 'bx-favourite-heart', changeDetection: OnPush, template: PRESS })
+@Component({ selector: 'bx-favourite-heart', hostDirectives: VARIANT, changeDetection: OnPush, template: PRESS })
 export class FavouriteHeart extends PressToggle { protected override readonly look = 'bx-heart'; protected override readonly glyph = '♥'; protected override readonly defaultLabel = 'Favourite'; }
 
 /** A switch whose knob squishes as it is pressed. [(value)]. */
-@Component({ selector: 'bx-squish-switch', changeDetection: OnPush, template: `<div class="bx-fx-squish">${SETTING}</div>` })
+@Component({ selector: 'bx-squish-switch', hostDirectives: VARIANT, changeDetection: OnPush, template: `<div class="bx-fx-squish">${SETTING}</div>` })
 export class SquishSwitch extends SettingBase {}
 /** Radio cards whose mark wobbles when chosen. [(value)]. */
-@Component({ selector: 'bx-jelly-radio', changeDetection: OnPush, template: `<div class="bx-fx-jelly">${CHOICE}</div>` })
+@Component({ selector: 'bx-jelly-radio', hostDirectives: VARIANT, changeDetection: OnPush, template: `<div class="bx-fx-jelly">${CHOICE}</div>` })
 export class JellyRadio extends ChoiceBase {}
 /** A segmented choice whose highlight glides. [(value)]. */
-@Component({ selector: 'bx-glide-select', changeDetection: OnPush, template: `<div class="bx-fx-glide">${SEGMENTS}</div>` })
+@Component({ selector: 'bx-glide-select', hostDirectives: VARIANT, changeDetection: OnPush, template: `<div class="bx-fx-glide">${SEGMENTS}</div>` })
 export class GlideSelect extends SegmentsBase {}
 /** A segmented choice that gives like rubber when pressed. [(value)]. */
-@Component({ selector: 'bx-rubber-segment', changeDetection: OnPush, template: `<div class="bx-fx-rubber">${SEGMENTS}</div>` })
+@Component({ selector: 'bx-rubber-segment', hostDirectives: VARIANT, changeDetection: OnPush, template: `<div class="bx-fx-rubber">${SEGMENTS}</div>` })
 export class RubberSegment extends SegmentsBase {}
 
 /** An amount typed, or dragged left and right by the arrows beside the label. [(value)]. */
 @Component({
-  selector: 'bx-scrub-field', changeDetection: OnPush,
+  selector: 'bx-scrub-field', hostDirectives: VARIANT, changeDetection: OnPush,
   template: `<div class="bx-field bx-scrub" [attr.data-testid]="testID() || null"><div class="bx-slider-head"><label class="bx-label" [attr.for]="id">{{ label() }}</label>
     <span class="bx-scrub-handle" aria-hidden="true" (pointerdown)="down($event)" (pointermove)="move($event)" (pointerup)="g = null">⇔</span></div>
     <div class="bx-control">@if (currency()) {<span class="bx-affix" aria-hidden="true">{{ currency() }}</span>}<input type="number" class="bx-input bx-num" inputmode="decimal" [id]="id" [value]="value()"
@@ -846,7 +847,7 @@ export class PromptBar extends Part {
 
 /** Speak to the assistant: pressed while listening; the screen does the listening. [(listening)]. */
 @Component({
-  selector: 'bx-voice-pill', changeDetection: OnPush,
+  selector: 'bx-voice-pill', hostDirectives: VARIANT, changeDetection: OnPush,
   template: `<button type="button" [class]="listening() ? 'bx-voice-pill is-listening' : 'bx-voice-pill'" [attr.data-testid]="testID() || null" [attr.aria-pressed]="listening()" (click)="listening.set(!listening())">
     <span class="bx-voice-waves" aria-hidden="true"><span></span><span></span><span></span></span><span>{{ listening() ? listeningLabel() : label() }}</span></button>`,
 })
@@ -858,7 +859,7 @@ export class VoicePill extends Part {
 
 /** A chip that calls the bank (a tel: link). */
 @Component({
-  selector: 'bx-call-chip', changeDetection: OnPush,
+  selector: 'bx-call-chip', hostDirectives: VARIANT, changeDetection: OnPush,
   template: `<a class="bx-call-chip" [href]="href()" [attr.aria-label]="label() + ', ' + number()" [attr.data-testid]="testID() || null"><span class="bx-call-icon" aria-hidden="true">✆</span><span>{{ label() }}</span></a>`,
 })
 export class CallChip extends Part {

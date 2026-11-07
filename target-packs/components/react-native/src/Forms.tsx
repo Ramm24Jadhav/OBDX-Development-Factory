@@ -10,6 +10,9 @@ import { DatePicker } from './DatePicker';
 import { FieldProps, FieldShell, Option, controlStyle, isEmpty, options as toOptions, styles, useField } from './field';
 import { Enter, MODAL_FADE, Pop, Press, Roll, Shake, useOpen, useSlide } from './motion';
 import { Theme, useTheme } from './theme';
+import { part, variantOf } from './variants';
+
+const SWITCHES = 'switch';
 
 /* ---------- TextArea (oj-text-area) ---------- */
 
@@ -294,9 +297,14 @@ export function Toggle(props: FieldProps<boolean>) {
              accessibilityState={{ checked: !!value, disabled: off }} disabled={off} onPress={() => onChange?.(!value)}
              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: t.minTouch, gap: 12, opacity: disabled ? 0.5 : 1 }}>
         <Text style={{ fontSize: 15, color: t.color.text, flexShrink: 1 }} importantForAccessibility="no">{label}</Text>
-        <View style={{ width: 52, height: 30, borderRadius: 15, padding: 3, backgroundColor: value ? t.color.primary : t.color.borderStrong }}>
-          <Animated.View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.color.surface,
-            transform: [{ translateX: at.interpolate({ inputRange: [0, 1], outputRange: [0, 22] }) }] }} />
+        <View style={[{ width: 52, height: 30, borderRadius: 15, padding: 3, backgroundColor: value ? t.color.primary : t.color.borderStrong, justifyContent: 'center' },
+          part(t, SWITCHES, 'track', { on: !!value })]}>
+          {/* labelled: On or Off in the track, beside the thumb (the switch role already announces it) */}
+          {variantOf(t, SWITCHES) === 'labelled'
+            ? <Text importantForAccessibility="no" style={{ position: 'absolute', [value ? 'left' : 'right']: 9, fontSize: 11, fontWeight: '700',
+              color: value ? t.color.onPrimary : t.color.textBody }}>{value ? 'On' : 'Off'}</Text> : null}
+          <Animated.View style={[{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.color.surface,
+            transform: [{ translateX: at.interpolate({ inputRange: [0, 1], outputRange: [0, variantOf(t, SWITCHES) === 'labelled' ? 34 : 22] }) }] }, part(t, SWITCHES, 'thumb', { on: !!value })]} />
         </View>
       </Press>
       {error
@@ -502,8 +510,8 @@ export function FileUpload(props: FileUploadProps) {
       <Shake error={message}>
       <Press testID={`${testID}-input`} accessibilityRole="button" accessibilityLabel={`${multiple ? 'Add files' : 'Choose a file'}${hint ? `, ${hint}` : ''}, ${label}`}
                  accessibilityHint={message || hint || helpText} accessibilityState={{ disabled: !!disabled }} disabled={disabled} onPress={choose}
-                 style={{ minHeight: t.minTouch + 24, borderWidth: 1.5, borderStyle: 'dashed', borderColor: message ? t.color.danger : t.color.borderStrong,
-                   borderRadius: t.radius.card, alignItems: 'center', justifyContent: 'center', padding: 12, opacity: disabled ? 0.6 : 1 }}>
+                 style={[{ minHeight: t.minTouch + 24, borderWidth: 1.5, borderStyle: 'dashed', borderColor: message ? t.color.danger : t.color.borderStrong,
+                   borderRadius: t.radius.card, alignItems: 'center', justifyContent: 'center', padding: 12, opacity: disabled ? 0.6 : 1 }, part(t, 'upload', 'area')]}>
         <Text style={{ fontSize: 15, fontWeight: '600', color: t.color.primaryText }}>{multiple ? 'Add files' : 'Choose a file'}</Text>
         {hint ? <Text style={[s.help, { marginTop: 2 }]} importantForAccessibility="no">{hint}</Text> : null}
       </Press>

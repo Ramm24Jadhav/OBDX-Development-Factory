@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, forwardRef, input } from 
 import { NG_VALUE_ACCESSOR } from '@angular/forms';
 
 import { FieldBase, FieldShell } from './field';
+import { VARIANT } from './variant';
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -12,7 +13,7 @@ function display(iso: string, locale?: string): string {
 
 /** A date as yyyy-mm-dd (oj-input-date), the browser's date picker, with min, max and blocked days checked. */
 @Component({
-  selector: 'bx-date',
+  selector: 'bx-date', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FieldShell],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => DatePicker), multi: true }],

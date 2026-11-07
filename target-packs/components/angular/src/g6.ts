@@ -10,6 +10,7 @@ import { ALERT, AlertBase, Part, ROWS, RowsBase, Severity, arrow } from './g1';
 import { QUICK, QuickBase, THING, TILES, TRANSACTIONS, ThingBase, TilesBase, TransactionHistory } from './g2';
 import { CHART, ChartBase, METERS, MetersBase } from './g4';
 import { CALC, CalcBase } from './g5';
+import { VARIANT } from './variant';
 
 export type { QuickItem } from './g2';
 
@@ -65,7 +66,7 @@ export class TransactionsWidget extends TabSummaryBase { protected override read
 
 /** A file for bulk payments (the bx-document-upload field), its template, and Upload. [(value)], (upload), (template). */
 @Component({
-  selector: 'bx-bulk-file-upload',
+  selector: 'bx-bulk-file-upload', hostDirectives: VARIANT,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FileUpload],
   template: `
