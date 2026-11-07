@@ -587,10 +587,10 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-delinquency-notice message="Your car loan ·· 3310 is 12 days overdue: 412.00." />
       </div></section>
       <section class="gate" data-component="rolling-digits" aria-labelledby="aw7-0-h"><h2 id="aw7-0-h">Rolling digits</h2><div class="gate-body">
-        <bx-rolling-digits [value]="12400.5" currency="USD" />
+        <bx-rolling-digits [variant]="variant" [value]="12400.5" currency="USD" />
       </div></section>
       <section class="gate" data-component="count-up" aria-labelledby="aw7-1-h"><h2 id="aw7-1-h">Count up</h2><div class="gate-body">
-        <bx-count-up [value]="1840.2" currency="USD" />
+        <bx-count-up [variant]="variant" [value]="1840.2" currency="USD" />
       </div></section>
       <section class="gate" data-component="split-flap-board" aria-labelledby="aw7-2-h"><h2 id="aw7-2-h">Split-flap board</h2><div class="gate-body">
         <bx-split-flap-board [items]="[{label: 'USD', value: '0.92 EUR'}, {label: 'GBP', value: '1.17 EUR'}]" />
@@ -599,55 +599,55 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-reveal-digits value="GB29 NWBK 6016 1331 9268 19" />
       </div></section>
       <section class="gate" data-component="blur-in-text" aria-labelledby="aw7-4-h"><h2 id="aw7-4-h">Blur-in text</h2><div class="gate-body">
-        <bx-blur-in-text text="Your money, clearly." />
+        <bx-blur-in-text [variant]="variant" text="Your money, clearly." />
       </div></section>
       <section class="gate" data-component="text-reveal" aria-labelledby="aw7-5-h"><h2 id="aw7-5-h">Text reveal</h2><div class="gate-body">
-        <bx-text-reveal text="Welcome back, Asha" />
+        <bx-text-reveal [variant]="variant" text="Welcome back, Asha" />
       </div></section>
       <section class="gate" data-component="rotating-text" aria-labelledby="aw7-6-h"><h2 id="aw7-6-h">Rotating text</h2><div class="gate-body">
-        <bx-rotating-text prefix="Pay" [words]="['bills', 'friends', 'cards']" />
+        <bx-rotating-text [variant]="variant" prefix="Pay" [words]="['bills', 'friends', 'cards']" />
       </div></section>
       <section class="gate" data-component="shimmer-text" aria-labelledby="aw7-7-h"><h2 id="aw7-7-h">Shimmer text</h2><div class="gate-body">
-        <bx-shimmer-text text="New: instant transfers" />
+        <bx-shimmer-text [variant]="variant" text="New: instant transfers" />
       </div></section>
       <section class="gate" data-component="gradient-text" aria-labelledby="aw7-8-h"><h2 id="aw7-8-h">Gradient text</h2><div class="gate-body">
-        <bx-gradient-text text="Platinum" />
+        <bx-gradient-text [variant]="variant" text="Platinum" />
       </div></section>
       <section class="gate" data-component="typed-text" aria-labelledby="aw7-9-h"><h2 id="aw7-9-h">Typed text</h2><div class="gate-body">
-        <bx-typed-text text="You spent 320.00 on groceries this month, 40.00 less than last month." />
+        <bx-typed-text [variant]="variant" text="You spent 320.00 on groceries this month, 40.00 less than last month." />
       </div></section>
       <section class="gate" data-component="focus-word" aria-labelledby="aw7-10-h"><h2 id="aw7-10-h">Focus word</h2><div class="gate-body">
-        <bx-focus-word text="Save a little every day" />
+        <bx-focus-word [variant]="variant" text="Save a little every day" />
       </div></section>
       <section class="gate" data-component="scroll-float-text" aria-labelledby="aw7-11-h"><h2 id="aw7-11-h">Scroll float text</h2><div class="gate-body">
-        <bx-scroll-float-text text="Grow your savings" />
+        <bx-scroll-float-text [variant]="variant" text="Grow your savings" />
       </div></section>
       <section class="gate" data-component="fade-in-content" aria-labelledby="aw7-12-h"><h2 id="aw7-12-h">Fade-in content</h2><div class="gate-body">
-        <bx-fade-in-content effect="fadeup"><p>The screen's own content</p></bx-fade-in-content>
+        <bx-fade-in-content [variant]="variant"><p>The screen's own content</p></bx-fade-in-content>
       </div></section>
       <section class="gate" data-component="scroll-reveal" aria-labelledby="aw7-13-h"><h2 id="aw7-13-h">Scroll reveal</h2><div class="gate-body">
-        <bx-scroll-reveal effect="scale"><p>The screen's own content</p></bx-scroll-reveal>
+        <bx-scroll-reveal [variant]="variant" [effect]="variant ? undefined : 'scale'"><p>The screen's own content</p></bx-scroll-reveal>
       </div></section>
       <section class="gate" data-component="scroll-expand" aria-labelledby="aw7-14-h"><h2 id="aw7-14-h">Scroll expand</h2><div class="gate-body">
-        <bx-scroll-expand><p>The screen's own content</p></bx-scroll-expand>
+        <bx-scroll-expand [variant]="variant"><p>The screen's own content</p></bx-scroll-expand>
       </div></section>
       <section class="gate" data-component="edge-blur" aria-labelledby="aw7-15-h"><h2 id="aw7-15-h">Edge blur</h2><div class="gate-body">
-        <bx-edge-blur><p>The screen's own content</p></bx-edge-blur>
+        <bx-edge-blur [variant]="variant"><p>The screen's own content</p></bx-edge-blur>
       </div></section>
       <section class="gate" data-component="glare-hover" aria-labelledby="aw7-16-h"><h2 id="aw7-16-h">Glare hover</h2><div class="gate-body">
-        <bx-glare-hover><p>The screen's own content</p></bx-glare-hover>
+        <bx-glare-hover [variant]="variant"><p>The screen's own content</p></bx-glare-hover>
       </div></section>
       <section class="gate" data-component="magnetic-button" aria-labelledby="aw7-17-h"><h2 id="aw7-17-h">Magnetic button</h2><div class="gate-body">
         <bx-magnetic-button label="Open an account" />
       </div></section>
       <section class="gate" data-component="highlight-border" aria-labelledby="aw7-18-h"><h2 id="aw7-18-h">Highlight border</h2><div class="gate-body">
-        <bx-highlight-border><p>The screen's own content</p></bx-highlight-border>
+        <bx-highlight-border [variant]="variant"><p>The screen's own content</p></bx-highlight-border>
       </div></section>
       <section class="gate" data-component="click-burst" aria-labelledby="aw7-19-h"><h2 id="aw7-19-h">Click burst</h2><div class="gate-body">
-        <bx-click-burst><p>The screen's own content</p></bx-click-burst>
+        <bx-click-burst [variant]="variant"><p>The screen's own content</p></bx-click-burst>
       </div></section>
       <section class="gate" data-component="marquee" aria-labelledby="aw7-20-h"><h2 id="aw7-20-h">Marquee</h2><div class="gate-body">
-        <bx-marquee [items]="['USD 0.92 EUR', 'GBP 1.17 EUR', 'AED 0.25 EUR']" />
+        <bx-marquee [variant]="variant" [items]="['USD 0.92 EUR', 'GBP 1.17 EUR', 'AED 0.25 EUR']" />
       </div></section>
       <section class="gate" data-component="animated-list" aria-labelledby="aw7-21-h"><h2 id="aw7-21-h">Animated list</h2><div class="gate-body">
         <bx-animated-list label="Recent" [items]="['Coffee House', {title: 'Salary', meta: '31 Dec'}]" />
@@ -671,7 +671,7 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-bento-grid label="Dashboard" [items]="[{id: 'spend', title: 'Spending', figure: '1,240.00', size: 'wide'}, {id: 'save', title: 'Saved', figure: '320.00'}, {id: 'score', title: 'Credit score', figure: '742'}]" />
       </div></section>
       <section class="gate" data-component="carousel" aria-labelledby="aw7-28-h"><h2 id="aw7-28-h">Carousel</h2><div class="gate-body">
-        <bx-carousel [slides]="[{title: 'Travel insurance', text: 'Cover for the whole family'}, {title: 'Home loans', text: 'From 6.9% a year'}]" />
+        <bx-carousel [variant]="variant" [slides]="[{title: 'Travel insurance', text: 'Cover for the whole family'}, {title: 'Home loans', text: 'From 6.9% a year'}]" />
       </div></section>
       <section class="gate" data-component="elastic-slider" aria-labelledby="aw7-29-h"><h2 id="aw7-29-h">Elastic slider</h2><div class="gate-body">
         <bx-elastic-slider label="Amount" [value]="500" prefix="USD" />
@@ -701,31 +701,31 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-profile-card name="Priya Nair" jobTitle="Relationship manager" [items]="[{label: 'Phone', value: '+44 20 7946 0123'}]" actionLabel="Send a message" />
       </div></section>
       <section class="gate" data-component="glass-panel" aria-labelledby="aw7-38-h"><h2 id="aw7-38-h">Glass panel</h2><div class="gate-body">
-        <bx-glass-panel><p>The screen's own content</p></bx-glass-panel>
+        <bx-glass-panel [variant]="variant"><p>The screen's own content</p></bx-glass-panel>
       </div></section>
       <section class="gate" data-component="gradient-backdrop" aria-labelledby="aw7-39-h"><h2 id="aw7-39-h">Gradient backdrop</h2><div class="gate-body">
-        <bx-gradient-backdrop><p>The screen's own content</p></bx-gradient-backdrop>
+        <bx-gradient-backdrop [variant]="variant"><p>The screen's own content</p></bx-gradient-backdrop>
       </div></section>
       <section class="gate" data-component="soft-aurora" aria-labelledby="aw7-40-h"><h2 id="aw7-40-h">Soft aurora</h2><div class="gate-body">
-        <bx-soft-aurora><p>The screen's own content</p></bx-soft-aurora>
+        <bx-soft-aurora [variant]="variant"><p>The screen's own content</p></bx-soft-aurora>
       </div></section>
       <section class="gate" data-component="silk-backdrop" aria-labelledby="aw7-41-h"><h2 id="aw7-41-h">Silk backdrop</h2><div class="gate-body">
-        <bx-silk-backdrop><p>The screen's own content</p></bx-silk-backdrop>
+        <bx-silk-backdrop [variant]="variant"><p>The screen's own content</p></bx-silk-backdrop>
       </div></section>
       <section class="gate" data-component="dot-grid" aria-labelledby="aw7-42-h"><h2 id="aw7-42-h">Dot grid</h2><div class="gate-body">
-        <bx-dot-grid><p>The screen's own content</p></bx-dot-grid>
+        <bx-dot-grid [variant]="variant"><p>The screen's own content</p></bx-dot-grid>
       </div></section>
       <section class="gate" data-component="line-waves" aria-labelledby="aw7-43-h"><h2 id="aw7-43-h">Line waves</h2><div class="gate-body">
-        <bx-line-waves><p>The screen's own content</p></bx-line-waves>
+        <bx-line-waves [variant]="variant"><p>The screen's own content</p></bx-line-waves>
       </div></section>
       <section class="gate" data-component="light-beams" aria-labelledby="aw7-44-h"><h2 id="aw7-44-h">Light beams</h2><div class="gate-body">
-        <bx-light-beams><p>The screen's own content</p></bx-light-beams>
+        <bx-light-beams [variant]="variant"><p>The screen's own content</p></bx-light-beams>
       </div></section>
       <section class="gate" data-component="topography" aria-labelledby="aw7-45-h"><h2 id="aw7-45-h">Topography</h2><div class="gate-body">
-        <bx-topography><p>The screen's own content</p></bx-topography>
+        <bx-topography [variant]="variant"><p>The screen's own content</p></bx-topography>
       </div></section>
       <section class="gate" data-component="particle-backdrop" aria-labelledby="aw7-46-h"><h2 id="aw7-46-h">Particle backdrop</h2><div class="gate-body">
-        <bx-particle-backdrop><p>The screen's own content</p></bx-particle-backdrop>
+        <bx-particle-backdrop [variant]="variant"><p>The screen's own content</p></bx-particle-backdrop>
       </div></section>
       <section class="gate" data-component="slide-to-confirm" aria-labelledby="aw7-47-h"><h2 id="aw7-47-h">Slide to confirm</h2><div class="gate-body">
         <bx-slide-to-confirm label="Slide to pay 1,250.00" />
@@ -743,7 +743,7 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-success-check label="Payment sent" text="1,250.00 USD to A. Rao" />
       </div></section>
       <section class="gate" data-component="swipe-row" aria-labelledby="aw7-52-h"><h2 id="aw7-52-h">Swipe row</h2><div class="gate-body">
-        <bx-swipe-row heading="Coffee House" meta="Today 08:14" value="-4.50" [actions]="[{value: 'split', label: 'Split'}, {value: 'dispute', label: 'Dispute', tone: 'danger'}]" />
+        <bx-swipe-row [variant]="variant" heading="Coffee House" meta="Today 08:14" value="-4.50" [actions]="[{value: 'split', label: 'Split'}, {value: 'dispute', label: 'Dispute', tone: 'danger'}]" />
       </div></section>
       <section class="gate" data-component="swipe-toast" aria-labelledby="aw7-53-h"><h2 id="aw7-53-h">Swipe toast</h2><div class="gate-body">
         <bx-swipe-toast message="Saved as a payee" />
@@ -764,7 +764,7 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-rubber-segment label="Period" [options]="['1M', '3M', '1Y']" value="1M" />
       </div></section>
       <section class="gate" data-component="scrub-field" aria-labelledby="aw7-59-h"><h2 id="aw7-59-h">Scrub field</h2><div class="gate-body">
-        <bx-scrub-field [value]="250" currency="USD" />
+        <bx-scrub-field [variant]="variant" [value]="250" currency="USD" />
       </div></section>
       <section class="gate" data-component="budget-gauge" aria-labelledby="aw7-60-h"><h2 id="aw7-60-h">Budget gauge</h2><div class="gate-body">
         <bx-budget-gauge label="Groceries" [value]="320" [max]="400" unit="USD" />
@@ -805,6 +805,8 @@ class Gallery {
   speed = signal('N');
   day = signal('2026-11-12');
   tab = signal('c');
+  // An effect's variant (?variant=id, variants/v5.json): the sections of the effects take it
+  readonly variant = params.get('variant') || '';
   selected = signal<readonly string[]>(['t2']);
   bulk = signal<File[] | undefined>([]);
   message = signal('');

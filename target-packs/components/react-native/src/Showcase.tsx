@@ -9,7 +9,7 @@ import { Animated, Image, PanResponder, ScrollView, StyleSheet, Text, View } fro
 import { Avatar } from './G1';
 import { Tabs } from './Tabs';
 import { Option } from './field';
-import { BG, DURATION, Enter, Press, useOpen, usePop, useProgress, useReducedMotion, useSlide, useStagger } from './motion';
+import { BG, DURATION, Enter, Motion, Press, fx, useOpen, usePop, useProgress, useReducedMotion, useSlide, useStagger } from './motion';
 import { Heading, KeyValues, Row, Sheet, SliderControl, SliderControlProps, Touch, panel } from './parts';
 import { useTheme } from './theme';
 
@@ -244,15 +244,18 @@ export interface CarouselProps {
   value: string;
   onChange: (id: string) => void;
   width?: number;
+  /** A named preset (variants/v5.json): fade or scale play the motion library's change preset instead of paging across. */
+  variant?: string;
 }
 
 /** Slides side by side that page with a swipe, with Previous, Next and a dot for each. */
-export function Carousel({ testID, label, slides, value, onChange, width = 320 }: CarouselProps) {
+export function Carousel({ testID, variant, label, slides, value, onChange, width = 320 }: CarouselProps) {
   const t = useTheme();
   const r = useReducedMotion();
+  const change = fx('carousel', variant).effect;
   const at = Math.max(0, slides.findIndex((s) => s.id === value));
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
-  useEffect(() => { scroll.current?.scrollTo({ x: at * width, animated: !r }); }, [at, width, r]);
+  useEffect(() => { scroll.current?.scrollTo({ x: at * width, animated: !r && !change }); }, [at, width, r, change]);
   const go = (i: number) => onChange(slides[(i + slides.length) % slides.length].id);
   return (
     <View testID={testID} style={{ gap: 8 }} accessibilityLabel={`${label}, ${at + 1} of ${slides.length}: ${slides[at]?.label ?? ''}`}>
@@ -260,7 +263,8 @@ export function Carousel({ testID, label, slides, value, onChange, width = 320 }
       <ScrollView ref={scroll} horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={{ width }} focusable accessibilityLabel={label}
                   onMomentumScrollEnd={(e) => { const i = Math.round(e.nativeEvent.contentOffset.x / width); if (i !== at) { go(i); } }}>
         {slides.map((s, i) => (
-          <View key={s.id} style={{ width, paddingHorizontal: 4 }} importantForAccessibility={i === at ? 'auto' : 'no-hide-descendants'}>{s.content}</View>
+          <View key={s.id} style={{ width, paddingHorizontal: 4 }} importantForAccessibility={i === at ? 'auto' : 'no-hide-descendants'}>
+            {change && i === at ? <Motion phase="change" preset={change} on={at}>{s.content}</Motion> : s.content}</View>
         ))}
       </ScrollView>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
@@ -537,13 +541,15 @@ export function ProfileCard({ testID, name, role, photo, rows = [], actionLabel,
  * A frosted panel over a backdrop: a light translucent surface with a bright edge. shortcut: React Native cannot blur
  * what is behind a view, so this is translucency only; use expo-blur's BlurView behind it if the app has it.
  */
-export function GlassPanel({ testID, children }: CardProps) {
+export function GlassPanel({ testID, variant, children }: CardProps & { variant?: string }) {
   const t = useTheme();
   const dark = t.color.bg.startsWith('#0');
+  // Frosted is more opaque, clear less: the variant's intensity, as React Native cannot blur
+  const alpha = Math.min(0.9, Math.max(0.25, (dark ? 0.25 : 0.3) + 0.3 * fx('glass-panel', variant).intensity));
   return (
     <Enter testID={testID} style={{ padding: 16, gap: 10, borderRadius: t.radius.card, borderWidth: 1,
       borderColor: dark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.7)',
-      backgroundColor: dark ? 'rgba(20, 30, 43, 0.55)' : 'rgba(255, 255, 255, 0.6)', boxShadow: '0 8px 32px rgba(15, 23, 42, 0.12)' }}>
+      backgroundColor: dark ? `rgba(20, 30, 43, ${alpha.toFixed(2)})` : `rgba(255, 255, 255, ${alpha.toFixed(2)})`, boxShadow: '0 8px 32px rgba(15, 23, 42, 0.12)' }}>
       {children}
     </Enter>
   );

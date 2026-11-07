@@ -35,6 +35,23 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     if (!motion.reducedMotion()) { run(); }
     return vm.disconnected;
   };
+  /**
+   * A kind with a variant property: a named preset of the effect's settings (variants/v5.json). Its view model gets fx(), the
+   * settings (before its own model runs, so timers can use them), and fxCss(), the class (' is-v-<variant>') that turns on the
+   * variant's --bx-fx-* variables.
+   */
+  var varied = function (kind, id) {
+    var w = k.copy(kind);
+    w.props = k.copy(kind.props);
+    w.props.variant = str();
+    w.model = function (context) {
+      var self = this, props = context.properties;
+      self.fx = ko.pureComputed(function () { return motion.fx(id, props.variant || undefined); });
+      self.fxCss = ko.pureComputed(function () { return self.fx().css; });
+      kind.model.call(self, context);
+    };
+    return w;
+  };
   /** A kind with its view inside a wrapper of an effect class. */
   var wrap = function (kind, css) { var w = k.copy(kind); w.view = '<div class="' + css + '">' + kind.view + '</div>'; return w; };
   /** Sets CSS variables from where the pointer is over the element (0 to 1 across, 0 to 1 down). */
@@ -57,7 +74,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     });
   }
   kinds.rolling = { model: RollingKind, props: { value: { type: 'any', value: 0 }, currency: str() },
-    view: '<span class="bx-rolling">' + hidden('text') + '<span class="bx-rolling-face" aria-hidden="true">' + each('cols', 'c', iff('c.data.digit', '<span class="bx-roll-col"><span :class="[[c.data.css]]">'
+    view: '<span :class="[[\'bx-rolling\' + fxCss()]]">' + hidden('text') + '<span class="bx-rolling-face" aria-hidden="true">' + each('cols', 'c', iff('c.data.digit', '<span class="bx-roll-col"><span :class="[[c.data.css]]">'
       + '<span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></span></span>')
       + iff('!c.data.digit', '<span class="bx-roll-sep">' + txt('c.data.ch') + '</span>')) + '</span></span>' };
 
@@ -72,16 +89,17 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     var steps = 30;
     var step = 0;
     var start = self.now();
-    every(self, Math.max(10, Math.round((self.props.duration || 1200) / steps)), function () {
+    var f = self.fx();
+    every(self, Math.max(10, Math.round((self.props.duration || 1200 / f.speed) / steps)), function () {
       step += 1;
       var p = step / steps;
-      self.now(start + (target() - start) * (1 - Math.pow(1 - p, 3)));
+      self.now(start + (target() - start) * (f.easing === 'linear' ? p : 1 - Math.pow(1 - p, 3)));
       if (step >= steps) { self.now(target()); return false; }
       return true;
     });
   }
-  kinds.count = { model: CountKind, props: { value: num(0), from: num(0), duration: num(1200), currency: str(), prefix: str(), suffix: str() },
-    view: '<span class="bx-count-up">' + hidden('final') + '<span aria-hidden="true">' + txt('shown') + '</span></span>' };
+  kinds.count = { model: CountKind, props: { value: num(0), from: num(0), duration: { type: 'number' }, currency: str(), prefix: str(), suffix: str() },
+    view: '<span :class="[[\'bx-count-up\' + fxCss()]]">' + hidden('final') + '<span aria-hidden="true">' + txt('shown') + '</span></span>' };
 
   function FlapKind(context) {
     var self = this;
@@ -118,10 +136,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     self.chars = ko.pureComputed(function () { return chars(self.props.text); });
   }
   kinds.blurin = { model: WordsKind, props: { text: str() },
-    view: '<p class="bx-fx-text bx-blur-in">' + hidden('$properties.text') + '<span aria-hidden="true">' + each('words', 'w', '<span :class="[[w.data.css]]">' + txt('w.data.w') + '</span> ') + '</span></p>' };
+    view: '<p :class="[[\'bx-fx-text bx-blur-in\' + fxCss()]]">' + hidden('$properties.text') + '<span aria-hidden="true">' + each('words', 'w', '<span :class="[[w.data.css]]">' + txt('w.data.w') + '</span> ') + '</span></p>' };
   kinds.floattext = { model: WordsKind, props: { text: str() },
-    view: '<p class="bx-fx-text bx-scroll-float">' + hidden('$properties.text') + '<span aria-hidden="true">' + each('chars', 'c', '<span :class="[[c.data.css]]">' + txt('c.data.ch') + '</span>') + '</span></p>' };
-  var plainText = function (css) { return { model: WordsKind, props: { text: str(), animated: bool(true) }, view: '<span :class="[[\'bx-fx-text ' + css + '\' + ($properties.animated ? \' is-animated\' : \'\')]]">' + txt('$properties.text') + '</span>' }; };
+    view: '<p :class="[[\'bx-fx-text bx-scroll-float\' + fxCss()]]">' + hidden('$properties.text') + '<span aria-hidden="true">' + each('chars', 'c', '<span :class="[[c.data.css]]">' + txt('c.data.ch') + '</span>') + '</span></p>' };
+  var plainText = function (css) { return { model: WordsKind, props: { text: str(), animated: bool(true) }, view: '<span :class="[[\'bx-fx-text ' + css + '\' + ($properties.animated ? \' is-animated\' : \'\') + fxCss()]]">' + txt('$properties.text') + '</span>' }; };
   kinds.textreveal = plainText('bx-text-reveal');
   kinds.shimmer = plainText('bx-shimmer-text');
   kinds.gradient = plainText('bx-gradient-text');
@@ -134,10 +152,11 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     // A new row for each word, so its entry animation plays again
     self.shown = ko.pureComputed(function () { return [{ word: self.word(), at: self.at() }]; });
     self.all = ko.pureComputed(function () { var w = (self.props.words || []).map(String); return (self.props.prefix ? self.props.prefix + ' ' : '') + (w.length > 1 ? w.slice(0, -1).join(', ') + ' or ' + w[w.length - 1] : w.join('')); });
-    every(self, self.props.interval || 2200, function () { self.at(self.at() + 1); return true; });
+    self.css = ko.pureComputed(function () { var f = self.fx(); return 'bx-fx-text bx-rotating' + (f.effect ? ' is-' + f.effect : '') + f.css; });
+    every(self, self.props.interval || Math.round(2200 / self.fx().speed), function () { self.at(self.at() + 1); return true; });
   }
-  kinds.rotating = { model: RotatingKind, props: { prefix: str(), words: arr(), interval: num(2200) },
-    view: '<span class="bx-fx-text bx-rotating">' + hidden('all') + '<span aria-hidden="true">' + iff('$properties.prefix', txt('$properties.prefix') + ' ')
+  kinds.rotating = { model: RotatingKind, props: { prefix: str(), words: arr(), interval: { type: 'number' } },
+    view: '<span :class="[[css]]">' + hidden('all') + '<span aria-hidden="true">' + iff('$properties.prefix', txt('$properties.prefix') + ' ')
       + '' + each('shown', 'w', '<span class="bx-rotating-word">' + txt('w.data.word') + '</span>') + '</span></span>' };
 
   function TypedKind(context) {
@@ -147,30 +166,35 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     self.count = ko.observable(motion.reducedMotion() ? full().length : 0);
     self.shown = ko.pureComputed(function () { return full().slice(0, self.count()); });
     self.typing = ko.pureComputed(function () { return self.count() < full().length; });
-    every(self, self.props.speed || 35, function () { if (self.count() >= full().length) { return false; } self.count(self.count() + 1); return true; });
+    every(self, self.props.speed || Math.round(35 / self.fx().speed), function () { if (self.count() >= full().length) { return false; } self.count(self.count() + 1); return true; });
   }
-  kinds.typed = { model: TypedKind, props: { text: str(), speed: num(35) },
-    view: '<span class="bx-fx-text bx-typed">' + hidden('$properties.text') + '<span aria-hidden="true">' + txt('shown') + '<span :class="[[typing() ? \'bx-caret is-typing\' : \'bx-caret\']]"></span></span></span>' };
+  kinds.typed = { model: TypedKind, props: { text: str(), speed: { type: 'number' } },
+    view: '<span :class="[[\'bx-fx-text bx-typed\' + fxCss()]]">' + hidden('$properties.text') + '<span aria-hidden="true">' + txt('shown') + '<span :class="[[typing() ? \'bx-caret is-typing\' : \'bx-caret\']]"></span></span></span>' };
 
   function FocusKind(context) {
     var self = this;
     base(self, context, 'bx-focusw');
     self.at = ko.observable(0);
     self.words = ko.pureComputed(function () { var l = words(self.props.text); return l.map(function (w, i) { return { w: w.w, css: 'bx-word' + (i === self.at() % Math.max(1, l.length) ? ' is-focus' : '') }; }); });
-    every(self, self.props.interval || 1800, function () { self.at(self.at() + 1); return true; });
+    every(self, self.props.interval || Math.round(1800 / self.fx().speed), function () { self.at(self.at() + 1); return true; });
   }
-  kinds.focusword = { model: FocusKind, props: { text: str(), interval: num(1800) },
-    view: '<p class="bx-fx-text bx-focus-word">' + hidden('$properties.text') + '<span aria-hidden="true">' + each('words', 'w', '<span :class="[[w.data.css]]">' + txt('w.data.w') + '</span> ') + '</span></p>' };
+  kinds.focusword = { model: FocusKind, props: { text: str(), interval: { type: 'number' } },
+    view: '<p :class="[[\'bx-fx-text bx-focus-word\' + fxCss()]]">' + hidden('$properties.text') + '<span aria-hidden="true">' + each('words', 'w', '<span :class="[[w.data.css]]">' + txt('w.data.w') + '</span> ') + '</span></p>' };
 
   /* ---------- motion: wrappers for the screen's own content ---------- */
   function WrapKind(context) {
     var self = this;
     base(self, context, 'bx-wrap');
-    self.css = ko.pureComputed(function () { return 'bx-fx ' + self.props.effectClass + (self.props.effect ? ' is-' + self.props.effect : '') + (self.props.delay ? ' ' + d(self.props.delay) : ''); });
+    self.css = ko.pureComputed(function () {
+      var f = self.fx ? self.fx() : { css: '' };
+      var effect = self.props.effect || f.effect || self.defaultEffect;
+      return 'bx-fx ' + self.props.effectClass + (effect ? ' is-' + effect : '') + (self.props.delay ? ' ' + d(self.props.delay) : '') + f.css;
+    });
   }
   var wrapper = function (effectClass, extra) {
-    var props = { effectClass: str(effectClass), effect: str(extra || ''), delay: num(0) };
-    return { model: WrapKind, props: props, view: '<div :class="[[css]]"><oj-bind-slot></oj-bind-slot></div>' };
+    var props = { effectClass: str(effectClass), effect: str(), delay: num(0) };
+    var model = function (context) { this.defaultEffect = extra || ''; WrapKind.call(this, context); };
+    return { model: model, props: props, view: '<div :class="[[css]]"><oj-bind-slot></oj-bind-slot></div>' };
   };
   kinds.fadein = wrapper('bx-fade-in', 'fadeup');
   kinds.expand = wrapper('bx-scroll-expand');
@@ -184,7 +208,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     var self = this;
     base(self, context, 'bx-sr');
     self.inView = ko.observable(motion.reducedMotion() || typeof window.IntersectionObserver !== 'function');
-    self.css = ko.pureComputed(function () { return 'bx-fx bx-scroll-reveal is-' + (self.props.effect || 'fadeup') + (self.inView() ? ' is-in' : ''); });
+    self.css = ko.pureComputed(function () { return 'bx-fx bx-scroll-reveal is-' + (self.props.effect || self.fx().effect || 'fadeup') + (self.inView() ? ' is-in' : '') + self.fx().css; });
     var seen = null;
     self.connected = function () {
       if (self.inView() || !self.element.querySelector) { return; }
@@ -194,7 +218,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     };
     self.disconnected = function () { if (seen) { seen.disconnect(); } };
   }
-  kinds.scrollreveal = { model: RevealOnScrollKind, props: { effect: str('fadeup') }, view: '<div :class="[[css]]"><oj-bind-slot></oj-bind-slot></div>' };
+  kinds.scrollreveal = { model: RevealOnScrollKind, props: { effect: str() }, view: '<div :class="[[css]]"><oj-bind-slot></oj-bind-slot></div>' };
 
   function MagneticKind(context) {
     var self = this;
@@ -214,9 +238,14 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
       var host = event.currentTarget;
       if (!host || !host.ownerDocument || motion.reducedMotion()) { return true; }
       var r = host.getBoundingClientRect();
-      for (var i = 0; i < 8; i++) {
+      var f = self.fx();
+      var n = Math.min(16, Math.max(4, Math.round(8 * f.density)));
+      for (var i = 0; i < n; i++) {
         var p = host.ownerDocument.createElement('span');
-        p.className = 'bx-burst-dot bx-burst-' + i;
+        p.className = 'bx-burst-dot bx-burst-' + (i % 8);
+        var a = (i / n) * Math.PI * 2;
+        p.style.setProperty('--bx-bx', Math.round(Math.sin(a) * 28 * f.intensity) + 'px');
+        p.style.setProperty('--bx-by', Math.round(-Math.cos(a) * 28 * f.intensity) + 'px');
         p.setAttribute('aria-hidden', 'true');
         p.style.left = (event.clientX - r.left) + 'px';
         p.style.top = (event.clientY - r.top) + 'px';
@@ -226,7 +255,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
       return true;
     };
   }
-  kinds.burst = { model: BurstKind, props: {}, view: '<div class="bx-fx bx-click-burst" on-click="[[burst]]"><oj-bind-slot></oj-bind-slot></div>' };
+  kinds.burst = { model: BurstKind, props: {}, view: '<div :class="[[\'bx-fx bx-click-burst\' + fxCss()]]" on-click="[[burst]]"><oj-bind-slot></oj-bind-slot></div>' };
 
   function MarqueeKind(context) {
     var self = this;
@@ -238,7 +267,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     self.toggle = function () { self.paused(!self.paused()); };
   }
   kinds.marquee = { model: MarqueeKind, props: { label: str('Updates'), items: arr(), speed: str('normal') },
-    view: '<section class="bx-marquee" :aria-label="[[$properties.label]]"><div class="bx-marquee-window"><div :class="[[css]]"><ul class="bx-marquee-list">'
+    view: '<section :class="[[\'bx-marquee\' + fxCss()]]" :aria-label="[[$properties.label]]"><div class="bx-marquee-window"><div :class="[[css]]"><ul class="bx-marquee-list">'
       + each('items', 'm', '<li>' + txt('m.data.label') + '</li>') + '</ul><ul class="bx-marquee-list" aria-hidden="true">' + each('items', 'm', '<li>' + txt('m.data.label') + '</li>') + '</ul></div></div>'
       + '<button type="button" class="bx-btn bx-btn--borderless bx-btn--sm bx-marquee-toggle" on-click="[[toggle]]">' + txt('toggleText') + '</button></section>' };
 
@@ -304,6 +333,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     self.where = ko.pureComputed(function () { return n() ? 'Card ' + ((self.props.index || 0) + 1) + ' of ' + n() : ''; });
     self.next = function () { if (n()) { self.props.index = ((self.props.index || 0) + 1) % n(); } };
     self.prev = function () { if (n()) { self.props.index = ((self.props.index || 0) - 1 + n()) % n(); } };
+    self.css = ko.pureComputed(function () { var f = self.fx(); return 'bx-carousel' + (f.effect ? ' is-' + f.effect : '') + f.css; });
   }
   kinds.deck = { model: DeckKind, props: { label: str('Cards'), items: arr(), index: { type: 'number', value: 0, writeback: true } },
     view: '<section class="bx-card-stack" :aria-label="[[$properties.label]]"><div class="bx-deck">' + each('cards', 'c', '<article :class="[[c.data.css]]" :aria-hidden="[[c.data.hidden]]">'
@@ -342,7 +372,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     self.prev = function () { if (n()) { self.props.index = ((self.props.index || 0) - 1 + n()) % n(); } };
   }
   kinds.carousel = { model: CarouselKind, props: { label: str('Highlights'), slides: arr(), index: { type: 'number', value: 0, writeback: true } },
-    view: '<section class="bx-carousel" aria-roledescription="carousel" :aria-label="[[$properties.label]]"><div class="bx-slides" aria-live="polite">'
+    view: '<section :class="[[css]]" aria-roledescription="carousel" :aria-label="[[$properties.label]]"><div class="bx-slides" aria-live="polite">'
       + each('slides', 's', '<div :class="[[s.data.css]]" role="group" aria-roledescription="slide" :aria-label="[[s.data.of]]" :hidden="[[s.data.hidden]]"><h3 class="bx-card-title">' + txt('s.data.title')
         + '</h3><p class="bx-thing-text">' + txt('s.data.text') + '</p></div>') + '</div><div class="bx-deck-controls"><button type="button" class="bx-page" aria-label="Previous slide" on-click="[[prev]]">‹</button>'
       + '<span class="bx-dots">' + each('slides', 's', '<button type="button" :class="[[s.data.dot]]" :aria-label="[[s.data.dotName]]" :aria-current="[[s.data.current]]" on-click="[[s.data.go]]"></button>')
@@ -431,7 +461,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
   function BackdropKind(context) {
     var self = this;
     base(self, context, 'bx-bd');
-    self.css = ko.pureComputed(function () { return 'bx-backdrop is-' + self.props.look + (self.props.still ? ' is-still' : ''); });
+    self.css = ko.pureComputed(function () { return 'bx-backdrop is-' + self.props.look + (self.props.still ? ' is-still' : '') + (self.fx ? self.fx().css : ''); });
   }
   var backdrop = function (look) { return { model: BackdropKind, props: { look: str(look), still: bool() }, view: '<div :class="[[css]]"><span class="bx-backdrop-layer" aria-hidden="true"></span><div class="bx-backdrop-content"><oj-bind-slot></oj-bind-slot></div></div>' }; };
   ['gradient', 'aurora', 'silk', 'dots', 'waves', 'beams', 'topography'].forEach(function (look) { kinds['bd-' + look] = backdrop(look); });
@@ -445,7 +475,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
       if (!c) { return false; }
       var w = canvas.width = canvas.clientWidth || 300;
       var h = canvas.height = canvas.clientHeight || 160;
-      if (!dots.length) { for (var i = 0; i < (self.props.count || 40); i++) { dots.push({ x: Math.random() * w, y: Math.random() * h, r: 1 + Math.random() * 2, v: 0.15 + Math.random() * 0.35 }); } }
+      if (!dots.length) { var f = self.fx(); for (var i = 0; i < (self.props.count || Math.round(40 * f.density)); i++) { dots.push({ x: Math.random() * w, y: Math.random() * h, r: 1 + Math.random() * 2, v: (0.15 + Math.random() * 0.35) * f.speed }); } }
       c.clearRect(0, 0, w, h);
       c.fillStyle = window.getComputedStyle ? window.getComputedStyle(canvas).color : '#4f46e5';
       dots.forEach(function (p) { p.y -= p.v; if (p.y < -4) { p.y = h + 4; p.x = Math.random() * w; } c.globalAlpha = 0.35; c.beginPath(); c.arc(p.x, p.y, p.r, 0, Math.PI * 2); c.fill(); });
@@ -457,8 +487,8 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
       if (!motion.reducedMotion() && !self.props.still) { every(self, 40, function () { return draw(canvas); }); }
     };
   }
-  kinds.particles = { model: ParticlesKind, props: { count: num(40), still: bool() },
-    view: '<div class="bx-backdrop is-particles"><canvas class="bx-backdrop-layer" aria-hidden="true"></canvas><div class="bx-backdrop-content"><oj-bind-slot></oj-bind-slot></div></div>' };
+  kinds.particles = { model: ParticlesKind, props: { count: { type: 'number' }, still: bool() },
+    view: '<div :class="[[\'bx-backdrop is-particles\' + fxCss()]]"><canvas class="bx-backdrop-layer" aria-hidden="true"></canvas><div class="bx-backdrop-content"><oj-bind-slot></oj-bind-slot></div></div>' };
 
   /* ---------- micro interactions ---------- */
   function SlideConfirmKind(context) {
@@ -545,7 +575,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     var self = this;
     base(self, context, 'bx-swipe');
     self.open = ko.observable(false);
-    self.css = ko.pureComputed(function () { return 'bx-swipe-row' + (self.open() ? ' is-open' : ''); });
+    self.css = ko.pureComputed(function () { return 'bx-swipe-row' + (self.open() ? ' is-open' : '') + self.fx().css; });
     self.actions = ko.pureComputed(function () {
       return list(self.props.actions).map(function (o) {
         return { label: o.label, name: o.label + ': ' + self.props.heading, css: 'bx-swipe-action' + (o.tone ? ' is-' + o.tone : ''), go: function () { self.open(false); bx.fire(self.element, 'ojAction', { value: o.value !== undefined ? o.value : o.id }); } };
@@ -598,12 +628,12 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     var x0 = null, v0 = 0;
     self.onInput = function (event) { var n = Number(event.target.value); if (isFinite(n)) { self.props.value = clamp(n); } return true; };
     self.down = function (event) { x0 = event.clientX; v0 = Number(self.props.value) || 0; if (event.currentTarget && event.currentTarget.setPointerCapture && event.pointerId !== undefined) { event.currentTarget.setPointerCapture(event.pointerId); } return true; };
-    self.move = function (event) { if (x0 === null) { return true; } var stepN = Math.round((event.clientX - x0) / 8); self.props.value = clamp(v0 + stepN * (self.props.step || 1)); return true; };
+    self.move = function (event) { if (x0 === null) { return true; } var stepN = Math.round((event.clientX - x0) / (8 / self.fx().sensitivity)); self.props.value = clamp(v0 + stepN * (self.props.step || 1)); return true; };
     self.up = function () { x0 = null; return true; };
     self.shown = ko.pureComputed(function () { return money(Number(self.props.value) || 0, self.props.currency); });
   }
   kinds.scrub = { model: ScrubKind, props: { labelHint: str('Amount'), value: { type: 'number', value: 0, writeback: true }, min: num(0), max: { type: 'number' }, step: num(10), currency: str() },
-    view: '<div class="bx-field bx-scrub"><div class="bx-slider-head"><label class="bx-label" :for="[[id]]">' + txt('$properties.labelHint') + '</label><span class="bx-scrub-handle" aria-hidden="true"'
+    view: '<div :class="[[\'bx-field bx-scrub\' + fxCss()]]"><div class="bx-slider-head"><label class="bx-label" :for="[[id]]">' + txt('$properties.labelHint') + '</label><span class="bx-scrub-handle" aria-hidden="true"'
       + ' on-pointerdown="[[down]]" on-pointermove="[[move]]" on-pointerup="[[up]]">⇔</span></div><div class="bx-control">' + iff('$properties.currency', '<span class="bx-affix" aria-hidden="true">' + txt('$properties.currency') + '</span>')
       + '<input type="number" class="bx-input bx-num" inputmode="decimal" :id="[[id]]" :value="[[$properties.value]]" :min="[[$properties.min]]" :max="[[$properties.max]]" :step="[[$properties.step]]"'
       + ' on-input="[[onInput]]"/></div><span class="bx-help">Drag the arrows, or type</span></div>' };
@@ -671,26 +701,26 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
   /* ---------- group 7 ---------- */
   var g = g1.kinds, h = g2.kinds, c = g3.kinds, e = g5.kinds;
   var elements = [
-    register('bx-rolling-digits', kinds.rolling), register('bx-count-up', kinds.count), register('bx-split-flap-board', kinds.flap, { heading: 'Exchange rates' }),
-    register('bx-reveal-digits', kinds.reveal), register('bx-blur-in-text', kinds.blurin), register('bx-text-reveal', kinds.textreveal), register('bx-rotating-text', kinds.rotating),
-    register('bx-shimmer-text', kinds.shimmer), register('bx-gradient-text', kinds.gradient, { animated: false }), register('bx-typed-text', kinds.typed), register('bx-focus-word', kinds.focusword),
-    register('bx-scroll-float-text', kinds.floattext),
-    register('bx-fade-in-content', kinds.fadein), register('bx-scroll-reveal', kinds.scrollreveal), register('bx-scroll-expand', kinds.expand), register('bx-edge-blur', kinds.edgeblur),
-    register('bx-glare-hover', kinds.glare), register('bx-magnetic-button', kinds.magnetic), register('bx-highlight-border', kinds.highlight), register('bx-click-burst', kinds.burst),
-    register('bx-marquee', kinds.marquee),
+    register('bx-rolling-digits', varied(kinds.rolling, 'rolling-digits')), register('bx-count-up', varied(kinds.count, 'count-up')), register('bx-split-flap-board', kinds.flap, { heading: 'Exchange rates' }),
+    register('bx-reveal-digits', kinds.reveal), register('bx-blur-in-text', varied(kinds.blurin, 'blur-in-text')), register('bx-text-reveal', varied(kinds.textreveal, 'text-reveal')), register('bx-rotating-text', varied(kinds.rotating, 'rotating-text')),
+    register('bx-shimmer-text', varied(kinds.shimmer, 'shimmer-text')), register('bx-gradient-text', varied(kinds.gradient, 'gradient-text'), { animated: false }), register('bx-typed-text', varied(kinds.typed, 'typed-text')), register('bx-focus-word', varied(kinds.focusword, 'focus-word')),
+    register('bx-scroll-float-text', varied(kinds.floattext, 'scroll-float-text')),
+    register('bx-fade-in-content', varied(kinds.fadein, 'fade-in-content')), register('bx-scroll-reveal', varied(kinds.scrollreveal, 'scroll-reveal')), register('bx-scroll-expand', varied(kinds.expand, 'scroll-expand')), register('bx-edge-blur', varied(kinds.edgeblur, 'edge-blur')),
+    register('bx-glare-hover', varied(kinds.glare, 'glare-hover')), register('bx-magnetic-button', kinds.magnetic), register('bx-highlight-border', varied(kinds.highlight, 'highlight-border')), register('bx-click-burst', varied(kinds.burst, 'click-burst')),
+    register('bx-marquee', varied(kinds.marquee, 'marquee')),
     register('bx-animated-list', kinds.alist), register('bx-spotlight-card', kinds.spotlight), register('bx-tilt-card', kinds.tilt), register('bx-flip-card', kinds.flip),
-    register('bx-card-stack', kinds.deck), register('bx-glow-border-card', kinds.glowcard), register('bx-bento-grid', kinds.bento), register('bx-carousel', kinds.carousel),
+    register('bx-card-stack', kinds.deck), register('bx-glow-border-card', kinds.glowcard), register('bx-bento-grid', kinds.bento), register('bx-carousel', varied(kinds.carousel, 'carousel')),
     register('bx-elastic-slider', wrap(g.slider, 'bx-fx-elastic'), { labelHint: 'Amount', max: 10000, step: 50 }), register('bx-option-wheel', kinds.wheel),
     register('bx-pill-nav', wrap(g.nav, 'bx-fx-pill-nav')), register('bx-dock-nav', wrap(h.quick, 'bx-fx-dock'), { label: 'Dock' }), register('bx-card-nav', kinds.cardnav),
     register('bx-staggered-menu', wrap(g.menu, 'bx-fx-stagger-menu'), { label: 'Menu' }), register('bx-document-folder', kinds.folder), register('bx-scroll-stack', kinds.scrollstack),
-    register('bx-profile-card', kinds.profile), register('bx-glass-panel', kinds.glass),
-    register('bx-gradient-backdrop', kinds['bd-gradient']), register('bx-soft-aurora', kinds['bd-aurora']), register('bx-silk-backdrop', kinds['bd-silk']), register('bx-dot-grid', kinds['bd-dots']),
-    register('bx-line-waves', kinds['bd-waves']), register('bx-light-beams', kinds['bd-beams']), register('bx-topography', kinds['bd-topography']), register('bx-particle-backdrop', kinds.particles),
+    register('bx-profile-card', kinds.profile), register('bx-glass-panel', varied(kinds.glass, 'glass-panel')),
+    register('bx-gradient-backdrop', varied(kinds['bd-gradient'], 'gradient-backdrop')), register('bx-soft-aurora', varied(kinds['bd-aurora'], 'soft-aurora')), register('bx-silk-backdrop', varied(kinds['bd-silk'], 'silk-backdrop')), register('bx-dot-grid', varied(kinds['bd-dots'], 'dot-grid')),
+    register('bx-line-waves', varied(kinds['bd-waves'], 'line-waves')), register('bx-light-beams', varied(kinds['bd-beams'], 'light-beams')), register('bx-topography', varied(kinds['bd-topography'], 'topography')), register('bx-particle-backdrop', varied(kinds.particles, 'particle-backdrop')),
     register('bx-slide-to-confirm', kinds.slideconfirm), register('bx-hold-to-confirm', kinds.hold), register('bx-otp-slots', wrap(c.code, 'bx-fx-otp'), { labelHint: 'Enter the code', length: 6 }),
-    register('bx-receipt-tear', wrap(h.receipt, 'bx-fx-torn'), { heading: 'Payment sent' }), register('bx-success-check', kinds.successcheck), register('bx-swipe-row', kinds.swiperow),
+    register('bx-receipt-tear', wrap(h.receipt, 'bx-fx-torn'), { heading: 'Payment sent' }), register('bx-success-check', kinds.successcheck), register('bx-swipe-row', varied(kinds.swiperow, 'swipe-row')),
     register('bx-swipe-toast', kinds.swipetoast), register('bx-bell-toggle', kinds.bell), register('bx-squish-switch', wrap(c.toggle, 'bx-fx-squish')),
     register('bx-jelly-radio', wrap(h.choice, 'bx-fx-jelly')), register('bx-glide-select', wrap(g.segmented, 'bx-fx-glide')), register('bx-rubber-segment', wrap(g.segmented, 'bx-fx-rubber')),
-    register('bx-scrub-field', kinds.scrub), register('bx-budget-gauge', kinds.gauge), register('bx-status-mark', kinds.statusmark), register('bx-favourite-heart', kinds.heart),
+    register('bx-scrub-field', varied(kinds.scrub, 'scrub-field')), register('bx-budget-gauge', kinds.gauge), register('bx-status-mark', kinds.statusmark), register('bx-favourite-heart', kinds.heart),
     register('bx-peek-rating', wrap(e.rating, 'bx-fx-peek'), { labelHint: 'How was it?' }), register('bx-warm-tooltip', wrap(g.tooltip, 'bx-fx-warm')), register('bx-prompt-bar', kinds.prompt),
     register('bx-voice-pill', kinds.voice), register('bx-call-chip', kinds.call), register('bx-lattice-loader', kinds.lattice)
   ];

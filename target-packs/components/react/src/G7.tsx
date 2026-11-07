@@ -10,7 +10,7 @@ import { ActionMenu, ActionMenuProps, SegmentsProps, SideNav, SideNavProps, Slid
 import { ChoiceCards, ChoiceCardsProps, Detail, DetailList, QuickActions, QuickActionsProps, ReceiptProps, TransactionReceipt, money } from './G2';
 import { CodeInput, CodeProps, Setting, SettingProps, masked } from './G3';
 import { FeedbackRating, RatingProps } from './G5';
-import { reducedMotion } from './motion';
+import { fx, reducedMotion } from './motion';
 
 type Opt<P, K extends keyof P> = Omit<P, K> & Partial<Pick<P, K>>;
 type Vars = CSSProperties & Record<`--${string}`, string>;
@@ -40,15 +40,18 @@ function pointer(e: PointerEvent<HTMLElement>, set: (s: CSSStyleDeclaration, x: 
   set(el.style, r.width ? (e.clientX - r.left) / r.width : 0.5, r.height ? (e.clientY - r.top) / r.height : 0.5);
 }
 
+/** Every effect takes a variant: a named preset of its settings (variants/v5.json), shown as is-v-<variant> and the --bx-fx-* variables. */
+export interface WrapProps { testID?: string; variant?: string; children?: ReactNode }
+
 const Hidden = ({ children }: { children: ReactNode }) => <span className="bx-visually-hidden">{children}</span>;
 
 /* ---------- text effects ---------- */
 
 /** A number whose digits roll to their place when it changes. */
-export function RollingDigits({ testID, value, currency }: { testID?: string; value: number | string; currency?: string }) {
+export function RollingDigits({ testID, variant, value, currency }: { testID?: string; variant?: string; value: number | string; currency?: string }) {
   const text = money(value, currency);
   return (
-    <span className="bx-rolling" data-testid={testID}><Hidden>{text}</Hidden>
+    <span className={'bx-rolling' + fx('rolling-digits', variant).css} data-testid={testID}><Hidden>{text}</Hidden>
       <span className="bx-rolling-face" aria-hidden="true">
         {text.split('').map((c, i) => (c >= '0' && c <= '9'
           ? <span key={i} className="bx-roll-col"><span className={`bx-roll-strip is-d-${c}`}>{'0123456789'.split('').map((n) => <span key={n}>{n}</span>)}</span></span>
@@ -58,19 +61,21 @@ export function RollingDigits({ testID, value, currency }: { testID?: string; va
   );
 }
 
-export interface CountUpProps { testID?: string; value: number; from?: number; duration?: number; currency?: string; prefix?: string; suffix?: string }
+export interface CountUpProps { testID?: string; variant?: string; value: number; from?: number; duration?: number; currency?: string; prefix?: string; suffix?: string }
 /** Counts up to a figure; screen readers hear the figure once. */
-export function CountUp({ testID, value, from = 0, duration = 1200, currency, prefix = '', suffix = '' }: CountUpProps) {
+export function CountUp({ testID, variant, value, from = 0, duration, currency, prefix = '', suffix = '' }: CountUpProps) {
+  const f = fx('count-up', variant);
+  const ms = duration ?? 1200 / f.speed;
   const [now, setNow] = useState(reducedMotion() ? value : from);
   const step = useRef(0);
   const fmt = (n: number) => prefix + (money(Math.round(n * 100) / 100, currency) || String(n)) + suffix;
-  useEvery(Math.max(10, Math.round(duration / 30)), () => {
+  useEvery(Math.max(10, Math.round(ms / 30)), () => {
     step.current += 1;
     const p = step.current / 30;
-    setNow(p >= 1 ? value : from + (value - from) * (1 - (1 - p) ** 3));
+    setNow(p >= 1 ? value : from + (value - from) * (f.easing === 'linear' ? p : 1 - (1 - p) ** 3));
     return p < 1;
   }, [value]);
-  return <span className="bx-count-up" data-testid={testID}><Hidden>{fmt(value)}</Hidden><span aria-hidden="true">{fmt(now)}</span></span>;
+  return <span className={'bx-count-up' + f.css} data-testid={testID}><Hidden>{fmt(value)}</Hidden><span aria-hidden="true">{fmt(now)}</span></span>;
 }
 
 /** Rates on flip tiles, each row read as a whole. */
@@ -105,69 +110,76 @@ export function RevealDigits({ testID, label = 'Account number', value }: { test
 }
 
 /** Words that come into focus one after another. */
-export function BlurInText({ testID, text }: { testID?: string; text: string }) {
-  return <p className="bx-fx-text bx-blur-in" data-testid={testID}><Hidden>{text}</Hidden><span aria-hidden="true">{words(text).map((w, i) => <span key={i} className={`bx-word ${stagger(i)}`}>{w} </span>)}</span></p>;
+export function BlurInText({ testID, variant, text }: { testID?: string; variant?: string; text: string }) {
+  return <p className={'bx-fx-text bx-blur-in' + fx('blur-in-text', variant).css} data-testid={testID}><Hidden>{text}</Hidden><span aria-hidden="true">{words(text).map((w, i) => <span key={i} className={`bx-word ${stagger(i)}`}>{w} </span>)}</span></p>;
 }
 /** Text that a sliding edge uncovers. */
-export function TextReveal({ testID, text, animated = true }: { testID?: string; text: string; animated?: boolean }) {
-  return <span className={'bx-fx-text bx-text-reveal' + (animated ? ' is-animated' : '')} data-testid={testID}>{text}</span>;
+export function TextReveal({ testID, variant, text, animated = true }: { testID?: string; variant?: string; text: string; animated?: boolean }) {
+  return <span className={'bx-fx-text bx-text-reveal' + (animated ? ' is-animated' : '') + fx('text-reveal', variant).css} data-testid={testID}>{text}</span>;
 }
 
-export interface RotatingTextProps { testID?: string; prefix?: string; words: ReadonlyArray<string>; interval?: number }
+export interface RotatingTextProps { testID?: string; variant?: string; prefix?: string; words: ReadonlyArray<string>; interval?: number }
 /** One word after another after a fixed start; screen readers hear all the words once. */
-export function RotatingText({ testID, prefix, words: list, interval = 2200 }: RotatingTextProps) {
+export function RotatingText({ testID, variant, prefix, words: list, interval }: RotatingTextProps) {
+  const f = fx('rotating-text', variant);
+  const ms = interval ?? Math.round(2200 / f.speed);
   const [at, setAt] = useState(0);
-  useEvery(interval, () => { setAt((n) => n + 1); return true; }, [interval]);
+  useEvery(ms, () => { setAt((n) => n + 1); return true; }, [ms]);
   const all = (prefix ? `${prefix} ` : '') + (list.length > 1 ? `${list.slice(0, -1).join(', ')} or ${list[list.length - 1]}` : list.join(''));
   return (
-    <span className="bx-fx-text bx-rotating" data-testid={testID}><Hidden>{all}</Hidden>
+    <span className={'bx-fx-text bx-rotating' + (f.effect ? ` is-${f.effect}` : '') + f.css} data-testid={testID}><Hidden>{all}</Hidden>
       <span aria-hidden="true">{prefix ? `${prefix} ` : ''}<span key={at} className="bx-rotating-word">{list.length ? list[at % list.length] : ''}</span></span>
     </span>
   );
 }
 /** Text with a light that runs across it. */
-export function ShimmerText({ testID, text, animated = true }: { testID?: string; text: string; animated?: boolean }) {
-  return <span className={'bx-fx-text bx-shimmer-text' + (animated ? ' is-animated' : '')} data-testid={testID}>{text}</span>;
+export function ShimmerText({ testID, variant, text, animated = true }: { testID?: string; variant?: string; text: string; animated?: boolean }) {
+  return <span className={'bx-fx-text bx-shimmer-text' + (animated ? ' is-animated' : '') + fx('shimmer-text', variant).css} data-testid={testID}>{text}</span>;
 }
 /** Text in the brand gradient, still or moving. */
-export function GradientText({ testID, text, animated = false }: { testID?: string; text: string; animated?: boolean }) {
-  return <span className={'bx-fx-text bx-gradient-text' + (animated ? ' is-animated' : '')} data-testid={testID}>{text}</span>;
+export function GradientText({ testID, variant, text, animated = false }: { testID?: string; variant?: string; text: string; animated?: boolean }) {
+  return <span className={'bx-fx-text bx-gradient-text' + (animated ? ' is-animated' : '') + fx('gradient-text', variant).css} data-testid={testID}>{text}</span>;
 }
 
 /** Text typed out letter by letter (the assistant's answer); screen readers hear it whole. */
-export function TypedText({ testID, text, speed = 35 }: { testID?: string; text: string; speed?: number }) {
+export function TypedText({ testID, variant, text, speed }: { testID?: string; variant?: string; text: string; speed?: number }) {
+  const f = fx('typed-text', variant);
+  const ms = speed ?? Math.round(35 / f.speed);
   const [count, setCount] = useState(reducedMotion() ? text.length : 0);
   const at = useRef(count);
   useEffect(() => { at.current = reducedMotion() ? text.length : 0; setCount(at.current); }, [text]);
-  useEvery(speed, () => { at.current = Math.min(text.length, at.current + 1); setCount(at.current); return at.current < text.length; }, [text, speed]);
+  useEvery(ms, () => { at.current = Math.min(text.length, at.current + 1); setCount(at.current); return at.current < text.length; }, [text, ms]);
   const typing = count < text.length;
-  return <span className="bx-fx-text bx-typed" data-testid={testID}><Hidden>{text}</Hidden><span aria-hidden="true">{text.slice(0, count)}<span className={'bx-caret' + (typing ? ' is-typing' : '')} /></span></span>;
+  return <span className={'bx-fx-text bx-typed' + f.css} data-testid={testID}><Hidden>{text}</Hidden><span aria-hidden="true">{text.slice(0, count)}<span className={'bx-caret' + (typing ? ' is-typing' : '')} /></span></span>;
 }
 
 /** A sentence with one word in focus at a time. */
-export function FocusWord({ testID, text, interval = 1800 }: { testID?: string; text: string; interval?: number }) {
+export function FocusWord({ testID, variant, text, interval }: { testID?: string; variant?: string; text: string; interval?: number }) {
+  const f = fx('focus-word', variant);
+  const ms = interval ?? Math.round(1800 / f.speed);
   const [at, setAt] = useState(0);
-  useEvery(interval, () => { setAt((n) => n + 1); return true; }, [interval]);
+  useEvery(ms, () => { setAt((n) => n + 1); return true; }, [ms]);
   const list = words(text);
-  return <p className="bx-fx-text bx-focus-word" data-testid={testID}><Hidden>{text}</Hidden><span aria-hidden="true">{list.map((w, i) => <span key={i} className={'bx-word' + (i === at % Math.max(1, list.length) ? ' is-focus' : '')}>{w} </span>)}</span></p>;
+  return <p className={'bx-fx-text bx-focus-word' + f.css} data-testid={testID}><Hidden>{text}</Hidden><span aria-hidden="true">{list.map((w, i) => <span key={i} className={'bx-word' + (i === at % Math.max(1, list.length) ? ' is-focus' : '')}>{w} </span>)}</span></p>;
 }
 /** Letters that float up as the text scrolls into view. */
-export function ScrollFloatText({ testID, text }: { testID?: string; text: string }) {
-  return <p className="bx-fx-text bx-scroll-float" data-testid={testID}><Hidden>{text}</Hidden><span aria-hidden="true">{chars(text).map((c, i) => <span key={i} className={c.css}>{c.ch}</span>)}</span></p>;
+export function ScrollFloatText({ testID, variant, text }: { testID?: string; variant?: string; text: string }) {
+  return <p className={'bx-fx-text bx-scroll-float' + fx('scroll-float-text', variant).css} data-testid={testID}><Hidden>{text}</Hidden><span aria-hidden="true">{chars(text).map((c, i) => <span key={i} className={c.css}>{c.ch}</span>)}</span></p>;
 }
 
 /* ---------- motion: wrappers for the screen's own content ---------- */
 
 type Entry = 'fadeup' | 'scale' | 'slide' | 'blur';
-export interface WrapProps { testID?: string; children?: ReactNode }
 
 /** Content that fades, scales, slides or sharpens in when it appears. */
-export function FadeInContent({ testID, effect = 'fadeup', delay = 0, children }: WrapProps & { effect?: Entry; delay?: number }) {
-  return <div className={`bx-fx bx-fade-in is-${effect}` + (delay ? ` ${stagger(delay)}` : '')} data-testid={testID}>{children}</div>;
+export function FadeInContent({ testID, variant, effect, delay = 0, children }: WrapProps & { effect?: Entry; delay?: number }) {
+  const f = fx('fade-in-content', variant);
+  return <div className={`bx-fx bx-fade-in is-${effect ?? f.effect ?? 'fadeup'}` + (delay ? ` ${stagger(delay)}` : '') + f.css} data-testid={testID}>{children}</div>;
 }
 
 /** Content that comes in when it scrolls into view (shown at once without IntersectionObserver or under reduced motion). */
-export function ScrollReveal({ testID, effect = 'fadeup', children }: WrapProps & { effect?: Entry }) {
+export function ScrollReveal({ testID, variant, effect, children }: WrapProps & { effect?: Entry }) {
+  const f = fx('scroll-reveal', variant);
   const box = useRef<HTMLDivElement>(null);
   const [seen, setSeen] = useState(() => reducedMotion() || typeof IntersectionObserver === 'undefined');
   useEffect(() => {
@@ -176,19 +188,19 @@ export function ScrollReveal({ testID, effect = 'fadeup', children }: WrapProps 
     io.observe(box.current);
     return () => io.disconnect();
   }, [seen]);
-  return <div ref={box} className={`bx-fx bx-scroll-reveal is-${effect}` + (seen ? ' is-in' : '')} data-testid={testID}>{children}</div>;
+  return <div ref={box} className={`bx-fx bx-scroll-reveal is-${effect ?? f.effect ?? 'fadeup'}` + (seen ? ' is-in' : '') + f.css} data-testid={testID}>{children}</div>;
 }
-const wrapper = (css: string) => function Wrapper({ testID, children }: WrapProps) { return <div className={`bx-fx ${css}`} data-testid={testID}>{children}</div>; };
+const wrapper = (css: string, id: string) => function Wrapper({ testID, variant, children }: WrapProps) { return <div className={`bx-fx ${css}` + fx(id, variant).css} data-testid={testID}>{children}</div>; };
 /** Content that grows to full width as it scrolls into view. */
-export const ScrollExpand = wrapper('bx-scroll-expand');
+export const ScrollExpand = wrapper('bx-scroll-expand', 'scroll-expand');
 /** A scrolling area whose top and bottom edges fade. */
-export const EdgeBlur = wrapper('bx-edge-blur');
+export const EdgeBlur = wrapper('bx-edge-blur', 'edge-blur');
 /** Content with a glare that crosses it on hover and focus. */
-export const GlareHover = wrapper('bx-glare');
+export const GlareHover = wrapper('bx-glare', 'glare-hover');
 /** Content inside a moving gradient border. */
-export const HighlightBorder = wrapper('bx-highlight-border');
+export const HighlightBorder = wrapper('bx-highlight-border', 'highlight-border');
 /** A frosted glass panel. */
-export const GlassPanel = wrapper('bx-glass-panel');
+export const GlassPanel = wrapper('bx-glass-panel', 'glass-panel');
 
 /** A primary button that leans toward the pointer. */
 export function MagneticButton({ testID, label, disabled, onAction }: { testID?: string; label: string; disabled?: boolean; onAction?: () => void }) {
@@ -202,14 +214,19 @@ export function MagneticButton({ testID, label, disabled, onAction }: { testID?:
 }
 
 /** Content where a click sends out a small burst of dots (decoration only). */
-export function ClickBurst({ testID, children }: WrapProps) {
+export function ClickBurst({ testID, variant, children }: WrapProps) {
+  const f = fx('click-burst', variant);
   const burst = (e: MouseEvent<HTMLDivElement>) => {
     if (reducedMotion()) { return; }
     const host = e.currentTarget;
     const r = host.getBoundingClientRect();
-    for (let i = 0; i < 8; i++) {
+    const n = Math.min(16, Math.max(4, Math.round(8 * f.density)));
+    for (let i = 0; i < n; i++) {
       const p = document.createElement('span');
-      p.className = `bx-burst-dot bx-burst-${i}`;
+      p.className = `bx-burst-dot bx-burst-${i % 8}`;
+      const a = (i / n) * Math.PI * 2;
+      p.style.setProperty('--bx-bx', `${Math.round(Math.sin(a) * 28 * f.intensity)}px`);
+      p.style.setProperty('--bx-by', `${Math.round(-Math.cos(a) * 28 * f.intensity)}px`);
       p.setAttribute('aria-hidden', 'true');
       p.style.left = `${e.clientX - r.left}px`;
       p.style.top = `${e.clientY - r.top}px`;
@@ -217,14 +234,14 @@ export function ClickBurst({ testID, children }: WrapProps) {
       setTimeout(() => p.remove(), 700);
     }
   };
-  return <div className="bx-fx bx-click-burst" data-testid={testID} onClick={burst}>{children}</div>;
+  return <div className={'bx-fx bx-click-burst' + f.css} data-testid={testID} onClick={burst}>{children}</div>;
 }
 
 /** Items that scroll past; it stops on hover and focus, and Pause stops it for good. */
-export function Marquee({ testID, label = 'Updates', items, speed = 'normal' }: { testID?: string; label?: string; items: ReadonlyArray<string>; speed?: 'slow' | 'normal' }) {
+export function Marquee({ testID, variant, label = 'Updates', items, speed = 'normal' }: { testID?: string; variant?: string; label?: string; items: ReadonlyArray<string>; speed?: 'slow' | 'normal' }) {
   const [paused, setPaused] = useState(reducedMotion());
   return (
-    <section className="bx-marquee" aria-label={label} data-testid={testID}>
+    <section className={'bx-marquee' + fx('marquee', variant).css} aria-label={label} data-testid={testID}>
       <div className="bx-marquee-window">
         <div className={`bx-marquee-track is-${speed}` + (paused ? ' is-paused' : '')}>
           <ul className="bx-marquee-list">{items.map((m, i) => <li key={i}>{m}</li>)}</ul>
@@ -326,11 +343,12 @@ export function BentoGrid({ testID, label, items, onAction }: { testID?: string;
 }
 
 /** Slides one at a time with Previous, Next and a dot each; nothing moves by itself. */
-export function Carousel({ testID, label = 'Highlights', slides }: { testID?: string; label?: string; slides: ReadonlyArray<DeckItem> }) {
+export function Carousel({ testID, variant, label = 'Highlights', slides }: { testID?: string; variant?: string; label?: string; slides: ReadonlyArray<DeckItem> }) {
+  const f = fx('carousel', variant);
   const [at, setAt] = useState(0);
   const n = slides.length;
   return (
-    <section className="bx-carousel" aria-roledescription="carousel" aria-label={label} data-testid={testID}>
+    <section className={'bx-carousel' + (f.effect ? ` is-${f.effect}` : '') + f.css} aria-roledescription="carousel" aria-label={label} data-testid={testID}>
       <div className="bx-slides" aria-live="polite">
         {slides.map((o, i) => <div key={i} className={'bx-slide' + (i === at ? ' is-on' : '')} role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${n}`} hidden={i !== at}>
           <h3 className="bx-card-title">{o.title}</h3><p className="bx-thing-text">{o.text}</p></div>)}
@@ -425,33 +443,36 @@ export function ProfileCard({ testID, name, jobTitle, src, items = [], actionLab
 
 /* ---------- backdrops ---------- */
 
-export interface BackdropProps { testID?: string; still?: boolean; children?: ReactNode }
-const backdrop = (look: string) => function Backdrop({ testID, still, children }: BackdropProps) {
-  return <div className={`bx-backdrop is-${look}` + (still ? ' is-still' : '')} data-testid={testID}><span className="bx-backdrop-layer" aria-hidden="true" /><div className="bx-backdrop-content">{children}</div></div>;
+export interface BackdropProps { testID?: string; variant?: string; still?: boolean; children?: ReactNode }
+const backdrop = (look: string, id: string) => function Backdrop({ testID, variant, still, children }: BackdropProps) {
+  return <div className={`bx-backdrop is-${look}` + (still ? ' is-still' : '') + fx(id, variant).css} data-testid={testID}><span className="bx-backdrop-layer" aria-hidden="true" /><div className="bx-backdrop-content">{children}</div></div>;
 };
 /** A soft moving gradient behind the content. */
-export const GradientBackdrop = backdrop('gradient');
+export const GradientBackdrop = backdrop('gradient', 'gradient-backdrop');
 /** Slow coloured light behind the content. */
-export const SoftAurora = backdrop('aurora');
+export const SoftAurora = backdrop('aurora', 'soft-aurora');
 /** Folds of colour like silk. */
-export const SilkBackdrop = backdrop('silk');
+export const SilkBackdrop = backdrop('silk', 'silk-backdrop');
 /** A fading grid of dots. */
-export const DotGrid = backdrop('dots');
+export const DotGrid = backdrop('dots', 'dot-grid');
 /** Lines like waves. */
-export const LineWaves = backdrop('waves');
+export const LineWaves = backdrop('waves', 'line-waves');
 /** Beams of light from the top. */
-export const LightBeams = backdrop('beams');
+export const LightBeams = backdrop('beams', 'light-beams');
 /** Contour lines like a map. */
-export const Topography = backdrop('topography');
+export const Topography = backdrop('topography', 'topography');
 
 /** Specks drifting up on a canvas; still under reduced motion. */
-export function ParticleBackdrop({ testID, count = 40, still, children }: BackdropProps & { count?: number }) {
+export function ParticleBackdrop({ testID, variant, count, still, children }: BackdropProps & { count?: number }) {
+  const f = fx('particle-backdrop', variant);
+  const n = count ?? Math.round(40 * f.density);
+  const pace = f.speed;
   const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const el = canvas.current;
     const c = el?.getContext?.('2d');
     if (!el || !c) { return undefined; }
-    const dots = Array.from({ length: count }, () => ({ x: Math.random() * (el.clientWidth || 300), y: Math.random() * (el.clientHeight || 160), r: 1 + Math.random() * 2, v: 0.15 + Math.random() * 0.35 }));
+    const dots = Array.from({ length: n }, () => ({ x: Math.random() * (el.clientWidth || 300), y: Math.random() * (el.clientHeight || 160), r: 1 + Math.random() * 2, v: (0.15 + Math.random() * 0.35) * pace }));
     const draw = () => {
       const w = (el.width = el.clientWidth || 300);
       const h = (el.height = el.clientHeight || 160);
@@ -463,8 +484,8 @@ export function ParticleBackdrop({ testID, count = 40, still, children }: Backdr
     if (still || reducedMotion()) { return undefined; }
     const t = setInterval(draw, 40);
     return () => clearInterval(t);
-  }, [count, still]);
-  return <div className="bx-backdrop is-particles" data-testid={testID}><canvas ref={canvas} className="bx-backdrop-layer" aria-hidden="true" /><div className="bx-backdrop-content">{children}</div></div>;
+  }, [n, pace, still]);
+  return <div className={'bx-backdrop is-particles' + f.css} data-testid={testID}><canvas ref={canvas} className="bx-backdrop-layer" aria-hidden="true" /><div className="bx-backdrop-content">{children}</div></div>;
 }
 
 /* ---------- micro interactions ---------- */
@@ -531,13 +552,13 @@ export function SuccessCheck({ testID, label = 'Done', text }: { testID?: string
 }
 
 export interface SwipeAction { value: string; label: string; tone?: 'danger' }
-export interface SwipeRowProps { testID?: string; heading: string; meta?: string; value?: string; actions: ReadonlyArray<SwipeAction>; onAction?: (value: string) => void }
+export interface SwipeRowProps { testID?: string; variant?: string; heading: string; meta?: string; value?: string; actions: ReadonlyArray<SwipeAction>; onAction?: (value: string) => void }
 /** A row whose actions show when it is swiped left, and to the keyboard when focus is in it. */
-export function SwipeRow({ testID, heading, meta, value, actions, onAction }: SwipeRowProps) {
+export function SwipeRow({ testID, variant, heading, meta, value, actions, onAction }: SwipeRowProps) {
   const [open, setOpen] = useState(false);
   const x0 = useRef<number | null>(null);
   return (
-    <div className={'bx-swipe-row' + (open ? ' is-open' : '')} data-testid={testID} onPointerDown={(e) => { x0.current = e.clientX; }}
+    <div className={'bx-swipe-row' + (open ? ' is-open' : '') + fx('swipe-row', variant).css} data-testid={testID} onPointerDown={(e) => { x0.current = e.clientX; }}
          onPointerUp={(e) => { if (x0.current !== null) { const dx = e.clientX - x0.current; if (dx < -40) { setOpen(true); } else if (dx > 40) { setOpen(false); } } x0.current = null; }}>
       <div className="bx-swipe-actions">{actions.map((a) => <button key={a.value} type="button" className={'bx-swipe-action' + (a.tone ? ` is-${a.tone}` : '')} aria-label={`${a.label}: ${heading}`} onClick={() => { setOpen(false); onAction?.(a.value); }}>{a.label}</button>)}</div>
       <div className="bx-row bx-swipe-face"><span className="bx-row-main"><strong>{heading}</strong>{meta ? <span className="bx-row-meta">{meta}</span> : null}</span>{value ? <span className="bx-row-value">{value}</span> : null}</div>
@@ -581,17 +602,18 @@ export function GlideSelect(p: SegmentsProps) { return <div className="bx-fx-gli
 /** A segmented choice that gives like rubber when pressed. */
 export function RubberSegment(p: SegmentsProps) { return <div className="bx-fx-rubber"><ToggleGroup {...p} /></div>; }
 
-export interface ScrubProps { testID?: string; label?: string; value: number; onChange?: (value: number) => void; min?: number; max?: number; step?: number; currency?: string }
+export interface ScrubProps { testID?: string; variant?: string; label?: string; value: number; onChange?: (value: number) => void; min?: number; max?: number; step?: number; currency?: string }
 /** An amount typed, or dragged left and right by the arrows beside the label. */
-export function ScrubField({ testID, label = 'Amount', value, onChange, min = 0, max, step = 10, currency }: ScrubProps) {
+export function ScrubField({ testID, variant, label = 'Amount', value, onChange, min = 0, max, step = 10, currency }: ScrubProps) {
+  const f = fx('scrub-field', variant);
   const id = useId();
   const g = useRef<{ x: number; v: number } | null>(null);
   const clamp = (n: number) => Math.min(max ?? Infinity, Math.max(min, n));
   return (
-    <div className="bx-field bx-scrub" data-testid={testID}>
+    <div className={'bx-field bx-scrub' + f.css} data-testid={testID}>
       <div className="bx-slider-head"><label className="bx-label" htmlFor={id}>{label}</label>
         <span className="bx-scrub-handle" aria-hidden="true" onPointerDown={(e) => { g.current = { x: e.clientX, v: value }; e.currentTarget.setPointerCapture?.(e.pointerId); }}
-              onPointerMove={(e) => { if (g.current) { onChange?.(clamp(g.current.v + Math.round((e.clientX - g.current.x) / 8) * step)); } }} onPointerUp={() => { g.current = null; }}>⇔</span></div>
+              onPointerMove={(e) => { if (g.current) { onChange?.(clamp(g.current.v + Math.round((e.clientX - g.current.x) / (8 / f.sensitivity)) * step)); } }} onPointerUp={() => { g.current = null; }}>⇔</span></div>
       <div className="bx-control">{currency ? <span className="bx-affix" aria-hidden="true">{currency}</span> : null}
         <input type="number" className="bx-input bx-num" inputMode="decimal" id={id} value={value} min={min} max={max} step={step} onChange={(e) => { const n = Number(e.target.value); if (Number.isFinite(n)) { onChange?.(clamp(n)); } }} /></div>
       <span className="bx-help">Drag the arrows, or type</span>

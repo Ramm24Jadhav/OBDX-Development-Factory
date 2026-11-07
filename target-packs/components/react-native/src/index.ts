@@ -66,8 +66,10 @@ export type { CalculatorsWidgetProps, CreditScoreWidgetProps, DelinquencyNoticeP
   TabsWidgetProps } from './G6';
 export type { BarsProps, InfoCardProps, ProgressListProps } from './parts';
 export { DURATION, EASING, Enter, Pop, Press, Roll, Shake, useCycle, useEnter, useGrow, useOpen, usePop, useProgress, useReducedMotion, useRoll, useShake, useShimmer,
-  useSlide, useStagger } from './motion';
-export type { EnterEffect, PressProps } from './motion';
+  useSlide, useStagger, Motion, fx, paletteColors, usePreset } from './motion';
+export { FX, PALETTES, PRESETS } from './presets';
+export type { Frame, FxParams, Phase, Preset } from './presets';
+export type { EnterEffect, FxSettings, PressProps } from './motion';
 export { BlurInText, CountUp, FocusWord, GradientText, RevealDigits, RollingDigits, RotatingText, ScrollFloatText, ShimmerText, SplitFlapBoard, TextReveal, TypedText,
   mix } from './TextEffects';
 export type { CountUpProps, FocusWordProps, GradientTextProps, RevealDigitsProps, RollingDigitsProps, RotatingTextProps, ScrollFloatTextProps, SplitFlapBoardProps,

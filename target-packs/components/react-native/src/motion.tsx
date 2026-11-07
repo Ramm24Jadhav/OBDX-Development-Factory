@@ -7,7 +7,8 @@
 import { ComponentProps, ReactNode, useEffect, useRef, useSyncExternalStore } from 'react';
 import { AccessibilityInfo, Animated, Easing, Platform, Pressable, PressableProps, StyleProp, ViewStyle } from 'react-native';
 
-import { useTheme } from './theme';
+import { Frame, FxParams, FX, PALETTES, PRESETS, EASING as PRESET_EASING } from './presets';
+import { Theme, useTheme } from './theme';
 import { lightTokens } from './tokens';
 
 /**
@@ -275,4 +276,64 @@ export function useProgress(key: unknown, duration: number = DURATION.slow, dela
     Animated.timing(v, { toValue: 1, duration, delay, easing: EASING.standard, useNativeDriver: native }).start();
   }, [key, v, duration, delay, native]);
   return v;
+}
+
+/* ---------- The motion library and effect variants ---------- */
+
+const bezier = (css: string) => { const [a, b, c, d] = (css.match(/-?[\d.]+/g) || ['0', '0', '1', '1']).map(Number); return Easing.bezier(a, b, c, d); };
+
+/** A preset's frames as styles of one value that runs 0 → frames - 1. React Native cannot blur natively: blur is a soft grow. */
+export function presetStyle(frames: ReadonlyArray<Frame>, v: Animated.Value) {
+  const inputRange = frames.map((_, i) => i);
+  const keys = new Set(frames.flatMap((f) => Object.keys(f)));
+  const track = (pick: (f: Frame) => number) => v.interpolate({ inputRange, outputRange: frames.map(pick) });
+  const transform: Array<Record<string, Animated.AnimatedInterpolation<number | string>>> = [];
+  if (keys.has('x')) { transform.push({ translateX: track((f) => f.x ?? 0) }); }
+  if (keys.has('y')) { transform.push({ translateY: track((f) => f.y ?? 0) }); }
+  if (keys.has('scale') || keys.has('blur')) { transform.push({ scale: track((f) => (f.scale ?? 1) * (1 + (f.blur ?? 0) * 0.005)) }); }
+  if (keys.has('rotate')) { transform.push({ rotate: v.interpolate({ inputRange, outputRange: frames.map((f) => `${f.rotate ?? 0}deg`) }) }); }
+  return { ...(keys.has('opacity') ? { opacity: track((f) => f.opacity ?? 1) } : {}), ...(transform.length ? { transform } : {}) };
+}
+
+/**
+ * A preset of the motion library (motion.json) as an animated style: enter plays on mount, change each time key changes
+ * (not on the first render), exit while key is true. Under reduced motion it is at its end at once. No name, no motion.
+ */
+export function usePreset(phase: 'enter' | 'change' | 'exit', name?: string | null, key?: unknown) {
+  const p = name ? PRESETS[phase]?.[name] : undefined;
+  const frames = p?.frames ?? [{}, {}];
+  const end = frames.length - 1;
+  const rest = phase === 'exit' ? 0 : end;
+  const v = useRef(new Animated.Value(phase === 'enter' && p && !reduced ? 0 : rest)).current;
+  const first = useRef(true);
+  const r = useReducedMotion();
+  useEffect(() => {
+    const start = phase === 'enter' ? first.current : phase === 'change' ? !first.current : !!key;
+    first.current = false;
+    if (phase === 'exit' && !key) { v.setValue(0); return; }
+    if (!p || !start) { return; }
+    if (r) { v.stopAnimation(); v.setValue(end); return; }
+    v.setValue(0);
+    Animated.timing(v, { toValue: end, duration: DURATION[p.duration], easing: bezier(PRESET_EASING[p.easing]), useNativeDriver: true }).start();
+  }, [key, r]); // eslint-disable-line react-hooks/exhaustive-deps
+  return p ? presetStyle(frames, v) : {};
+}
+
+/** A view that plays a preset: enter on mount, change when on changes, exit while on is true. */
+export function Motion({ phase = 'enter', preset, on, style, children, ...props }: { phase?: 'enter' | 'change' | 'exit'; preset?: string | null; on?: unknown; style?: StyleProp<ViewStyle>; children?: ReactNode } & ViewMotionProps) {
+  return <Animated.View {...props} style={[style, usePreset(phase, preset, on)]}>{children}</Animated.View>;
+}
+
+export interface FxSettings extends FxParams { speed: number; intensity: number; density: number; sensitivity: number }
+
+/** An effect variant's settings (variants/*.json), with the defaults for any it leaves out; an unknown variant is the default. */
+export function fx(component: string, variant?: string): FxSettings {
+  return { speed: 1, intensity: 1, density: 1, sensitivity: 1, ...(variant ? FX[component]?.[variant] : undefined) };
+}
+
+/** The palette roles (as on the web, --bx-<role>) in the theme's colours. */
+const ROLE: Record<string, keyof Theme['color']> = { 'brand-text': 'primaryText', 'brand-2': 'primaryActive', 'info-text': 'infoText', 'success-text': 'successText',
+  'warning-text': 'warningText', 'danger-text': 'dangerText', text: 'text', muted: 'textMuted', 'border-strong': 'borderStrong' };
+export function paletteColors(t: Theme, palette?: string): string[] | undefined {
+  return palette && PALETTES[palette] ? PALETTES[palette].map((role) => t.color[ROLE[role]] ?? t.color.primary) : undefined;
 }

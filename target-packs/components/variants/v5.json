@@ -1,0 +1,2919 @@
+{
+  "$comment": "Wave V5 of docs/COMPONENT-VARIANTS-PLAN.md: the effect kinds (text and number effects, wrapper, backdrop, marquee, slides, row). Their variants are named parameter presets rather than visual styles. params use the vocabulary in parameters (absent means the default); motion names a preset from motion.json presets per phase, \"effect\" for the component's own movement, or null. css is the root selector the generated variant rules use. tools/gen-motion.mjs turns this file and motion.json into each pack's tables and the shared CSS.",
+  "wave": "V5",
+  "version": 1,
+  "parameters": {
+    "speed": {
+      "type": "number",
+      "default": 1,
+      "doc": "Pace: durations are divided by it and timers run that much faster"
+    },
+    "intensity": {
+      "type": "number",
+      "default": 1,
+      "doc": "How strong the effect is: blur, distance, glare, frosting, edge size"
+    },
+    "density": {
+      "type": "number",
+      "default": 1,
+      "doc": "How many: particles, dots, lines, burst dots"
+    },
+    "sensitivity": {
+      "type": "number",
+      "default": 1,
+      "doc": "Value change per pixel dragged"
+    },
+    "palette": {
+      "type": "string",
+      "default": "brand",
+      "values": [
+        "brand",
+        "ocean",
+        "sunset",
+        "mono"
+      ],
+      "doc": "Colours, from palettes"
+    },
+    "direction": {
+      "type": "string",
+      "default": null,
+      "values": [
+        "left",
+        "right",
+        "up",
+        "down"
+      ],
+      "doc": "Which way it moves; the default is the component's own"
+    },
+    "effect": {
+      "type": "string",
+      "default": null,
+      "values": [
+        "fade",
+        "scale",
+        "slide",
+        "blur",
+        "flip"
+      ],
+      "doc": "Which movement, for components that offer several"
+    },
+    "easing": {
+      "type": "string",
+      "default": null,
+      "values": [
+        "standard",
+        "spring",
+        "linear"
+      ],
+      "doc": "The curve; the default is the component's own"
+    }
+  },
+  "palettes": {
+    "$comment": "Token roles, darkest-safe ones so text effects keep their contrast. Web: --bx-<role>; React Native maps them to its theme colours.",
+    "brand": [
+      "brand-text",
+      "brand-2",
+      "info-text"
+    ],
+    "ocean": [
+      "info-text",
+      "success-text",
+      "brand-text"
+    ],
+    "sunset": [
+      "warning-text",
+      "danger-text",
+      "brand-2"
+    ],
+    "mono": [
+      "text",
+      "muted",
+      "border-strong"
+    ]
+  },
+  "components": {
+    "blur-in-text": {
+      "kind": "text",
+      "css": ".bx-blur-in",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "Words come into focus one after another",
+          "pattern": "Staggered blur-in",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "gentle",
+          "name": "Gentle",
+          "purpose": "A slow, light blur for calm welcome lines",
+          "pattern": "Slow fade-through",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "speed": 0.6,
+            "intensity": 0.5
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "crisp",
+          "name": "Crisp",
+          "purpose": "A quick, light blur that does not hold up reading",
+          "pattern": "Snappy reveal",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "speed": 1.6,
+            "intensity": 0.6
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "dramatic",
+          "name": "Dramatic",
+          "purpose": "A slow, deep blur for a single headline on a hero",
+          "pattern": "Cinematic title",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "speed": 0.5,
+            "intensity": 1.8
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "text-reveal": {
+      "kind": "text",
+      "css": ".bx-text-reveal",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "An edge uncovers the text from the start of the line",
+          "pattern": "Wipe reveal",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "from-end",
+          "name": "From the end",
+          "purpose": "The edge runs from the end of the line, for right-aligned figures",
+          "pattern": "Reverse wipe",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "direction": "left"
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "rise",
+          "name": "Rise",
+          "purpose": "The text is uncovered from below, like a curtain going up",
+          "pattern": "Vertical mask reveal",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "direction": "up"
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "quick",
+          "name": "Quick",
+          "purpose": "A fast wipe for labels that change often",
+          "pattern": "Snappy reveal",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "speed": 2
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "rotating-text": {
+      "kind": "text",
+      "css": ".bx-rotating",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Roll",
+          "purpose": "Each word rolls up into place",
+          "pattern": "Word roll",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "fade",
+          "name": "Fade",
+          "purpose": "Each word fades in, quieter than a roll",
+          "pattern": "Crossfade",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "effect": "fade",
+            "speed": 0.8
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "flip",
+          "name": "Flip",
+          "purpose": "Each word flips in like a departure board",
+          "pattern": "Flip board",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "effect": "flip"
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "brisk",
+          "name": "Brisk",
+          "purpose": "Words change quickly, for short lists of three",
+          "pattern": "Fast cycle",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "speed": 1.6
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "shimmer-text": {
+      "kind": "text",
+      "css": ".bx-shimmer-text",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "A brand-coloured light runs across the text",
+          "pattern": "Shimmer",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "slow",
+          "name": "Slow",
+          "purpose": "A slow light for a label that stays on screen",
+          "pattern": "Slow shimmer",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "speed": 0.5
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "ocean",
+          "name": "Ocean",
+          "purpose": "A cool blue light, for information rather than offers",
+          "pattern": "Cool shimmer",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "ocean"
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "gold",
+          "name": "Gold",
+          "purpose": "A warm light for premium and rewards labels",
+          "pattern": "Warm shimmer",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "sunset",
+            "speed": 0.8
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "gradient-text": {
+      "kind": "text",
+      "css": ".bx-gradient-text",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Brand",
+          "purpose": "The text in the brand gradient",
+          "pattern": "Brand gradient",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "ocean",
+          "name": "Ocean",
+          "purpose": "Cool blues and greens",
+          "pattern": "Cool gradient",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "ocean"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "sunset",
+          "name": "Sunset",
+          "purpose": "Warm ambers and reds for rewards and premium tiers",
+          "pattern": "Warm gradient",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "sunset"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "graphite",
+          "name": "Graphite",
+          "purpose": "A quiet grey gradient for formal screens",
+          "pattern": "Monochrome gradient",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "mono"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "typed-text": {
+      "kind": "text",
+      "css": ".bx-typed",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "Typed at a reading pace, like an assistant answering",
+          "pattern": "Typewriter",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "quick",
+          "name": "Quick",
+          "purpose": "Typed fast, for long answers",
+          "pattern": "Fast typewriter",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "speed": 2
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "deliberate",
+          "name": "Deliberate",
+          "purpose": "Typed slowly, for one short line that matters",
+          "pattern": "Slow typewriter",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "speed": 0.5
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "focus-word": {
+      "kind": "text",
+      "css": ".bx-focus-word",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "One word at a time comes into focus",
+          "pattern": "Focus pull",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "slow",
+          "name": "Slow read",
+          "purpose": "The focus moves slowly, for a sentence to be read",
+          "pattern": "Slow focus pull",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "speed": 0.6
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "soft",
+          "name": "Soft",
+          "purpose": "The other words stay nearly sharp",
+          "pattern": "Light focus",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "intensity": 0.5
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "sharp",
+          "name": "Sharp",
+          "purpose": "The other words blur more and the focus moves faster",
+          "pattern": "Strong focus",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "intensity": 2,
+            "speed": 1.4
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "scroll-float-text": {
+      "kind": "text",
+      "css": ".bx-scroll-float",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Float up",
+          "purpose": "Letters float up into place as the text scrolls in",
+          "pattern": "Scroll-linked float",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "sink",
+          "name": "Sink",
+          "purpose": "Letters settle down into place instead",
+          "pattern": "Scroll-linked drop",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "direction": "down"
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "gentle",
+          "name": "Gentle",
+          "purpose": "Letters move only a little",
+          "pattern": "Subtle float",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "intensity": 0.5
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "bold",
+          "name": "Bold",
+          "purpose": "Letters travel further, for one large headline",
+          "pattern": "Large float",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "intensity": 2
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "rolling-digits": {
+      "kind": "number",
+      "css": ".bx-rolling",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Spring",
+          "purpose": "Digits roll to their place and settle with a little spring",
+          "pattern": "Odometer",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "smooth",
+          "name": "Smooth",
+          "purpose": "Digits roll without overshoot, for formal statements",
+          "pattern": "Smooth odometer",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "easing": "standard"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "quick",
+          "name": "Quick",
+          "purpose": "A fast roll for figures that update live",
+          "pattern": "Ticker",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "speed": 2,
+            "easing": "standard"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "slow",
+          "name": "Slow",
+          "purpose": "A slow roll for one balance that matters",
+          "pattern": "Slow odometer",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "speed": 0.5
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "count-up": {
+      "kind": "number",
+      "css": ".bx-count-up",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "Counts up quickly and eases into the figure",
+          "pattern": "Ease-out count",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "quick",
+          "name": "Quick",
+          "purpose": "Counts up in half the time, for dashboards with many figures",
+          "pattern": "Fast count",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "speed": 2
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "slow",
+          "name": "Slow",
+          "purpose": "Counts up slowly, for one headline figure",
+          "pattern": "Slow count",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "speed": 0.5
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "steady",
+          "name": "Steady",
+          "purpose": "Counts at an even rate, like a meter",
+          "pattern": "Linear count",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "easing": "linear"
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "scrub-field": {
+      "kind": "number",
+      "css": ".bx-scrub",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "Dragging the arrows changes the amount by one step every few pixels",
+          "pattern": "Scrubbable number",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "fine",
+          "name": "Fine",
+          "purpose": "Half as sensitive, for exact amounts",
+          "pattern": "Fine scrub",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "sensitivity": 0.5
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "fast",
+          "name": "Fast",
+          "purpose": "Twice as sensitive, for wide ranges",
+          "pattern": "Coarse scrub",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "sensitivity": 2
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "fade-in-content": {
+      "kind": "wrapper",
+      "css": ".bx-fade-in",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Rise",
+          "purpose": "The content rises and fades in",
+          "pattern": "Fade up",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": "rise",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "scale",
+          "name": "Scale",
+          "purpose": "The content grows a little as it fades in",
+          "pattern": "Zoom in",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "effect": "scale"
+          },
+          "motion": {
+            "enter": "scale",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "slide",
+          "name": "Slide",
+          "purpose": "The content slides in from the side",
+          "pattern": "Slide in",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "effect": "slide"
+          },
+          "motion": {
+            "enter": "slide",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "blur",
+          "name": "Sharpen",
+          "purpose": "The content sharpens from a blur",
+          "pattern": "Blur in",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "effect": "blur",
+            "speed": 0.8
+          },
+          "motion": {
+            "enter": "blur",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "scroll-reveal": {
+      "kind": "wrapper",
+      "css": ".bx-scroll-reveal",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Rise",
+          "purpose": "The content rises in when it scrolls into view",
+          "pattern": "Scroll fade up",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": "rise",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "scale",
+          "name": "Scale",
+          "purpose": "The content grows in when it scrolls into view",
+          "pattern": "Scroll zoom",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "effect": "scale"
+          },
+          "motion": {
+            "enter": "scale",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "slide",
+          "name": "Slide",
+          "purpose": "The content slides in when it scrolls into view",
+          "pattern": "Scroll slide",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "effect": "slide"
+          },
+          "motion": {
+            "enter": "slide",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "blur",
+          "name": "Sharpen",
+          "purpose": "The content sharpens when it scrolls into view",
+          "pattern": "Scroll blur",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "effect": "blur"
+          },
+          "motion": {
+            "enter": "blur",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "scroll-expand": {
+      "kind": "wrapper",
+      "css": ".bx-scroll-expand",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "The content grows to full width as it scrolls into view",
+          "pattern": "Scroll expand",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "subtle",
+          "name": "Subtle",
+          "purpose": "It starts nearly full size",
+          "pattern": "Light expand",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "intensity": 0.5
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "bold",
+          "name": "Bold",
+          "purpose": "It starts much smaller, for a hero image",
+          "pattern": "Hero expand",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "intensity": 2
+          },
+          "motion": {
+            "enter": "effect",
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "edge-blur": {
+      "kind": "wrapper",
+      "css": ".bx-edge-blur",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "The top and bottom edges of the scrolling area fade",
+          "pattern": "Scroll fade edges",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "soft",
+          "name": "Soft",
+          "purpose": "Deeper fades, for long lists",
+          "pattern": "Deep fade edges",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "intensity": 2
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "tight",
+          "name": "Tight",
+          "purpose": "Short fades, for short panels",
+          "pattern": "Short fade edges",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "intensity": 0.5
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "glare-hover": {
+      "kind": "wrapper",
+      "css": ".bx-glare",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "A glare crosses the content on hover and focus",
+          "pattern": "Glare sweep",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": "effect",
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "subtle",
+          "name": "Subtle",
+          "purpose": "A faint, slow glare",
+          "pattern": "Soft sheen",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "intensity": 0.5,
+            "speed": 0.7
+          },
+          "motion": {
+            "enter": null,
+            "hover": "effect",
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "bright",
+          "name": "Bright",
+          "purpose": "A strong, quick glare for cards and offers",
+          "pattern": "Foil sheen",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "intensity": 1.6,
+            "speed": 1.4
+          },
+          "motion": {
+            "enter": null,
+            "hover": "effect",
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "highlight-border": {
+      "kind": "wrapper",
+      "css": ".bx-highlight-border",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Brand",
+          "purpose": "A border in the brand gradient",
+          "pattern": "Gradient border",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "ocean",
+          "name": "Ocean",
+          "purpose": "A cool blue and green border",
+          "pattern": "Cool gradient border",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "ocean"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "sunset",
+          "name": "Sunset",
+          "purpose": "A warm amber and red border for offers",
+          "pattern": "Warm gradient border",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "sunset"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "graphite",
+          "name": "Graphite",
+          "purpose": "A quiet grey border",
+          "pattern": "Monochrome border",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "mono"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "click-burst": {
+      "kind": "wrapper",
+      "css": ".bx-click-burst",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "A small burst of brand dots where it is clicked",
+          "pattern": "Click burst",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": "effect",
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "confetti",
+          "name": "Confetti",
+          "purpose": "A wider, warm burst for a goal reached",
+          "pattern": "Celebration burst",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "sunset",
+            "density": 1.5,
+            "intensity": 1.4
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": "effect",
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "quiet",
+          "name": "Quiet",
+          "purpose": "A few grey dots close in",
+          "pattern": "Subtle burst",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "mono",
+            "density": 0.5,
+            "intensity": 0.6
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": "effect",
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "glass-panel": {
+      "kind": "wrapper",
+      "css": ".bx-glass-panel",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "A frosted glass panel",
+          "pattern": "Frosted glass",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "frosted",
+          "name": "Frosted",
+          "purpose": "Heavier frosting, for text over busy backdrops",
+          "pattern": "Heavy frost",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "intensity": 1.6
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "clear",
+          "name": "Clear",
+          "purpose": "Light frosting that shows more of what is behind",
+          "pattern": "Clear glass",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "intensity": 0.4
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": null,
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "gradient-backdrop": {
+      "kind": "backdrop",
+      "css": ".bx-backdrop.is-gradient",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "The gradient in the brand colours at its usual pace",
+          "pattern": "Brand backdrop",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "ocean",
+          "name": "Ocean",
+          "purpose": "The gradient in cool blues and greens, for savings and wellbeing screens",
+          "pattern": "Cool palette",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "ocean"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "sunset",
+          "name": "Sunset",
+          "purpose": "The gradient in warm ambers and reds, for offers and celebrations",
+          "pattern": "Warm palette",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "sunset",
+            "speed": 1.25
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "calm",
+          "name": "Calm",
+          "purpose": "A slower, sparser, grey gradient that stays out of the way of dense content",
+          "pattern": "Quiet backdrop",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "mono",
+            "speed": 0.5,
+            "density": 0.7
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "soft-aurora": {
+      "kind": "backdrop",
+      "css": ".bx-backdrop.is-aurora",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "The aurora in the brand colours at its usual pace",
+          "pattern": "Brand backdrop",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "ocean",
+          "name": "Ocean",
+          "purpose": "The aurora in cool blues and greens, for savings and wellbeing screens",
+          "pattern": "Cool palette",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "ocean"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "sunset",
+          "name": "Sunset",
+          "purpose": "The aurora in warm ambers and reds, for offers and celebrations",
+          "pattern": "Warm palette",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "sunset",
+            "speed": 1.25
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "calm",
+          "name": "Calm",
+          "purpose": "A slower, sparser, grey aurora that stays out of the way of dense content",
+          "pattern": "Quiet backdrop",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "mono",
+            "speed": 0.5,
+            "density": 0.7
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "silk-backdrop": {
+      "kind": "backdrop",
+      "css": ".bx-backdrop.is-silk",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "The silk in the brand colours at its usual pace",
+          "pattern": "Brand backdrop",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "ocean",
+          "name": "Ocean",
+          "purpose": "The silk in cool blues and greens, for savings and wellbeing screens",
+          "pattern": "Cool palette",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "ocean"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "sunset",
+          "name": "Sunset",
+          "purpose": "The silk in warm ambers and reds, for offers and celebrations",
+          "pattern": "Warm palette",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "sunset",
+            "speed": 1.25
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "calm",
+          "name": "Calm",
+          "purpose": "A slower, sparser, grey silk that stays out of the way of dense content",
+          "pattern": "Quiet backdrop",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "mono",
+            "speed": 0.5,
+            "density": 0.7
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "dot-grid": {
+      "kind": "backdrop",
+      "css": ".bx-backdrop.is-dots",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "The dot grid in the brand colours at its usual pace",
+          "pattern": "Brand backdrop",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "ocean",
+          "name": "Ocean",
+          "purpose": "The dot grid in cool blues and greens, for savings and wellbeing screens",
+          "pattern": "Cool palette",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "ocean"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "sunset",
+          "name": "Sunset",
+          "purpose": "The dot grid in warm ambers and reds, for offers and celebrations",
+          "pattern": "Warm palette",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "sunset",
+            "speed": 1.25
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "calm",
+          "name": "Calm",
+          "purpose": "A slower, sparser, grey dot grid that stays out of the way of dense content",
+          "pattern": "Quiet backdrop",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "mono",
+            "speed": 0.5,
+            "density": 0.7
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "line-waves": {
+      "kind": "backdrop",
+      "css": ".bx-backdrop.is-waves",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "The waves in the brand colours at its usual pace",
+          "pattern": "Brand backdrop",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "ocean",
+          "name": "Ocean",
+          "purpose": "The waves in cool blues and greens, for savings and wellbeing screens",
+          "pattern": "Cool palette",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "ocean"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "sunset",
+          "name": "Sunset",
+          "purpose": "The waves in warm ambers and reds, for offers and celebrations",
+          "pattern": "Warm palette",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "sunset",
+            "speed": 1.25
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "calm",
+          "name": "Calm",
+          "purpose": "A slower, sparser, grey waves that stays out of the way of dense content",
+          "pattern": "Quiet backdrop",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "mono",
+            "speed": 0.5,
+            "density": 0.7
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "light-beams": {
+      "kind": "backdrop",
+      "css": ".bx-backdrop.is-beams",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "The beams in the brand colours at its usual pace",
+          "pattern": "Brand backdrop",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "ocean",
+          "name": "Ocean",
+          "purpose": "The beams in cool blues and greens, for savings and wellbeing screens",
+          "pattern": "Cool palette",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "ocean"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "sunset",
+          "name": "Sunset",
+          "purpose": "The beams in warm ambers and reds, for offers and celebrations",
+          "pattern": "Warm palette",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "sunset",
+            "speed": 1.25
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "calm",
+          "name": "Calm",
+          "purpose": "A slower, sparser, grey beams that stays out of the way of dense content",
+          "pattern": "Quiet backdrop",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "mono",
+            "speed": 0.5,
+            "density": 0.7
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "topography": {
+      "kind": "backdrop",
+      "css": ".bx-backdrop.is-topography",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "The contour lines in the brand colours at its usual pace",
+          "pattern": "Brand backdrop",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "ocean",
+          "name": "Ocean",
+          "purpose": "The contour lines in cool blues and greens, for savings and wellbeing screens",
+          "pattern": "Cool palette",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "ocean"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "sunset",
+          "name": "Sunset",
+          "purpose": "The contour lines in warm ambers and reds, for offers and celebrations",
+          "pattern": "Warm palette",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "sunset",
+            "speed": 1.25
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "calm",
+          "name": "Calm",
+          "purpose": "A slower, sparser, grey contour lines that stays out of the way of dense content",
+          "pattern": "Quiet backdrop",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "mono",
+            "speed": 0.5,
+            "density": 0.7
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "particle-backdrop": {
+      "kind": "backdrop",
+      "css": ".bx-backdrop.is-particles",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "The particles in the brand colours at its usual pace",
+          "pattern": "Brand backdrop",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "ocean",
+          "name": "Ocean",
+          "purpose": "The particles in cool blues and greens, for savings and wellbeing screens",
+          "pattern": "Cool palette",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "ocean"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "sunset",
+          "name": "Sunset",
+          "purpose": "The particles in warm ambers and reds, for offers and celebrations",
+          "pattern": "Warm palette",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "sunset",
+            "speed": 1.25
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "calm",
+          "name": "Calm",
+          "purpose": "A slower, sparser, grey particles that stays out of the way of dense content",
+          "pattern": "Quiet backdrop",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "palette": "mono",
+            "speed": 0.5,
+            "density": 0.7
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "marquee": {
+      "kind": "marquee",
+      "css": ".bx-marquee",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Standard",
+          "purpose": "Items scroll past from right to left",
+          "pattern": "Ticker",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": "effect",
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "slow",
+          "name": "Slow",
+          "purpose": "A slow scroll that is easy to read",
+          "pattern": "Slow ticker",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "speed": 0.6
+          },
+          "motion": {
+            "enter": null,
+            "hover": "effect",
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "fast",
+          "name": "Fast",
+          "purpose": "A quick scroll for short items",
+          "pattern": "Fast ticker",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "speed": 1.6
+          },
+          "motion": {
+            "enter": null,
+            "hover": "effect",
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "reverse",
+          "name": "Reverse",
+          "purpose": "Items scroll from left to right, for right-to-left reading",
+          "pattern": "Reverse ticker",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "direction": "right"
+          },
+          "motion": {
+            "enter": null,
+            "hover": "effect",
+            "press": null,
+            "change": "effect",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "carousel": {
+      "kind": "slides",
+      "css": ".bx-carousel",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Slide",
+          "purpose": "Each slide slides in from the side",
+          "pattern": "Slide carousel",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "slide",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "fade",
+          "name": "Fade",
+          "purpose": "Slides crossfade, quieter than a slide",
+          "pattern": "Fade carousel",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "effect": "fade"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "fade",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "scale",
+          "name": "Scale",
+          "purpose": "Each slide grows in a little",
+          "pattern": "Zoom carousel",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "effect": "scale"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "scale",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    },
+    "swipe-row": {
+      "kind": "row",
+      "css": ".bx-swipe-row",
+      "variants": [
+        {
+          "id": "standard",
+          "name": "Spring",
+          "purpose": "The row springs open to show its actions",
+          "pattern": "Spring swipe",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {},
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "spring",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "smooth",
+          "name": "Smooth",
+          "purpose": "The row slides open without overshoot",
+          "pattern": "Smooth swipe",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "easing": "standard"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "slide",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        },
+        {
+          "id": "snappy",
+          "name": "Snappy",
+          "purpose": "The row opens quickly",
+          "pattern": "Quick swipe",
+          "source": "own",
+          "licence": "Proprietary (the bank pack)",
+          "params": {
+            "speed": 1.6,
+            "easing": "standard"
+          },
+          "motion": {
+            "enter": null,
+            "hover": null,
+            "press": null,
+            "change": "slide",
+            "exit": null
+          },
+          "packs": {
+            "jet-premium": true,
+            "react": true,
+            "angular": true,
+            "react-native": true
+          }
+        }
+      ]
+    }
+  }
+}

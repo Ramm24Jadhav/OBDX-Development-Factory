@@ -11,16 +11,21 @@ import { ActionMenu, MenuItem, NavItem, Part, SEGMENTS, SLIDER, SegmentsBase, Si
 import { CHOICE, ChoiceBase, Detail, TransactionReceipt, money } from './g2';
 import { OtpInput, SETTING, SettingBase, masked } from './g3';
 import { QuickItem, QuickLinksWidget } from './g6';
-import { reducedMotion } from './motion';
+import { fx, reducedMotion } from './motion';
 
 /** A stagger step class (bx-d-0 to bx-d-19), so delays need no inline style. */
 export const stagger = (i: number): string => `bx-d-${Math.min(i, 19)}`;
 const chars = (text: string) => (text || '').split('').map((c, i) => ({ ch: c === ' ' ? ' ' : c, css: `bx-ch ${stagger(i)}` }));
 const words = (text: string) => (text || '').split(/\s+/).filter(Boolean);
 
-/** What the effects share: a timer loop that stops with the component and under reduced motion. */
+/** What the effects share: their variant, and a timer loop that stops with the component and under reduced motion. */
 @Directive()
 export abstract class Fx extends Part {
+  /** A named preset of the effect's settings (variants/v5.json), shown as is-v-<variant> and the --bx-fx-* variables. */
+  readonly variant = input('');
+  /** The component's id in the variants, for the effects that have them. */
+  protected readonly fxId: string = '';
+  protected readonly v = computed(() => fx(this.fxId, this.variant() || undefined));
   private timer: ReturnType<typeof setTimeout> | null = null;
   constructor() { super(); inject(DestroyRef).onDestroy(() => this.stop()); }
   /** Calls fn every ms while it returns true; nothing under reduced motion. */
@@ -46,12 +51,13 @@ const OnPush = ChangeDetectionStrategy.OnPush;
 /** A number whose digits roll to their place when it changes. */
 @Component({
   selector: 'bx-rolling-digits', changeDetection: OnPush,
-  template: `<span class="bx-rolling" [attr.data-testid]="testID() || null"><span class="bx-visually-hidden">{{ text() }}</span><span class="bx-rolling-face" aria-hidden="true">
+  template: `<span [class]="'bx-rolling' + v().css" [attr.data-testid]="testID() || null"><span class="bx-visually-hidden">{{ text() }}</span><span class="bx-rolling-face" aria-hidden="true">
     @for (c of cols(); track $index) {
       @if (c.digit) { <span class="bx-roll-col"><span [class]="'bx-roll-strip is-d-' + c.ch">@for (n of digits; track n) {<span>{{ n }}</span>}</span></span> } @else { <span class="bx-roll-sep">{{ c.ch }}</span> }
     }</span></span>`,
 })
-export class RollingDigits extends Part {
+export class RollingDigits extends Fx {
+  protected override readonly fxId = 'rolling-digits';
   readonly value = input<number | string>(0);
   readonly currency = input('');
   protected readonly digits = '0123456789'.split('');
@@ -62,12 +68,13 @@ export class RollingDigits extends Part {
 /** Counts up to a figure; screen readers hear the figure once. */
 @Component({
   selector: 'bx-count-up', changeDetection: OnPush,
-  template: `<span class="bx-count-up" [attr.data-testid]="testID() || null"><span class="bx-visually-hidden">{{ fmt(value()) }}</span><span aria-hidden="true">{{ fmt(now()) }}</span></span>`,
+  template: `<span [class]="'bx-count-up' + v().css" [attr.data-testid]="testID() || null"><span class="bx-visually-hidden">{{ fmt(value()) }}</span><span aria-hidden="true">{{ fmt(now()) }}</span></span>`,
 })
 export class CountUp extends Fx {
+  protected override readonly fxId = 'count-up';
   readonly value = input(0);
   readonly from = input(0);
-  readonly duration = input(1200);
+  readonly duration = input<number | undefined>(undefined);
   readonly currency = input('');
   readonly prefix = input('');
   readonly suffix = input('');
@@ -81,10 +88,11 @@ export class CountUp extends Fx {
         if (reducedMotion()) { this.now.set(target); return; }
         this.now.set(from);
         let step = 0;
-        this.every(Math.max(10, Math.round(this.duration() / 30)), () => {
+        const f = this.v();
+        this.every(Math.max(10, Math.round((this.duration() ?? 1200 / f.speed) / 30)), () => {
           step += 1;
           const p = step / 30;
-          this.now.set(p >= 1 ? target : from + (target - from) * (1 - (1 - p) ** 3));
+          this.now.set(p >= 1 ? target : from + (target - from) * (f.easing === 'linear' ? p : 1 - (1 - p) ** 3));
           return p < 1;
         });
       });
@@ -129,57 +137,60 @@ export class RevealDigits extends Part {
 /** Words that come into focus one after another. */
 @Component({
   selector: 'bx-blur-in-text', changeDetection: OnPush,
-  template: `<p class="bx-fx-text bx-blur-in" [attr.data-testid]="testID() || null"><span class="bx-visually-hidden">{{ text() }}</span><span aria-hidden="true">@for (w of words(); track $index) {<span [class]="'bx-word ' + step($index)">{{ w }} </span>}</span></p>`,
+  template: `<p [class]="'bx-fx-text bx-blur-in' + v().css" [attr.data-testid]="testID() || null"><span class="bx-visually-hidden">{{ text() }}</span><span aria-hidden="true">@for (w of words(); track $index) {<span [class]="'bx-word ' + step($index)">{{ w }} </span>}</span></p>`,
 })
-export class BlurInText extends Part {
+export class BlurInText extends Fx {
+  protected override readonly fxId = 'blur-in-text';
   readonly text = input('');
   protected readonly words = computed(() => words(this.text()));
   protected step(i: number): string { return stagger(i); }
 }
 
 @Directive()
-abstract class StyledText extends Part {
+abstract class StyledText extends Fx {
   readonly text = input('');
   readonly animated = input<boolean | undefined>(undefined);
   protected readonly look: string = '';
   protected readonly defaultAnimated: boolean = true;
-  protected readonly css = computed(() => `bx-fx-text ${this.look}` + ((this.animated() ?? this.defaultAnimated) ? ' is-animated' : ''));
+  protected readonly css = computed(() => `bx-fx-text ${this.look}` + ((this.animated() ?? this.defaultAnimated) ? ' is-animated' : '') + this.v().css);
 }
 const STYLED = `<span [class]="css()" [attr.data-testid]="testID() || null">{{ text() }}</span>`;
 /** Text that a sliding edge uncovers. */
 @Component({ selector: 'bx-text-reveal', changeDetection: OnPush, template: STYLED })
-export class TextReveal extends StyledText { protected override readonly look = 'bx-text-reveal'; }
+export class TextReveal extends StyledText { protected override readonly look = 'bx-text-reveal'; protected override readonly fxId = 'text-reveal'; }
 /** Text with a light that runs across it. */
 @Component({ selector: 'bx-shimmer-text', changeDetection: OnPush, template: STYLED })
-export class ShimmerText extends StyledText { protected override readonly look = 'bx-shimmer-text'; }
+export class ShimmerText extends StyledText { protected override readonly look = 'bx-shimmer-text'; protected override readonly fxId = 'shimmer-text'; }
 /** Text in the brand gradient, still or moving. */
 @Component({ selector: 'bx-gradient-text', changeDetection: OnPush, template: STYLED })
-export class GradientText extends StyledText { protected override readonly look = 'bx-gradient-text'; protected override readonly defaultAnimated = false; }
+export class GradientText extends StyledText { protected override readonly look = 'bx-gradient-text'; protected override readonly defaultAnimated = false; protected override readonly fxId = 'gradient-text'; }
 
 /** One word after another after a fixed start; screen readers hear all the words once. */
 @Component({
   selector: 'bx-rotating-text', changeDetection: OnPush,
-  template: `<span class="bx-fx-text bx-rotating" [attr.data-testid]="testID() || null"><span class="bx-visually-hidden">{{ all() }}</span><span aria-hidden="true">@if (prefix()) {<span>{{ prefix() }} </span>}
+  template: `<span [class]="'bx-fx-text bx-rotating' + (v().effect ? ' is-' + v().effect : '') + v().css" [attr.data-testid]="testID() || null"><span class="bx-visually-hidden">{{ all() }}</span><span aria-hidden="true">@if (prefix()) {<span>{{ prefix() }} </span>}
     @for (w of shown(); track w.at) {<span class="bx-rotating-word">{{ w.word }}</span>}</span></span>`,
 })
 export class RotatingText extends Fx {
+  protected override readonly fxId = 'rotating-text';
   readonly prefix = input('');
   readonly words = input<ReadonlyArray<string>>([]);
-  readonly interval = input(2200);
+  readonly interval = input<number | undefined>(undefined);
   protected readonly at = signal(0);
   protected readonly shown = computed(() => { const w = this.words(); return [{ word: w.length ? w[this.at() % w.length] : '', at: this.at() }]; });
   protected readonly all = computed(() => { const w = this.words(); return (this.prefix() ? `${this.prefix()} ` : '') + (w.length > 1 ? `${w.slice(0, -1).join(', ')} or ${w[w.length - 1]}` : w.join('')); });
-  constructor() { super(); afterNextRender(() => this.every(this.interval(), () => { this.at.set(this.at() + 1); return true; })); }
+  constructor() { super(); afterNextRender(() => this.every(this.interval() ?? Math.round(2200 / this.v().speed), () => { this.at.set(this.at() + 1); return true; })); }
 }
 
 /** Text typed out letter by letter (the assistant's answer); screen readers hear it whole. */
 @Component({
   selector: 'bx-typed-text', changeDetection: OnPush,
-  template: `<span class="bx-fx-text bx-typed" [attr.data-testid]="testID() || null"><span class="bx-visually-hidden">{{ text() }}</span><span aria-hidden="true">{{ text().slice(0, count()) }}<span [class]="count() < text().length ? 'bx-caret is-typing' : 'bx-caret'"></span></span></span>`,
+  template: `<span [class]="'bx-fx-text bx-typed' + v().css" [attr.data-testid]="testID() || null"><span class="bx-visually-hidden">{{ text() }}</span><span aria-hidden="true">{{ text().slice(0, count()) }}<span [class]="count() < text().length ? 'bx-caret is-typing' : 'bx-caret'"></span></span></span>`,
 })
 export class TypedText extends Fx {
+  protected override readonly fxId = 'typed-text';
   readonly text = input('');
-  readonly speed = input(35);
+  readonly speed = input<number | undefined>(undefined);
   protected readonly count = signal(0);
   constructor() {
     super();
@@ -188,7 +199,7 @@ export class TypedText extends Fx {
       untracked(() => {
         if (reducedMotion()) { this.count.set(t.length); return; }
         this.count.set(0);
-        this.every(this.speed(), () => { this.count.set(Math.min(t.length, this.count() + 1)); return this.count() < t.length; });
+        this.every(this.speed() ?? Math.round(35 / this.v().speed), () => { this.count.set(Math.min(t.length, this.count() + 1)); return this.count() < t.length; });
       });
     });
   }
@@ -197,23 +208,25 @@ export class TypedText extends Fx {
 /** A sentence with one word in focus at a time. */
 @Component({
   selector: 'bx-focus-word', changeDetection: OnPush,
-  template: `<p class="bx-fx-text bx-focus-word" [attr.data-testid]="testID() || null"><span class="bx-visually-hidden">{{ text() }}</span><span aria-hidden="true">@for (w of list(); track $index) {<span [class]="$index === focus() ? 'bx-word is-focus' : 'bx-word'">{{ w }} </span>}</span></p>`,
+  template: `<p [class]="'bx-fx-text bx-focus-word' + v().css" [attr.data-testid]="testID() || null"><span class="bx-visually-hidden">{{ text() }}</span><span aria-hidden="true">@for (w of list(); track $index) {<span [class]="$index === focus() ? 'bx-word is-focus' : 'bx-word'">{{ w }} </span>}</span></p>`,
 })
 export class FocusWord extends Fx {
+  protected override readonly fxId = 'focus-word';
   readonly text = input('');
-  readonly interval = input(1800);
+  readonly interval = input<number | undefined>(undefined);
   protected readonly at = signal(0);
   protected readonly list = computed(() => words(this.text()));
   protected readonly focus = computed(() => this.at() % Math.max(1, this.list().length));
-  constructor() { super(); afterNextRender(() => this.every(this.interval(), () => { this.at.set(this.at() + 1); return true; })); }
+  constructor() { super(); afterNextRender(() => this.every(this.interval() ?? Math.round(1800 / this.v().speed), () => { this.at.set(this.at() + 1); return true; })); }
 }
 
 /** Letters that float up as the text scrolls into view. */
 @Component({
   selector: 'bx-scroll-float-text', changeDetection: OnPush,
-  template: `<p class="bx-fx-text bx-scroll-float" [attr.data-testid]="testID() || null"><span class="bx-visually-hidden">{{ text() }}</span><span aria-hidden="true">@for (c of chars(); track $index) {<span [class]="c.css">{{ c.ch }}</span>}</span></p>`,
+  template: `<p [class]="'bx-fx-text bx-scroll-float' + v().css" [attr.data-testid]="testID() || null"><span class="bx-visually-hidden">{{ text() }}</span><span aria-hidden="true">@for (c of chars(); track $index) {<span [class]="c.css">{{ c.ch }}</span>}</span></p>`,
 })
-export class ScrollFloatText extends Part {
+export class ScrollFloatText extends Fx {
+  protected override readonly fxId = 'scroll-float-text';
   readonly text = input('');
   protected readonly chars = computed(() => chars(this.text()));
 }
@@ -223,17 +236,19 @@ export class ScrollFloatText extends Part {
 type Entry = 'fadeup' | 'scale' | 'slide' | 'blur';
 
 /** Content that fades, scales, slides or sharpens in when it appears. */
-@Component({ selector: 'bx-fade-in-content', changeDetection: OnPush, template: `<div [class]="'bx-fx bx-fade-in is-' + effect() + (delay() ? ' ' + step(delay()) : '')" [attr.data-testid]="testID() || null"><ng-content /></div>` })
-export class FadeInContent extends Part {
-  readonly effect = input<Entry>('fadeup');
+@Component({ selector: 'bx-fade-in-content', changeDetection: OnPush, template: `<div [class]="'bx-fx bx-fade-in is-' + (effect() ?? v().effect ?? 'fadeup') + (delay() ? ' ' + step(delay()) : '') + v().css" [attr.data-testid]="testID() || null"><ng-content /></div>` })
+export class FadeInContent extends Fx {
+  protected override readonly fxId = 'fade-in-content';
+  readonly effect = input<Entry | undefined>(undefined);
   readonly delay = input(0);
   protected step(i: number): string { return stagger(i); }
 }
 
 /** Content that comes in when it scrolls into view (shown at once without IntersectionObserver or under reduced motion). */
-@Component({ selector: 'bx-scroll-reveal', changeDetection: OnPush, template: `<div #box [class]="'bx-fx bx-scroll-reveal is-' + effect() + (seen() ? ' is-in' : '')" [attr.data-testid]="testID() || null"><ng-content /></div>` })
-export class ScrollReveal extends Part {
-  readonly effect = input<Entry>('fadeup');
+@Component({ selector: 'bx-scroll-reveal', changeDetection: OnPush, template: `<div #box [class]="'bx-fx bx-scroll-reveal is-' + (effect() ?? v().effect ?? 'fadeup') + (seen() ? ' is-in' : '') + v().css" [attr.data-testid]="testID() || null"><ng-content /></div>` })
+export class ScrollReveal extends Fx {
+  protected override readonly fxId = 'scroll-reveal';
+  readonly effect = input<Entry | undefined>(undefined);
   protected readonly seen = signal(reducedMotion() || typeof IntersectionObserver === 'undefined');
   private readonly box = viewChild<ElementRef<HTMLElement>>('box');
   constructor() {
@@ -249,24 +264,24 @@ export class ScrollReveal extends Part {
   }
 }
 
-const WRAP = `<div [class]="'bx-fx ' + look" [attr.data-testid]="testID() || null"><ng-content /></div>`;
+const WRAP = `<div [class]="'bx-fx ' + look + v().css" [attr.data-testid]="testID() || null"><ng-content /></div>`;
 @Directive()
-abstract class Wrap extends Part { protected readonly look: string = ''; }
+abstract class Wrap extends Fx { protected readonly look: string = ''; }
 /** Content that grows to full width as it scrolls into view. */
 @Component({ selector: 'bx-scroll-expand', changeDetection: OnPush, template: WRAP })
-export class ScrollExpand extends Wrap { protected override readonly look = 'bx-scroll-expand'; }
+export class ScrollExpand extends Wrap { protected override readonly look = 'bx-scroll-expand'; protected override readonly fxId = 'scroll-expand'; }
 /** A scrolling area whose top and bottom edges fade. */
 @Component({ selector: 'bx-edge-blur', changeDetection: OnPush, template: WRAP })
-export class EdgeBlur extends Wrap { protected override readonly look = 'bx-edge-blur'; }
+export class EdgeBlur extends Wrap { protected override readonly look = 'bx-edge-blur'; protected override readonly fxId = 'edge-blur'; }
 /** Content with a glare that crosses it on hover and focus. */
 @Component({ selector: 'bx-glare-hover', changeDetection: OnPush, template: WRAP })
-export class GlareHover extends Wrap { protected override readonly look = 'bx-glare'; }
+export class GlareHover extends Wrap { protected override readonly look = 'bx-glare'; protected override readonly fxId = 'glare-hover'; }
 /** Content inside a moving gradient border. */
 @Component({ selector: 'bx-highlight-border', changeDetection: OnPush, template: WRAP })
-export class HighlightBorder extends Wrap { protected override readonly look = 'bx-highlight-border'; }
+export class HighlightBorder extends Wrap { protected override readonly look = 'bx-highlight-border'; protected override readonly fxId = 'highlight-border'; }
 /** A frosted glass panel. */
 @Component({ selector: 'bx-glass-panel', changeDetection: OnPush, template: WRAP })
-export class GlassPanel extends Wrap { protected override readonly look = 'bx-glass-panel'; }
+export class GlassPanel extends Wrap { protected override readonly look = 'bx-glass-panel'; protected override readonly fxId = 'glass-panel'; }
 
 /** A primary button that leans toward the pointer. */
 @Component({
@@ -283,15 +298,21 @@ export class MagneticButton extends Fx {
 }
 
 /** Content where a click sends out a small burst of dots (decoration only). */
-@Component({ selector: 'bx-click-burst', changeDetection: OnPush, template: `<div class="bx-fx bx-click-burst" [attr.data-testid]="testID() || null" (click)="burst($event)"><ng-content /></div>` })
-export class ClickBurst extends Part {
+@Component({ selector: 'bx-click-burst', changeDetection: OnPush, template: `<div [class]="'bx-fx bx-click-burst' + v().css" [attr.data-testid]="testID() || null" (click)="burst($event)"><ng-content /></div>` })
+export class ClickBurst extends Fx {
+  protected override readonly fxId = 'click-burst';
   protected burst(e: MouseEvent): void {
+    const f = this.v();
     if (reducedMotion()) { return; }
     const host = e.currentTarget as HTMLElement;
     const r = host.getBoundingClientRect();
-    for (let i = 0; i < 8; i++) {
+    const n = Math.min(16, Math.max(4, Math.round(8 * f.density)));
+    for (let i = 0; i < n; i++) {
       const p = document.createElement('span');
-      p.className = `bx-burst-dot bx-burst-${i}`;
+      p.className = `bx-burst-dot bx-burst-${i % 8}`;
+      const a = (i / n) * Math.PI * 2;
+      p.style.setProperty('--bx-bx', `${Math.round(Math.sin(a) * 28 * f.intensity)}px`);
+      p.style.setProperty('--bx-by', `${Math.round(-Math.cos(a) * 28 * f.intensity)}px`);
       p.setAttribute('aria-hidden', 'true');
       p.style.left = `${e.clientX - r.left}px`;
       p.style.top = `${e.clientY - r.top}px`;
@@ -304,11 +325,12 @@ export class ClickBurst extends Part {
 /** Items that scroll past; it stops on hover and focus, and Pause stops it for good. */
 @Component({
   selector: 'bx-marquee', changeDetection: OnPush,
-  template: `<section class="bx-marquee" [attr.aria-label]="label()" [attr.data-testid]="testID() || null"><div class="bx-marquee-window"><div [class]="'bx-marquee-track is-' + speed() + (paused() ? ' is-paused' : '')">
+  template: `<section [class]="'bx-marquee' + v().css" [attr.aria-label]="label()" [attr.data-testid]="testID() || null"><div class="bx-marquee-window"><div [class]="'bx-marquee-track is-' + speed() + (paused() ? ' is-paused' : '')">
     <ul class="bx-marquee-list">@for (m of items(); track $index) {<li>{{ m }}</li>}</ul><ul class="bx-marquee-list" aria-hidden="true">@for (m of items(); track $index) {<li>{{ m }}</li>}</ul></div></div>
     <button type="button" class="bx-btn bx-btn--borderless bx-btn--sm bx-marquee-toggle" (click)="paused.set(!paused())">{{ paused() ? 'Play' : 'Pause' }}</button></section>`,
 })
-export class Marquee extends Part {
+export class Marquee extends Fx {
+  protected override readonly fxId = 'marquee';
   readonly label = input('Updates');
   readonly items = input<ReadonlyArray<string>>([]);
   readonly speed = input<'slow' | 'normal'>('normal');
@@ -414,14 +436,15 @@ export class BentoGrid extends Part {
 /** Slides one at a time with Previous, Next and a dot each; nothing moves by itself. [(index)]. */
 @Component({
   selector: 'bx-carousel', changeDetection: OnPush,
-  template: `<section class="bx-carousel" aria-roledescription="carousel" [attr.aria-label]="label()" [attr.data-testid]="testID() || null"><div class="bx-slides" aria-live="polite">
+  template: `<section [class]="'bx-carousel' + (v().effect ? ' is-' + v().effect : '') + v().css" aria-roledescription="carousel" [attr.aria-label]="label()" [attr.data-testid]="testID() || null"><div class="bx-slides" aria-live="polite">
     @for (s of slides(); track $index) {<div [class]="$index === index() ? 'bx-slide is-on' : 'bx-slide'" role="group" aria-roledescription="slide" [attr.aria-label]="($index + 1) + ' of ' + slides().length"
       [hidden]="$index !== index()"><h3 class="bx-card-title">{{ s.title }}</h3><p class="bx-thing-text">{{ s.text }}</p></div>}</div>
     <div class="bx-deck-controls"><button type="button" class="bx-page" aria-label="Previous slide" (click)="go(-1)">‹</button><span class="bx-dots">@for (s of slides(); track $index) {
       <button type="button" [class]="$index === index() ? 'bx-dot is-on' : 'bx-dot'" [attr.aria-label]="'Slide ' + ($index + 1)" [attr.aria-current]="$index === index() || null" (click)="index.set($index)"></button>}</span>
       <button type="button" class="bx-page" aria-label="Next slide" (click)="go(1)">›</button></div></section>`,
 })
-export class Carousel extends Part {
+export class Carousel extends Fx {
+  protected override readonly fxId = 'carousel';
   readonly label = input('Highlights');
   readonly slides = input<ReadonlyArray<DeckItem>>([]);
   readonly index = model(0);
@@ -535,38 +558,39 @@ export class ProfileCard extends Part {
 
 /* ---------- backdrops ---------- */
 
-const BACKDROP = `<div [class]="'bx-backdrop is-' + look + (still() ? ' is-still' : '')" [attr.data-testid]="testID() || null"><span class="bx-backdrop-layer" aria-hidden="true"></span><div class="bx-backdrop-content"><ng-content /></div></div>`;
+const BACKDROP = `<div [class]="'bx-backdrop is-' + look + (still() ? ' is-still' : '') + v().css" [attr.data-testid]="testID() || null"><span class="bx-backdrop-layer" aria-hidden="true"></span><div class="bx-backdrop-content"><ng-content /></div></div>`;
 @Directive()
-abstract class Backdrop extends Part { readonly still = input(false); protected readonly look: string = ''; }
+abstract class Backdrop extends Fx { readonly still = input(false); protected readonly look: string = ''; }
 /** A soft moving gradient behind the content. */
 @Component({ selector: 'bx-gradient-backdrop', changeDetection: OnPush, template: BACKDROP })
-export class GradientBackdrop extends Backdrop { protected override readonly look = 'gradient'; }
+export class GradientBackdrop extends Backdrop { protected override readonly look = 'gradient'; protected override readonly fxId = 'gradient-backdrop'; }
 /** Slow coloured light behind the content. */
 @Component({ selector: 'bx-soft-aurora', changeDetection: OnPush, template: BACKDROP })
-export class SoftAurora extends Backdrop { protected override readonly look = 'aurora'; }
+export class SoftAurora extends Backdrop { protected override readonly look = 'aurora'; protected override readonly fxId = 'soft-aurora'; }
 /** Folds of colour like silk. */
 @Component({ selector: 'bx-silk-backdrop', changeDetection: OnPush, template: BACKDROP })
-export class SilkBackdrop extends Backdrop { protected override readonly look = 'silk'; }
+export class SilkBackdrop extends Backdrop { protected override readonly look = 'silk'; protected override readonly fxId = 'silk-backdrop'; }
 /** A fading grid of dots. */
 @Component({ selector: 'bx-dot-grid', changeDetection: OnPush, template: BACKDROP })
-export class DotGrid extends Backdrop { protected override readonly look = 'dots'; }
+export class DotGrid extends Backdrop { protected override readonly look = 'dots'; protected override readonly fxId = 'dot-grid'; }
 /** Lines like waves. */
 @Component({ selector: 'bx-line-waves', changeDetection: OnPush, template: BACKDROP })
-export class LineWaves extends Backdrop { protected override readonly look = 'waves'; }
+export class LineWaves extends Backdrop { protected override readonly look = 'waves'; protected override readonly fxId = 'line-waves'; }
 /** Beams of light from the top. */
 @Component({ selector: 'bx-light-beams', changeDetection: OnPush, template: BACKDROP })
-export class LightBeams extends Backdrop { protected override readonly look = 'beams'; }
+export class LightBeams extends Backdrop { protected override readonly look = 'beams'; protected override readonly fxId = 'light-beams'; }
 /** Contour lines like a map. */
 @Component({ selector: 'bx-topography', changeDetection: OnPush, template: BACKDROP })
-export class Topography extends Backdrop { protected override readonly look = 'topography'; }
+export class Topography extends Backdrop { protected override readonly look = 'topography'; protected override readonly fxId = 'topography'; }
 
 /** Specks drifting up on a canvas; still under reduced motion. */
 @Component({
   selector: 'bx-particle-backdrop', changeDetection: OnPush,
-  template: `<div class="bx-backdrop is-particles" [attr.data-testid]="testID() || null"><canvas #canvas class="bx-backdrop-layer" aria-hidden="true"></canvas><div class="bx-backdrop-content"><ng-content /></div></div>`,
+  template: `<div [class]="'bx-backdrop is-particles' + v().css" [attr.data-testid]="testID() || null"><canvas #canvas class="bx-backdrop-layer" aria-hidden="true"></canvas><div class="bx-backdrop-content"><ng-content /></div></div>`,
 })
 export class ParticleBackdrop extends Fx {
-  readonly count = input(40);
+  protected override readonly fxId = 'particle-backdrop';
+  readonly count = input<number | undefined>(undefined);
   readonly still = input(false);
   private readonly canvas = viewChild<ElementRef<HTMLCanvasElement>>('canvas');
   constructor() {
@@ -575,7 +599,8 @@ export class ParticleBackdrop extends Fx {
       const el = this.canvas()?.nativeElement;
       const c = el?.getContext?.('2d');
       if (!el || !c) { return; }
-      const dots = Array.from({ length: this.count() }, () => ({ x: Math.random() * (el.clientWidth || 300), y: Math.random() * (el.clientHeight || 160), r: 1 + Math.random() * 2, v: 0.15 + Math.random() * 0.35 }));
+      const f = this.v();
+      const dots = Array.from({ length: this.count() ?? Math.round(40 * f.density) }, () => ({ x: Math.random() * (el.clientWidth || 300), y: Math.random() * (el.clientHeight || 160), r: 1 + Math.random() * 2, v: (0.15 + Math.random() * 0.35) * f.speed }));
       const draw = () => {
         const w = (el.width = el.clientWidth || 300);
         const h = (el.height = el.clientHeight || 160);
@@ -695,12 +720,13 @@ export interface SwipeAction { value: string; label: string; tone?: 'danger' }
 /** A row whose actions show when it is swiped left, and to the keyboard when focus is in it. */
 @Component({
   selector: 'bx-swipe-row', changeDetection: OnPush,
-  template: `<div [class]="open() ? 'bx-swipe-row is-open' : 'bx-swipe-row'" [attr.data-testid]="testID() || null" (pointerdown)="x0 = $event.clientX" (pointerup)="up($event)">
+  template: `<div [class]="(open() ? 'bx-swipe-row is-open' : 'bx-swipe-row') + v().css" [attr.data-testid]="testID() || null" (pointerdown)="x0 = $event.clientX" (pointerup)="up($event)">
     <div class="bx-swipe-actions">@for (a of actions(); track a.value) {<button type="button" [class]="a.tone ? 'bx-swipe-action is-' + a.tone : 'bx-swipe-action'" [attr.aria-label]="a.label + ': ' + heading()"
       (click)="open.set(false); action.emit(a.value)">{{ a.label }}</button>}</div>
     <div class="bx-row bx-swipe-face"><span class="bx-row-main"><strong>{{ heading() }}</strong>@if (meta()) {<span class="bx-row-meta">{{ meta() }}</span>}</span>@if (value()) {<span class="bx-row-value">{{ value() }}</span>}</div></div>`,
 })
-export class SwipeRow extends Part {
+export class SwipeRow extends Fx {
+  protected override readonly fxId = 'swipe-row';
   readonly heading = input.required<string>();
   readonly meta = input('');
   readonly value = input('');
@@ -764,12 +790,13 @@ export class RubberSegment extends SegmentsBase {}
 /** An amount typed, or dragged left and right by the arrows beside the label. [(value)]. */
 @Component({
   selector: 'bx-scrub-field', changeDetection: OnPush,
-  template: `<div class="bx-field bx-scrub" [attr.data-testid]="testID() || null"><div class="bx-slider-head"><label class="bx-label" [attr.for]="id">{{ label() }}</label>
+  template: `<div [class]="'bx-field bx-scrub' + v().css" [attr.data-testid]="testID() || null"><div class="bx-slider-head"><label class="bx-label" [attr.for]="id">{{ label() }}</label>
     <span class="bx-scrub-handle" aria-hidden="true" (pointerdown)="down($event)" (pointermove)="move($event)" (pointerup)="g = null">⇔</span></div>
     <div class="bx-control">@if (currency()) {<span class="bx-affix" aria-hidden="true">{{ currency() }}</span>}<input type="number" class="bx-input bx-num" inputmode="decimal" [id]="id" [value]="value()"
       [attr.min]="min()" [attr.max]="max() ?? null" [attr.step]="step()" (input)="typed($event)" /></div><span class="bx-help">Drag the arrows, or type</span></div>`,
 })
-export class ScrubField extends Part {
+export class ScrubField extends Fx {
+  protected override readonly fxId = 'scrub-field';
   readonly label = input('Amount');
   readonly value = model(0);
   readonly min = input(0);
@@ -780,7 +807,7 @@ export class ScrubField extends Part {
   private clamp(n: number): number { return Math.min(this.max() ?? Infinity, Math.max(this.min(), n)); }
   protected typed(e: Event): void { const n = Number((e.target as HTMLInputElement).value); if (Number.isFinite(n)) { this.value.set(this.clamp(n)); } }
   protected down(e: PointerEvent): void { this.g = { x: e.clientX, v: this.value() }; (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); }
-  protected move(e: PointerEvent): void { if (this.g) { this.value.set(this.clamp(this.g.v + Math.round((e.clientX - this.g.x) / 8) * this.step())); } }
+  protected move(e: PointerEvent): void { if (this.g) { this.value.set(this.clamp(this.g.v + Math.round((e.clientX - this.g.x) / (8 / this.v().sensitivity)) * this.step())); } }
 }
 
 /** A half-circle gauge of a budget; over the budget it turns red and says so. */

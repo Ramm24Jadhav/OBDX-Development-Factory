@@ -20,6 +20,8 @@ const params = new URLSearchParams(location.search);
 const mode = params.get('mode') === 'dark' ? 'dark' : 'light';
 // The factory's Component factory shows one section (?only=id) in the design, motion and brand its card has chosen
 const only = params.get('only');
+// An effect's variant (?variant=id, variants/v5.json): the sections and samples of the effects take it
+const variant = params.get('variant') || undefined;
 const look = (params.get('look') || 'elevated') as NonNullable<ComponentStyle['look']>;
 const click = (params.get('click') || 'press') as NonNullable<NonNullable<ComponentStyle['motion']>['click']>;
 const scroll = (params.get('scroll') || 'fadeup') as NonNullable<NonNullable<ComponentStyle['motion']>['scroll']>;
@@ -148,7 +150,7 @@ function Gallery() {
         <Section id="overview" title="Overview widget"><OverviewWidget testID="ov" tiles={[{ id: 'cs', title: 'Current and savings', value: '15,610.50', note: '3 accounts' }]} /></Section>
 
         {/* The five effect categories: one of each moving kind (under reduced motion they show their end state) */}
-        <Section id="rolling-digits" title="Rolling digits"><RollingDigits value="12,400.00" /></Section>
+        <Section id="rolling-digits" title="Rolling digits"><RollingDigits variant={variant} value="12,400.00" /></Section>
         <Section id="slide-to-confirm" title="Slide to confirm"><SlideToConfirm label="Slide to pay 1,250.00" onConfirm={noop} /></Section>
         <Section id="success-check" title="Success check"><SuccessCheck label="Payment sent" /></Section>
       </main>

@@ -5,7 +5,7 @@
  */
 import { Animated, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
-import { BG, useCycle } from './motion';
+import { BG, fx, paletteColors, useCycle } from './motion';
 import { useTheme } from './theme';
 
 export interface BackdropProps {
@@ -15,11 +15,19 @@ export interface BackdropProps {
   colors?: ReadonlyArray<string>;
   /** Seconds for one cycle of the movement. */
   period?: number;
+  /** A named preset of its settings (variants/v5.json): ocean, sunset, calm. */
+  variant?: string;
 }
 
-function useColors(colors?: ReadonlyArray<string>) {
+function useColors(colors?: ReadonlyArray<string>, palette?: string) {
   const t = useTheme();
-  return colors && colors.length ? colors : [t.color.primary, t.color.info, t.color.successSoft];
+  return colors && colors.length ? colors : paletteColors(t, palette) ?? [t.color.primary, t.color.info, t.color.successSoft];
+}
+
+/** A backdrop's variant: its colours, its period (slower or faster) and how many of its parts (density). */
+function useVariant(id: string, variant: string | undefined, colors: ReadonlyArray<string> | undefined, period: number | undefined, base: number) {
+  const f = fx(id, variant);
+  return { f, list: useColors(colors, f.palette), seconds: period ?? base / f.speed, many: (n: number | undefined, d: number) => n ?? Math.max(1, Math.round(d * f.density)) };
 }
 
 const decor = { pointerEvents: 'none' as const, importantForAccessibility: 'no-hide-descendants' as const, accessibilityElementsHidden: true };
@@ -28,9 +36,10 @@ const decor = { pointerEvents: 'none' as const, importantForAccessibility: 'no-h
 const seeded = (n: number) => { const x = Math.sin(n * 12.9898) * 43758.5453; return x - Math.floor(x); };
 
 /** A soft gradient that slowly shifts between two angles. */
-export function GradientBackdrop({ testID, style, colors, period = 12 }: BackdropProps) {
-  const [a, b, c = b] = useColors(colors);
-  const v = useCycle(period * 1000);
+export function GradientBackdrop({ testID, variant, style, colors, period }: BackdropProps) {
+  const { list, seconds } = useVariant('gradient-backdrop', variant, colors, period, 12);
+  const [a, b, c = b] = list;
+  const v = useCycle(seconds * 1000);
   return (
     <View testID={testID} {...decor} style={[StyleSheet.absoluteFill, { overflow: 'hidden' }, style]}>
       <View style={[StyleSheet.absoluteFill, { [BG]: `linear-gradient(135deg, ${a}, ${b})` }]} />
@@ -41,9 +50,9 @@ export function GradientBackdrop({ testID, style, colors, period = 12 }: Backdro
 }
 
 /** Large soft lights that drift slowly, like an aurora. */
-export function SoftAurora({ testID, style, colors, period = 18 }: BackdropProps) {
-  const list = useColors(colors);
-  const v = useCycle(period * 1000);
+export function SoftAurora({ testID, variant, style, colors, period }: BackdropProps) {
+  const { list, seconds } = useVariant('soft-aurora', variant, colors, period, 18);
+  const v = useCycle(seconds * 1000);
   return (
     <View testID={testID} {...decor} style={[StyleSheet.absoluteFill, { overflow: 'hidden' }, style]}>
       {list.slice(0, 3).map((c, i) => (
@@ -57,9 +66,10 @@ export function SoftAurora({ testID, style, colors, period = 18 }: BackdropProps
 }
 
 /** Wide diagonal bands of colour that slide past each other, like folds of silk. */
-export function SilkBackdrop({ testID, style, colors, period = 16 }: BackdropProps) {
-  const [a, b] = useColors(colors);
-  const v = useCycle(period * 1000);
+export function SilkBackdrop({ testID, variant, style, colors, period }: BackdropProps) {
+  const { list, seconds } = useVariant('silk-backdrop', variant, colors, period, 16);
+  const [a, b] = list;
+  const v = useCycle(seconds * 1000);
   return (
     <View testID={testID} {...decor} style={[StyleSheet.absoluteFill, { overflow: 'hidden', backgroundColor: a }, style]}>
       {[0, 1, 2, 3].map((i) => (
@@ -72,9 +82,12 @@ export function SilkBackdrop({ testID, style, colors, period = 16 }: BackdropPro
 }
 
 /** A grid of small dots with a slow wave of light across it. */
-export function DotGrid({ testID, style, colors, period = 6, rows = 10, columns = 14 }: BackdropProps & { rows?: number; columns?: number }) {
-  const [a] = useColors(colors);
-  const v = useCycle(period * 1000);
+export function DotGrid({ testID, variant, style, colors, period, rows: r, columns: c }: BackdropProps & { rows?: number; columns?: number }) {
+  const { list, seconds, many } = useVariant('dot-grid', variant, colors, period, 6);
+  const [a] = list;
+  const rows = many(r, 10);
+  const columns = many(c, 14);
+  const v = useCycle(seconds * 1000);
   return (
     <View testID={testID} {...decor} style={[StyleSheet.absoluteFill, { justifyContent: 'space-evenly' }, style]}>
       {Array.from({ length: rows }, (_, r) => (
@@ -91,9 +104,11 @@ export function DotGrid({ testID, style, colors, period = 6, rows = 10, columns 
 }
 
 /** Thin horizontal lines that sway up and down in a slow wave. */
-export function LineWaves({ testID, style, colors, period = 8, lines = 12 }: BackdropProps & { lines?: number }) {
-  const [a] = useColors(colors);
-  const v = useCycle(period * 1000);
+export function LineWaves({ testID, variant, style, colors, period, lines: n }: BackdropProps & { lines?: number }) {
+  const { list, seconds, many } = useVariant('line-waves', variant, colors, period, 8);
+  const [a] = list;
+  const lines = many(n, 12);
+  const v = useCycle(seconds * 1000);
   return (
     <View testID={testID} {...decor} style={[StyleSheet.absoluteFill, { overflow: 'hidden', justifyContent: 'space-evenly' }, style]}>
       {Array.from({ length: lines }, (_, i) => {
@@ -107,9 +122,11 @@ export function LineWaves({ testID, style, colors, period = 8, lines = 12 }: Bac
 }
 
 /** Soft beams of light falling from the top, sweeping a little. */
-export function LightBeams({ testID, style, colors, period = 14, beams = 5 }: BackdropProps & { beams?: number }) {
-  const [a] = useColors(colors);
-  const v = useCycle(period * 1000);
+export function LightBeams({ testID, variant, style, colors, period, beams: n }: BackdropProps & { beams?: number }) {
+  const { list, seconds, many } = useVariant('light-beams', variant, colors, period, 14);
+  const [a] = list;
+  const beams = many(n, 5);
+  const v = useCycle(seconds * 1000);
   return (
     <View testID={testID} {...decor} style={[StyleSheet.absoluteFill, { overflow: 'hidden' }, style]}>
       {Array.from({ length: beams }, (_, i) => (
@@ -122,9 +139,11 @@ export function LightBeams({ testID, style, colors, period = 14, beams = 5 }: Ba
 }
 
 /** Contour lines spreading from a point, like a map of hills. */
-export function Topography({ testID, style, colors, period = 10, rings = 7 }: BackdropProps & { rings?: number }) {
-  const [a] = useColors(colors);
-  const v = useCycle(period * 1000);
+export function Topography({ testID, variant, style, colors, period, rings: n }: BackdropProps & { rings?: number }) {
+  const { list, seconds, many } = useVariant('topography', variant, colors, period, 10);
+  const [a] = list;
+  const rings = many(n, 7);
+  const v = useCycle(seconds * 1000);
   return (
     <View testID={testID} {...decor} style={[StyleSheet.absoluteFill, { overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, style]}>
       {Array.from({ length: rings }, (_, i) => (
@@ -137,9 +156,10 @@ export function Topography({ testID, style, colors, period = 10, rings = 7 }: Ba
 }
 
 /** Small specks drifting slowly upwards. */
-export function ParticleBackdrop({ testID, style, colors, period = 12, count = 24 }: BackdropProps & { count?: number }) {
-  const list = useColors(colors);
-  const v = useCycle(period * 1000);
+export function ParticleBackdrop({ testID, variant, style, colors, period, count: n }: BackdropProps & { count?: number }) {
+  const { list, seconds, many } = useVariant('particle-backdrop', variant, colors, period, 12);
+  const count = many(n, 24);
+  const v = useCycle(seconds * 1000);
   return (
     <View testID={testID} {...decor} style={[StyleSheet.absoluteFill, { overflow: 'hidden' }, style]}>
       {Array.from({ length: count }, (_, i) => {

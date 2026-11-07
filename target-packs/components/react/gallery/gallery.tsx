@@ -13,6 +13,8 @@ const params = new URLSearchParams(location.search);
 const mode = params.get('mode') === 'dark' ? 'dark' : 'light';
 // The factory's Component factory shows one section (?only=id) in the design and motion its card has chosen
 const only = params.get('only');
+// An effect's variant (?variant=id, variants/v5.json): the sections of the effects take it
+const variant = params.get('variant') || undefined;
 const look = (params.get('look') || 'elevated') as ComponentStyle['look'];
 const motion = { hover: params.get('hover') || undefined, click: params.get('click') || undefined, scroll: params.get('scroll') || undefined } as ComponentStyle['motion'];
 const accounts = [{ value: 'S', label: 'Savings •••• 4521' }, { value: 'C', label: 'Current •••• 0187' }];
@@ -646,10 +648,10 @@ function Gallery() {
         <PendingApprovalsWidget items={[{title: 'Payroll Feb · prioritized', meta: 'Financial · 182,400.00', value: 'PAY-4410'}, {title: 'Add payee J. Mehta', meta: 'Non-financial', value: 'BEN-218'}]} />
       </Section>
       <Section id="rolling-digits" title="Rolling digits">
-        <RollingDigits value={12400.5} currency="USD" />
+        <RollingDigits variant={variant} value={12400.5} currency="USD" />
       </Section>
       <Section id="count-up" title="Count up">
-        <CountUp value={1840.2} currency="USD" />
+        <CountUp variant={variant} value={1840.2} currency="USD" />
       </Section>
       <Section id="split-flap-board" title="Split-flap board">
         <SplitFlapBoard items={[{label: 'USD', value: '0.92 EUR'}, {label: 'GBP', value: '1.17 EUR'}]} />
@@ -658,55 +660,55 @@ function Gallery() {
         <RevealDigits value="GB29 NWBK 6016 1331 9268 19" />
       </Section>
       <Section id="blur-in-text" title="Blur-in text">
-        <BlurInText text="Your money, clearly." />
+        <BlurInText variant={variant} text="Your money, clearly." />
       </Section>
       <Section id="text-reveal" title="Text reveal">
-        <TextReveal text="Welcome back, Asha" />
+        <TextReveal variant={variant} text="Welcome back, Asha" />
       </Section>
       <Section id="rotating-text" title="Rotating text">
-        <RotatingText prefix="Pay" words={['bills', 'friends', 'cards']} />
+        <RotatingText variant={variant} prefix="Pay" words={['bills', 'friends', 'cards']} />
       </Section>
       <Section id="shimmer-text" title="Shimmer text">
-        <ShimmerText text="New: instant transfers" />
+        <ShimmerText variant={variant} text="New: instant transfers" />
       </Section>
       <Section id="gradient-text" title="Gradient text">
-        <GradientText text="Platinum" />
+        <GradientText variant={variant} text="Platinum" />
       </Section>
       <Section id="typed-text" title="Typed text">
-        <TypedText text="You spent 320.00 on groceries this month, 40.00 less than last month." />
+        <TypedText variant={variant} text="You spent 320.00 on groceries this month, 40.00 less than last month." />
       </Section>
       <Section id="focus-word" title="Focus word">
-        <FocusWord text="Save a little every day" />
+        <FocusWord variant={variant} text="Save a little every day" />
       </Section>
       <Section id="scroll-float-text" title="Scroll float text">
-        <ScrollFloatText text="Grow your savings" />
+        <ScrollFloatText variant={variant} text="Grow your savings" />
       </Section>
       <Section id="fade-in-content" title="Fade-in content">
-        <FadeInContent effect="fadeup"><p>The screen's own content</p></FadeInContent>
+        <FadeInContent variant={variant}><p>The screen's own content</p></FadeInContent>
       </Section>
       <Section id="scroll-reveal" title="Scroll reveal">
-        <ScrollReveal effect="scale"><p>The screen's own content</p></ScrollReveal>
+        <ScrollReveal variant={variant} effect={variant ? undefined : 'scale'}><p>The screen's own content</p></ScrollReveal>
       </Section>
       <Section id="scroll-expand" title="Scroll expand">
-        <ScrollExpand><p>The screen's own content</p></ScrollExpand>
+        <ScrollExpand variant={variant}><p>The screen's own content</p></ScrollExpand>
       </Section>
       <Section id="edge-blur" title="Edge blur">
-        <EdgeBlur><p>The screen's own content</p></EdgeBlur>
+        <EdgeBlur variant={variant}><p>The screen's own content</p></EdgeBlur>
       </Section>
       <Section id="glare-hover" title="Glare hover">
-        <GlareHover><p>The screen's own content</p></GlareHover>
+        <GlareHover variant={variant}><p>The screen's own content</p></GlareHover>
       </Section>
       <Section id="magnetic-button" title="Magnetic button">
         <MagneticButton label="Open an account" />
       </Section>
       <Section id="highlight-border" title="Highlight border">
-        <HighlightBorder><p>The screen's own content</p></HighlightBorder>
+        <HighlightBorder variant={variant}><p>The screen's own content</p></HighlightBorder>
       </Section>
       <Section id="click-burst" title="Click burst">
-        <ClickBurst><p>The screen's own content</p></ClickBurst>
+        <ClickBurst variant={variant}><p>The screen's own content</p></ClickBurst>
       </Section>
       <Section id="marquee" title="Marquee">
-        <Marquee items={['USD 0.92 EUR', 'GBP 1.17 EUR', 'AED 0.25 EUR']} />
+        <Marquee variant={variant} items={['USD 0.92 EUR', 'GBP 1.17 EUR', 'AED 0.25 EUR']} />
       </Section>
       <Section id="animated-list" title="Animated list">
         <AnimatedList label="Recent" items={['Coffee House', {title: 'Salary', meta: '31 Dec'}]} />
@@ -730,7 +732,7 @@ function Gallery() {
         <BentoGrid label="Dashboard" items={[{id: 'spend', title: 'Spending', figure: '1,240.00', size: 'wide'}, {id: 'save', title: 'Saved', figure: '320.00'}, {id: 'score', title: 'Credit score', figure: '742'}]} />
       </Section>
       <Section id="carousel" title="Carousel">
-        <Carousel slides={[{title: 'Travel insurance', text: 'Cover for the whole family'}, {title: 'Home loans', text: 'From 6.9% a year'}]} />
+        <Carousel variant={variant} slides={[{title: 'Travel insurance', text: 'Cover for the whole family'}, {title: 'Home loans', text: 'From 6.9% a year'}]} />
       </Section>
       <Section id="elastic-slider" title="Elastic slider">
         <ElasticSlider label="Amount" value={500} prefix="USD" />
@@ -760,31 +762,31 @@ function Gallery() {
         <ProfileCard name="Priya Nair" jobTitle="Relationship manager" items={[{label: 'Phone', value: '+44 20 7946 0123'}]} actionLabel="Send a message" />
       </Section>
       <Section id="glass-panel" title="Glass panel">
-        <GlassPanel><p>The screen's own content</p></GlassPanel>
+        <GlassPanel variant={variant}><p>The screen's own content</p></GlassPanel>
       </Section>
       <Section id="gradient-backdrop" title="Gradient backdrop">
-        <GradientBackdrop><p>The screen's own content</p></GradientBackdrop>
+        <GradientBackdrop variant={variant}><p>The screen's own content</p></GradientBackdrop>
       </Section>
       <Section id="soft-aurora" title="Soft aurora">
-        <SoftAurora><p>The screen's own content</p></SoftAurora>
+        <SoftAurora variant={variant}><p>The screen's own content</p></SoftAurora>
       </Section>
       <Section id="silk-backdrop" title="Silk backdrop">
-        <SilkBackdrop><p>The screen's own content</p></SilkBackdrop>
+        <SilkBackdrop variant={variant}><p>The screen's own content</p></SilkBackdrop>
       </Section>
       <Section id="dot-grid" title="Dot grid">
-        <DotGrid><p>The screen's own content</p></DotGrid>
+        <DotGrid variant={variant}><p>The screen's own content</p></DotGrid>
       </Section>
       <Section id="line-waves" title="Line waves">
-        <LineWaves><p>The screen's own content</p></LineWaves>
+        <LineWaves variant={variant}><p>The screen's own content</p></LineWaves>
       </Section>
       <Section id="light-beams" title="Light beams">
-        <LightBeams><p>The screen's own content</p></LightBeams>
+        <LightBeams variant={variant}><p>The screen's own content</p></LightBeams>
       </Section>
       <Section id="topography" title="Topography">
-        <Topography><p>The screen's own content</p></Topography>
+        <Topography variant={variant}><p>The screen's own content</p></Topography>
       </Section>
       <Section id="particle-backdrop" title="Particle backdrop">
-        <ParticleBackdrop><p>The screen's own content</p></ParticleBackdrop>
+        <ParticleBackdrop variant={variant}><p>The screen's own content</p></ParticleBackdrop>
       </Section>
       <Section id="slide-to-confirm" title="Slide to confirm">
         <SlideToConfirm label="Slide to pay 1,250.00" />
@@ -802,7 +804,7 @@ function Gallery() {
         <SuccessCheck label="Payment sent" text="1,250.00 USD to A. Rao" />
       </Section>
       <Section id="swipe-row" title="Swipe row">
-        <SwipeRow heading="Coffee House" meta="Today 08:14" value="-4.50" actions={[{value: 'split', label: 'Split'}, {value: 'dispute', label: 'Dispute', tone: 'danger'}]} />
+        <SwipeRow variant={variant} heading="Coffee House" meta="Today 08:14" value="-4.50" actions={[{value: 'split', label: 'Split'}, {value: 'dispute', label: 'Dispute', tone: 'danger'}]} />
       </Section>
       <Section id="swipe-toast" title="Swipe toast">
         <SwipeToast message="Saved as a payee" />
@@ -823,7 +825,7 @@ function Gallery() {
         <RubberSegment label="Period" options={['1M', '3M', '1Y']} value="1M" />
       </Section>
       <Section id="scrub-field" title="Scrub field">
-        <ScrubField value={250} currency="USD" />
+        <ScrubField variant={variant} value={250} currency="USD" />
       </Section>
       <Section id="budget-gauge" title="Budget gauge">
         <BudgetGauge label="Groceries" value={320} max={400} unit="USD" />

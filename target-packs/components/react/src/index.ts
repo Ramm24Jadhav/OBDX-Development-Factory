@@ -25,8 +25,10 @@ export { Autocomplete, CURRENCIES, CurrencySelector, DateRangePicker, FileUpload
   fileSize } from './Forms';
 export type { AutocompleteProps, CurrencySelectorProps, DateRange, DateRangePickerProps, FileUploadProps, MultiSelectProps, NumberInputProps,
   PasswordFieldProps, SearchFieldProps, TextAreaProps } from './Forms';
-export { EFFECTS, play, reducedMotion } from './motion';
-export type { Effect } from './motion';
+export { EFFECTS, fx, keyframes, leave, play, reducedMotion } from './motion';
+export { DURATION, EASING, FX, PALETTES, PRESETS } from './presets';
+export type { Effect, FxSettings } from './motion';
+export type { Frame, FxParams, Phase, Preset } from './presets';
 export { styleClasses } from './style';
 export type { ComponentStyle } from './style';
 export type { FieldProps, Option } from './field';

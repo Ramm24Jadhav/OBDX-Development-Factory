@@ -6,38 +6,45 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Animated, PanResponder, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
-import { BG, DURATION, EASING, useCycle, useProgress, useReducedMotion } from './motion';
+import { BG, DURATION, EASING, fx, paletteColors, presetStyle, useCycle, useProgress, useReducedMotion } from './motion';
+import { PRESETS } from './presets';
 import { useTheme } from './theme';
 
 export interface WrapProps {
   testID?: string;
   children?: ReactNode;
   style?: StyleProp<ViewStyle>;
+  /** A named preset of the effect's settings (variants/v5.json). */
+  variant?: string;
 }
 
 /* ---------- FadeInContent and ScrollReveal ---------- */
 
-/** Content that fades in after a delay (a section of a dashboard after its data). */
-export function FadeInContent({ testID, children, style, delay = 0 }: WrapProps & { delay?: number }) {
-  const v = useProgress('once', DURATION.slow, delay);
-  return <Animated.View testID={testID} style={[style, { opacity: v }]}>{children}</Animated.View>;
+/** Content that comes in after a delay (a section of a dashboard after its data), with an enter preset of the motion library. */
+export function FadeInContent({ testID, variant, children, style, delay = 0, effect }: WrapProps & { delay?: number; effect?: 'fade' | 'rise' | 'scale' | 'slide' | 'blur' }) {
+  const f = fx('fade-in-content', variant);
+  const p = PRESETS.enter[effect ?? f.effect ?? (variant ? 'rise' : 'fade')] ?? PRESETS.enter.fade;
+  const v = useProgress('once', DURATION.slow / f.speed, delay);
+  return <Animated.View testID={testID} style={[style, presetStyle(p.frames!, v)]}>{children}</Animated.View>;
 }
 
 export interface ScrollRevealProps extends WrapProps {
   /** True once it is on screen (from a FlatList's onViewableItemsChanged); it stays revealed. */
   visible?: boolean;
-  /** rise (default), scale or slide. */
-  effect?: 'rise' | 'scale' | 'slide';
+  /** rise (default), scale, slide or blur (a soft grow: React Native cannot blur). */
+  effect?: 'rise' | 'scale' | 'slide' | 'blur';
 }
 
 /** Content revealed as it scrolls into view. */
-export function ScrollReveal({ testID, children, style, visible = true, effect = 'rise' }: ScrollRevealProps) {
+export function ScrollReveal({ testID, variant, children, style, visible = true, effect: chosen }: ScrollRevealProps) {
+  const f = fx('scroll-reveal', variant);
+  const effect = chosen ?? (f.effect as ScrollRevealProps['effect']) ?? 'rise';
   const [seen, setSeen] = useState(visible);
   useEffect(() => { if (visible) { setSeen(true); } }, [visible]);
-  const v = useProgress(seen, DURATION.slow);
+  const v = useProgress(seen, DURATION.slow / f.speed);
   const shown = seen ? v : 0;
   const move = seen ? v.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) : 1;
-  const transform = effect === 'scale' ? [{ scale: seen ? v.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }) : 0.94 }]
+  const transform = effect === 'scale' || effect === 'blur' ? [{ scale: seen ? v.interpolate({ inputRange: [0, 1], outputRange: [effect === 'blur' ? 1.03 : 0.94, 1] }) : effect === 'blur' ? 1.03 : 0.94 }]
     : effect === 'slide' ? [{ translateX: Animated.multiply(move, 24) }] : [{ translateY: Animated.multiply(move, 24) }];
   return <Animated.View testID={testID} style={[style, { opacity: shown, transform }]}>{children}</Animated.View>;
 }
@@ -50,13 +57,14 @@ export interface ScrollExpandProps extends WrapProps {
 }
 
 /** A panel that grows from an inset card to full width as the screen scrolls. */
-export function ScrollExpand({ testID, children, style, progress }: ScrollExpandProps) {
+export function ScrollExpand({ testID, variant, children, style, progress }: ScrollExpandProps) {
   const t = useTheme();
+  const from = Math.max(0.6, 1 - 0.1 * fx('scroll-expand', variant).intensity);
   const own = useProgress('once', 700);
   const p = progress ?? own;
   return (
     <Animated.View testID={testID} style={[style, { overflow: 'hidden', backgroundColor: t.color.surface,
-      borderRadius: t.radius.card, transform: [{ scale: p.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1], extrapolate: 'clamp' }) }] }]}>
+      borderRadius: t.radius.card, transform: [{ scale: p.interpolate({ inputRange: [0, 1], outputRange: [from, 1], extrapolate: 'clamp' }) }] }]}>
       {children}
     </Animated.View>
   );
@@ -65,8 +73,9 @@ export function ScrollExpand({ testID, children, style, progress }: ScrollExpand
 /* ---------- EdgeBlur ---------- */
 
 /** Fades the top and bottom edges of a scrolling area into the background, so content softly runs out of view. */
-export function EdgeBlur({ testID, children, style, size = 28 }: WrapProps & { size?: number }) {
+export function EdgeBlur({ testID, variant, children, style, size: chosen }: WrapProps & { size?: number }) {
   const t = useTheme();
+  const size = chosen ?? 28 * fx('edge-blur', variant).intensity;
   const edge = (to: 'bottom' | 'top') => ({ position: 'absolute' as const, left: 0, right: 0, height: size, [to === 'bottom' ? 'top' : 'bottom']: 0,
     [BG]: `linear-gradient(to ${to}, ${t.color.bg}, transparent)` });
   return (
@@ -81,18 +90,19 @@ export function EdgeBlur({ testID, children, style, size = 28 }: WrapProps & { s
 /* ---------- GlareHover ---------- */
 
 /** A light sweeps across the card when it is pressed (the phone's version of a glare on hover). */
-export function GlareHover({ testID, children, style, onPress, label }: WrapProps & { onPress?: () => void; label?: string }) {
+export function GlareHover({ testID, variant, children, style, onPress, label }: WrapProps & { onPress?: () => void; label?: string }) {
   const t = useTheme();
+  const f = fx('glare-hover', variant);
   const r = useReducedMotion();
   const x = useRef(new Animated.Value(0)).current;
-  const sweep = () => { if (r) { return; } x.setValue(0); Animated.timing(x, { toValue: 1, duration: 650, easing: EASING.standard, useNativeDriver: true }).start(); };
+  const sweep = () => { if (r) { return; } x.setValue(0); Animated.timing(x, { toValue: 1, duration: 650 / f.speed, easing: EASING.standard, useNativeDriver: true }).start(); };
   return (
     <Pressable testID={testID} accessibilityRole={onPress ? 'button' : undefined} accessibilityLabel={label} onPressIn={sweep} onPress={onPress}
                style={[{ overflow: 'hidden', borderRadius: t.radius.card }, onPress ? { minHeight: t.minTouch, justifyContent: 'center' } : null, style]}>
       {children}
       <Animated.View pointerEvents="none" importantForAccessibility="no"
                      style={{ position: 'absolute', top: -20, bottom: -20, width: 80, left: 0, opacity: x.interpolate({ inputRange: [0, 0.1, 0.9, 1], outputRange: [0, 1, 1, 0] }),
-                       [BG]: 'linear-gradient(to right, transparent, rgba(255, 255, 255, 0.45), transparent)',
+                       [BG]: `linear-gradient(to right, transparent, rgba(255, 255, 255, ${Math.min(0.9, 0.45 * f.intensity)}), transparent)`,
                        transform: [{ rotate: '20deg' }, { translateX: x.interpolate({ inputRange: [0, 1], outputRange: [-120, 520] }) }] }} />
     </Pressable>
   );
@@ -141,15 +151,16 @@ export function MagneticButton({ testID, label, onPress, disabled }: MagneticBut
 /* ---------- HighlightBorder ---------- */
 
 /** A border that glows softly while active (a field being listened to, a card waiting for the customer). */
-export function HighlightBorder({ testID, children, style, active = true }: WrapProps & { active?: boolean }) {
+export function HighlightBorder({ testID, variant, children, style, active = true }: WrapProps & { active?: boolean }) {
   const t = useTheme();
-  const glow = useCycle(1600, active, 0.5);
+  const f = fx('highlight-border', variant);
+  const glow = useCycle(1600 / f.speed, active, 0.5);
   return (
     <View testID={testID} style={[{ borderRadius: t.radius.card }, style]}>
       {children}
       {active ? (
         <Animated.View pointerEvents="none" importantForAccessibility="no"
-                       style={[StyleSheet.absoluteFill, { borderRadius: t.radius.card, borderWidth: 2, borderColor: t.color.primary,
+                       style={[StyleSheet.absoluteFill, { borderRadius: t.radius.card, borderWidth: 2, borderColor: paletteColors(t, f.palette)?.[0] ?? t.color.primary,
                          opacity: glow.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.35, 1, 0.35] }) }]} />
       ) : null}
     </View>
@@ -158,11 +169,13 @@ export function HighlightBorder({ testID, children, style, active = true }: Wrap
 
 /* ---------- ClickBurst ---------- */
 
-const RAYS = 8;
 
 /** A small burst of dots from the centre on each press (a payment sent, a goal reached). */
-export function ClickBurst({ testID, children, style, onPress, label }: WrapProps & { onPress?: () => void; label: string }) {
+export function ClickBurst({ testID, variant, children, style, onPress, label }: WrapProps & { onPress?: () => void; label: string }) {
   const t = useTheme();
+  const f = fx('click-burst', variant);
+  const rays = Math.min(16, Math.max(4, Math.round(8 * f.density)));
+  const [c1, c2] = paletteColors(t, f.palette) ?? [t.color.warning, t.color.primary];
   const r = useReducedMotion();
   const v = useRef(new Animated.Value(1)).current;
   const fire = () => {
@@ -176,13 +189,13 @@ export function ClickBurst({ testID, children, style, onPress, label }: WrapProp
                style={[{ minHeight: t.minTouch, alignItems: 'center', justifyContent: 'center' }, style]}>
       {children}
       <View pointerEvents="none" importantForAccessibility="no-hide-descendants" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
-        {Array.from({ length: RAYS }, (_, i) => {
-          const a = (i / RAYS) * Math.PI * 2;
+        {Array.from({ length: rays }, (_, i) => {
+          const a = (i / rays) * Math.PI * 2;
           return (
-            <Animated.View key={i} style={{ position: 'absolute', width: 6, height: 6, borderRadius: 3, backgroundColor: i % 2 ? t.color.primary : t.color.warning,
+            <Animated.View key={i} style={{ position: 'absolute', width: 6, height: 6, borderRadius: 3, backgroundColor: i % 2 ? c2 : c1,
               opacity: v.interpolate({ inputRange: [0, 0.2, 1], outputRange: [0, 1, 0] }),
-              transform: [{ translateX: v.interpolate({ inputRange: [0, 1], outputRange: [0, Math.cos(a) * 34] }) },
-                { translateY: v.interpolate({ inputRange: [0, 1], outputRange: [0, Math.sin(a) * 34] }) }] }} />
+              transform: [{ translateX: v.interpolate({ inputRange: [0, 1], outputRange: [0, Math.cos(a) * 34 * f.intensity] }) },
+                { translateY: v.interpolate({ inputRange: [0, 1], outputRange: [0, Math.sin(a) * 34 * f.intensity] }) }] }} />
           );
         })}
       </View>
@@ -198,11 +211,15 @@ export interface MarqueeProps {
   items: ReadonlyArray<string>;
   /** Points a second. */
   speed?: number;
+  /** A named preset of its settings (variants/v5.json): slow, fast, reverse. */
+  variant?: string;
 }
 
 /** A line of notices that runs across the screen; it stands still (and wraps) under reduced motion. */
-export function Marquee({ testID, items, speed = 40 }: MarqueeProps) {
+export function Marquee({ testID, variant, items, speed: chosen }: MarqueeProps) {
   const t = useTheme();
+  const f = fx('marquee', variant);
+  const speed = chosen ?? 40 * f.speed;
   const r = useReducedMotion();
   const [width, setWidth] = useState(0);
   const cycle = useCycle(Math.max(1000, (width / speed) * 1000), !r && width > 0);
@@ -215,7 +232,7 @@ export function Marquee({ testID, items, speed = 40 }: MarqueeProps) {
     <View testID={testID} accessible accessibilityLabel={items.join('. ')} style={{ overflow: 'hidden', paddingVertical: 8, backgroundColor: t.color.surface2,
       borderRadius: t.radius.control }}>
       {r ? <Text style={{ fontSize: 14, color: t.color.textBody, paddingHorizontal: 12 }}>{items.join('  ·  ')}</Text> : (
-        <Animated.View style={{ flexDirection: 'row', transform: [{ translateX: cycle.interpolate({ inputRange: [0, 1], outputRange: [0, -width || -1] }) }] }}>
+        <Animated.View style={{ flexDirection: 'row', transform: [{ translateX: cycle.interpolate({ inputRange: [0, 1], outputRange: f.direction === 'right' ? [-width || -1, 0] : [0, -width || -1] }) }] }}>
           {row('a')}{row('b')}
         </Animated.View>
       )}

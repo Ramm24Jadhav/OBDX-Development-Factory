@@ -906,12 +906,14 @@ test('g7 pointer effects set CSS variables on the element; click burst adds and 
   create('bx-magnetic-button', {}).vm.move({ currentTarget: target, clientX: 100, clientY: 50 });
   eq(s.v['--bx-mx'], '0.0px', 'magnet at the centre');
   const kids = [];
-  const host = { getBoundingClientRect: () => ({ left: 0, top: 0 }), ownerDocument: { createElement: () => ({ style: {}, setAttribute() {}, parentNode: null }) }, appendChild: (x) => { kids.push(x); x.parentNode = { removeChild: () => kids.splice(kids.indexOf(x), 1) }; } };
+  const host = { getBoundingClientRect: () => ({ left: 0, top: 0 }), ownerDocument: { createElement: () => ({ style: style(), setAttribute() {}, parentNode: null }) }, appendChild: (x) => { kids.push(x); x.parentNode = { removeChild: () => kids.splice(kids.indexOf(x), 1) }; } };
   timers.length = 0;
   create('bx-click-burst', {}).vm.burst({ currentTarget: host, clientX: 5, clientY: 5 });
   eq(kids.length, 8, 'dots');
   runTimers(700, 8);
   eq(kids.length, 0, 'removed');
+  create('bx-click-burst', { variant: 'confetti' }).vm.burst({ currentTarget: host, clientX: 5, clientY: 5 });
+  eq([kids.length, kids[0].style.v['--bx-by']], [12, '-39px'], 'a confetti variant sends more dots further');
 });
 test('g7 showcase: deck and carousel go round; the flip card hides the face it turned away', () => {
   const deck = create('bx-card-stack', { items: [{ title: 'A' }, { title: 'B' }, { title: 'C' }] });

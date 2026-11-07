@@ -1,5 +1,5 @@
 {
-  "$comment": "The motion spec: what each component does on enter, hover, press, a value change, open and close, an error and while loading, the same in every pack. 'style' follows the component style saved in the Component factory (bx-motion-hover-lift|glow|shine, bx-motion-click-press|ripple|bounce, bx-motion-scroll-fadeup|scale|slide|blur); the other names are in effects. Durations and easing are the --bx-dur-* and --bx-ease-* tokens. Under reduced motion every component shows its end state. packs says where the motion is built.",
+  "$comment": "The motion spec: what each component does on enter, hover, press, a value change, open and close, an error and while loading, the same in every pack. 'style' follows the component style saved in the Component factory (bx-motion-hover-lift|glow|shine, bx-motion-click-press|ripple|bounce, bx-motion-scroll-fadeup|scale|slide|blur); the other names are in effects. Durations and easing are the --bx-dur-* and --bx-ease-* tokens. Under reduced motion every component shows its end state. packs says where the motion is built. presets is the motion library every kind uses: variants/*.json names one per phase for each variant, and tools/gen-motion.mjs builds each pack's tables and the bx-m-* classes from it.",
   "version": 1,
   "effects": {
     "style": "Follows the component style (hover, click or scroll effect chosen in the Component factory)",
@@ -19,6 +19,328 @@
     "rise": "Rises and fades in",
     "slide-down": "Slides down into place",
     "effect": "The component is the effect itself (text, motion, backdrop and micro interaction categories)"
+  },
+  "presets": {
+    "$comment": "The motion library: named presets per phase that every kind uses, the same in every pack. Frames use neutral keys (opacity, x and y in px, scale, blur in px, rotate in deg); enter and change play their frames, exit plays to its frame, hover and press hold a state. duration names a --bx-dur-* token (fast, base, slow), easing a --bx-ease-* one (standard, exit, spring). variants.json names one per phase for each variant; 'effect' there means the component's own movement. Under reduced motion every preset shows its end state.",
+    "enter": {
+      "fade": {
+        "what": "Fades in",
+        "duration": "base",
+        "easing": "standard",
+        "frames": [
+          {
+            "opacity": 0
+          },
+          {}
+        ]
+      },
+      "rise": {
+        "what": "Rises a little and fades in",
+        "duration": "base",
+        "easing": "standard",
+        "frames": [
+          {
+            "opacity": 0,
+            "y": 12
+          },
+          {}
+        ]
+      },
+      "scale": {
+        "what": "Grows a little and fades in",
+        "duration": "base",
+        "easing": "standard",
+        "frames": [
+          {
+            "opacity": 0,
+            "scale": 0.96
+          },
+          {}
+        ]
+      },
+      "slide": {
+        "what": "Slides in from the side",
+        "duration": "base",
+        "easing": "standard",
+        "frames": [
+          {
+            "opacity": 0,
+            "x": 16
+          },
+          {}
+        ]
+      },
+      "blur": {
+        "what": "Sharpens from a blur",
+        "duration": "slow",
+        "easing": "standard",
+        "frames": [
+          {
+            "opacity": 0,
+            "blur": 6
+          },
+          {}
+        ]
+      },
+      "drop": {
+        "what": "Drops down into place",
+        "duration": "base",
+        "easing": "standard",
+        "frames": [
+          {
+            "opacity": 0,
+            "y": -8
+          },
+          {}
+        ]
+      },
+      "pop": {
+        "what": "Pops in on a spring",
+        "duration": "slow",
+        "easing": "spring",
+        "frames": [
+          {
+            "opacity": 0,
+            "scale": 0.85
+          },
+          {}
+        ]
+      }
+    },
+    "hover": {
+      "lift": {
+        "what": "Lifts and casts a deeper shadow",
+        "duration": "fast",
+        "easing": "standard",
+        "state": {
+          "y": -2,
+          "shadow": 2
+        }
+      },
+      "glow": {
+        "what": "Glows in the brand colour",
+        "duration": "fast",
+        "easing": "standard",
+        "state": {
+          "glow": 1
+        }
+      },
+      "grow": {
+        "what": "Grows a little",
+        "duration": "fast",
+        "easing": "standard",
+        "state": {
+          "scale": 1.02
+        }
+      },
+      "tint": {
+        "what": "Takes a light brand tint",
+        "duration": "fast",
+        "easing": "standard",
+        "state": {
+          "tint": 1
+        }
+      },
+      "border": {
+        "what": "The border takes the brand colour",
+        "duration": "fast",
+        "easing": "standard",
+        "state": {
+          "border": 1
+        }
+      }
+    },
+    "press": {
+      "press": {
+        "what": "Presses in a little",
+        "duration": "fast",
+        "easing": "standard",
+        "state": {
+          "scale": 0.97
+        }
+      },
+      "sink": {
+        "what": "Presses in further, for large surfaces",
+        "duration": "fast",
+        "easing": "standard",
+        "state": {
+          "scale": 0.94
+        }
+      },
+      "bounce": {
+        "what": "Presses in and springs back",
+        "duration": "slow",
+        "easing": "spring",
+        "state": {
+          "scale": 0.95
+        }
+      }
+    },
+    "change": {
+      "roll": {
+        "what": "A changed value rolls up into place",
+        "duration": "base",
+        "easing": "standard",
+        "frames": [
+          {
+            "opacity": 0,
+            "y": 8
+          },
+          {}
+        ]
+      },
+      "pop": {
+        "what": "Pops with a spring",
+        "duration": "slow",
+        "easing": "spring",
+        "frames": [
+          {
+            "scale": 0.85
+          },
+          {
+            "scale": 1.06
+          },
+          {}
+        ]
+      },
+      "shake": {
+        "what": "Shakes once, for an error",
+        "duration": "slow",
+        "easing": "standard",
+        "frames": [
+          {},
+          {
+            "x": -6
+          },
+          {
+            "x": 5
+          },
+          {
+            "x": -3
+          },
+          {}
+        ]
+      },
+      "pulse": {
+        "what": "Pulses once",
+        "duration": "slow",
+        "easing": "standard",
+        "frames": [
+          {},
+          {
+            "scale": 1.04
+          },
+          {}
+        ]
+      },
+      "settle": {
+        "what": "Settles in from above",
+        "duration": "base",
+        "easing": "standard",
+        "frames": [
+          {
+            "opacity": 0,
+            "y": -6
+          },
+          {}
+        ]
+      },
+      "fade": {
+        "what": "Crossfades to the new content",
+        "duration": "slow",
+        "easing": "standard",
+        "frames": [
+          {
+            "opacity": 0
+          },
+          {}
+        ]
+      },
+      "slide": {
+        "what": "The new content slides in from the side",
+        "duration": "slow",
+        "easing": "standard",
+        "frames": [
+          {
+            "opacity": 0,
+            "x": 24
+          },
+          {}
+        ]
+      },
+      "scale": {
+        "what": "The new content grows in",
+        "duration": "slow",
+        "easing": "standard",
+        "frames": [
+          {
+            "opacity": 0,
+            "scale": 0.94
+          },
+          {}
+        ]
+      },
+      "spring": {
+        "what": "Moves to its new place on a spring",
+        "duration": "slow",
+        "easing": "spring",
+        "frames": [
+          {
+            "x": 24
+          },
+          {}
+        ]
+      }
+    },
+    "exit": {
+      "fade": {
+        "what": "Fades out",
+        "duration": "fast",
+        "easing": "exit",
+        "frames": [
+          {},
+          {
+            "opacity": 0
+          }
+        ]
+      },
+      "sink": {
+        "what": "Sinks a little and fades out",
+        "duration": "fast",
+        "easing": "exit",
+        "frames": [
+          {},
+          {
+            "opacity": 0,
+            "y": 8
+          }
+        ]
+      },
+      "scale": {
+        "what": "Shrinks a little and fades out",
+        "duration": "fast",
+        "easing": "exit",
+        "frames": [
+          {},
+          {
+            "opacity": 0,
+            "scale": 0.96
+          }
+        ]
+      },
+      "slide": {
+        "what": "Slides out to the side",
+        "duration": "base",
+        "easing": "exit",
+        "frames": [
+          {},
+          {
+            "opacity": 0,
+            "x": -24
+          }
+        ]
+      }
+    }
   },
   "components": {
     "button": {

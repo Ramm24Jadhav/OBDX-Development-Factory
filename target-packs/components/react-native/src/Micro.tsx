@@ -9,7 +9,7 @@ import { AccessibilityInfo, Animated, PanResponder, StyleSheet, Text, TextInput,
 import { Button } from './Button';
 import { formatAmount } from './TextField';
 import { FieldProps, Option, options as toOptions, styles } from './field';
-import { DURATION, Enter, Pop, Press, Shake, useCycle, useOpen, usePop, useProgress, useReducedMotion, useSlide } from './motion';
+import { DURATION, EASING, Enter, Pop, Press, Shake, fx, useCycle, useOpen, usePop, useProgress, useReducedMotion, useSlide } from './motion';
 import { CodeBoxes, CodeBoxesProps, Tone, Touch, toneColors } from './parts';
 import { useTheme } from './theme';
 
@@ -172,13 +172,17 @@ export interface SwipeRowProps {
   children: ReactNode;
   actions: ReadonlyArray<SwipeAction>;
   onAction: (id: string) => void;
+  /** A named preset of its settings (variants/v5.json): smooth, snappy. */
+  variant?: string;
 }
 
 const ACTION = 84;
 
 /** A row (a transaction) that slides aside to show its actions; screen readers find the same actions on the row. */
-export function SwipeRow({ testID, label, children, actions, onAction }: SwipeRowProps) {
+export function SwipeRow({ testID, variant, label, children, actions, onAction }: SwipeRowProps) {
   const t = useTheme();
+  const f = useRef(fx('swipe-row', variant));
+  f.current = fx('swipe-row', variant);
   const x = useRef(new Animated.Value(0)).current;
   const width = actions.length * ACTION;
   const open = useRef(false);
@@ -187,7 +191,11 @@ export function SwipeRow({ testID, label, children, actions, onAction }: SwipeRo
     onPanResponderMove: (_, g) => x.setValue(Math.max(-width, Math.min(0, g.dx + (open.current ? -width : 0)))),
     onPanResponderRelease: (_, g) => { open.current = g.dx + (open.current ? -width : 0) < -width / 2; settle(); },
   })).current;
-  function settle() { Animated.spring(x, { toValue: open.current ? -width : 0, friction: 7, useNativeDriver: true }).start(); }
+  function settle() {
+    const to = open.current ? -width : 0;
+    (f.current.easing === 'standard' ? Animated.timing(x, { toValue: to, duration: DURATION.base / f.current.speed, easing: EASING.standard, useNativeDriver: true })
+      : Animated.spring(x, { toValue: to, friction: 7, useNativeDriver: true })).start();
+  }
   const act = (id: string) => { open.current = false; settle(); onAction(id); };
   return (
     <View testID={testID} style={{ overflow: 'hidden', borderRadius: t.radius.control }}>
@@ -396,6 +404,8 @@ export function RubberSegment({ testID, label, value, onChange, options, disable
 /* ---------- ScrubField ---------- */
 
 export interface ScrubFieldProps extends FieldProps<number> {
+  /** A named preset of its settings (variants/v5.json): fine, fast. */
+  variant?: string;
   min?: number;
   max: number;
   step?: number;
@@ -403,18 +413,18 @@ export interface ScrubFieldProps extends FieldProps<number> {
 }
 
 /** An amount changed by dragging across it (each step of the finger is one step of the amount); screen readers swipe up and down. */
-export function ScrubField({ testID, label, value, onChange, min = 0, max, step = 10, currency, disabled, error, helpText }: ScrubFieldProps) {
+export function ScrubField({ testID, variant, label, value, onChange, min = 0, max, step = 10, currency, disabled, error, helpText }: ScrubFieldProps) {
   const t = useTheme();
   const s = styles(t);
   const at = value ?? min;
   const clamp = (n: number) => Math.min(max, Math.max(min, Math.round(n / step) * step));
   const startAt = useRef(at);
-  const latest = useRef({ at, onChange, disabled });
-  latest.current = { at, onChange, disabled };
+  const latest = useRef({ at, onChange, disabled, perStep: 8 });
+  latest.current = { at, onChange, disabled, perStep: 8 / fx('scrub-field', variant).sensitivity };
   const pan = useRef(PanResponder.create({
     onStartShouldSetPanResponder: () => !latest.current.disabled,
     onPanResponderGrant: () => { startAt.current = latest.current.at; },
-    onPanResponderMove: (_, g) => { const n = clamp(startAt.current + Math.round(g.dx / 8) * step); if (n !== latest.current.at) { latest.current.onChange?.(n); } },
+    onPanResponderMove: (_, g) => { const n = clamp(startAt.current + Math.round(g.dx / latest.current.perStep) * step); if (n !== latest.current.at) { latest.current.onChange?.(n); } },
   })).current;
   const shown = `${currency ? `${currency} ` : ''}${formatAmount(at, currency)}`;
   return (
