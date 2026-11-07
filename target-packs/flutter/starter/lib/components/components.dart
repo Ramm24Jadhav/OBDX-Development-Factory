@@ -3,6 +3,7 @@ library;
 
 export 'button.dart';
 export 'choices.dart';
+export 'component_style.dart';
 export 'fields.dart';
 export 'layout.dart';
 export 'theme.dart';

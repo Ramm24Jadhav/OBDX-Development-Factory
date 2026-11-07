@@ -17,7 +17,9 @@ android() {
     command -v adb >/dev/null || fail "adb not found. Install the Android SDK platform tools and put them on the PATH."
     [ -n "${1:-}" ] && export ANDROID_SERIAL="$1"
     adb get-state >/dev/null 2>&1 || fail "No phone or emulator. Connect one (USB debugging on) or start an emulator."
-    (cd android && if [ -x ./gradlew ]; then ./gradlew assembleDebug; else gradle assembleDebug; fi)
+    [ -f android/gradle/wrapper/gradle-wrapper.jar ] \
+        || fail "android/gradle/wrapper/gradle-wrapper.jar is missing. Copy it in (see the README, Gradle wrapper)."
+    (cd android && bash ./gradlew assembleDebug)
     adb install -r android/app/build/outputs/apk/debug/app-debug.apk
     adb logcat -c
     adb shell am start -W -n "$APP_ID/.MainActivity"

@@ -1,6 +1,6 @@
 /** The component style saved in the Component factory: a look, motion on hover, click and scroll, and light or dark. */
 export interface ComponentStyle {
-  look?: 'elevated' | 'soft' | 'glass' | 'outline' | 'vivid' | 'pill' | 'brutal' | 'redwood';
+  look?: 'elevated' | 'soft' | 'glass' | 'outline' | 'vivid' | 'pill' | 'brutal' | 'redwood' | 'liquid';
   motion?: { hover?: 'lift' | 'glow' | 'shine'; click?: 'press' | 'ripple' | 'bounce'; scroll?: 'fadeup' | 'scale' | 'slide' | 'blur' };
   mode?: 'light' | 'dark';
 }

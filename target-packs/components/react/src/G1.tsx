@@ -7,6 +7,7 @@ import * as RadixDialog from '@radix-ui/react-dialog';
 import { KeyboardEvent, ReactNode, useEffect, useId, useRef, useState } from 'react';
 
 import { Button, ButtonProps } from './Button';
+import { Lens } from './lens';
 
 /* ---------- items: strings or objects, each with an id and a label ---------- */
 
@@ -115,6 +116,7 @@ export function ToggleGroup({ testID, label, options, value, onChange, disabled 
     <div className="bx-field bx-segmented-field" data-testid={testID}>
       <span className="bx-label" id={`${id}-label`}>{label}</span>
       <div className="bx-segmented" role="radiogroup" aria-labelledby={`${id}-label`} ref={box} onKeyDown={key}>
+        <Lens />
         {list.map((o, i) => {
           const on = valueOf(o) === value;
           return (
@@ -190,7 +192,7 @@ export function ActionMenu({ testID, label = 'More', items, onAction, disabled }
     <div className="bx-menu" ref={box} data-testid={testID}>
       <button type="button" className="bx-btn bx-btn--outlined bx-menu-button" aria-haspopup="menu" aria-expanded={open} aria-controls={id} disabled={disabled}
               onClick={() => setOpen(!open)} onKeyDown={(e) => { if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); } }}>
-        <span className="bx-btn-label">{label}</span><span className="bx-menu-caret" aria-hidden="true" />
+        <Lens /><span className="bx-btn-label">{label}</span><span className="bx-menu-caret" aria-hidden="true" />
       </button>
       {open ? (
         <ul className="bx-menu-list" role="menu" id={id} aria-label={label} onKeyDown={key}>

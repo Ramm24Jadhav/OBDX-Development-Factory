@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'component_style.dart';
+
 /// primary: the screen's main action; secondary: another action; link: a quiet one (Cancel, Back).
 enum BxVariant { primary, secondary, link }
 
@@ -27,7 +29,8 @@ class BxButton extends StatelessWidget {
       label: busy ? '$label, working' : null,
       child: switch (variant) {
         BxVariant.primary => FilledButton(onPressed: onTap, child: child),
-        BxVariant.secondary => OutlinedButton(onPressed: onTap, child: child),
+        // on Glass and Liquid glass a secondary button is a glass surface (BxGlass draws nothing extra on the other looks)
+        BxVariant.secondary => BxGlass(radius: Theme.of(context).extension<BxLookTheme>()?.corner ?? 8, child: OutlinedButton(onPressed: onTap, child: child)),
         BxVariant.link => TextButton(onPressed: onTap, child: child),
       },
     );

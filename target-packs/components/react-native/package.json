@@ -15,7 +15,13 @@
   },
   "peerDependencies": {
     "react": ">=19",
-    "react-native": ">=0.78"
+    "react-native": ">=0.78",
+    "expo-blur": ">=14"
+  },
+  "peerDependenciesMeta": {
+    "expo-blur": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@babel/core": "^7.28.0",

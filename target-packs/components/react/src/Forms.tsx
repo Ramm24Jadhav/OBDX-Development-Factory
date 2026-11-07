@@ -5,6 +5,7 @@
  */
 import { KeyboardEvent, useId, useMemo, useRef, useState } from 'react';
 
+import { Lens } from './lens';
 import { FieldMessage, FieldProps, FieldShell, Option, fieldClass, isEmpty, options as toOptions, useField } from './field';
 import { play } from './motion';
 
@@ -241,7 +242,7 @@ export function Toggle(props: FieldProps<boolean>) {
         <span className="bx-switch-label" id={`${id}-label`}>{label}</span>
         <button type="button" role="switch" className="bx-switch" id={id} data-testid={`${testID}-input`} aria-checked={!!value} aria-labelledby={`${id}-label`}
                 aria-describedby={error ? `${id}-err` : helpText ? `${id}-help` : undefined} aria-readonly={readOnly || undefined} disabled={disabled}
-                onClick={() => { if (!readOnly) { onChange?.(!value); } }} />
+                onClick={() => { if (!readOnly) { onChange?.(!value); } }}><Lens /></button>
       </div>
       <FieldMessage id={id} error={error ?? ''} helpText={helpText} />
     </div>

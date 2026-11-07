@@ -55,6 +55,8 @@ guidance: |
     request and response types; the client adds the session cookie and the nonce.
   - Pages do not navigate themselves: they emit (action) with an action id and (done), which app.routes.ts wires up.
   - Write tests with the Angular test runner (vitest) and TestBed.
+  - The app's design comes from the factory's component style in src/app/component-style.json (look, motion, mode,
+    brand): app.ts puts its bx-look-* classes on the root and bx.css draws the nine designs, Liquid glass included.
 
 rules:
   - id: angular-no-react

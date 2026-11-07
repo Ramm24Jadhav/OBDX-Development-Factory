@@ -6,9 +6,12 @@
 import { ChangeDetectionStrategy, Component, Directive, computed, input, model, output } from '@angular/core';
 
 import { FileUpload } from './forms';
-import { Part, ROWS, RowsBase, arrow } from './g1';
-import { TILES, TilesBase } from './g2';
+import { ALERT, AlertBase, Part, ROWS, RowsBase, Severity, arrow } from './g1';
+import { QUICK, QuickBase, THING, TILES, TRANSACTIONS, ThingBase, TilesBase, TransactionHistory } from './g2';
 import { CHART, ChartBase, METERS, MetersBase } from './g4';
+import { CALC, CalcBase } from './g5';
+
+export type { QuickItem } from './g2';
 
 /* ---------- tab summary ---------- */
 
@@ -88,26 +91,9 @@ export class BulkUploadWidget extends Part {
 
 /* ---------- QuickLinksWidget ---------- */
 
-export interface QuickItem { id: string; label: string; icon?: string }
-
 /** Shortcuts for the corporate user, tiles of an icon and a word. */
-@Component({
-  selector: 'bx-quick-links-corp',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <nav class="bx-quick" [attr.aria-label]="label()" [attr.data-testid]="testID() || null">
-      <ul>
-        @for (o of items(); track o.id) {
-          <li><button type="button" class="bx-quick-item" (click)="action.emit(o.id)"><span class="bx-quick-icon" aria-hidden="true">{{ o.icon || '•' }}</span><span>{{ o.label }}</span></button></li>
-        }
-      </ul>
-    </nav>`,
-})
-export class QuickLinksWidget extends Part {
-  readonly label = input('Quick links');
-  readonly items = input<ReadonlyArray<QuickItem>>([]);
-  readonly action = output<string>();
-}
+@Component({ selector: 'bx-quick-links-corp', changeDetection: ChangeDetectionStrategy.OnPush, template: QUICK })
+export class QuickLinksWidget extends QuickBase { protected override readonly defaultLabel = 'Quick links'; }
 
 /* ---------- reused kinds ---------- */
 
@@ -151,7 +137,59 @@ export class NotificationsWidget extends RowsBase { protected override readonly 
 @Component({ selector: 'bx-pending-approvals', changeDetection: ChangeDetectionStrategy.OnPush, template: ROWS })
 export class PendingApprovalsWidget extends RowsBase { protected override readonly defaults = { heading: 'Pending approvals', actionLabel: 'Approve' }; }
 
+/* ---------- the retail dashboard ---------- */
+
+/** Each kind of holding with its total. */
+@Component({ selector: 'bx-overview', changeDetection: ChangeDetectionStrategy.OnPush, template: TILES })
+export class OverviewWidget extends TilesBase { protected override readonly defaults = { heading: 'Overview' }; }
+/** Things worth a look today, each with an action. */
+@Component({ selector: 'bx-quick-insights', changeDetection: ChangeDetectionStrategy.OnPush, template: ROWS })
+export class QuickInsightsWidget extends RowsBase { protected override readonly defaults = { heading: 'Worth a look', actionLabel: 'Act', emptyText: 'Nothing needs you today.' }; }
+/** The latest transactions. */
+@Component({ selector: 'bx-recent-transactions', changeDetection: ChangeDetectionStrategy.OnPush, template: TRANSACTIONS })
+export class RecentTransactionsWidget extends TransactionHistory { protected override readonly defaultHeading = 'Recent transactions'; }
+/** Bills due, each with Pay now. */
+@Component({ selector: 'bx-bills-widget', changeDetection: ChangeDetectionStrategy.OnPush, template: ROWS })
+export class BillsWidget extends RowsBase { protected override readonly defaults = { heading: 'Bills', actionLabel: 'Pay now', emptyText: 'No bills due.' }; }
+/** Where the money went, by category. */
+@Component({ selector: 'bx-spend-analysis', changeDetection: ChangeDetectionStrategy.OnPush, template: CHART })
+export class SpendAnalysisWidget extends ChartBase { protected override readonly defaultHeading = 'Where your money went'; }
+/** Savings goals and how far along each is. */
+@Component({ selector: 'bx-goals', changeDetection: ChangeDetectionStrategy.OnPush, template: METERS })
+export class GoalsWidget extends MetersBase { protected override readonly defaultHeading = 'Goals'; }
+/** Budgets used this month. */
+@Component({ selector: 'bx-budgets', changeDetection: ChangeDetectionStrategy.OnPush, template: METERS })
+export class BudgetsWidget extends MetersBase { protected override readonly defaultHeading = 'Budgets'; }
+/** A loan calculator on the dashboard. */
+@Component({ selector: 'bx-calculators', changeDetection: ChangeDetectionStrategy.OnPush, template: CALC })
+export class CalculatorsWidget extends CalcBase { protected override readonly defaults = { heading: 'Calculators', amount: 10000, rate: 9.5, months: 36 }; }
+/** The credit score on its scale; a high score never turns amber. */
+@Component({ selector: 'bx-credit-score', changeDetection: ChangeDetectionStrategy.OnPush, template: METERS })
+export class CreditScoreWidget extends MetersBase { protected override readonly defaultHeading = 'Credit score'; protected override readonly defaultWarnAt = 101; }
+/** Points, vouchers and cashback. */
+@Component({ selector: 'bx-rewards', changeDetection: ChangeDetectionStrategy.OnPush, template: TILES })
+export class RewardsWidget extends TilesBase { protected override readonly defaults = { heading: 'Rewards' }; }
+/** The relationship manager and a way to write to them. */
+@Component({ selector: 'bx-financial-advisor', changeDetection: ChangeDetectionStrategy.OnPush, template: THING })
+export class FinancialAdvisorWidget extends ThingBase { protected override readonly defaultAction = 'Send a message'; }
+/** An offer for the customer. */
+@Component({ selector: 'bx-special-offers', changeDetection: ChangeDetectionStrategy.OnPush, template: THING })
+export class SpecialOffersWidget extends ThingBase { protected override readonly defaultAction = 'Apply now'; }
+/** What is due on the cards. */
+@Component({ selector: 'bx-credit-cards-overview', changeDetection: ChangeDetectionStrategy.OnPush, template: TILES })
+export class CreditCardsWidget extends TilesBase { protected override readonly defaults = { heading: 'Credit cards' }; }
+/** The loans at a glance. */
+@Component({ selector: 'bx-loans-overview', changeDetection: ChangeDetectionStrategy.OnPush, template: TILES })
+export class LoansWidget extends TilesBase { protected override readonly defaults = { heading: 'Loans' }; }
+/** An overdue payment, announced at once, with Pay now. */
+@Component({ selector: 'bx-delinquency-notice', changeDetection: ChangeDetectionStrategy.OnPush, template: ALERT })
+export class DelinquencyNotice extends AlertBase {
+  protected override readonly defaultSeverity: Severity = 'error';
+  protected override readonly defaults = { heading: 'Payment overdue', actionLabel: 'Pay now' };
+}
+
 /** Group 6's components, for a screen's imports. */
 export const G6_COMPONENTS = [FinancialOverviewWidget, CurrencyPositionWidget, CreditLineWidget, TradeBillsWidget, TradeInstrumentsWidget, ReportsWidget, AccountsWidget,
   CorporateLimitsWidget, TransactionsWidget, LastPaymentsWidget, BulkUploadWidget, QuickLinksWidget, WorkSnapshotWidget, NotificationsWidget, PendingActionWidget, MyLimitsWidget,
-  PendingApprovalsWidget] as const;
+  PendingApprovalsWidget, OverviewWidget, QuickInsightsWidget, RecentTransactionsWidget, BillsWidget, SpendAnalysisWidget, GoalsWidget, BudgetsWidget, CalculatorsWidget,
+  CreditScoreWidget, RewardsWidget, FinancialAdvisorWidget, SpecialOffersWidget, CreditCardsWidget, LoansWidget, DelinquencyNotice] as const;

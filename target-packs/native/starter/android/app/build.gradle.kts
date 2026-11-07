@@ -42,6 +42,19 @@ kotlin {
     jvmToolchain(17)
 }
 
+// A release build talks to the real bank, so it needs certificate pins; -Pobdx.allowNoPins=true builds one without on
+// purpose. Checked when the APK or bundle is packaged, so unit tests of the release variant still run without pins.
+val releasePins = providers.gradleProperty("obdx.pins").orElse("").get()
+val allowNoPins = providers.gradleProperty("obdx.allowNoPins").orElse("false").get().toBoolean()
+tasks.matching { it.name == "packageRelease" || it.name == "packageReleaseBundle" }.configureEach {
+    doFirst {
+        if (releasePins.isBlank() && !allowNoPins) {
+            throw GradleException("A release build needs the bank's certificate pins. Set obdx.pins and obdx.pinsExpire in " +
+                "gradle.properties (see the README), or pass -Pobdx.allowNoPins=true to build a release without pinning on purpose.")
+        }
+    }
+}
+
 dependencies {
     val compose = platform("androidx.compose:compose-bom:2025.10.00")
     implementation(compose)

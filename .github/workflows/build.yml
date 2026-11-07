@@ -211,8 +211,7 @@ jobs:
       - uses: actions/setup-java@v4
         with: {distribution: temurin, java-version: '17'}
       - uses: gradle/actions/setup-gradle@v4
-        with: {gradle-version: '8.14'}
-      - run: gradle test
+      - run: ./gradlew test
 
   # The React Native pack in the browser (react-native-web): screenshots, both themes and contrast. Linux is the reference.
   react-native-gates:

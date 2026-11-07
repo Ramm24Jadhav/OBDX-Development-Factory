@@ -320,7 +320,7 @@ public class ChangeBuildService {
             CodeGenerator.Result result;
             try {
                 result = generator.generate(context, plan, item, file.generated(), file.original(), Map.of(), others, note,
-                        changes.scaffold(context, file.path(), file.original()));
+                        changes.scaffold(change.getWorkspaceId(), context, file.path(), file.original()));
             } catch (CodeGenerator.JoinFailed e) {
                 // The fix came in pieces that did not join: the file (and any reviewer's edit of it) is kept as it is
                 log.warn("The build fix of {} in change {} did not join cleanly; the file is kept as it is", file.path(), change.getId());

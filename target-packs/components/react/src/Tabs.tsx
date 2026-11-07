@@ -1,6 +1,8 @@
 import * as RadixTabs from '@radix-ui/react-tabs';
 import { ReactNode } from 'react';
 
+import { Lens } from './lens';
+
 export interface Tab {
   id: string;
   label: string;
@@ -23,6 +25,7 @@ export function Tabs({ label, tabs, selection, onSelectionChange, testID }: Tabs
   return (
     <RadixTabs.Root value={selection} onValueChange={onSelectionChange} activationMode="automatic" data-testid={testID}>
       <RadixTabs.List className="bx-tabs is-top" aria-label={label}>
+        <Lens />
         {tabs.map((t) => (
           <RadixTabs.Trigger key={t.id} value={t.id} disabled={t.disabled} className={'bx-tab' + (t.id === selection ? ' is-on' : '')}
                              data-testid={testID ? `${testID}-${t.id}` : undefined}>

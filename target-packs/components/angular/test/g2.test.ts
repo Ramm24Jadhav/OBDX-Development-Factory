@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { AccountBalance, AccountCard, AccountDetails, AccountNumber, AccountSelector, AccountSummary, BeneficiaryCard, BeneficiarySelector, DepositRedemption, DepositTopUp,
   DepositsSummary, MaturityInstructions, NewDepositForm, Payee, PaymentForm, PaymentStatus, Tile, TransactionDetails, TransactionFilter, TransactionHistory, TransactionReceipt,
   TransferSummary, ibanValid, money } from '../src';
+import { PaymentSchedule, QuickActions, UpcomingBills } from '../src';
 import { violations } from './a11y';
 
 async function mount<T>(host: Type<T>) {
@@ -116,5 +117,28 @@ describe('group 2', () => {
     await settle();
     expect(host.choice()).toBe('Close and pay out');
     expect(getByRole(el, 'group', { name: 'At maturity' })).toBeTruthy();
+  });
+});
+
+describe('group 2, the components React and JET have', () => {
+  it('each renders with its sample, says what was pressed and passes axe', async () => {
+    @Component({ imports: [QuickActions, PaymentSchedule, UpcomingBills], template: `
+      <bx-quick-actions [items]="[{ id: 'send', label: 'Send', icon: '↗' }, { id: 'bills', label: 'Pay bills' }]" (action)="seen = $event" />
+      <bx-repeat [(value)]="repeat" />
+      <bx-upcoming-bills [items]="bills" (action)="paid = $event.title" />
+      <bx-upcoming-bills heading="Later" [items]="[]" />` })
+    class Host { seen = ''; paid = ''; repeat = signal('Once'); bills = [{ id: 'b1', title: 'Electricity', meta: 'Due 20 Jan', value: '86.20' }]; }
+    const { el, host, settle } = await mount(Host);
+    await userEvent.click(getByRole(el, 'button', { name: 'Pay bills' }));
+    expect(host.seen).toBe('bills');
+    expect(getByRole(el, 'navigation', { name: 'Quick actions' })).toBeTruthy();
+    fireEvent.keyDown(getByRole(el, 'radio', { name: 'Once' }), { key: 'ArrowRight' });
+    await settle();
+    expect(host.repeat()).toBe('Weekly');
+    expect(getByRole(el, 'radiogroup', { name: 'Repeat' })).toBeTruthy();
+    await userEvent.click(getByRole(el, 'button', { name: 'Pay: Electricity' }));
+    expect(host.paid).toBe('Electricity');
+    expect(getByText(el, 'No bills due.')).toBeTruthy();
+    expect(await violations(el)).toEqual([]);
   });
 });

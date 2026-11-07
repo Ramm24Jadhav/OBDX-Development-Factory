@@ -84,7 +84,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
           limits: (t.limits || []).map((x) => ({ limit: x[0], workaround: x[1] })),
           language: t.language, besideJet: t.besideJet ? 'Runs beside the JET screens' : 'A separate app',
           defaultFolder: f ? f.defaultAppFolder : '',
-          starterHref: f ? 'api/targets/' + f.id + '/starter.zip' : null
+          starterHref: f ? (self.workspaceId() ? 'api/workspaces/' + encodeURIComponent(self.workspaceId()) + '/targets/' : 'api/targets/') + encodeURIComponent(f.id) + '/starter.zip' : null
         };
       });
       self.picked.subscribe(() => { const d = self.detail(); if (d && !(self.current() && self.current().target === pickedTech().pack)) { self.appFolder(d.defaultFolder || ''); } });

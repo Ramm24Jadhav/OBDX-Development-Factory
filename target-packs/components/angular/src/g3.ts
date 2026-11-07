@@ -7,7 +7,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, Directive, computed, ef
 
 import { Dialog } from './dialog';
 import { FieldMessage } from './field';
-import { Part, ROWS, RowsBase, SEGMENTS, SLIDER, SegmentsBase, SliderBase, TIMELINE, TimelineBase } from './g1';
+import { ALERT, AlertBase, Part, ROWS, RowsBase, SEGMENTS, SLIDER, STEPS, SegmentsBase, Severity, SliderBase, StepsBase, TIMELINE, TimelineBase } from './g1';
 import { DETAILS, DetailsBase, FORM, FormBase, TILES, TilesBase } from './g2';
 
 /** The last four digits behind dots, as banks show a card or account number. */
@@ -45,57 +45,131 @@ export class RepaymentSchedule extends Part {
   readonly rows = input<ReadonlyArray<Record<string, string | number | undefined>>>([]);
 }
 
-/* ---------- OtpInput ---------- */
+/* ---------- codes ---------- */
 
-/** A one-time code in slots: one input (so pasting and the phone's code suggestion work), digits only. [(value)], (completed). */
-@Component({
-  selector: 'bx-otp',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FieldMessage],
-  template: `
-    <div [class]="fieldClass()" [attr.data-testid]="testID() || null">
-      <label class="bx-label" [attr.for]="id">{{ label() }}</label>
-      <div class="bx-slots">
-        <input class="bx-code-input" [id]="id" [type]="masked() ? 'password' : 'text'" [value]="value()" [attr.maxlength]="length()" inputmode="numeric"
-               [attr.autocomplete]="masked() ? 'off' : 'one-time-code'" [disabled]="disabled()" spellcheck="false" [attr.aria-required]="required() || null"
-               [attr.aria-invalid]="message() ? true : null" [attr.aria-describedby]="describedBy()" (focus)="focused.set(true)" (blur)="focused.set(false); touched.set(true)"
-               (input)="type($event)" />
-        @for (s of slots(); track $index) { <span [class]="s.css" aria-hidden="true">{{ s.ch }}</span> }
-      </div>
-      <bx-field-message [id]="id" [error]="message()" [helpText]="helpText()" />
-      @if (actionLabel()) { <button type="button" class="bx-alert-action bx-code-action" (click)="action.emit()">{{ actionLabel() }}</button> }
-    </div>`,
-})
-export class OtpInput extends Part {
-  readonly label = input('Enter the code');
+export const CODE = `
+  <div [class]="fieldClass()" [attr.data-testid]="testID() || null">
+    <label class="bx-label" [attr.for]="id">{{ name() }}</label>
+    <div class="bx-slots">
+      <input class="bx-code-input" [id]="id" [type]="dots() ? 'password' : 'text'" [value]="value()" [attr.maxlength]="size()" inputmode="numeric"
+             [attr.autocomplete]="dots() ? 'off' : 'one-time-code'" [disabled]="disabled()" spellcheck="false" [attr.aria-required]="required() || null"
+             [attr.aria-invalid]="message() ? true : null" [attr.aria-describedby]="describedBy()" (focus)="focused.set(true)" (blur)="focused.set(false); touched.set(true)"
+             (input)="type($event)" />
+      @for (s of slots(); track $index) { <span [class]="s.css" aria-hidden="true">{{ s.ch }}</span> }
+    </div>
+    <bx-field-message [id]="id" [error]="message()" [helpText]="helpText()" />
+    @if (act()) { <button type="button" class="bx-alert-action bx-code-action" (click)="action.emit()">{{ act() }}</button> }
+  </div>`;
+
+/** A code or PIN in slots: one input (so pasting and the phone's code suggestion work), digits only. [(value)], (completed). */
+@Directive()
+export abstract class CodeBase extends Part {
+  /** Leave out for the component's own label, length, dots and action. */
+  readonly label = input<string | undefined>(undefined);
   readonly value = model('');
-  readonly length = input(6);
+  readonly length = input<number | undefined>(undefined);
   /** Dots instead of digits (a PIN). */
-  readonly masked = input(false);
+  readonly masked = input<boolean | undefined>(undefined);
   readonly required = input(false);
   readonly disabled = input(false);
   readonly helpText = input('');
   readonly error = input('');
-  readonly actionLabel = input('Send a new code');
+  readonly actionLabel = input<string | undefined>(undefined);
   readonly completed = output<string>();
   readonly action = output<void>();
+  protected readonly defaults: { label: string; length?: number; masked?: boolean; actionLabel?: string } = { label: 'Enter the code' };
+  protected readonly name = computed(() => this.label() ?? this.defaults.label);
+  protected readonly size = computed(() => this.length() ?? this.defaults.length ?? 6);
+  protected readonly dots = computed(() => this.masked() ?? this.defaults.masked ?? false);
+  protected readonly act = computed(() => this.actionLabel() ?? this.defaults.actionLabel ?? '');
   protected readonly focused = signal(false);
   protected readonly touched = signal(false);
-  protected readonly message = computed(() => this.error() || (this.touched() && this.required() && !this.value() ? `${this.label()} is required.` : ''));
+  protected readonly message = computed(() => this.error() || (this.touched() && this.required() && !this.value() ? `${this.name()} is required.` : ''));
   protected readonly describedBy = computed(() => (this.message() ? `${this.id}-err` : this.helpText() ? `${this.id}-help` : null));
   protected readonly fieldClass = computed(() => 'bx-field bx-code' + (this.message() ? ' is-error' : '') + (this.focused() ? ' is-focus' : '') + (this.disabled() ? ' is-disabled' : ''));
   protected readonly slots = computed(() => {
     const v = this.value() ?? '';
-    return Array.from({ length: this.length() }, (_, i) => ({ ch: v[i] ? (this.masked() ? '•' : v[i]) : '',
+    return Array.from({ length: this.size() }, (_, i) => ({ ch: v[i] ? (this.dots() ? '•' : v[i]) : '',
       css: 'bx-slot' + (v[i] ? ' is-filled' : '') + (i === v.length && this.focused() ? ' is-next' : '') }));
   });
   protected type(e: Event): void {
     const el = e.target as HTMLInputElement;
-    const n = el.value.replace(/\D/g, '').slice(0, this.length());
+    const n = el.value.replace(/\D/g, '').slice(0, this.size());
     if (el.value !== n) { el.value = n; }
     this.value.set(n);
-    if (n.length === this.length()) { this.completed.emit(n); }
+    if (n.length === this.size()) { this.completed.emit(n); }
   }
+}
+
+/** A one-time code with Send a new code. */
+@Component({ selector: 'bx-otp', changeDetection: ChangeDetectionStrategy.OnPush, imports: [FieldMessage], template: CODE })
+export class OtpInput extends CodeBase { protected override readonly defaults = { label: 'Enter the code', actionLabel: 'Send a new code' }; }
+/** The code that activates a new card. */
+@Component({ selector: 'bx-activate-card', changeDetection: ChangeDetectionStrategy.OnPush, imports: [FieldMessage], template: CODE })
+export class ActivateCard extends CodeBase { protected override readonly defaults = { label: 'Enter the activation code' }; }
+/** A new PIN, in dots. */
+@Component({ selector: 'bx-reset-pin', changeDetection: ChangeDetectionStrategy.OnPush, imports: [FieldMessage], template: CODE })
+export class ResetPin extends CodeBase { protected override readonly defaults = { label: 'Choose a new PIN', length: 4, masked: true }; }
+
+/* ---------- CardTile ---------- */
+
+/** The card's picture with the number masked; grey when blocked. A screen reader hears one line about it. */
+@Component({
+  selector: 'bx-card-tile',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div [class]="frozen() ? 'bx-card-face is-frozen' : 'bx-card-face'" role="img" [attr.aria-label]="name()" [attr.data-testid]="testID() || null">
+      <span class="bx-card-face-label" aria-hidden="true">{{ label() }}</span>
+      <span class="bx-card-face-number bx-mono" aria-hidden="true">{{ shown() }}</span>
+      <span class="bx-card-face-foot" aria-hidden="true"><span>{{ holder() }}</span><span>{{ expiry() }}</span><strong>{{ network() }}</strong></span>
+      @if (frozen()) { <span class="bx-card-face-lock" aria-hidden="true">Blocked</span> }
+    </div>`,
+})
+export class CardTile extends Part {
+  readonly label = input.required<string>();
+  readonly number = input('');
+  readonly holder = input('');
+  readonly expiry = input('');
+  readonly network = input('');
+  readonly frozen = input(false);
+  protected readonly shown = computed(() => masked(this.number()));
+  protected readonly name = computed(() => [this.label(), this.network(), `ending ${(this.number() || '').replace(/\D/g, '').slice(-4)}`, this.frozen() ? 'blocked' : '']
+    .filter(Boolean).join(', '));
+}
+
+/* ---------- AuthChallenge ---------- */
+
+const METHOD_ICON = { face: '☺', fingerprint: '◉', passkey: '⚿' };
+
+/** Asks for a biometric or a passkey; the screen does the asking (WebAuthn or the app) and sets the state. (verify), (other). */
+@Component({
+  selector: 'bx-biometric',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <section class="bx-card bx-challenge" [attr.aria-labelledby]="id" [attr.data-testid]="testID() || null">
+      <span [class]="state() === 'waiting' ? 'bx-challenge-icon is-waiting' : 'bx-challenge-icon'" aria-hidden="true">{{ icon() }}</span>
+      <h3 class="bx-card-title" [id]="id">{{ heading() }}</h3>
+      @if (text()) { <p class="bx-thing-text">{{ text() }}</p> }
+      @if (state() === 'failed') { <p class="bx-error" role="alert"><span class="bx-error-icon" aria-hidden="true">!</span>{{ failedText() }}</p> }
+      <div class="bx-kv-actions">
+        <button type="button" class="bx-btn bx-btn--borderless" (click)="other.emit()">{{ otherLabel() }}</button>
+        <button type="button" class="bx-btn bx-btn--callToAction" [attr.aria-busy]="state() === 'waiting' || null" (click)="go()">{{ actionLabel() }}</button>
+      </div>
+    </section>`,
+})
+export class AuthChallenge extends Part {
+  readonly heading = input('Confirm it is you');
+  readonly text = input('');
+  readonly method = input<'face' | 'fingerprint' | 'passkey'>('fingerprint');
+  readonly actionLabel = input('Use fingerprint');
+  readonly otherLabel = input('Use a code instead');
+  /** ready, waiting (the device is asking) or failed. */
+  readonly state = input<'ready' | 'waiting' | 'failed'>('ready');
+  readonly failedText = input('That did not work. Try again, or use a code.');
+  readonly verify = output<void>();
+  readonly other = output<void>();
+  protected readonly icon = computed(() => METHOD_ICON[this.method()]);
+  protected go(): void { if (this.state() !== 'waiting') { this.verify.emit(); } }
 }
 
 /* ---------- settings ---------- */
@@ -245,8 +319,24 @@ export class ConvertToEmi extends SegmentsBase { protected override readonly def
 export class RedeemPoints extends SliderBase { protected override readonly defaults = { label: 'Points to redeem', max: 12400, step: 100 }; }
 /** The card's statements, each to download. */
 @Component({ selector: 'bx-card-statements', changeDetection: ChangeDetectionStrategy.OnPush, template: ROWS })
-export class CardStatements extends RowsBase { protected override readonly defaults = { heading: 'Statements', actionLabel: 'Download' }; }
+export class CardStatements extends RowsBase { protected override readonly defaults = { heading: 'Statements', actionLabel: 'Download', emptyText: 'No statements yet.' }; }
+/** The card's daily limit. [(value)]. */
+@Component({ selector: 'bx-spend-limit', changeDetection: ChangeDetectionStrategy.OnPush, template: SLIDER })
+export class CardLimits extends SliderBase { protected override readonly defaults = { label: 'Daily card limit', max: 10000, step: 100 }; }
+/** The steps of proving who the customer is. */
+@Component({ selector: 'bx-kyc-steps', changeDetection: ChangeDetectionStrategy.OnPush, template: STEPS })
+export class KycSteps extends StepsBase {
+  protected override readonly defaultLabel = 'Verify your identity';
+  protected override readonly defaultSteps = ['ID', 'Selfie', 'Address'];
+}
+/** A payment the bank stopped, and what to do; announced at once. */
+@Component({ selector: 'bx-fraud-alert', changeDetection: ChangeDetectionStrategy.OnPush, template: ALERT })
+export class FraudAlert extends AlertBase {
+  protected override readonly defaultSeverity: Severity = 'error';
+  protected override readonly defaults = { heading: 'Was this you?', actionLabel: 'Review it' };
+}
 
 /** Group 3's components, for a screen's imports. */
 export const G3_COMPONENTS = [LoansSummary, LoanRepayment, RepaymentSchedule, PromiseToPay, DisbursementTimeline, CardList, ConvertToEmi, RedeemPoints, BlockCard, RaiseDispute,
-  AddOnCard, CardStatements, OtpInput, SessionExpiryWarning, SecureConfirmation, SensitiveField] as const;
+  AddOnCard, CardStatements, OtpInput, SessionExpiryWarning, SecureConfirmation, SensitiveField, CardTile, ActivateCard, CardLimits, ResetPin, AuthChallenge, KycSteps,
+  FraudAlert] as const;

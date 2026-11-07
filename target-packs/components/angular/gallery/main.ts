@@ -175,6 +175,35 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-notification-panel testID="np1" [items]="notes" />
         <bx-notification-panel testID="np2" heading="Alerts" [items]="[]" emptyText="No alerts." />
       </div></section>
+      <section class="gate" data-component="danger-button" aria-labelledby="ap-danger-button-h"><h2 id="ap-danger-button-h">Danger button</h2><div class="gate-body">
+        <bx-danger-button testID="db1" label="Cancel payment" />
+        <bx-danger-button testID="db2" label="Cancel payment" [busy]="true" />
+      </div></section>
+      <section class="gate" data-component="filter-chips" aria-labelledby="ap-filter-chips-h"><h2 id="ap-filter-chips-h">Filter chips</h2><div class="gate-body">
+        <bx-filter-chips testID="fc1" label="Filter" [options]="['Card', 'Transfer', 'Bills', 'Salary']" [value]="['Card']" />
+      </div></section>
+      <section class="gate" data-component="accordion" aria-labelledby="ap-accordion-h"><h2 id="ap-accordion-h">Accordion</h2><div class="gate-body">
+        <bx-accordion testID="ac1" [items]="[{ id: 'a', title: 'How long does a transfer take?', body: 'Same day inside the bank; up to 2 working days to other banks.' }, { id: 'b', title: 'Can I cancel a payment?', body: 'Yes, until it is sent.' }]" />
+      </div></section>
+      <section class="gate" data-component="avatar" aria-labelledby="ap-avatar-h"><h2 id="ap-avatar-h">Avatar</h2><div class="gate-body">
+        <bx-avatar testID="av1" name="Asha Rao" />
+        <bx-avatar testID="av2" name="J. Mehta" size="sm" />
+        <bx-avatar testID="av3" name="S. Kapoor" size="lg" />
+      </div></section>
+      <section class="gate" data-component="skeleton" aria-labelledby="ap-skeleton-h"><h2 id="ap-skeleton-h">Skeleton</h2><div class="gate-body">
+        <bx-skeleton testID="sk1" />
+        <bx-skeleton testID="sk2" shape="card" [lines]="2" />
+        <bx-skeleton testID="sk3" shape="circle" [lines]="1" />
+      </div></section>
+      <section class="gate" data-component="quick-actions" aria-labelledby="ap-quick-actions-h"><h2 id="ap-quick-actions-h">Quick actions</h2><div class="gate-body">
+        <bx-quick-actions testID="qa1" [items]="[{ id: 'send', label: 'Send', icon: '↗' }, { id: 'bills', label: 'Pay bills', icon: '≡' }, { id: 'topup', label: 'Top up', icon: '+' }, { id: 'scan', label: 'Scan to pay', icon: '⌗' }]" />
+      </div></section>
+      <section class="gate" data-component="repeat" aria-labelledby="ap-repeat-h"><h2 id="ap-repeat-h">Repeat</h2><div class="gate-body">
+        <bx-repeat testID="rp1" value="Once" />
+      </div></section>
+      <section class="gate" data-component="upcoming-bills" aria-labelledby="ap-upcoming-bills-h"><h2 id="ap-upcoming-bills-h">Upcoming bills</h2><div class="gate-body">
+        <bx-upcoming-bills testID="ub1" [items]="[{ id: 'b1', title: 'Electricity', meta: 'Due 20 Jan', value: '86.20' }, { id: 'b2', title: 'Card ·· 4821', meta: 'Due 18 Jan', value: '640.00' }]" />
+      </div></section>
       <section class="gate" data-component="account-picker" aria-labelledby="aw2-0-h"><h2 id="aw2-0-h">Account picker</h2><div class="gate-body">
         <bx-account-picker testID="ap1" [options]="accounts" [(value)]="account" />
       </div></section>
@@ -426,6 +455,41 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       <section class="gate" data-component="faq" aria-labelledby="aw5-20-h"><h2 id="aw5-20-h">FAQ</h2><div class="gate-body">
         <bx-faq [items]="faq" />
       </div></section>
+      <section class="gate" data-component="card-tile" aria-labelledby="ap-card-tile-h"><h2 id="ap-card-tile-h">Card tile</h2><div class="gate-body">
+        <bx-card-tile testID="ct1" label="Platinum" number="4111111111114821" holder="A. RAO" expiry="09/29" network="Visa" />
+        <bx-card-tile testID="ct2" label="Classic" number="4111111111117710" network="Visa" [frozen]="true" />
+      </div></section>
+      <section class="gate" data-component="activate-card" aria-labelledby="ap-activate-card-h"><h2 id="ap-activate-card-h">Activate card</h2><div class="gate-body">
+        <bx-activate-card testID="ak1" />
+      </div></section>
+      <section class="gate" data-component="spend-limit" aria-labelledby="ap-spend-limit-h"><h2 id="ap-spend-limit-h">Card limits</h2><div class="gate-body">
+        <bx-spend-limit testID="sl1" [value]="2000" prefix="USD" />
+      </div></section>
+      <section class="gate" data-component="card-controls" aria-labelledby="ap-card-controls-h"><h2 id="ap-card-controls-h">Card controls</h2><div class="gate-body">
+        <bx-card-controls testID="cc1" [options]="['Online payments', 'ATM withdrawals', 'Use abroad']" [value]="['Online payments']" />
+      </div></section>
+      <section class="gate" data-component="reset-pin" aria-labelledby="ap-reset-pin-h"><h2 id="ap-reset-pin-h">Reset PIN</h2><div class="gate-body">
+        <bx-reset-pin testID="pn1" />
+      </div></section>
+      <section class="gate" data-component="biometric" aria-labelledby="ap-biometric-h"><h2 id="ap-biometric-h">Biometric</h2><div class="gate-body">
+        <bx-biometric testID="bm1" text="Touch the sensor to approve 1,250.00 to A. Rao." />
+        <bx-biometric testID="bm2" method="face" actionLabel="Use Face ID" state="failed" />
+      </div></section>
+      <section class="gate" data-component="kyc-steps" aria-labelledby="ap-kyc-steps-h"><h2 id="ap-kyc-steps-h">KYC steps</h2><div class="gate-body">
+        <bx-kyc-steps testID="ky1" selectedStep="Selfie" />
+      </div></section>
+      <section class="gate" data-component="fraud-alert" aria-labelledby="ap-fraud-alert-h"><h2 id="ap-fraud-alert-h">Fraud alert</h2><div class="gate-body">
+        <bx-fraud-alert testID="fa1" message="We stopped a payment of 899.00 to Unknown Ltd." />
+      </div></section>
+      <section class="gate" data-component="savings-goal" aria-labelledby="ap-savings-goal-h"><h2 id="ap-savings-goal-h">Savings goal</h2><div class="gate-body">
+        <bx-savings-goal [items]="[{ label: 'Holiday fund', value: 1800, max: 3000 }]" unit="USD" />
+      </div></section>
+      <section class="gate" data-component="loan-calculator" aria-labelledby="ap-loan-calculator-h"><h2 id="ap-loan-calculator-h">Loan calculator</h2><div class="gate-body">
+        <bx-loan-calculator currency="USD" actionLabel="Apply for this loan" />
+      </div></section>
+      <section class="gate" data-component="currency-converter" aria-labelledby="ap-currency-converter-h"><h2 id="ap-currency-converter-h">Currency converter</h2><div class="gate-body">
+        <bx-currency-converter currency="USD" toCurrency="EUR" [rate]="0.92" />
+      </div></section>
       <section class="gate" data-component="financial-overview" aria-labelledby="aw6-0-h"><h2 id="aw6-0-h">Financial overview</h2><div class="gate-body">
         <bx-financial-overview [items]="[{label: 'Assets', value: '4.2M', meta: 'CASA, deposits'}, {label: 'Liabilities', value: '1.1M', meta: 'Loans'}, {label: 'Net worth', value: '3.1M', meta: 'Assets less liabilities'}]" />
       </div></section>
@@ -476,6 +540,51 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       </div></section>
       <section class="gate" data-component="pending-approvals" aria-labelledby="aw6-16-h"><h2 id="aw6-16-h">Pending approvals</h2><div class="gate-body">
         <bx-pending-approvals [items]="[{title: 'Payroll Feb · prioritized', meta: 'Financial · 182,400.00', value: 'PAY-4410'}, {title: 'Add payee J. Mehta', meta: 'Non-financial', value: 'BEN-218'}]" />
+      </div></section>
+      <section class="gate" data-component="overview" aria-labelledby="ap-overview-h"><h2 id="ap-overview-h">Overview</h2><div class="gate-body">
+        <bx-overview [items]="[{ label: 'Current and savings', value: '15,610.50', meta: '3 accounts' }, { label: 'Term deposits', value: '25,000.00', meta: '2 deposits' }, { label: 'Loans', value: '18,420.00', meta: '1 loan outstanding' }, { label: 'Credit cards', value: '640.00 due', meta: '2 cards' }, { label: 'Mutual funds', value: '4,120.00', meta: '1 fund' }]" />
+      </div></section>
+      <section class="gate" data-component="quick-insights" aria-labelledby="ap-quick-insights-h"><h2 id="ap-quick-insights-h">Quick insights</h2><div class="gate-body">
+        <bx-quick-insights [items]="[{ title: 'Term deposit matures', meta: 'In 5 days · ·· 9011', value: '25,000.00' }, { title: 'Card payment due', meta: '18 Jan · ·· 4821', value: '640.00' }, { title: 'Low balance', meta: 'Current ·· 7730', value: '210.00' }]" />
+      </div></section>
+      <section class="gate" data-component="recent-transactions" aria-labelledby="ap-recent-transactions-h"><h2 id="ap-recent-transactions-h">Recent transactions</h2><div class="gate-body">
+        <bx-recent-transactions currency="USD" [items]="txns" />
+      </div></section>
+      <section class="gate" data-component="bills-widget" aria-labelledby="ap-bills-widget-h"><h2 id="ap-bills-widget-h">Bills</h2><div class="gate-body">
+        <bx-bills-widget [items]="[{ title: 'Electricity', meta: 'Due 20 Jan', value: '86.20' }, { title: 'Water', meta: 'Due 25 Jan', value: '24.10' }]" />
+      </div></section>
+      <section class="gate" data-component="spend-analysis" aria-labelledby="ap-spend-analysis-h"><h2 id="ap-spend-analysis-h">Spend analysis</h2><div class="gate-body">
+        <bx-spend-analysis [items]="[{ label: 'Groceries', value: 320 }, { label: 'Travel', value: 180 }, { label: 'Eating out', value: 210 }, { label: 'Shopping', value: 140 }]" unit="USD" />
+      </div></section>
+      <section class="gate" data-component="goals" aria-labelledby="ap-goals-h"><h2 id="ap-goals-h">Goals</h2><div class="gate-body">
+        <bx-goals [items]="[{ label: 'Holiday fund', value: 1800, max: 3000 }, { label: 'New car', value: 4200, max: 15000 }]" />
+      </div></section>
+      <section class="gate" data-component="budgets" aria-labelledby="ap-budgets-h"><h2 id="ap-budgets-h">Budgets</h2><div class="gate-body">
+        <bx-budgets [items]="[{ label: 'Groceries', value: 320, max: 400 }, { label: 'Travel', value: 180, max: 300 }, { label: 'Eating out', value: 210, max: 200 }]" />
+      </div></section>
+      <section class="gate" data-component="calculators" aria-labelledby="ap-calculators-h"><h2 id="ap-calculators-h">Calculators</h2><div class="gate-body">
+        <bx-calculators currency="USD" />
+      </div></section>
+      <section class="gate" data-component="credit-score" aria-labelledby="ap-credit-score-h"><h2 id="ap-credit-score-h">Credit score</h2><div class="gate-body">
+        <bx-credit-score [items]="[{ label: 'Credit score', value: 742, max: 900 }]" />
+      </div></section>
+      <section class="gate" data-component="rewards" aria-labelledby="ap-rewards-h"><h2 id="ap-rewards-h">Rewards</h2><div class="gate-body">
+        <bx-rewards [items]="[{ label: 'Points', value: '12,400', meta: 'Redeem for merchandise, vouchers or air miles' }, { label: 'Vouchers', value: '3', meta: 'Expire 31 Mar' }, { label: 'Cashback', value: '45.00', meta: 'Paid on the 1st' }]" />
+      </div></section>
+      <section class="gate" data-component="financial-advisor" aria-labelledby="ap-financial-advisor-h"><h2 id="ap-financial-advisor-h">Financial advisor</h2><div class="gate-body">
+        <bx-financial-advisor heading="Priya Nair" text="priya.nair@bank.example · +44 20 7946 0123" badge="Relationship manager" />
+      </div></section>
+      <section class="gate" data-component="special-offers" aria-labelledby="ap-special-offers-h"><h2 id="ap-special-offers-h">Special offers</h2><div class="gate-body">
+        <bx-special-offers heading="Pre-approved personal loan" text="Up to 25,000.00 at 9.5% a year." badge="Offer" />
+      </div></section>
+      <section class="gate" data-component="credit-cards-overview" aria-labelledby="ap-credit-cards-overview-h"><h2 id="ap-credit-cards-overview-h">Credit cards</h2><div class="gate-body">
+        <bx-credit-cards-overview [items]="[{ label: 'Total due', value: '640.00', meta: 'Due 18 Jan' }, { label: 'Minimum due', value: '32.00', meta: 'Pay to avoid charges' }, { label: 'Available limit', value: '9,360.00', meta: 'Of 10,000.00' }]" />
+      </div></section>
+      <section class="gate" data-component="loans-overview" aria-labelledby="ap-loans-overview-h"><h2 id="ap-loans-overview-h">Loans</h2><div class="gate-body">
+        <bx-loans-overview [items]="[{ label: 'Loans', value: '2', meta: 'Home and car' }, { label: 'Outstanding', value: '18,420.00', meta: 'Next instalment 5 Feb' }, { label: 'Sanctioned', value: '30,000.00', meta: 'Both loans' }]" />
+      </div></section>
+      <section class="gate" data-component="delinquency-notice" aria-labelledby="ap-delinquency-notice-h"><h2 id="ap-delinquency-notice-h">Delinquency notice</h2><div class="gate-body">
+        <bx-delinquency-notice message="Your car loan ·· 3310 is 12 days overdue: 412.00." />
       </div></section>
       <section class="gate" data-component="rolling-digits" aria-labelledby="aw7-0-h"><h2 id="aw7-0-h">Rolling digits</h2><div class="gate-body">
         <bx-rolling-digits [value]="12400.5" currency="USD" />

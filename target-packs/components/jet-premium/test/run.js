@@ -424,7 +424,7 @@ test('views use only bindings JET 6 has (no function literals, no new, no $paren
 
 const css = fs.readFileSync(path.join(BX, 'bx.css'), 'utf8');
 test('the skin has every design option and motion of the component style', () => {
-  const need = ['elevated', 'soft', 'glass', 'outline', 'vivid', 'pill', 'brutal', 'redwood'].filter((l) => l !== 'elevated').map((l) => '.bx-look-' + l)
+  const need = ['elevated', 'soft', 'glass', 'outline', 'vivid', 'pill', 'brutal', 'redwood', 'liquid'].filter((l) => l !== 'elevated').map((l) => '.bx-look-' + l)
     .concat(['lift', 'glow', 'shine'].map((m) => '.bx-motion-hover-' + m), ['press', 'ripple', 'bounce'].map((m) => '.bx-motion-click-' + m),
       ['fadeup', 'scale', 'slide', 'blur'].map((m) => '.bx-motion-scroll-' + m), ['.bx-dark', 'prefers-reduced-motion']);
   eq(need.filter((n) => css.indexOf(n) < 0), [], 'missing in bx.css');

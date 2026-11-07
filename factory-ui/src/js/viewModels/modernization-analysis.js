@@ -426,7 +426,8 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
       this.targetSaved = ko.pureComputed(() => !!this.channel() && this.channel().target === this.draftTarget()
         && (this.channel().appFolder || '') === this.draftFolder().trim().replace(/\/$/, ''));
       this.saveTip = ko.pureComputed(() => (!this.canScan() ? 'Changing the target needs Manage code.' : this.targetSaved() ? 'This is the workspace\'s target.' : null));
-      this.starterUrl = ko.pureComputed(() => 'api/targets/' + encodeURIComponent(this.draftTarget()) + '/starter.zip');
+      // The workspace's starter: its saved component style is in the starter's style file
+      this.starterUrl = ko.pureComputed(() => (this.workspaceId() ? 'api/workspaces/' + encodeURIComponent(this.workspaceId()) + '/targets/' : 'api/targets/') + encodeURIComponent(this.draftTarget()) + '/starter.zip');
       this.appStep = ko.pureComputed(() => {
         const c = this.channel();
         if (!this.targetSaved()) {
@@ -504,7 +505,7 @@ define(['knockout', '../accUtils', '../services/api', '../services/workspaceSele
         if (c && c.target !== 'jet' && !c.appFolderExists) {
           return { css: 'factory-rqd-problem', lead: 'The ' + c.title.replace(/\s*\(.*\)$/, '') + ' app is not in the code yet.',
             detail: 'Download the starter project, commit it to ' + c.appFolder + '/ and import again; converted screens are written there.',
-            fix: { label: 'Download the starter', run: () => { window.location.href = 'api/targets/' + encodeURIComponent(c.target) + '/starter.zip'; } } };
+            fix: { label: 'Download the starter', run: () => { window.location.href = (this.workspaceId() ? 'api/workspaces/' + encodeURIComponent(this.workspaceId()) + '/targets/' : 'api/targets/') + encodeURIComponent(c.target) + '/starter.zip'; } } };
         }
         if (!this.searchingFindings() && critical()) {
           return { css: 'factory-rqd-problem is-error', lead: plural(critical(), 'use') + ' of forbidden APIs ' + (critical() === 1 ? 'breaks' : 'break') + ' an error rule.',
