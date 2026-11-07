@@ -48,9 +48,9 @@
   --bx-focus: 0 0 0 3px var(--bx-surface), 0 0 0 6px var(--bx-brand); --bx-weight: 700; --bx-weight-title: 800;
 }
 .bx-look-brutal :where(.bx-tabs, .bx-segmented) { border: var(--bx-bw) solid var(--bx-text); }
-/* Redwood: Oracle's own look; the Redwood brand, flat colour, tight corners, quiet depth */
+/* Redwood: Oracle's own look; the Redwood red (a shade darker than #c74634, so brand text keeps AA on its tints), flat colour, tight corners, quiet depth */
 .bx-look-redwood {
-  --bx-brand: #c74634; --bx-brand-2: #a33b2b; --bx-gradient: var(--bx-brand); --bx-radius: 6px; --bx-radius-lg: 8px; --bx-radius-xl: 10px; --bx-radius-sm: 3px;
+  --bx-brand: #ad3c2c; --bx-brand-2: #8f3224; --bx-gradient: var(--bx-brand); --bx-radius: 6px; --bx-radius-lg: 8px; --bx-radius-xl: 10px; --bx-radius-sm: 3px;
   --bx-track: color-mix(in srgb, var(--bx-brand) 5%, var(--bx-surface-3)); --bx-pad-card: 16px; --bx-weight-title: 600; --bx-cta-shadow: none;
   --bx-shadow-1: 0 1px 1px rgba(15, 23, 42, 0.08); --bx-shadow-2: 0 2px 6px rgba(15, 23, 42, 0.1); --bx-shadow-3: 0 10px 24px rgba(15, 23, 42, 0.16);
 }

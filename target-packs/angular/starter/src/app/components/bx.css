@@ -466,9 +466,11 @@ bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pi
 .bx-balance { display: flex; flex-direction: column; gap: 6px; padding: 20px; border-radius: var(--bx-radius-lg); background: var(--bx-gradient); color: var(--bx-on-brand); border: var(--bx-bw) solid var(--bx-accent-edge); box-shadow: var(--bx-shadow-2); }
 .bx-balance-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .bx-balance-label { margin: 0; font-size: 14px; font-weight: 600; opacity: 0.92; }
+/* the brand fill's own text colour, over any page rule for paragraphs */
+.bx-balance :is(.bx-balance-label, .bx-balance-amount, .bx-balance-meta) { color: var(--bx-on-brand); }
 .bx-balance .bx-reveal { color: var(--bx-on-brand); background: rgba(255, 255, 255, 0.16); }
 .bx-balance-amount { margin: 0; font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; animation: bx-roll-in var(--bx-dur-base) var(--bx-ease-standard); }
-.bx-balance-meta { margin: 0; font-size: 13px; opacity: 0.88; }
+.bx-balance-meta { margin: 0; font-size: 13px; opacity: 0.92; }
 @supports (animation-timeline: view()) {
   .bx-motion-scroll-fadeup .bx-balance { animation: bx-in-up linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
   .bx-motion-scroll-scale .bx-balance { animation: bx-in-scale linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
@@ -593,7 +595,7 @@ bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pi
 .bx-msg { align-self: flex-start; display: flex; flex-direction: column; gap: 2px; max-width: 80%; padding: 8px 12px; border-radius: 14px 14px 14px 4px; background: var(--bx-surface-3);
   color: var(--bx-text); font-size: 14px; animation: bx-settle var(--bx-dur-base) var(--bx-ease-standard); }
 .bx-msg.is-mine { align-self: flex-end; border-radius: 14px 14px 4px 14px; background: var(--bx-brand); color: var(--bx-on-brand); }
-.bx-msg-who { font-size: 11.5px; font-weight: 650; opacity: 0.8; }
+.bx-msg-who { font-size: 11.5px; font-weight: 650; opacity: 0.9; }
 .bx-chat-typing { margin: 0; color: var(--bx-muted); font-size: 13px; font-style: italic; }
 .bx-chat-compose { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
 .bx-chat-compose .bx-control { flex: 1 1 auto; }
@@ -1198,9 +1200,9 @@ button.bx-payee:hover { background: var(--bx-surface-2); }
   --bx-focus: 0 0 0 3px var(--bx-surface), 0 0 0 6px var(--bx-brand); --bx-weight: 700; --bx-weight-title: 800;
 }
 .bx-look-brutal :where(.bx-tabs, .bx-segmented) { border: var(--bx-bw) solid var(--bx-text); }
-/* Redwood: Oracle's own look; the Redwood brand, flat colour, tight corners, quiet depth */
+/* Redwood: Oracle's own look; the Redwood red (a shade darker than #c74634, so brand text keeps AA on its tints), flat colour, tight corners, quiet depth */
 .bx-look-redwood {
-  --bx-brand: #c74634; --bx-brand-2: #a33b2b; --bx-gradient: var(--bx-brand); --bx-radius: 6px; --bx-radius-lg: 8px; --bx-radius-xl: 10px; --bx-radius-sm: 3px;
+  --bx-brand: #ad3c2c; --bx-brand-2: #8f3224; --bx-gradient: var(--bx-brand); --bx-radius: 6px; --bx-radius-lg: 8px; --bx-radius-xl: 10px; --bx-radius-sm: 3px;
   --bx-track: color-mix(in srgb, var(--bx-brand) 5%, var(--bx-surface-3)); --bx-pad-card: 16px; --bx-weight-title: 600; --bx-cta-shadow: none;
   --bx-shadow-1: 0 1px 1px rgba(15, 23, 42, 0.08); --bx-shadow-2: 0 2px 6px rgba(15, 23, 42, 0.1); --bx-shadow-3: 0 10px 24px rgba(15, 23, 42, 0.16);
 }
