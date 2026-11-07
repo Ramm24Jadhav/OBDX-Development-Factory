@@ -326,7 +326,8 @@ bx-bell-toggle, bx-status-mark, bx-favourite-heart, bx-warm-tooltip, bx-voice-pi
 .bx-balance-label { margin: 0; font-size: 14px; font-weight: 600; opacity: 0.92; }
 /* the brand fill's own text colour, over any page rule for paragraphs */
 .bx-balance :is(.bx-balance-label, .bx-balance-amount, .bx-balance-meta) { color: var(--bx-on-brand); }
-.bx-balance .bx-reveal { color: var(--bx-on-brand); background: rgba(255, 255, 255, 0.16); }
+/* a darker chip (not a lighter one), so white text keeps AA on any brand */
+.bx-balance .bx-reveal { color: var(--bx-on-brand); background: rgba(15, 23, 42, 0.2); }
 .bx-balance-amount { margin: 0; font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; animation: bx-roll-in var(--bx-dur-base) var(--bx-ease-standard); }
 .bx-balance-meta { margin: 0; font-size: 13px; opacity: 0.92; }
 @supports (animation-timeline: view()) {

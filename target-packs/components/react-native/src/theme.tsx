@@ -51,7 +51,8 @@ export interface Theme {
 export function makeTheme(style: ComponentStyle = {}, brand?: string, reduceTransparency = false): Theme {
   const look = style.look ?? 'elevated';
   const color: Colors = { ...lightTokens.color, ...(style.mode === 'dark' ? darkColors : {}) } as Colors;
-  if (look === 'redwood') { color.primary = '#ad3c2c'; color.primaryText = '#8f3224'; }
+  // Redwood's red; in dark its text is a light tint and white sits on the fill, so both keep AA
+  if (look === 'redwood') { color.primary = '#ad3c2c'; color.primaryText = style.mode === 'dark' ? mix('#ad3c2c', '#ffffff', 0.45) : '#8f3224'; if (style.mode === 'dark') { color.onPrimary = '#ffffff'; } }
   if (brand) { color.primary = brand; }
   const c = color;
   const radius = look === 'pill' ? { control: 999, card: 22, small: 6, overlay: 28 } : look === 'brutal' ? { control: 4, card: 6, small: 2, overlay: 8 }
