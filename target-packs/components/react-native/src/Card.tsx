@@ -12,17 +12,19 @@ export interface CardProps {
   /** Makes the whole card a button (an account to open). Do not put other buttons in it then. */
   onAction?: () => void;
   selected?: boolean;
+  /** A style variant from variants.json; the default look when left out. outlined: flat, drawn by its edge. */
+  variant?: 'outlined';
   testID?: string;
 }
 
 /** A card: a heading, the content and actions. */
-export function Card({ heading, subheading, children, actions, onAction, selected, testID }: CardProps) {
+export function Card({ heading, subheading, children, actions, onAction, selected, variant, testID }: CardProps) {
   const t = useTheme();
   const box = {
-    gap: 12, padding: 18, borderRadius: t.radius.card, backgroundColor: t.glass ? t.glass.fill : t.color.surface, borderWidth: selected ? 1.5 : t.border,
-    borderColor: selected ? t.color.primary : t.look === 'brutal' ? t.color.text : t.glass ? t.glass.rim : t.color.border,
+    gap: 12, padding: t.padCard, borderRadius: t.radius.card, backgroundColor: t.glass ? t.glass.fill : t.card, borderWidth: selected ? 1.5 : t.border,
+    borderColor: selected ? t.color.primary : t.glass ? t.glass.rim : variant === 'outlined' ? t.color.borderStrong : t.line,
     ...(t.glass ? { overflow: 'hidden' as const } : {}),
-    ...(t.shadow ? { shadowColor: '#0f172a', shadowOpacity: 0.08, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 2 } : {}),
+    ...(variant === 'outlined' ? {} : t.elevation(2)),
   };
   const body = (
     <>

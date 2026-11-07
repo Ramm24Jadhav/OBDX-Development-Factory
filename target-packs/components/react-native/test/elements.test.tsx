@@ -173,6 +173,22 @@ describe('Tokens and the component style', () => {
     expect(screen.getByRole('button', { name: 'Pay now' })).toHaveStyle({ backgroundColor: '#123456' });
   });
 
+  it('gives every design its own shared settings, in light and dark, and the cards and panels read them', async () => {
+    const looks = ['soft', 'glass', 'outline', 'vivid', 'pill', 'brutal', 'redwood', 'liquid'] as const;
+    for (const mode of ['light', 'dark'] as const) {
+      const sig = (look?: (typeof looks)[number]) => {
+        const t = makeTheme({ look, mode });
+        return JSON.stringify([t.radius, t.border, t.line, t.fill, t.card, t.track, t.cta, t.weightTitle, t.elevation(2), t.color.primary]);
+      };
+      for (const look of looks) { expect(sig(look)).not.toBe(sig()); }
+    }
+    expect(makeTheme({ look: 'brutal', mode: 'dark' }).line).toBe(makeTheme({ mode: 'dark' }).color.text);
+    expect(makeTheme({ look: 'outline' }).cta.bg).toBe('transparent');
+    expect(makeTheme({ look: 'outline' }).elevation(2)).toEqual({});
+    await render(<ThemeProvider style={{ look: 'brutal' }}><Card testID="c" heading="Savings" /></ThemeProvider>);
+    expect(screen.getByTestId('c')).toHaveStyle({ borderColor: makeTheme().color.text, borderWidth: 2, borderRadius: 6 });
+  });
+
   it('draws Liquid glass as a translucent fill with a lit rim, and solid when the phone asks for less transparency', async () => {
     expect(makeTheme({ look: 'liquid' }).glass).toEqual({ fill: 'rgba(255, 255, 255, 0.6)', rim: 'rgba(255, 255, 255, 0.3)', tint: 'light' });
     expect(makeTheme({ look: 'liquid', mode: 'dark' }).glass?.fill).toBe('rgba(40, 40, 40, 0.62)');

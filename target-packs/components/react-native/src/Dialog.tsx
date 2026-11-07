@@ -35,10 +35,10 @@ export function Dialog({ open, onOpenChange, title, description, children, foote
         <Pressable style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(15, 23, 42, 0.45)' }}
                    accessible={false} onPress={close} />
         <Animated.View testID={testID} accessibilityViewIsModal {...panelRole(title)}
-              style={[spring, { backgroundColor: t.color.surface, borderRadius: 18, ...(sheet ? { borderBottomLeftRadius: 0, borderBottomRightRadius: 0, paddingBottom: 28 } : {}), padding: 20, gap: 12, maxHeight: '90%',
-                shadowColor: '#0f172a', shadowOpacity: 0.18, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 8 }]}>
+              style={[spring, { backgroundColor: t.raised, borderRadius: t.radius.overlay, ...(sheet ? { borderBottomLeftRadius: 0, borderBottomRightRadius: 0, paddingBottom: 28 } : {}), padding: 20, gap: 12, maxHeight: '90%', borderWidth: t.border, borderColor: t.line,
+                ...t.elevation(3) }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <Text accessibilityRole="header" style={{ flex: 1, fontSize: 18, fontWeight: '700', color: t.color.text }}>{title}</Text>
+            <Text accessibilityRole="header" style={{ flex: 1, fontSize: 18, fontWeight: t.weightTitle, color: t.color.text }}>{title}</Text>
             {cancelBehavior === 'icon' ? <IconButton testID={testID ? `${testID}-close` : undefined} label="Close" icon="close" onAction={close} /> : null}
           </View>
           {description ? <Text style={{ fontSize: 14, color: t.color.textMuted }}>{description}</Text> : null}

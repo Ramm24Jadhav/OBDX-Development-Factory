@@ -535,7 +535,7 @@ export function SessionExpiryWarning({ testID, open, seconds = 60, heading = 'Ar
             </>}>
       {variant === 'countdown' ? (
         <View style={{ alignItems: 'center' }}>
-          <DotRing share={seconds > 0 ? left / seconds : 0} size={88} color={t.color.primary} track={t.color.surface3}>
+          <DotRing share={seconds > 0 ? left / seconds : 0} size={88} color={t.color.primary} track={t.track}>
             <Text style={{ fontSize: 24, fontWeight: '700', color: t.color.text, fontVariant: ['tabular-nums'] }}>{Math.max(0, left)}</Text>
           </DotRing>
         </View>

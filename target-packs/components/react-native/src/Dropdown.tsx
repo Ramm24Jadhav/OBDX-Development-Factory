@@ -31,7 +31,7 @@ export function Dropdown(props: DropdownProps) {
       </Press>
       <Modal visible={open} transparent animationType={MODAL_FADE} accessibilityLabel={label} onRequestClose={close}>
         <Pressable style={sheet.backdrop} accessibilityLabel="Close the list" onPress={close} />
-        <Animated.View style={[sheet.panel, spring, { backgroundColor: t.color.surface, borderTopLeftRadius: t.radius.card, borderTopRightRadius: t.radius.card }]}
+        <Animated.View style={[sheet.panel, spring, { backgroundColor: t.raised, borderTopLeftRadius: t.radius.overlay, borderTopRightRadius: t.radius.overlay }]}
               accessibilityViewIsModal>
           <Text style={[sheet.title, { color: t.color.text }]} accessibilityRole="header">{label}</Text>
           <FlatList data={list} keyExtractor={(o) => o.value} renderItem={({ item }) => {

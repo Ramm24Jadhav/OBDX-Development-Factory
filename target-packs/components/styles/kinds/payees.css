@@ -1,0 +1,7 @@
+.bx-payee:focus-visible { outline: none; box-shadow: var(--bx-focus); }
+.bx-payee-search { margin: 4px 0 8px; }
+.bx-payee { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 6px 4px; border: 0; border-radius: var(--bx-radius); background: transparent; color: var(--bx-text); font: inherit;
+  text-align: left; }
+button.bx-payee { cursor: pointer; }
+button.bx-payee:hover { background: var(--bx-surface-2); }
+.bx-motion-click-press button.bx-payee:active { transform: scale(0.97); }

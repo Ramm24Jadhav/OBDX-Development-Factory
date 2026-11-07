@@ -1,0 +1,15 @@
+.bx-balance { display: flex; flex-direction: column; gap: 6px; padding: 20px; border-radius: var(--bx-radius-lg); background: var(--bx-gradient); color: var(--bx-on-brand); border: var(--bx-bw) solid var(--bx-accent-edge); box-shadow: var(--bx-shadow-2); }
+.bx-balance-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.bx-balance-label { margin: 0; font-size: 14px; font-weight: 600; opacity: 0.92; }
+/* the brand fill's own text colour, over any page rule for paragraphs */
+.bx-balance :is(.bx-balance-label, .bx-balance-amount, .bx-balance-meta) { color: var(--bx-on-brand); }
+/* a darker chip (not a lighter one), so white text keeps AA on any brand */
+.bx-balance .bx-reveal { color: var(--bx-on-brand); background: rgba(15, 23, 42, 0.2); }
+.bx-balance-amount { margin: 0; font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; animation: bx-roll-in var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-balance-meta { margin: 0; font-size: 13px; opacity: 0.92; }
+@supports (animation-timeline: view()) {
+  .bx-motion-scroll-fadeup .bx-balance { animation: bx-in-up linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+  .bx-motion-scroll-scale .bx-balance { animation: bx-in-scale linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+  .bx-motion-scroll-slide .bx-balance { animation: bx-in-slide linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+  .bx-motion-scroll-blur .bx-balance { animation: bx-in-blur linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+}

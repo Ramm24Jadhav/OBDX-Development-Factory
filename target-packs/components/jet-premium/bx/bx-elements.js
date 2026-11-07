@@ -149,7 +149,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-variants'], function (Composite, b
     var self = this;
     self.props = context.properties;
     self.element = context.element;
-    self.css = ko.pureComputed(function () { return 'bx-card' + (self.props.interactive ? ' is-interactive' : '') + (self.props.selected ? ' is-selected' : ''); });
+    self.css = ko.pureComputed(function () { return 'bx-card' + bx.variantClass(self.props.variant) + (self.props.interactive ? ' is-interactive' : '') + (self.props.selected ? ' is-selected' : ''); });
     self.press = function () { if (self.props.interactive) { bx.fire(self.element, 'ojAction', {}); } };
     self.key = function (vm, event) { if (self.props.interactive && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); self.press(); return false; } return true; };
   }
@@ -160,7 +160,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-variants'], function (Composite, b
       + '<div class="bx-card-body"><oj-bind-slot></oj-bind-slot></div><div class="bx-card-actions"><oj-bind-slot name="actions"></oj-bind-slot></div></div>',
     viewModel: CardModel,
     metadata: { properties: { heading: { type: 'string', value: '' }, subheading: { type: 'string', value: '' }, interactive: { type: 'boolean', value: false },
-      selected: { type: 'boolean', value: false } }, events: { ojAction: { bubbles: true } } }
+      selected: { type: 'boolean', value: false }, variant: { type: 'string', value: '' } }, events: { ojAction: { bubbles: true } } }
   });
 
   /* ---------- bx-tabs: a tablist; arrow keys, Home and End move; selection writes back ---------- */

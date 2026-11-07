@@ -68,6 +68,7 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       <section class="gate" data-component="card" aria-labelledby="cd-h"><h2 id="cd-h">Card</h2><div class="gate-body"><div class="gate-row">
         <bx-card heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</bx-card>
         <bx-card heading="Current •••• 0187" subheading="Open the account" [interactive]="true" [selected]="false">₹12,410.50</bx-card>
+        <div data-variant="outlined"><bx-card variant="outlined" heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</bx-card></div>
       </div></div></section>
       <section class="gate" data-component="tabs" aria-labelledby="tb-h"><h2 id="tb-h">Tabs</h2><div class="gate-body">
         <bx-tabs #t label="Accounts" [tabs]="tabs" [(selection)]="tab" />

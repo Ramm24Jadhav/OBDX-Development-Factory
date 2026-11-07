@@ -7,13 +7,14 @@ import { GlassBlur, Theme, useTheme } from './theme';
 export type Chroming = 'callToAction' | 'solid' | 'outlined' | 'borderless' | 'danger';
 
 function look(t: Theme, chroming: Chroming) {
-  const filled = chroming === 'callToAction' || chroming === 'solid' || chroming === 'danger';
-  const outlineCta = t.look === 'outline' && chroming === 'callToAction';
-  const bg = chroming === 'danger' ? t.color.danger : filled && !outlineCta ? t.color.primary : t.glass ? t.glass.fill : chroming === 'outlined' ? t.color.surface : 'transparent';
+  // the call to action follows the design (Outline's is hollow); the others keep their meaning in every design
+  const cta = chroming === 'callToAction';
+  const bg = chroming === 'danger' ? t.color.danger : cta ? t.cta.bg : chroming === 'solid' ? t.color.primary : t.glass ? t.glass.fill : chroming === 'outlined' ? t.fill : 'transparent';
+  const edge = cta ? t.cta.border : t.glass ? t.glass.rim : chroming === 'outlined' ? t.lineStrong : t.look === 'brutal' && chroming !== 'borderless' ? t.line : 'transparent';
   return {
-    box: { backgroundColor: bg, borderWidth: chroming === 'outlined' || outlineCta || t.look === 'brutal' || t.glass ? Math.max(t.border, 1) : 0,
-      borderColor: outlineCta ? t.color.primary : t.look === 'brutal' ? t.color.text : t.glass ? t.glass.rim : t.color.borderStrong },
-    text: filled && !outlineCta ? t.color.onPrimary : chroming === 'borderless' || outlineCta ? t.color.primaryText : t.color.text,
+    box: { backgroundColor: bg, borderWidth: edge === 'transparent' ? 0 : Math.max(t.border, 1), borderColor: edge,
+      ...(t.look === 'brutal' && chroming !== 'borderless' ? t.elevation(1) : {}) },
+    text: cta ? t.cta.text : chroming === 'solid' || chroming === 'danger' ? t.color.onPrimary : chroming === 'borderless' ? t.color.primaryText : t.color.text,
   };
 }
 
@@ -37,13 +38,13 @@ export function Button({ testID, label, chroming = 'callToAction', disabled, bus
   return (
     <Press testID={testID} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: off, busy: !!busy }}
                disabled={off} onPress={onAction}
-               style={[{ minHeight: t.minTouch, paddingHorizontal: 20, borderRadius: t.radius.control, flexDirection: 'row', alignItems: 'center',
+               style={[{ minHeight: t.minTouch, paddingHorizontal: t.pad + 6, borderRadius: t.radius.control, flexDirection: 'row', alignItems: 'center',
                  justifyContent: 'center', opacity: off ? 0.5 : 1, overflow: 'hidden' }, l.box]}>
       <GlassBlur />
       {/* the busy button shimmers (motion.json: loading) */}
       <Animated.View style={[{ flexDirection: 'row', alignItems: 'center', gap: 8 }, shimmer]}>
         {busy ? <ActivityIndicator size="small" color={l.text} aria-hidden /> : startIcon}
-        <Text style={{ color: l.text, fontSize: 15, fontWeight: '600' }}>{label}</Text>
+        <Text style={{ color: l.text, fontSize: 15, fontWeight: t.weight }}>{label}</Text>
       </Animated.View>
     </Press>
   );

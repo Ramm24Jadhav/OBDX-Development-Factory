@@ -1,0 +1,13 @@
+.bx-layout-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.bx-layout-grid.is-cols-1 { grid-template-columns: minmax(0, 1fr); }
+.bx-layout-grid.is-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.bx-layout-grid.is-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.bx-layout-grid.is-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.bx-layout-grid.is-gap-sm { gap: 8px; }
+.bx-layout-grid.is-gap-lg { gap: 24px; }
+@media (max-width: 720px) {
+  .bx-layout-grid.is-cols-3, .bx-layout-grid.is-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  .bx-layout-grid[class*="is-cols-"] { grid-template-columns: minmax(0, 1fr); }
+}

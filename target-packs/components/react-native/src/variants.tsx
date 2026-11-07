@@ -37,49 +37,48 @@ export const isDark = (t: Theme) => { const h = t.color.surface.replace('#', '')
 /** A message box: its frame, its heading colour and its body colour. Filled uses the tone's text colour as the fill, so white text keeps its contrast. */
 export function alertLook(t: Theme, variant: AlertVariant = 'default', c: ToneColors): { box: ViewStyle; fg: string; body: string } {
   if (variant === 'filled') { return { box: { backgroundColor: c.fg, borderRadius: t.radius.control }, fg: t.color.surface, body: t.color.surface }; }
-  if (variant === 'outlined') { return { box: { backgroundColor: t.color.surface, borderWidth: 1, borderColor: c.line, borderRadius: t.radius.control }, fg: c.fg, body: t.color.textBody }; }
+  if (variant === 'outlined') { return { box: { backgroundColor: t.card, borderWidth: Math.max(1, t.border), borderColor: c.line, borderRadius: t.radius.control }, fg: c.fg, body: t.color.textBody }; }
   if (variant === 'banner') { return { box: { backgroundColor: c.bg, borderRadius: 0, borderTopWidth: 3, borderTopColor: c.line, paddingHorizontal: 16 }, fg: c.fg, body: t.color.textBody }; }
   return { box: { backgroundColor: c.bg, borderRadius: t.radius.card, borderLeftWidth: 4, borderLeftColor: c.line }, fg: c.fg, body: t.color.textBody };
 }
 
 /** A toast's card, and its text colours. The snackbar sits on the inverse surface. */
 export function toastLook(t: Theme, variant: ToastVariant = 'default', line: string): { box: ViewStyle; fg: string; body: string } {
-  const shadow = { shadowColor: '#0f172a', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 3 };
-  if (variant === 'snackbar') { return { box: { backgroundColor: t.color.text, borderRadius: 4, ...shadow }, fg: t.color.surface, body: t.color.surface }; }
-  if (variant === 'stacked') { return { box: { backgroundColor: t.color.surface, borderRadius: 16, borderWidth: 1, borderColor: t.color.border, ...shadow, shadowOpacity: 0.14 }, fg: t.color.text, body: t.color.textBody }; }
-  if (variant === 'pill') { return { box: { backgroundColor: t.color.surface, borderRadius: 999, borderWidth: 1, borderColor: t.color.border, paddingHorizontal: 16, ...shadow }, fg: t.color.text, body: t.color.textBody }; }
-  return { box: { backgroundColor: t.color.surface, borderRadius: 14, borderWidth: 1, borderColor: t.color.border, borderLeftWidth: 4, borderLeftColor: line, ...shadow }, fg: t.color.text, body: t.color.textBody };
+  const shadow = t.elevation(2);
+  if (variant === 'snackbar') { return { box: { backgroundColor: t.color.text, borderRadius: t.radius.small, ...shadow }, fg: t.color.surface, body: t.color.surface }; }
+  if (variant === 'stacked') { return { box: { backgroundColor: t.raised, borderRadius: t.radius.overlay, borderWidth: t.border, borderColor: t.line, ...t.elevation(3) }, fg: t.color.text, body: t.color.textBody }; }
+  if (variant === 'pill') { return { box: { backgroundColor: t.raised, borderRadius: 999, borderWidth: t.border, borderColor: t.line, paddingHorizontal: 16, ...shadow }, fg: t.color.text, body: t.color.textBody }; }
+  return { box: { borderRadius: t.radius.card, backgroundColor: t.raised, borderWidth: t.border, borderColor: t.line, borderLeftWidth: 4, borderLeftColor: line, ...shadow }, fg: t.color.text, body: t.color.textBody };
 }
 
 /** A tooltip's bubble and text colour. */
 export function tooltipLook(t: Theme, variant: TooltipVariant = 'default'): { bubble: ViewStyle; fg: string } {
-  if (variant === 'plain') { return { bubble: { paddingVertical: 4, paddingHorizontal: 8, borderRadius: 4, backgroundColor: t.color.text }, fg: t.color.surface }; }
+  if (variant === 'plain') { return { bubble: { paddingVertical: 4, paddingHorizontal: 8, borderRadius: t.radius.small, backgroundColor: t.color.text }, fg: t.color.surface }; }
   if (variant === 'rich') {
-    return { bubble: { padding: 14, borderRadius: 12, backgroundColor: t.color.surface2, borderWidth: 1, borderColor: t.color.border, shadowColor: '#0f172a', shadowOpacity: 0.12,
-      shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 3 }, fg: t.color.text };
+    return { bubble: { padding: 14, borderRadius: t.radius.card, backgroundColor: t.raised, borderWidth: t.border, borderColor: t.line, ...t.elevation(2) }, fg: t.color.text };
   }
-  if (variant === 'beak') { return { bubble: { padding: 10, borderRadius: 6, backgroundColor: t.color.surface, borderWidth: 1, borderColor: t.color.borderStrong }, fg: t.color.text }; }
+  if (variant === 'beak') { return { bubble: { padding: 10, borderRadius: t.radius.small, backgroundColor: t.raised, borderWidth: Math.max(1, t.border), borderColor: t.lineStrong }, fg: t.color.text }; }
   return { bubble: { padding: 10, borderRadius: t.radius.control, backgroundColor: t.color.text }, fg: t.color.surface };
 }
 
 /** A status badge's box, whether it shows its dot, and its text colour. */
 export function badgeLook(t: Theme, variant: BadgeVariant = 'default', c: ToneColors): { box: ViewStyle; dot: boolean; fg: string } {
-  if (variant === 'filled') { return { box: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: c.fg }, dot: false, fg: t.color.surface }; }
-  if (variant === 'outlined') { return { box: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: c.line }, dot: false, fg: c.fg }; }
+  if (variant === 'filled') { return { box: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: t.radius.small, backgroundColor: c.fg }, dot: false, fg: t.color.surface }; }
+  if (variant === 'outlined') { return { box: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: t.radius.small, borderWidth: Math.max(1, t.border), borderColor: c.line }, dot: false, fg: c.fg }; }
   if (variant === 'dot') { return { box: { paddingVertical: 2 }, dot: true, fg: t.color.text }; }
   return { box: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: c.bg }, dot: true, fg: c.fg };
 }
 
 /** A skeleton shape's fill and how much rounder its corners are. */
 export function skeletonLook(t: Theme, variant: SkeletonVariant = 'default') {
-  return variant === 'soft' ? { fill: t.color.surface2, round: 2 } : variant === 'pulse' ? { fill: t.color.surface3, round: 0.5 } : { fill: t.color.surface3, round: 1 };
+  return variant === 'soft' ? { fill: t.fill, round: 2 } : variant === 'pulse' ? { fill: t.track, round: 0.5 } : { fill: t.track, round: 1 };
 }
 
 /** An empty state's frame, whether it lays out in a row, and its icon disc size. */
 export function emptyLook(t: Theme, variant: EmptyVariant = 'default'): { box: ViewStyle; row: boolean; disc: number } {
   if (variant === 'illustrated') { return { box: { alignItems: 'center', gap: 10, padding: 32 }, row: false, disc: 96 }; }
   if (variant === 'compact') { return { box: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 }, row: true, disc: 36 }; }
-  if (variant === 'card') { return { box: { alignItems: 'center', gap: 8, padding: 24, borderWidth: 1.5, borderStyle: 'dashed', borderColor: t.color.borderStrong, borderRadius: t.radius.card }, row: false, disc: 56 }; }
+  if (variant === 'card') { return { box: { alignItems: 'center', gap: 8, padding: 24, borderWidth: Math.max(1.5, t.border), borderStyle: 'dashed', borderColor: t.lineStrong, borderRadius: t.radius.card }, row: false, disc: 56 }; }
   return { box: { alignItems: 'center', gap: 8, padding: 24 }, row: false, disc: 56 };
 }
 

@@ -127,7 +127,7 @@ export function SuccessCheck({ testID, label, size = 64, variant = 'default' }: 
     <View testID={testID} accessible accessibilityRole="summary" accessibilityLabel={label} style={{ alignItems: 'center', gap: 8 }}>
       <View style={variant === 'soft' ? { padding: size * 0.2, borderRadius: size, backgroundColor: t.color.successSoft } : undefined}>
       <Animated.View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: variant === 'filled' ? t.color.successText : t.color.success, transform: [{ scale: ring }],
-        ...(variant === 'filled' ? { shadowColor: '#0f172a', shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 4 } : {}) }}>
+        ...(variant === 'filled' ? t.elevation(3) : {}) }}>
         <View style={{ position: 'absolute', left: size * 0.28, top: size * 0.5, width: size * 0.2, height: 4, overflow: 'hidden', transform: [{ rotate: '45deg' }] }}>
           <Animated.View style={{ height: 4, borderRadius: 2, backgroundColor: '#fff', width: tick.interpolate({ inputRange: [0, 0.4, 1], outputRange: ['0%', '100%', '100%'] }) }} />
         </View>
@@ -385,7 +385,7 @@ export function RubberSegment({ testID, label, value, onChange, options, disable
   return (
     <View testID={testID} style={s.field} accessibilityRole="radiogroup" accessibilityLabel={label}>
       <Text style={s.label} importantForAccessibility="no">{label}</Text>
-      <View style={{ flexDirection: 'row', padding: 3, borderRadius: 999, backgroundColor: t.color.surface3 }}>
+      <View style={{ flexDirection: 'row', padding: 3, borderRadius: 999, backgroundColor: t.track, borderWidth: t.look === 'brutal' ? t.border : 0, borderColor: t.line }}>
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           <Animated.View style={{ position: 'absolute', top: 3, bottom: 3, width: `${100 / list.length}%`, borderRadius: 999, backgroundColor: t.color.surface,
             left: slide.interpolate({ inputRange: [0, list.length], outputRange: ['0%', '100%'] }),
@@ -460,7 +460,7 @@ export function BudgetGauge({ testID, label, value, max, currency, size = 180, v
     <View testID={testID} accessible accessibilityRole="progressbar" accessibilityLabel={`${label}, ${text}${share > 1 ? ', over the limit' : ''}`}
           accessibilityValue={{ min: 0, max, now: Math.min(value, max) }} style={{ alignItems: 'center', gap: 6 }}>
       {variant === 'ring' ? (
-        <DotRing share={share} size={size * 0.7} color={tone} track={t.color.surface3} dots={32}>
+        <DotRing share={share} size={size * 0.7} color={tone} track={t.track} dots={32}>
           <Text style={{ fontSize: 20, fontWeight: '700', color: t.color.text }}>{Math.round(Math.min(1, Math.max(0, share)) * 100)}%</Text>
         </DotRing>
       ) : (
@@ -547,7 +547,7 @@ export function PromptBar({ testID, label = 'Ask the assistant', value, onChange
   const send = () => { if (value.trim() && !busy) { onSubmit(value.trim()); } };
   return (
     <View testID={testID} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 4, minHeight: t.minTouch + 8, borderRadius: 999,
-      backgroundColor: t.color.surface, borderWidth: 1, borderColor: t.color.border }}>
+      backgroundColor: t.fill, borderWidth: t.border, borderColor: t.line }}>
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: 999, borderWidth: 2, borderColor: t.color.primary,
         opacity: busy || focused ? glow.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.35, 1, 0.35] }) : 0 }]} />
       <TextInput testID={testID ? `${testID}-input` : undefined} style={{ flex: 1, minHeight: t.minTouch, fontSize: 16, color: t.color.text, paddingVertical: 10 }} value={value}

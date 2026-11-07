@@ -1,0 +1,19 @@
+.bx-meters { gap: 14px; }
+.bx-meter { display: flex; flex-direction: column; gap: 6px; }
+.bx-meter-head { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--bx-text); }
+.bx-meter-text { color: var(--bx-muted); font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; }
+.bx-meter-text.is-over { color: var(--bx-danger-text); font-weight: 600; }
+.bx-meter-track { position: relative; height: 10px; border-radius: var(--bx-radius-pill); background: var(--bx-track); overflow: hidden; }
+.bx-meter-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: inherit; background: var(--bx-brand); transform-origin: left; animation: bx-grow-x var(--bx-dur-slow) var(--bx-ease-standard); }
+.bx-meter-fill.is-near { background: var(--bx-warning); }
+.bx-meter-fill.is-over { background: var(--bx-danger); }
+.bx-gauge { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; width: 200px; max-width: 100%; }
+.bx-gauge svg { width: 100%; height: auto; }
+.bx-gauge-track, .bx-gauge-fill { fill: none; stroke-width: 9; stroke-linecap: round; }
+.bx-gauge-track { stroke: var(--bx-track); }
+.bx-gauge-fill { stroke: var(--bx-brand); stroke-dasharray: 126; transition: stroke-dashoffset var(--bx-dur-slow) var(--bx-ease-standard); animation: bx-gauge-in 700ms var(--bx-ease-standard); }
+.bx-gauge.is-near .bx-gauge-fill { stroke: var(--bx-warning); }
+.bx-gauge.is-over .bx-gauge-fill { stroke: var(--bx-danger); }
+.bx-gauge-label { font-weight: 650; }
+.bx-gauge-text { font-size: 13px; color: var(--bx-muted); font-variant-numeric: tabular-nums; }
+@keyframes bx-gauge-in { from { stroke-dashoffset: 126; } }

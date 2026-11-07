@@ -98,8 +98,10 @@ public class ComponentRegistry {
     private final Map<String, Next> nexts = new LinkedHashMap<>();
     private final List<Pack> packs;
     private final Map<String, Entry> byId = new LinkedHashMap<>();
+    private final JsonNode variants;
 
     public ComponentRegistry(ObjectMapper json) {
+        this.variants = read(json, "variants.json");
         JsonNode catalogue = read(json, "catalogue.json");
         List<Category> cats = new ArrayList<>();
         for (JsonNode c : catalogue.path("categories")) {
@@ -227,6 +229,11 @@ public class ComponentRegistry {
 
     public Entry component(String id) {
         return byId.get(id);
+    }
+
+    /** variants.json as it is: every component's style variants, the packs each is built in, and its motion. */
+    public JsonNode variants() {
+        return variants;
     }
 
     public int size() {

@@ -34,7 +34,7 @@ define(['knockout'], function (ko) {
   }
 
   // The JET gallery's examples (the gates' jet-gallery.html, with its sample data): every component as the gates check it.
-  // examples() resolves to view(id), a fresh copy of that component's example (null when the gallery has none), and data.
+  // examples() resolves to view(id, variant), a fresh copy of that component's example (null when the gallery has none), and data.
   let examples_ = null;
   function examples() {
     if (examples_) { return examples_; }
@@ -45,7 +45,13 @@ define(['knockout'], function (ko) {
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const bodies = {};
       doc.querySelectorAll('section[data-component]').forEach((sec) => { bodies[sec.getAttribute('data-component')] = sec.querySelector('.gate-body'); });
-      return { data: make(ko), view: (id) => { const b = bodies[id]; if (!b) { return null; } const first = b.firstElementChild && b.firstElementChild.classList.contains('gate-row') ? b.firstElementChild.firstElementChild : b.firstElementChild; return first ? [document.importNode(first, true)] : null; } };
+      return { data: make(ko), view: (id, variant) => {
+        const b = bodies[id]; if (!b) { return null; }
+        // a variant (variants.json) is the element marked data-variant in the section; the default is its first instance
+        const first = variant && variant !== 'default' ? b.querySelector('[data-variant="' + CSS.escape(variant) + '"] > *')
+          : b.firstElementChild && b.firstElementChild.classList.contains('gate-row') ? b.firstElementChild.firstElementChild : b.firstElementChild;
+        return first ? [document.importNode(first, true)] : null;
+      } };
     }).catch(() => { examples_ = null; return { data: {}, view: () => null }; });
     return examples_;
   }
