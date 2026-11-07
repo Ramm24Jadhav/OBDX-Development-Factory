@@ -55,8 +55,8 @@ export abstract class Part {
   protected focusLater(selector: string): void {
     setTimeout(() => (this.host.nativeElement as HTMLElement).querySelector<HTMLElement>(selector)?.focus(), 0);
   }
-  /** The variant's class for a kind, with a leading space, or '' for none. */
-  protected vc(kind: string): string { return this.variant() ? ` bx-${kind}--${this.variant()}` : ''; }
+  /** The variant's class (bx-v-<id>) for a kind's variant, with a leading space, or '' for none and default. */
+  protected vc(_kind: string): string { const v = this.variant(); return v && v !== 'default' ? ` bx-v-${v}` : ''; }
 }
 
 /* ---------- SecondaryButton ---------- */

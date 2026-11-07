@@ -37,9 +37,9 @@ export function Tabs({ label, tabs, selection, onSelectionChange, testID, varian
   return (
     <View testID={testID} style={{ gap: 12 }}>
       <ScrollView horizontal={variant !== 'vertical'} showsHorizontalScrollIndicator={false} accessibilityRole="tablist" accessibilityLabel={label}
-                  contentContainerStyle={[{ padding: 4, gap: 4, borderRadius: t.radius.card, backgroundColor: t.color.surface3 }, variantStyle(t, 'tabs', variant)]}>
+                  contentContainerStyle={[{ padding: 4, gap: 4, borderRadius: t.radius.card, backgroundColor: t.track, borderWidth: t.look === 'brutal' || t.look === 'outline' ? t.border : 0, borderColor: t.lineStrong }, variantStyle(t, 'tabs', variant)]}>
         {at ? <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 4, bottom: 4, left, width, borderRadius: t.radius.control,
-          backgroundColor: t.color.surface }} /> : null}
+          backgroundColor: t.fill, ...t.elevation(1) }} /> : null}
         {tabs.map((x, i) => {
           const on = x.id === selection;
           return (
@@ -48,7 +48,7 @@ export function Tabs({ label, tabs, selection, onSelectionChange, testID, varian
                    disabled={x.disabled} onPress={() => onSelectionChange(x.id)}
                    onLayout={(e) => { places.current.set(x.id, { x: e.nativeEvent.layout.x, width: e.nativeEvent.layout.width }); measured((n) => n + 1); }}
                    style={{ minHeight: t.minTouch - 4, justifyContent: 'center', paddingHorizontal: 16, borderRadius: t.radius.control,
-                     backgroundColor: on && !at ? t.color.surface : 'transparent', opacity: x.disabled ? 0.5 : 1 }}>
+                     backgroundColor: on && !at ? t.fill : 'transparent', opacity: x.disabled ? 0.5 : 1 }}>
               <Text style={{ fontSize: 14, fontWeight: on ? '700' : '500', color: on ? t.color.primaryText : t.color.textBody }}>{x.label}</Text>
             </Press>
           );

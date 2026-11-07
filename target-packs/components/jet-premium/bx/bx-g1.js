@@ -38,8 +38,8 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
     var model = kind.model;
     // a kind with a style variant (variants/v2.json) takes variant and gives its view vcls(), the variant's class for its root
     if (kind.vkind) {
-      properties.variant = str();
-      model = function (context) { kind.model.call(this, context); this.vcls = ko.pureComputed(function () { return bx.vcls(kind.vkind, context.properties.variant); }); };
+      properties.variant = str('default');
+      model = function (context) { kind.model.call(this, context); this.vcls = ko.pureComputed(function () { return bx.variantClass(context.properties.variant); }); };
       model.prototype = kind.model.prototype;
     }
     Object.keys(defaults || {}).forEach(function (k) { properties[k] = copy(properties[k] || { type: 'any' }); properties[k].value = defaults[k]; });
@@ -288,7 +288,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
     var self = this;
     base(self, context, 'bx-sheet');
     var opener = null;
-    self.css = ko.pureComputed(function () { return 'bx-sheet is-' + (self.props.position || 'end') + bx.vcls('dialog', self.props.variant); });
+    self.css = ko.pureComputed(function () { return 'bx-sheet is-' + (self.props.position || 'end') + bx.variantClass(self.props.variant); });
     self.role = ko.pureComputed(function () { return self.props.variant === 'alert' ? 'alertdialog' : 'dialog'; });
     self.close = function () {
       if (!self.props.open) { return; }
@@ -320,7 +320,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
   function GridKind(context) {
     var self = this;
     base(self, context, 'bx-grid');
-    self.css = ko.pureComputed(function () { return 'bx-layout-grid is-cols-' + (self.props.columns || 'auto') + ' is-gap-' + (self.props.gap || 'md') + bx.vcls('grid', self.props.variant); });
+    self.css = ko.pureComputed(function () { return 'bx-layout-grid is-cols-' + (self.props.columns || 'auto') + ' is-gap-' + (self.props.gap || 'md') + bx.variantClass(self.props.variant); });
   }
   kinds.grid = { model: GridKind, vkind: 'grid', props: { columns: { type: 'any', value: 'auto' }, gap: str('md') }, view: '<div :class="[[css]]"><oj-bind-slot></oj-bind-slot></div>' };
 

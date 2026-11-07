@@ -61,7 +61,7 @@ export class DataTable {
   readonly testID = input('');
   /** The style variant (variants/v2.json); the component's own look when left out. */
   readonly variant = input('');
-  protected readonly vcls = computed(() => (this.variant() ? ` bx-table--${this.variant()}` : ''));
+  protected readonly vcls = computed(() => (this.variant() && this.variant() !== 'default' ? ` bx-v-${this.variant()}` : ''));
   readonly sorted = output<{ field: string; direction: 'ascending' | 'descending' }>();
   private readonly sort = signal<{ field: string; asc: boolean } | null>(null);
 

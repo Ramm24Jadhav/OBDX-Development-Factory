@@ -13,6 +13,11 @@ define(['knockout'], function (ko) {
     return (prefix || 'bx') + '-' + seq;
   }
 
+  /** The class of a style variant (variants.json): " bx-v-<id>", nothing for the default look; only plain ids pass. */
+  function variantClass(id) {
+    return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(id || '') && id !== 'default' ? ' bx-v-' + id : '';
+  }
+
   /** Options as [{value, label, disabled}], from strings, objects, or {value, label} lists. */
   function options(list) {
     return (list || []).map(function (o) {
@@ -178,16 +183,11 @@ define(['knockout'], function (ko) {
     vm.onBlur = function () { vm.focused(false); vm.check(true); return true; };
   }
 
-  /** A style variant's class (variants/v2.json): ' bx-<kind>--<variant>', or '' when none is set. */
-  function vcls(kind, variant) {
-    return variant ? ' bx-' + kind + '--' + variant : '';
-  }
-
   /** Dispatches a JET-style event (ojAction, ojClose ...) from an element. */
   function fire(element, name, detail) {
     element.dispatchEvent(new CustomEvent(name, { bubbles: true, detail: detail || {} }));
   }
 
-  return { nextId: nextId, options: options, fromData: fromData, validate: validate, customMessage: customMessage, format: format, parse: parse,
-    helpText: helpText, FIELD: FIELD, fieldView: fieldView, fieldState: fieldState, fire: fire, vcls: vcls, ko: ko };
+  return { nextId: nextId, variantClass: variantClass, options: options, fromData: fromData, validate: validate, customMessage: customMessage, format: format, parse: parse,
+    helpText: helpText, FIELD: FIELD, fieldView: fieldView, fieldState: fieldState, fire: fire, ko: ko };
 });

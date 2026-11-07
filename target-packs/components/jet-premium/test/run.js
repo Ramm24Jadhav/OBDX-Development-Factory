@@ -1046,17 +1046,22 @@ test('the skin has the motion tokens, the effects and a reduced-motion rule for 
   eq(toFrames, [], 'keyframes that end away from the element style');
 });
 
-/* ---------- wave V2: the containers' and navigation's style variants (variants/v2.json) ---------- */
-const V2 = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'variants', 'v2.json'), 'utf8'));
+/* ---------- wave V2: the containers' and navigation's style variants (variants.json) ---------- */
+const readJson = (p) => JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', p), 'utf8'));
+const jetNames = {};
+readJson('catalogue.json').categories.forEach((cat) => cat.components.forEach((x) => { jetNames[x.id] = (x.names || {})['jet-premium']; }));
+const V2 = { components: Object.keys(readJson('variants.json').components).map((id) => Object.assign({ id: id }, readJson('variants.json').components[id]))
+  .filter((c) => c.wave === 'V2').map((c) => ({ id: c.id, kind: c.kind, variants: c.variants.filter((v) => v.id !== 'default' && v.built.indexOf('jet-premium') >= 0),
+    packs: c.variants.some((v) => v.built.indexOf('jet-premium') >= 0) ? { 'jet-premium': { name: jetNames[c.id] } } : {} })) };
 /** The classes a view model gives its root: vcls() from the kit, or the css / wrapCss computed that carries the variant. */
 const rootClasses = (vm) => ['vcls', 'css', 'wrapCss'].map((k) => (typeof vm[k] === 'function' ? vm[k]() : '')).join(' ');
 V2.components.filter((c) => c.packs['jet-premium']).forEach((c) => {
   const name = c.packs['jet-premium'].name;
-  test(name + ': every V2 variant gives its root bx-' + c.kind + '--<variant>, and none gives none', () => {
+  test(name + ': every V2 variant gives its root bx-v-<variant>, and none gives none', () => {
     const view = registry[name].view;
     eq(registry[name].metadata.properties.variant && registry[name].metadata.properties.variant.type, 'string', 'variant property');
-    eq(c.variants.filter((v) => rootClasses(create(name, { variant: v.id }).vm).split(/\s+/).indexOf('bx-' + c.kind + '--' + v.id) < 0).map((v) => v.id), [], 'variants without their class');
-    eq(rootClasses(create(name).vm).indexOf('--') < 0, true, 'no variant class by default');
+    eq(c.variants.filter((v) => rootClasses(create(name, { variant: v.id }).vm).split(/\s+/).indexOf('bx-v-' + v.id) < 0).map((v) => v.id), [], 'variants without their class');
+    eq(rootClasses(create(name).vm).indexOf('bx-v-') < 0, true, 'no variant class by default');
     if (!/vcls\(\)|\[\[css\]\]|\[\[wrapCss\]\]/.test(view)) { throw new Error('the view does not bind the variant class'); }
   });
 });
@@ -1075,7 +1080,7 @@ test('V2 structural variants: collapsed crumbs, compact pages, alert dialogs, ve
   eq(create('bx-data-grid', { data: [{ id: 1, payee: 'Asha' }], columns: [{ field: 'payee', headerText: 'Payee' }] }).vm.rows()[0].cells[0].label, null, 'no label by default');
   eq(create('bx-loan-schedule', { rows: [{ date: '1 Dec', amount: '200' }], variant: 'cards' }).vm.rows()[0].cells[0].label, 'Due date', 'schedule cell label');
   const dock = registry['bx-dock-nav'].view;
-  eq([rootClasses(create('bx-dock-nav', { variant: 'dock' }).vm).indexOf('bx-nav--dock') >= 0, dock.indexOf("<div :class=\"[[\'bx-fx-dock\' + vcls()]]\">") === 0, dock.split('vcls()').length],
+  eq([rootClasses(create('bx-dock-nav', { variant: 'dock' }).vm).indexOf('bx-v-dock') >= 0, dock.indexOf("<div :class=\"[[\'bx-fx-dock\' + vcls()]]\">") === 0, dock.split('vcls()').length],
     [true, true, 2], 'dock-nav: the variant on the dock only');
 });
 

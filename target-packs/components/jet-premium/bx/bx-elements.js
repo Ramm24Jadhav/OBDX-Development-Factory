@@ -91,7 +91,7 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
     };
     self.backdrop = function () { if (self.props.modality !== 'modal' && self.props.cancelBehavior !== 'none') { self.close(); } };
     self.cancel = function () { self.close(); };
-    self.css = ko.pureComputed(function () { return 'bx-dialog' + bx.vcls('dialog', self.props.variant); });
+    self.css = ko.pureComputed(function () { return 'bx-dialog' + bx.variantClass(self.props.variant); });
     self.role = ko.pureComputed(function () { return self.props.variant === 'alert' ? 'alertdialog' : 'dialog'; });
   }
   Composite.register('bx-dialog', {
@@ -152,7 +152,7 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
     var self = this;
     self.props = context.properties;
     self.element = context.element;
-    self.css = ko.pureComputed(function () { return 'bx-card' + bx.vcls('card', self.props.variant) + (self.props.interactive ? ' is-interactive' : '') + (self.props.selected ? ' is-selected' : ''); });
+    self.css = ko.pureComputed(function () { return 'bx-card' + bx.variantClass(self.props.variant) + (self.props.interactive ? ' is-interactive' : '') + (self.props.selected ? ' is-selected' : ''); });
     self.press = function () { if (self.props.interactive) { bx.fire(self.element, 'ojAction', {}); } };
     self.key = function (vm, event) { if (self.props.interactive && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); self.press(); return false; } return true; };
   }
@@ -173,7 +173,7 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
     self.element = context.element;
     self.id = bx.nextId('bx-tabs');
     self.loaded = ko.observableArray([]);
-    self.vcls = ko.pureComputed(function () { return bx.vcls('tabs', self.props.variant); });
+    self.vcls = ko.pureComputed(function () { return bx.variantClass(self.props.variant); });
     var load = function () {
       if (self.props.data) {
         bx.fromData(self.props.data, self.props.itemText || 'label', 'id').then(function (l) { self.loaded(l); });
@@ -225,7 +225,7 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
     self.element = context.element;
     self.id = bx.nextId('bx-grid');
     self.rowsData = ko.observableArray([]);
-    self.wrapCss = ko.pureComputed(function () { return 'bx-grid-wrap' + bx.vcls('table', self.props.variant); });
+    self.wrapCss = ko.pureComputed(function () { return 'bx-grid-wrap' + bx.variantClass(self.props.variant); });
     self.sortField = ko.observable(null);
     self.sortAsc = ko.observable(true);
     var load = function () {

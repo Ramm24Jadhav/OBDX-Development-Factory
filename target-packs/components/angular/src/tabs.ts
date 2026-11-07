@@ -32,7 +32,7 @@ export class Tabs {
   readonly testID = input('');
   /** The style variant (variants/v2.json); the component's own look when left out. */
   readonly variant = input('');
-  protected readonly vcls = computed(() => (this.variant() ? ` bx-tabs--${this.variant()}` : ''));
+  protected readonly vcls = computed(() => (this.variant() && this.variant() !== 'default' ? ` bx-v-${this.variant()}` : ''));
   readonly id = nextId('bx-tabs');
   private readonly host = inject(ElementRef<HTMLElement>);
   protected readonly rows = computed(() => this.tabs().map((t) => {

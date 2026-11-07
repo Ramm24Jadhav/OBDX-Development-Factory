@@ -28,7 +28,7 @@ export class Card {
   readonly testID = input('');
   /** The style variant (variants/v2.json); the component's own look when left out. */
   readonly variant = input('');
-  protected readonly vcls = computed(() => (this.variant() ? ` bx-card--${this.variant()}` : ''));
+  protected readonly vcls = computed(() => (this.variant() && this.variant() !== 'default' ? ` bx-v-${this.variant()}` : ''));
   readonly action = output<void>();
   protected readonly css = computed(() => 'bx-card' + this.vcls() + (this.interactive() ? ' is-interactive' : '') + (this.selected() ? ' is-selected' : ''));
 

@@ -285,7 +285,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
   function FlipKind(context) {
     var self = this;
     base(self, context, 'bx-flip');
-    self.css = ko.pureComputed(function () { return 'bx-flip-card' + bx.vcls('card', self.props.variant) + (self.props.flipped ? ' is-flipped' : ''); });
+    self.css = ko.pureComputed(function () { return 'bx-flip-card' + bx.variantClass(self.props.variant) + (self.props.flipped ? ' is-flipped' : ''); });
     self.frontHidden = ko.pureComputed(function () { return self.props.flipped ? 'true' : null; });
     self.backHidden = ko.pureComputed(function () { return self.props.flipped ? null : 'true'; });
     self.flip = function () { self.props.flipped = !self.props.flipped; k.focusLater(self, self.props.flipped ? '.bx-flip-back .bx-flip-button' : '.bx-flip-front .bx-flip-button'); };
@@ -396,7 +396,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
   function FolderKind(context) {
     var self = this;
     base(self, context, 'bx-folder');
-    self.css = ko.pureComputed(function () { return 'bx-folder' + bx.vcls('list', self.props.variant) + (self.props.open ? ' is-open' : ''); });
+    self.css = ko.pureComputed(function () { return 'bx-folder' + bx.variantClass(self.props.variant) + (self.props.open ? ' is-open' : ''); });
     self.expanded = ko.pureComputed(function () { return self.props.open ? 'true' : 'false'; });
     self.count = ko.pureComputed(function () { var n = (self.props.items || []).length; return n + (n === 1 ? ' document' : ' documents'); });
     self.docs = ko.pureComputed(function () {

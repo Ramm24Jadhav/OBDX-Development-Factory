@@ -10,9 +10,15 @@ import { violations } from './a11y';
 
 afterEach(() => { document.body.innerHTML = ''; TestBed.resetTestingModule(); });
 
-/* Wave V2 (variants/v2.json): every variant of every container and navigation component gives its root bx-<kind>--<id>. */
+/* Wave V2 (variants.json): every variant of every container and navigation component gives its root bx-v-<id>. */
 interface Spec { id: string; kind: string; variants: Array<{ id: string }>; packs: Record<string, { name: string }> }
-const spec: { components: Spec[] } = JSON.parse(readFileSync(resolve(process.cwd(), '../variants/v2.json'), 'utf8'));
+const read = (p: string) => JSON.parse(readFileSync(resolve(process.cwd(), '..', p), 'utf8'));
+const names = new Map<string, Record<string, string>>();
+for (const cat of read('catalogue.json').categories) { for (const x of cat.components) { names.set(x.id, x.names ?? {}); } }
+const spec: { components: Spec[] } = { components: Object.entries(read('variants.json').components as Record<string, { kind: string; wave: string; variants: Array<{ id: string; built: string[] }> }>)
+  .filter(([, c]) => c.wave === 'V2')
+  .map(([id, c]) => ({ id, kind: c.kind, variants: c.variants.filter((v) => v.id !== 'default'),
+    packs: Object.fromEntries(Object.entries(names.get(id) ?? {}).filter(([p]) => c.variants.some((v) => v.built.includes(p))).map(([p, name]) => [p, { name }])) })) };
 
 /** The component class for a selector, from the pack's exports. */
 const bySelector = new Map<string, Type<unknown>>();
@@ -62,12 +68,12 @@ describe('variants (V2): every component and variant in the Angular pack', () =>
       expect(type, c.packs.angular.name).toBeTruthy();
       for (const v of c.variants) {
         const { el, fixture } = await mount(type!, { ...sampleFor(c), variant: v.id });
-        expect(el.querySelector(`.bx-${c.kind}--${v.id}`), `${c.id} ${v.id}`).not.toBeNull();
+        expect(el.querySelector(`.bx-v-${v.id}`), `${c.id} ${v.id}`).not.toBeNull();
         fixture.destroy();
         document.body.innerHTML = '';
       }
       const { el } = await mount(type!, sampleFor(c));
-      expect(el.querySelector(`[class*="bx-${c.kind}--"]`), 'no variant class by default').toBeNull();
+      expect(el.querySelector('[class*="bx-v-"]'), 'no variant class by default').toBeNull();
       // a lone bx-tabs points at panels the screen draws, and a grid is only a layout
       if (c.id !== 'tabs' && c.kind !== 'grid') { expect(await violations(el)).toEqual([]); }
     });
@@ -108,12 +114,12 @@ describe('variants (V2): structural variants keep the behaviour', () => {
   });
   it('the dock carries the nav variant; pill nav and staggered menu pass theirs on', async () => {
     let m = await mount(P.DockNav, { items: quick.items, variant: 'dock' });
-    expect(m.el.querySelector('.bx-fx-dock.bx-nav--dock')).not.toBeNull();
+    expect(m.el.querySelector('.bx-fx-dock.bx-v-dock')).not.toBeNull();
     m.fixture.destroy();
     m = await mount(P.PillNav, { items: ['Accounts'], variant: 'pill' });
-    expect(m.el.querySelector('.bx-nav.bx-nav--pill')).not.toBeNull();
+    expect(m.el.querySelector('.bx-nav.bx-v-pill')).not.toBeNull();
     m.fixture.destroy();
     m = await mount(P.StaggeredMenu, { items: ['Download'], variant: 'glass' });
-    expect(m.el.querySelector('.bx-menu.bx-menu--glass')).not.toBeNull();
+    expect(m.el.querySelector('.bx-menu.bx-v-glass')).not.toBeNull();
   });
 });

@@ -1,0 +1,14 @@
+.bx-card-stack { display: flex; flex-direction: column; gap: 10px; }
+.bx-deck { position: relative; display: grid; padding-bottom: 18px; }
+.bx-deck-card { grid-area: 1 / 1; transition: transform var(--bx-dur-slow) var(--bx-ease-spring), opacity var(--bx-dur-slow) var(--bx-ease-standard); }
+.bx-deck-card.is-depth-0 { z-index: 4; }
+.bx-deck-card.is-depth-1 { z-index: 3; transform: translateY(8px) scale(0.96); opacity: 0.8; }
+.bx-deck-card.is-depth-2 { z-index: 2; transform: translateY(16px) scale(0.92); opacity: 0.55; }
+.bx-deck-card.is-depth-3 { z-index: 1; transform: translateY(16px) scale(0.92); opacity: 0; }
+.bx-deck-controls { display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 13px; color: var(--bx-muted); }
+.bx-scroll-stack { display: flex; flex-direction: column; gap: 16px; margin: 0; padding: 0; list-style: none; }
+.bx-scroll-stack-card { position: sticky; top: 16px; box-shadow: var(--bx-shadow-3); }
+.bx-scroll-stack-card.is-n-1 { top: 28px; }
+.bx-scroll-stack-card.is-n-2 { top: 40px; }
+.bx-scroll-stack-card.is-n-3 { top: 52px; }
+.bx-scroll-stack-card.is-n-4 { top: 64px; }

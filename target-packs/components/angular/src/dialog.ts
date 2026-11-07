@@ -43,7 +43,7 @@ export class Dialog {
   readonly testID = input('');
   /** The style variant (variants/v2.json); the component's own look when left out. */
   readonly variant = input('');
-  protected readonly vcls = computed(() => (this.variant() ? ` bx-dialog--${this.variant()}` : ''));
+  protected readonly vcls = computed(() => (this.variant() && this.variant() !== 'default' ? ` bx-v-${this.variant()}` : ''));
   readonly id = nextId('bx-dialog');
   private opener: HTMLElement | null = null;
   private readonly host = inject(ElementRef<HTMLElement>);

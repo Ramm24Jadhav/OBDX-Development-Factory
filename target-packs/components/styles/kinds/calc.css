@@ -1,0 +1,5 @@
+.bx-calc-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0 12px; }
+.bx-calc-result { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: var(--bx-radius); background: color-mix(in srgb, var(--bx-brand) 8%, var(--bx-surface)); }
+.bx-calc-title { font-size: 13px; color: var(--bx-text-body); font-weight: 600; }
+.bx-calc-main { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; animation: bx-roll-in var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-calc-line { font-size: 13px; color: var(--bx-text-body); }

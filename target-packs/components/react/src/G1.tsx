@@ -483,7 +483,7 @@ export function Pagination({ testID, label = 'Pages', page, pageCount, onPageCha
   const prev = <button type="button" className="bx-page" aria-label="Previous page" disabled={page <= 1} onClick={() => go(page - 1)}>‹</button>;
   const next = <button type="button" className="bx-page" aria-label="Next page" disabled={page >= count} onClick={() => go(page + 1)}>›</button>;
   if (variant === 'compact') {
-    return <nav className="bx-pages bx-pages--compact" aria-label={label} data-testid={testID}>{prev}<span className="bx-page-status">Page {page} of {count}</span>{next}</nav>;
+    return <nav className="bx-pages bx-v-compact" aria-label={label} data-testid={testID}>{prev}<span className="bx-page-status">Page {page} of {count}</span>{next}</nav>;
   }
   return (
     <nav className={'bx-pages' + vc('pages', variant)} aria-label={label} data-testid={testID}>

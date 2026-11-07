@@ -8,11 +8,17 @@ import * as P from '../src';
 import { VARIANTS, VariantKind, makeTheme, variantStyle } from '../src';
 import { accessibilityProblems } from './a11y';
 
-/* Wave V2 (variants/v2.json): every variant of every container and navigation component reaches the screen as its style. */
+/* Wave V2 (variants.json): every variant of every container and navigation component reaches the screen as its style. */
 interface Spec { id: string; kind: VariantKind; variants: Array<{ id: string }>; packs: Record<string, { name: string }> }
 // the first render loads the whole pack, which can take longer than jest's 5 s on a slow machine
 jest.setTimeout(30000);
-const spec: { components: Spec[] } = JSON.parse(readFileSync(resolve(__dirname, '../../variants/v2.json'), 'utf8'));
+const read = (p: string) => JSON.parse(readFileSync(resolve(__dirname, '..', '..', p), 'utf8'));
+const names = new Map<string, Record<string, string>>();
+for (const cat of read('catalogue.json').categories) { for (const x of cat.components) { names.set(x.id, x.names ?? {}); } }
+const spec: { components: Spec[] } = { components: Object.entries(read('variants.json').components as Record<string, { kind: string; wave: string; variants: Array<{ id: string; built: string[] }> }>)
+  .filter(([, c]) => c.wave === 'V2')
+  .map(([id, c]) => ({ id, kind: c.kind as VariantKind, variants: c.variants.filter((v) => v.id !== 'default'),
+    packs: Object.fromEntries(Object.entries(names.get(id) ?? {}).filter(([p]) => c.variants.some((v) => v.built.includes(p))).map(([p, name]) => [p, { name }])) })) };
 
 const noop = () => undefined;
 const tiles = { tiles: [{ id: 's', title: 'Savings', value: '12,400.00' }, { id: 'c', title: 'Current', value: '3,210.50' }] };

@@ -22,10 +22,10 @@ export interface CardProps {
 export function Card({ variant, heading, subheading, children, actions, onAction, selected, testID }: CardProps) {
   const t = useTheme();
   const box = {
-    gap: 12, padding: 18, borderRadius: t.radius.card, backgroundColor: t.glass ? t.glass.fill : t.color.surface, borderWidth: selected ? 1.5 : t.border,
-    borderColor: selected ? t.color.primary : t.look === 'brutal' ? t.color.text : t.glass ? t.glass.rim : t.color.border,
+    gap: 12, padding: t.padCard, borderRadius: t.radius.card, backgroundColor: t.glass ? t.glass.fill : t.card, borderWidth: selected ? 1.5 : t.border,
+    borderColor: selected ? t.color.primary : t.glass ? t.glass.rim : variant === 'outlined' ? t.color.borderStrong : t.line,
     ...(t.glass ? { overflow: 'hidden' as const } : {}),
-    ...(t.shadow ? { shadowColor: '#0f172a', shadowOpacity: 0.08, shadowRadius: 14, shadowOffset: { width: 0, height: 4 }, elevation: 2 } : {}),
+    ...(variant === 'outlined' ? {} : t.elevation(2)),
   };
   const body = (
     <>

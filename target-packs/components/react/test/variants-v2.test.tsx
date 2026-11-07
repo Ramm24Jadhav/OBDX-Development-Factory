@@ -9,9 +9,15 @@ import { violations } from './a11y';
 
 afterEach(cleanup);
 
-/* Wave V2 (variants/v2.json): every variant of every container and navigation component renders its bx-<kind>--<id> class, the Material ones with MUI. */
-interface Spec { id: string; kind: string; variants: Array<{ id: string; react?: string }>; packs: Record<string, { name: string; built: string[]; mui?: string[] }> }
-const spec: { components: Spec[] } = JSON.parse(readFileSync(resolve(process.cwd(), '../variants/v2.json'), 'utf8'));
+/* Wave V2 (variants.json): every variant of every container and navigation component renders its bx-v-<id> class, the Material ones with MUI. */
+interface Spec { id: string; kind: string; variants: Array<{ id: string }>; packs: Record<string, { name: string }> }
+const read = (p: string) => JSON.parse(readFileSync(resolve(process.cwd(), '..', p), 'utf8'));
+const names = new Map<string, Record<string, string>>();
+for (const cat of read('catalogue.json').categories) { for (const x of cat.components) { names.set(x.id, x.names ?? {}); } }
+const spec: { components: Spec[] } = { components: Object.entries(read('variants.json').components as Record<string, { kind: string; wave: string; variants: Array<{ id: string; built: string[] }> }>)
+  .filter(([, c]) => c.wave === 'V2')
+  .map(([id, c]) => ({ id, kind: c.kind, variants: c.variants.filter((v) => v.id !== 'default'),
+    packs: Object.fromEntries(Object.entries(names.get(id) ?? {}).filter(([p]) => c.variants.some((v) => v.built.includes(p))).map(([p, name]) => [p, { name }])) })) };
 
 const tiles = { heading: 'Accounts', items: [{ label: 'Savings', value: '1,000.00 USD' }, { label: 'Current', value: '250.00 USD' }] };
 const thing = { heading: 'Savings', text: 'Everyday account', actionLabel: 'View details' };
@@ -50,14 +56,15 @@ describe('variants (V2): every component and variant in the React pack', () => {
   for (const c of react) {
     describe(c.id, () => {
       for (const v of c.variants) {
-        const mui = (c.packs.react.mui ?? []).includes(v.id);
+        // the components whose markup has no MUI part draw their kind's Material variants with bx.css
+        const mui = P.MATERIAL[c.kind]?.includes(v.id) && !['sheet', 'dock-nav', 'card-nav'].includes(c.id);
         it(`${v.id}${mui ? ' (MUI)' : ''}`, async () => {
           const Component = lib[c.packs.react.name];
           expect(Component, c.packs.react.name).toBeTypeOf('function');
           render(<Component {...sampleFor(c)} variant={v.id} /> as ReactElement);
           if (c.kind === 'menu') { fireEvent.click(document.querySelector('.bx-menu-button')!); }
           if (c.id === 'document-folder') { fireEvent.click(document.querySelector('.bx-folder-tab')!); }
-          expect(document.querySelector(`.bx-${c.kind}--${v.id}`), `.bx-${c.kind}--${v.id}`).not.toBeNull();
+          expect(document.querySelector(`.bx-v-${v.id}`), `.bx-v-${v.id}`).not.toBeNull();
           if (mui) {
             expect(document.querySelector('[class*="Mui"]'), 'a MUI part').not.toBeNull();
             // one axe run per kind and Material variant (the plain variants change classes only)

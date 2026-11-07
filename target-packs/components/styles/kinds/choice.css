@@ -1,0 +1,22 @@
+.bx-choices { display: flex; flex-direction: column; gap: 8px; }
+.bx-choices.is-row { flex-direction: row; flex-wrap: wrap; }
+.bx-choice { position: relative; display: flex; align-items: center; gap: 10px; min-height: var(--bx-height); padding: 0 var(--bx-pad); border: var(--bx-bw) solid var(--bx-border-strong); border-radius: var(--bx-radius-control);
+  background: var(--bx-fill); box-shadow: var(--bx-shadow-1); cursor: pointer; transition: border-color var(--bx-dur) var(--bx-ease), background var(--bx-dur) var(--bx-ease); }
+.bx-choice:hover { border-color: color-mix(in srgb, var(--bx-brand) 45%, var(--bx-border-strong)); }
+.bx-choice.is-on { border-color: var(--bx-brand); background: color-mix(in srgb, var(--bx-brand) 7%, var(--bx-surface)); }
+.bx-choice.is-disabled { opacity: 0.55; cursor: not-allowed; }
+.bx-choice-input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.bx-choice-mark { width: 18px; height: 18px; flex: none; border: calc(var(--bx-bw) * 1.5) solid var(--bx-border-strong); border-radius: var(--bx-radius-sm); background: var(--bx-surface); transition: all var(--bx-dur) var(--bx-ease); }
+.bx-choice-input[type="radio"] + .bx-choice-mark { border-radius: 50%; }
+.bx-choice.is-on .bx-choice-mark { border-color: var(--bx-brand); background: var(--bx-brand); box-shadow: inset 0 0 0 3px var(--bx-surface); }
+.bx-choice-input:focus-visible + .bx-choice-mark { box-shadow: var(--bx-focus); }
+.bx-choice-label { font-size: 14.5px; color: var(--bx-text); }
+.bx-motion-hover-lift .bx-choice:not(.is-disabled):hover { transform: translateY(-1px); }
+.bx-motion-hover-glow .bx-choice:not(.is-disabled):hover { box-shadow: 0 0 0 4px color-mix(in srgb, var(--bx-brand) 14%, transparent); }
+.bx-motion-click-press .bx-choice:not(.is-disabled):active { transform: scale(0.96); }
+.bx-motion-click-bounce .bx-choice:not(.is-disabled):active { animation: bx-bounce 300ms var(--bx-ease-spring); }
+/* Change: a choice's mark and a chip pop, the switch knob springs, the chosen tab settles, new rows and files settle */
+.bx-choice.is-on .bx-choice-mark { animation: bx-pop var(--bx-dur-slow) var(--bx-ease-spring); }
+.bx-choice-text { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; }
+.bx-choice-meta { font-size: 12.5px; color: var(--bx-muted); }
+.bx-fx-jelly .bx-choice.is-on .bx-choice-mark { animation: bx-jelly 560ms var(--bx-ease-standard); }
