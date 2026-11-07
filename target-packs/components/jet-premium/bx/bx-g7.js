@@ -37,6 +37,13 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
   };
   /** A kind with its view inside a wrapper of an effect class. */
   var wrap = function (kind, css) { var w = k.copy(kind); w.view = '<div class="' + css + '">' + kind.view + '</div>'; return w; };
+  /** A wrapped kind whose variant (of another kind, vkind) goes on the wrapper instead of the inner root. */
+  var wrapAs = function (kind, css, vkind) {
+    var w = k.copy(kind);
+    w.vkind = vkind;
+    w.view = '<div :class="[[\'' + css + '\' + vcls()]]">' + kind.view.split(' + vcls()').join('') + '</div>';
+    return w;
+  };
   /** Sets CSS variables from where the pointer is over the element (0 to 1 across, 0 to 1 down). */
   var pointer = function (event, names) {
     var el = event.currentTarget;
@@ -248,8 +255,8 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     base(self, context, 'bx-alist');
     self.rows = ko.pureComputed(function () { return list(self.props.items).map(function (o, i) { return { title: o.title !== undefined ? String(o.title) : o.label, meta: o.meta || '', css: 'bx-row bx-alist-item ' + d(i) }; }); });
   }
-  kinds.alist = { model: StaggerListKind, props: { label: str(), items: arr() },
-    view: '<ul class="bx-rows bx-animated-list" :aria-label="[[$properties.label || null]]">' + each('rows', 'r', '<li :class="[[r.data.css]]"><span class="bx-row-main"><strong>' + txt('r.data.title') + '</strong>'
+  kinds.alist = { model: StaggerListKind, vkind: 'list', props: { label: str(), items: arr() },
+    view: '<ul :class="[[\'bx-rows bx-animated-list\' + vcls()]]" :aria-label="[[$properties.label || null]]">' + each('rows', 'r', '<li :class="[[r.data.css]]"><span class="bx-row-main"><strong>' + txt('r.data.title') + '</strong>'
       + iff('r.data.meta', '<span class="bx-row-meta">' + txt('r.data.meta') + '</span>') + '</span></li>') + '</ul>' };
 
   function PointerCardKind(context) {
@@ -267,8 +274,8 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     self.leave = function (event) { var s = event.currentTarget && event.currentTarget.style; if (s) { s.setProperty('--bx-rx', '0deg'); s.setProperty('--bx-ry', '0deg'); } return true; };
   }
   var pointerCard = function (css) {
-    return { model: PointerCardKind, props: { heading: str(), text: str() },
-      view: '<article class="bx-card ' + css + '" :aria-labelledby="[[id]]" on-pointermove="[[move]]" on-pointerleave="[[leave]]"><h3 class="bx-card-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>'
+    return { model: PointerCardKind, vkind: 'card', props: { heading: str(), text: str() },
+      view: '<article :class="[[\'bx-card ' + css + '\' + vcls()]]" :aria-labelledby="[[id]]" on-pointermove="[[move]]" on-pointerleave="[[leave]]"><h3 class="bx-card-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>'
         + iff('$properties.text', '<p class="bx-thing-text">' + txt('$properties.text') + '</p>') + '<oj-bind-slot></oj-bind-slot></article>' };
   };
   kinds.spotlight = pointerCard('bx-spotlight-card');
@@ -278,12 +285,12 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
   function FlipKind(context) {
     var self = this;
     base(self, context, 'bx-flip');
-    self.css = ko.pureComputed(function () { return 'bx-flip-card' + (self.props.flipped ? ' is-flipped' : ''); });
+    self.css = ko.pureComputed(function () { return 'bx-flip-card' + bx.vcls('card', self.props.variant) + (self.props.flipped ? ' is-flipped' : ''); });
     self.frontHidden = ko.pureComputed(function () { return self.props.flipped ? 'true' : null; });
     self.backHidden = ko.pureComputed(function () { return self.props.flipped ? null : 'true'; });
     self.flip = function () { self.props.flipped = !self.props.flipped; k.focusLater(self, self.props.flipped ? '.bx-flip-back .bx-flip-button' : '.bx-flip-front .bx-flip-button'); };
   }
-  kinds.flip = { model: FlipKind, props: { heading: str(), front: str(), back: str(), flipped: { type: 'boolean', value: false, writeback: true }, backLabel: str('Show details'), frontLabel: str('Back') },
+  kinds.flip = { model: FlipKind, vkind: 'card', props: { heading: str(), front: str(), back: str(), flipped: { type: 'boolean', value: false, writeback: true }, backLabel: str('Show details'), frontLabel: str('Back') },
     view: '<div :class="[[css]]"><div class="bx-flip-inner"><section class="bx-card bx-flip-face bx-flip-front" :aria-hidden="[[frontHidden]]" :aria-labelledby="[[id]]"><h3 class="bx-card-title" :id="[[id]]">'
       + txt('$properties.heading') + '</h3><p class="bx-thing-text">' + txt('$properties.front') + '</p><button type="button" class="bx-thing-action bx-flip-button" :tabindex="[[$properties.flipped ? \'-1\' : null]]"'
       + ' on-click="[[flip]]">' + txt('$properties.backLabel') + '</button></section><section class="bx-card bx-flip-face bx-flip-back" :aria-hidden="[[backHidden]]" :aria-label="[[$properties.heading]]">'
@@ -305,8 +312,8 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     self.next = function () { if (n()) { self.props.index = ((self.props.index || 0) + 1) % n(); } };
     self.prev = function () { if (n()) { self.props.index = ((self.props.index || 0) - 1 + n()) % n(); } };
   }
-  kinds.deck = { model: DeckKind, props: { label: str('Cards'), items: arr(), index: { type: 'number', value: 0, writeback: true } },
-    view: '<section class="bx-card-stack" :aria-label="[[$properties.label]]"><div class="bx-deck">' + each('cards', 'c', '<article :class="[[c.data.css]]" :aria-hidden="[[c.data.hidden]]">'
+  kinds.deck = { model: DeckKind, vkind: 'cards', props: { label: str('Cards'), items: arr(), index: { type: 'number', value: 0, writeback: true } },
+    view: '<section :class="[[\'bx-card-stack\' + vcls()]]" :aria-label="[[$properties.label]]"><div class="bx-deck">' + each('cards', 'c', '<article :class="[[c.data.css]]" :aria-hidden="[[c.data.hidden]]">'
       + '<h3 class="bx-card-title">' + txt('c.data.title') + '</h3><p class="bx-thing-text">' + txt('c.data.text') + '</p></article>') + '</div>'
       + '<div class="bx-deck-controls"><button type="button" class="bx-page" aria-label="Previous card" on-click="[[prev]]">‹</button><span role="status">' + txt('where') + '</span>'
       + '<button type="button" class="bx-page" aria-label="Next card" on-click="[[next]]">›</button></div></section>' };
@@ -323,8 +330,8 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
   }
   var bentoBody = '<span class="bx-tile-label">' + txt('t.data.title') + '</span>' + iff('t.data.value', '<span class="bx-tile-value">' + txt('t.data.value') + '</span>')
     + iff('t.data.text', '<span class="bx-tile-meta">' + txt('t.data.text') + '</span>');
-  kinds.bento = { model: BentoKind, events: k.ACTION, props: { label: str(), items: arr(), interactive: bool() },
-    view: '<ul class="bx-bento" :aria-label="[[$properties.label || null]]">' + each('tiles', 't', '<li :class="[[t.data.css]]">' + iff('$properties.interactive', '<button type="button" class="bx-bento-button" on-click="[[t.data.open]]">'
+  kinds.bento = { model: BentoKind, events: k.ACTION, vkind: 'tiles', props: { label: str(), items: arr(), interactive: bool() },
+    view: '<ul :class="[[\'bx-bento\' + vcls()]]" :aria-label="[[$properties.label || null]]">' + each('tiles', 't', '<li :class="[[t.data.css]]">' + iff('$properties.interactive', '<button type="button" class="bx-bento-button" on-click="[[t.data.open]]">'
       + bentoBody + '</button>') + iff('!$properties.interactive', '<div class="bx-bento-body">' + bentoBody + '</div>') + '</li>') + '</ul>' };
 
   function CarouselKind(context) {
@@ -382,14 +389,14 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
       return list(self.props.items).map(function (o, i) { return { title: o.title !== undefined ? String(o.title) : o.label, text: o.text || '', css: 'bx-card-nav-item ' + d(i), go: function () { bx.fire(self.element, 'ojAction', { value: o.id }); } }; });
     });
   }
-  kinds.cardnav = { model: CardNavKind, events: k.ACTION, props: { label: str('Explore'), items: arr() },
-    view: '<nav class="bx-card-nav" :aria-label="[[$properties.label]]"><ul>' + each('items', 'c', '<li :class="[[c.data.css]]"><button type="button" class="bx-card-nav-button" on-click="[[c.data.go]]">'
+  kinds.cardnav = { model: CardNavKind, events: k.ACTION, vkind: 'nav', props: { label: str('Explore'), items: arr() },
+    view: '<nav :class="[[\'bx-card-nav\' + vcls()]]" :aria-label="[[$properties.label]]"><ul>' + each('items', 'c', '<li :class="[[c.data.css]]"><button type="button" class="bx-card-nav-button" on-click="[[c.data.go]]">'
       + '<strong>' + txt('c.data.title') + '</strong>' + iff('c.data.text', '<span>' + txt('c.data.text') + '</span>') + '</button></li>') + '</ul></nav>' };
 
   function FolderKind(context) {
     var self = this;
     base(self, context, 'bx-folder');
-    self.css = ko.pureComputed(function () { return 'bx-folder' + (self.props.open ? ' is-open' : ''); });
+    self.css = ko.pureComputed(function () { return 'bx-folder' + bx.vcls('list', self.props.variant) + (self.props.open ? ' is-open' : ''); });
     self.expanded = ko.pureComputed(function () { return self.props.open ? 'true' : 'false'; });
     self.count = ko.pureComputed(function () { var n = (self.props.items || []).length; return n + (n === 1 ? ' document' : ' documents'); });
     self.docs = ko.pureComputed(function () {
@@ -397,7 +404,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     });
     self.toggle = function () { self.props.open = !self.props.open; };
   }
-  kinds.folder = { model: FolderKind, events: k.ACTION, props: { heading: str('Documents'), items: arr(), open: { type: 'boolean', value: false, writeback: true } },
+  kinds.folder = { model: FolderKind, events: k.ACTION, vkind: 'list', props: { heading: str('Documents'), items: arr(), open: { type: 'boolean', value: false, writeback: true } },
     view: '<section :class="[[css]]"><button type="button" class="bx-folder-tab" :aria-expanded="[[expanded]]" :aria-controls="[[id]]" on-click="[[toggle]]"><span class="bx-folder-icon" aria-hidden="true"></span>'
       + '<span class="bx-row-main"><strong>' + txt('$properties.heading') + '</strong><span class="bx-row-meta">' + txt('count') + '</span></span></button>'
       + iff('$properties.open', '<ul class="bx-rows bx-folder-docs" :id="[[id]]">' + each('docs', 'f', '<li :class="[[f.data.css]]"><span class="bx-row-main"><strong>' + txt('f.data.title') + '</strong>'
@@ -409,8 +416,8 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     base(self, context, 'bx-sstack');
     self.cards = ko.pureComputed(function () { return list(self.props.items).map(function (o, i) { return { title: o.title !== undefined ? String(o.title) : o.label, text: o.text || '', css: 'bx-card bx-scroll-stack-card is-n-' + Math.min(i, 9) }; }); });
   }
-  kinds.scrollstack = { model: ScrollStackKind, props: { label: str(), items: arr() },
-    view: '<ul class="bx-scroll-stack" :aria-label="[[$properties.label || null]]">' + each('cards', 'c', '<li :class="[[c.data.css]]"><h3 class="bx-card-title">' + txt('c.data.title') + '</h3>'
+  kinds.scrollstack = { model: ScrollStackKind, vkind: 'cards', props: { label: str(), items: arr() },
+    view: '<ul :class="[[\'bx-scroll-stack\' + vcls()]]" :aria-label="[[$properties.label || null]]">' + each('cards', 'c', '<li :class="[[c.data.css]]"><h3 class="bx-card-title">' + txt('c.data.title') + '</h3>'
       + '<p class="bx-thing-text">' + txt('c.data.text') + '</p></li>') + '</ul>' };
 
   function ProfileKind(context) {
@@ -420,8 +427,8 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     self.rows = ko.pureComputed(function () { return list(self.props.items).map(function (o) { return { label: o.label, value: o.value !== undefined ? String(o.value) : '' }; }); });
     self.act = function () { bx.fire(self.element, 'ojAction', {}); };
   }
-  kinds.profile = { model: ProfileKind, events: k.ACTION, props: { name: str(), jobTitle: str(), src: str(), items: arr(), actionLabel: str() },
-    view: '<article class="bx-card bx-profile-card" :aria-labelledby="[[id]]"><div class="bx-profile-head">' + iff('$properties.src', '<img class="bx-avatar is-lg" :src="[[$properties.src]]" alt=""/>')
+  kinds.profile = { model: ProfileKind, events: k.ACTION, vkind: 'card', props: { name: str(), jobTitle: str(), src: str(), items: arr(), actionLabel: str() },
+    view: '<article :class="[[\'bx-card bx-profile-card\' + vcls()]]" :aria-labelledby="[[id]]"><div class="bx-profile-head">' + iff('$properties.src', '<img class="bx-avatar is-lg" :src="[[$properties.src]]" alt=""/>')
       + iff('!$properties.src', '<span class="bx-avatar is-lg" aria-hidden="true">' + txt('initials') + '</span>') + '<span class="bx-row-main"><h3 class="bx-card-title" :id="[[id]]">' + txt('$properties.name') + '</h3>'
       + iff('$properties.jobTitle', '<span class="bx-row-meta">' + txt('$properties.jobTitle') + '</span>') + '</span></div>'
       + iff('rows().length', '<dl class="bx-kv-list">' + each('rows', 'r', '<div class="bx-kv-row"><dt>' + txt('r.data.label') + '</dt><dd>' + txt('r.data.value') + '</dd></div>') + '</dl>')
@@ -681,7 +688,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion', './bx-g1', './bx-g2', './
     register('bx-animated-list', kinds.alist), register('bx-spotlight-card', kinds.spotlight), register('bx-tilt-card', kinds.tilt), register('bx-flip-card', kinds.flip),
     register('bx-card-stack', kinds.deck), register('bx-glow-border-card', kinds.glowcard), register('bx-bento-grid', kinds.bento), register('bx-carousel', kinds.carousel),
     register('bx-elastic-slider', wrap(g.slider, 'bx-fx-elastic'), { labelHint: 'Amount', max: 10000, step: 50 }), register('bx-option-wheel', kinds.wheel),
-    register('bx-pill-nav', wrap(g.nav, 'bx-fx-pill-nav')), register('bx-dock-nav', wrap(h.quick, 'bx-fx-dock'), { label: 'Dock' }), register('bx-card-nav', kinds.cardnav),
+    register('bx-pill-nav', wrap(g.nav, 'bx-fx-pill-nav')), register('bx-dock-nav', wrapAs(h.quick, 'bx-fx-dock', 'nav'), { label: 'Dock' }), register('bx-card-nav', kinds.cardnav),
     register('bx-staggered-menu', wrap(g.menu, 'bx-fx-stagger-menu'), { label: 'Menu' }), register('bx-document-folder', kinds.folder), register('bx-scroll-stack', kinds.scrollstack),
     register('bx-profile-card', kinds.profile), register('bx-glass-panel', kinds.glass),
     register('bx-gradient-backdrop', kinds['bd-gradient']), register('bx-soft-aurora', kinds['bd-aurora']), register('bx-silk-backdrop', kinds['bd-silk']), register('bx-dot-grid', kinds['bd-dots']),

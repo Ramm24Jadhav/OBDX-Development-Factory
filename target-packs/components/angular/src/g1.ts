@@ -44,15 +44,19 @@ export function initials(name = ''): string {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w.charAt(0).toUpperCase()).join('') || '?';
 }
 
-/** What every component of the groups shares: a testID and the host element. */
+/** What every component of the groups shares: a testID, the host element, and the style variant. */
 @Directive()
 export abstract class Part {
   readonly testID = input('');
+  /** The style variant (variants/v2.json); the component's own look when left out. A component without variants ignores it. */
+  readonly variant = input('');
   readonly id = nextId('bx');
   protected readonly host = inject(ElementRef<HTMLElement>);
   protected focusLater(selector: string): void {
     setTimeout(() => (this.host.nativeElement as HTMLElement).querySelector<HTMLElement>(selector)?.focus(), 0);
   }
+  /** The variant's class for a kind, with a leading space, or '' for none. */
+  protected vc(kind: string): string { return this.variant() ? ` bx-${kind}--${this.variant()}` : ''; }
 }
 
 /* ---------- SecondaryButton ---------- */
@@ -219,7 +223,7 @@ export interface MenuItem extends Item { danger?: boolean }
   selector: 'bx-action-menu',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="bx-menu" [attr.data-testid]="testID() || null">
+    <div [class]="'bx-menu' + vc('menu')" [attr.data-testid]="testID() || null">
       <button type="button" class="bx-btn bx-btn--outlined bx-menu-button" aria-haspopup="menu" [attr.aria-expanded]="open()" [attr.aria-controls]="id"
               [disabled]="disabled()" (click)="toggle()" (keydown.arrowdown)="$event.preventDefault(); show()">
         <span class="bx-btn-label">{{ label() }}</span><span class="bx-menu-caret" aria-hidden="true"></span>
@@ -262,7 +266,7 @@ export class ActionMenu extends Part {
 export interface PanelItem { id?: string; title: string; body?: string }
 
 export const ACCORDION = `
-  <div class="bx-accordion" [attr.data-testid]="testID() || null">
+  <div [class]="'bx-accordion' + vc('accordion')" [attr.data-testid]="testID() || null">
     @for (o of rows(); track o.key) {
       <div [class]="o.on ? 'bx-acc-item is-open' : 'bx-acc-item'">
         <h3 class="bx-acc-head">
@@ -346,11 +350,13 @@ export class Stepper extends StepsBase {}
   selector: 'bx-breadcrumb',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <nav class="bx-crumbs" [attr.aria-label]="label()" [attr.data-testid]="testID() || null">
+    <nav [class]="'bx-crumbs' + vc('crumbs')" [attr.aria-label]="label()" [attr.data-testid]="testID() || null">
       <ol>
         @for (o of rows(); track o.id; let last = $last) {
           <li>
-            @if (!last) {
+            @if (o.gap) {
+              <button type="button" class="bx-crumb bx-crumb-more" aria-label="Show the full path" (click)="full.set(true)">…</button><span class="bx-crumb-sep" aria-hidden="true">/</span>
+            } @else if (!last) {
               <button type="button" class="bx-crumb" (click)="go(o)">{{ o.label }}</button><span class="bx-crumb-sep" aria-hidden="true">/</span>
             } @else {
               <span class="bx-crumb is-here" aria-current="page">{{ o.label }}</span>
@@ -364,7 +370,13 @@ export class Breadcrumb extends Part {
   readonly label = input('Breadcrumb');
   readonly items = input<ReadonlyArray<ItemLike>>([]);
   readonly action = output<string>();
-  protected readonly rows = computed(() => toItems(this.items()));
+  /** Collapsed: the hidden middle pages are shown. */
+  protected readonly full = signal(false);
+  protected readonly rows = computed(() => {
+    const l = toItems(this.items()).map((o) => ({ ...o, gap: false }));
+    // collapsed keeps the first page and the last two, with a button for the rest
+    return this.variant() === 'collapsed' && !this.full() && l.length > 3 ? [l[0], { id: '…', label: '…', index: -1, gap: true }, ...l.slice(-2)] : l;
+  });
   protected go(o: ListItem): void { this.action.emit(valueOf(o)); }
 }
 
@@ -375,7 +387,7 @@ export interface NavItem extends Item { badge?: string | number }
   selector: 'bx-side-nav',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <nav class="bx-nav" [attr.aria-label]="label()" [attr.data-testid]="testID() || null">
+    <nav [class]="'bx-nav' + vc('nav')" [attr.aria-label]="label()" [attr.data-testid]="testID() || null">
       <ul>
         @for (o of rows(); track o.id) {
           <li>
@@ -405,7 +417,7 @@ export class SideNav extends Part {
   template: `
     @if (open()) {
       <div class="bx-dialog-backdrop" (click)="close()"></div>
-      <div [class]="'bx-sheet is-' + position()" role="dialog" aria-modal="true" tabindex="-1" [attr.aria-labelledby]="id + '-title'" [attr.data-testid]="testID() || null"
+      <div [class]="'bx-sheet is-' + position() + vc('dialog')" [attr.role]="variant() === 'alert' ? 'alertdialog' : 'dialog'" aria-modal="true" tabindex="-1" [attr.aria-labelledby]="id + '-title'" [attr.data-testid]="testID() || null"
            cdkTrapFocus [cdkTrapFocusAutoCapture]="true" (keydown.escape)="close()">
         <div class="bx-dialog-header">
           <h2 class="bx-dialog-title" [id]="id + '-title'">{{ heading() }}</h2>
@@ -452,7 +464,7 @@ export class Sheet extends Part {
 @Component({
   selector: 'bx-grid',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<div [class]="'bx-layout-grid is-cols-' + columns() + ' is-gap-' + gap()" [attr.data-testid]="testID() || null"><ng-content /></div>`,
+  template: `<div [class]="'bx-layout-grid is-cols-' + columns() + ' is-gap-' + gap() + vc('grid')" [attr.data-testid]="testID() || null"><ng-content /></div>`,
 })
 export class Grid extends Part {
   readonly columns = input<1 | 2 | 3 | 4 | 'auto'>('auto');
@@ -465,9 +477,9 @@ export class Grid extends Part {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (label()) {
-      <div class="bx-divider has-label" role="separator" [attr.aria-label]="label()" [attr.data-testid]="testID() || null"><span aria-hidden="true">{{ label() }}</span></div>
+      <div [class]="'bx-divider has-label' + vc('divider')" role="separator" [attr.aria-label]="label()" [attr.data-testid]="testID() || null"><span aria-hidden="true">{{ label() }}</span></div>
     } @else {
-      <hr class="bx-divider" [attr.data-testid]="testID() || null" />
+      <hr [class]="'bx-divider' + vc('divider')" [attr.data-testid]="testID() || null" />
     }`,
 })
 export class Divider extends Part {
@@ -508,16 +520,17 @@ export function pagesAround(page: number, count: number): number[] {
   selector: 'bx-pagination',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <nav class="bx-pages" [attr.aria-label]="label()" [attr.data-testid]="testID() || null">
+    <nav [class]="'bx-pages' + vc('pages')" [attr.aria-label]="label()" [attr.data-testid]="testID() || null">
       <button type="button" class="bx-page" aria-label="Previous page" [disabled]="page() <= 1" (click)="go(page() - 1)">‹</button>
-      @for (p of pages(); track $index) {
+      @if (variant() === 'compact') { <span class="bx-page-status">Page {{ page() }} of {{ count() }}</span> }
+      @else { @for (p of pages(); track $index) {
         @if (p === 0) {
           <span class="bx-page-gap" aria-hidden="true">…</span>
         } @else {
           <button type="button" [class]="p === page() ? 'bx-page is-on' : 'bx-page'" [attr.aria-label]="'Page ' + p" [attr.aria-current]="p === page() ? 'page' : null"
                   (click)="go(p)">{{ p }}</button>
         }
-      }
+      } }
       <button type="button" class="bx-page" aria-label="Next page" [disabled]="page() >= count()" (click)="go(page() + 1)">›</button>
     </nav>`,
 })

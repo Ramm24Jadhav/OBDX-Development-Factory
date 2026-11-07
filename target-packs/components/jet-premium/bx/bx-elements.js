@@ -91,17 +91,20 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
     };
     self.backdrop = function () { if (self.props.modality !== 'modal' && self.props.cancelBehavior !== 'none') { self.close(); } };
     self.cancel = function () { self.close(); };
+    self.css = ko.pureComputed(function () { return 'bx-dialog' + bx.vcls('dialog', self.props.variant); });
+    self.role = ko.pureComputed(function () { return self.props.variant === 'alert' ? 'alertdialog' : 'dialog'; });
   }
   Composite.register('bx-dialog', {
     view: '<oj-bind-if test="[[shown()]]"><div class="bx-dialog-backdrop" on-click="[[backdrop]]"></div>'
-      + '<div class="bx-dialog" role="dialog" aria-modal="true" tabindex="-1" :aria-labelledby="[[id + \'-title\']]" on-keydown="[[onKey]]">'
+      + '<div :class="[[css]]" :role="[[role]]" aria-modal="true" tabindex="-1" :aria-labelledby="[[id + \'-title\']]" on-keydown="[[onKey]]">'
       + '<div class="bx-dialog-header"><oj-bind-slot name="header"><h2 class="bx-dialog-title" :id="[[id + \'-title\']]"><oj-bind-text value="[[$properties.dialogTitle]]"></oj-bind-text></h2></oj-bind-slot>'
       + '<oj-bind-if test="[[$properties.cancelBehavior !== \'none\']]"><button type="button" class="bx-btn bx-btn--borderless bx-btn--icon" aria-label="Close" on-click="[[cancel]]"><span aria-hidden="true">×</span></button></oj-bind-if></div>'
       + '<div class="bx-dialog-body"><oj-bind-slot name="body"><oj-bind-slot></oj-bind-slot></oj-bind-slot></div>'
       + '<div class="bx-dialog-footer"><oj-bind-slot name="footer"></oj-bind-slot></div></div></oj-bind-if>',
     viewModel: DialogModel,
     metadata: { properties: { dialogTitle: { type: 'string', value: '' }, cancelBehavior: { type: 'string', value: 'icon' }, modality: { type: 'string', value: 'modal' },
-      initialFocus: { type: 'string', value: 'auto' }, dragAffordance: { type: 'string', value: 'none' }, resizeBehavior: { type: 'string', value: 'none' }, position: { type: 'object', value: {} } },
+      initialFocus: { type: 'string', value: 'auto' }, dragAffordance: { type: 'string', value: 'none' }, resizeBehavior: { type: 'string', value: 'none' }, position: { type: 'object', value: {} },
+      variant: { type: 'string', value: '' } },
     methods: { open: {}, close: {}, isOpen: {} }, events: { ojOpen: { bubbles: true }, ojClose: { bubbles: true }, ojBeforeClose: { bubbles: true, cancelable: true } } }
   });
 
@@ -149,7 +152,7 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
     var self = this;
     self.props = context.properties;
     self.element = context.element;
-    self.css = ko.pureComputed(function () { return 'bx-card' + (self.props.interactive ? ' is-interactive' : '') + (self.props.selected ? ' is-selected' : ''); });
+    self.css = ko.pureComputed(function () { return 'bx-card' + bx.vcls('card', self.props.variant) + (self.props.interactive ? ' is-interactive' : '') + (self.props.selected ? ' is-selected' : ''); });
     self.press = function () { if (self.props.interactive) { bx.fire(self.element, 'ojAction', {}); } };
     self.key = function (vm, event) { if (self.props.interactive && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); self.press(); return false; } return true; };
   }
@@ -160,7 +163,7 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
       + '<div class="bx-card-body"><oj-bind-slot></oj-bind-slot></div><div class="bx-card-actions"><oj-bind-slot name="actions"></oj-bind-slot></div></div>',
     viewModel: CardModel,
     metadata: { properties: { heading: { type: 'string', value: '' }, subheading: { type: 'string', value: '' }, interactive: { type: 'boolean', value: false },
-      selected: { type: 'boolean', value: false } }, events: { ojAction: { bubbles: true } } }
+      selected: { type: 'boolean', value: false }, variant: { type: 'string', value: '' } }, events: { ojAction: { bubbles: true } } }
   });
 
   /* ---------- bx-tabs: a tablist; arrow keys, Home and End move; selection writes back ---------- */
@@ -170,6 +173,7 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
     self.element = context.element;
     self.id = bx.nextId('bx-tabs');
     self.loaded = ko.observableArray([]);
+    self.vcls = ko.pureComputed(function () { return bx.vcls('tabs', self.props.variant); });
     var load = function () {
       if (self.props.data) {
         bx.fromData(self.props.data, self.props.itemText || 'label', 'id').then(function (l) { self.loaded(l); });
@@ -204,14 +208,14 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
     };
   }
   Composite.register('bx-tabs', {
-    view: '<div :class="[[\'bx-tabs is-\' + ($properties.edge || \'top\')]]" role="tablist" :aria-label="[[$properties.label]]" on-keydown="[[onKey]]">'
+    view: '<div :class="[[\'bx-tabs is-\' + ($properties.edge || \'top\') + vcls()]]" role="tablist" :aria-label="[[$properties.label]]" :aria-orientation="[[$properties.variant === \'vertical\' ? \'vertical\' : null]]" on-keydown="[[onKey]]">'
       + '<oj-bind-for-each data="[[tabs]]" as="t"><template><button type="button" role="tab" :class="[[t.data.css]]" :aria-selected="[[t.data.selected]]" :tabindex="[[t.data.tab]]"'
       + ' :disabled="[[t.data.disabled]]" on-click="[[t.data.pick]]"><oj-bind-text value="[[t.data.label]]"></oj-bind-text></button></template></oj-bind-for-each>'
       + '<span class="bx-tabs-ink" aria-hidden="true"></span></div>',
     viewModel: TabsModel,
     metadata: { properties: { selection: { type: 'any', writeback: true }, options: { type: 'Array<Object>', value: [] }, data: { type: 'object' }, itemText: { type: 'any' },
       edge: { type: 'string', value: 'top' }, display: { type: 'string', value: 'all' }, label: { type: 'string', value: '' }, overflow: { type: 'string', value: 'hidden' },
-      layout: { type: 'string', value: 'stretch' } } }
+      layout: { type: 'string', value: 'stretch' }, variant: { type: 'string', value: '' } } }
   });
 
   /* ---------- bx-data-grid: oj-table's data and columns, sortable headers, single or multiple row selection ---------- */
@@ -221,6 +225,7 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
     self.element = context.element;
     self.id = bx.nextId('bx-grid');
     self.rowsData = ko.observableArray([]);
+    self.wrapCss = ko.pureComputed(function () { return 'bx-grid-wrap' + bx.vcls('table', self.props.variant); });
     self.sortField = ko.observable(null);
     self.sortAsc = ko.observable(true);
     var load = function () {
@@ -269,7 +274,7 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
       var selected = self.props.selected && self.props.selected.row ? self.props.selected.row : [];
       return list.map(function (x) {
         var on = selected.indexOf(x.key) >= 0;
-        return { key: x.key, cells: self.columns().map(function (c) { var v = c.field ? x.row[c.field] : ''; return { text: v === null || v === undefined ? '' : String(v), align: c.align, css: c.align === 'right' ? 'bx-td is-end' : 'bx-td' }; }),
+        return { key: x.key, cells: self.columns().map(function (c) { var v = c.field ? x.row[c.field] : ''; return { text: v === null || v === undefined ? '' : String(v), align: c.align, css: c.align === 'right' ? 'bx-td is-end' : 'bx-td', label: self.props.variant === 'cards' ? c.header : null }; }),
           selectable: !!mode && mode !== 'none', checked: on, css: 'bx-tr' + (on ? ' is-selected' : ''),
           toggle: function () {
             if (!mode || mode === 'none') { return true; }
@@ -283,7 +288,7 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
     self.selectable = ko.pureComputed(function () { var m = self.props.selectionMode && self.props.selectionMode.row; return !!m && m !== 'none'; });
   }
   Composite.register('bx-data-grid', {
-    view: '<div class="bx-grid-wrap"><table class="bx-grid" :aria-label="[[$properties.accessibility && $properties.accessibility.label ? $properties.accessibility.label : null]]">'
+    view: '<div :class="[[wrapCss]]"><table class="bx-grid" :aria-label="[[$properties.accessibility && $properties.accessibility.label ? $properties.accessibility.label : null]]">'
       + '<oj-bind-if test="[[$properties.caption]]"><caption><oj-bind-text value="[[$properties.caption]]"></oj-bind-text></caption></oj-bind-if><thead><tr>'
       + '<oj-bind-if test="[[selectable()]]"><th scope="col" class="bx-th bx-th-check"><span class="bx-visually-hidden">Select Row</span></th></oj-bind-if>'
       + '<oj-bind-for-each data="[[columns]]" as="c"><template><th scope="col" :class="[[c.data.css]]" :aria-sort="[[c.data.sortable ? c.data.sort : null]]">'
@@ -291,14 +296,14 @@ define(['ojs/ojcomposite', './bx-core'], function (Composite, bx) {
       + '<oj-bind-if test="[[!c.data.sortable]]"><oj-bind-text value="[[c.data.header]]"></oj-bind-text></oj-bind-if></th></template></oj-bind-for-each></tr></thead>'
       + '<tbody><oj-bind-for-each data="[[rows]]" as="r"><template><tr :class="[[r.data.css]]">'
       + '<oj-bind-if test="[[r.data.selectable]]"><td class="bx-td bx-td-check"><input type="checkbox" class="bx-check" aria-label="Select the row" :checked="[[r.data.checked]]" on-click="[[r.data.toggle]]"/></td></oj-bind-if>'
-      + '<oj-bind-for-each data="[[r.data.cells]]" as="c"><template><td :class="[[c.data.css]]"><oj-bind-text value="[[c.data.text]]"></oj-bind-text></td></template></oj-bind-for-each>'
+      + '<oj-bind-for-each data="[[r.data.cells]]" as="c"><template><td :class="[[c.data.css]]" :data-label="[[c.data.label]]"><oj-bind-text value="[[c.data.text]]"></oj-bind-text></td></template></oj-bind-for-each>'
       + '</tr></template></oj-bind-for-each></tbody></table>'
       + '<oj-bind-if test="[[empty()]]"><div class="bx-grid-empty"><oj-bind-slot name="noData"><oj-bind-text value="[[$properties.translations && $properties.translations.msgNoData ? $properties.translations.msgNoData : \'No data to show.\']]"></oj-bind-text></oj-bind-slot></div></oj-bind-if></div>',
     viewModel: GridModel,
     metadata: { properties: { data: { type: 'any' }, columns: { type: 'Array<Object>', value: [] }, selectionMode: { type: 'object', value: {} },
       selected: { type: 'object', writeback: true, value: { row: [], column: [] } }, keyAttributes: { type: 'string' }, caption: { type: 'string', value: '' },
       accessibility: { type: 'object', value: {} }, translations: { type: 'object', value: {} }, display: { type: 'string', value: 'list' },
-      scrollPolicy: { type: 'string', value: 'auto' }, horizontalGridVisible: { type: 'string', value: 'auto' }, verticalGridVisible: { type: 'string', value: 'auto' } },
+      scrollPolicy: { type: 'string', value: 'auto' }, horizontalGridVisible: { type: 'string', value: 'auto' }, verticalGridVisible: { type: 'string', value: 'auto' }, variant: { type: 'string', value: '' } },
     events: { ojSort: { bubbles: true } } }
   });
 

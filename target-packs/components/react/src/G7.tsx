@@ -4,13 +4,16 @@
  * premium JET pack. Every effect is CSS, the Web Animations API or a few timers; text that moves is also there whole
  * for screen readers; under reduced motion each shows its end state at once.
  */
-import { CSSProperties, KeyboardEvent, MouseEvent, PointerEvent, ReactNode, useEffect, useId, useRef, useState } from 'react';
+import MuiList from '@mui/material/List';
+import { CSSProperties, ElementType, KeyboardEvent, MouseEvent, PointerEvent, ReactNode, useEffect, useId, useRef, useState } from 'react';
 
 import { ActionMenu, ActionMenuProps, SegmentsProps, SideNav, SideNavProps, Slider, SliderProps, ToggleGroup, Tooltip, arrow, initials } from './G1';
 import { ChoiceCards, ChoiceCardsProps, Detail, DetailList, QuickActions, QuickActionsProps, ReceiptProps, TransactionReceipt, money } from './G2';
 import { CodeInput, CodeProps, Setting, SettingProps, masked } from './G3';
 import { FeedbackRating, RatingProps } from './G5';
+import { Surface } from './Material';
 import { reducedMotion } from './motion';
+import { CardVariant, CardsVariant, ListVariant, NavVariant, TilesVariant, isMaterial, vc } from './variants-v2';
 
 type Opt<P, K extends keyof P> = Omit<P, K> & Partial<Pick<P, K>>;
 type Vars = CSSProperties & Record<`--${string}`, string>;
@@ -240,24 +243,25 @@ export function Marquee({ testID, label = 'Updates', items, speed = 'normal' }: 
 
 export interface ListEntry { title: string; meta?: string }
 /** A list whose rows come in one after another. */
-export function AnimatedList({ testID, label, items }: { testID?: string; label?: string; items: ReadonlyArray<string | ListEntry> }) {
+export function AnimatedList({ testID, label, items, variant }: { testID?: string; label?: string; items: ReadonlyArray<string | ListEntry>; /** The style variant (variants/v2.json); divided is a Material list. */ variant?: ListVariant }) {
+  const Ul = (isMaterial('list', variant) ? MuiList : 'ul') as ElementType;
   return (
-    <ul className="bx-rows bx-animated-list" aria-label={label || undefined} data-testid={testID}>
+    <Ul className={'bx-rows bx-animated-list' + vc('list', variant)} aria-label={label || undefined} data-testid={testID}>
       {items.map((x, i) => { const o = typeof x === 'string' ? { title: x } : x; return <li key={i} className={`bx-row bx-alist-item ${stagger(i)}`}><span className="bx-row-main"><strong>{o.title}</strong>{o.meta ? <span className="bx-row-meta">{o.meta}</span> : null}</span></li>; })}
-    </ul>
+    </Ul>
   );
 }
 
-export interface FxCardProps { testID?: string; heading: string; text?: string; children?: ReactNode }
-const pointerCard = (css: string) => function FxCard({ testID, heading, text, children }: FxCardProps) {
+export interface FxCardProps { testID?: string; heading: string; text?: string; children?: ReactNode; /** The style variant (variants/v2.json). */ variant?: CardVariant }
+const pointerCard = (css: string) => function FxCard({ testID, heading, text, children, variant }: FxCardProps) {
   const id = useId();
   return (
-    <article className={`bx-card ${css}`} aria-labelledby={id} data-testid={testID}
-             onPointerMove={(e) => pointer(e, (s, x, y) => { s.setProperty('--bx-sx', `${Math.round(x * 100)}%`); s.setProperty('--bx-sy', `${Math.round(y * 100)}%`);
+    <Surface as="article" kind="card" variant={variant} className={`bx-card ${css}` + vc('card', variant)} aria-labelledby={id} data-testid={testID}
+             onPointerMove={(e: PointerEvent<HTMLElement>) => pointer(e, (s, x, y) => { s.setProperty('--bx-sx', `${Math.round(x * 100)}%`); s.setProperty('--bx-sy', `${Math.round(y * 100)}%`);
                s.setProperty('--bx-rx', `${((0.5 - y) * 8).toFixed(2)}deg`); s.setProperty('--bx-ry', `${((x - 0.5) * 10).toFixed(2)}deg`); })}
-             onPointerLeave={(e) => { e.currentTarget.style.setProperty('--bx-rx', '0deg'); e.currentTarget.style.setProperty('--bx-ry', '0deg'); }}>
+             onPointerLeave={(e: PointerEvent<HTMLElement>) => { e.currentTarget.style.setProperty('--bx-rx', '0deg'); e.currentTarget.style.setProperty('--bx-ry', '0deg'); }}>
       <h3 className="bx-card-title" id={id}>{heading}</h3>{text ? <p className="bx-thing-text">{text}</p> : null}{children}
-    </article>
+    </Surface>
   );
 };
 /** A card with a light that follows the pointer. */
@@ -267,25 +271,26 @@ export const TiltCard = pointerCard('bx-tilt-card');
 /** A card with a glowing border. */
 export const GlowBorderCard = pointerCard('bx-glow-border-card');
 
-export interface FlipCardProps { testID?: string; heading: string; front: string; back: string; flipped?: boolean; onFlippedChange?: (flipped: boolean) => void; backLabel?: string; frontLabel?: string }
+export interface FlipCardProps { testID?: string; heading: string; front: string; back: string; flipped?: boolean; onFlippedChange?: (flipped: boolean) => void; backLabel?: string; frontLabel?: string;
+  /** The style variant (variants/v2.json), on both faces. */ variant?: CardVariant }
 /** A card that turns over to show its details; the face turned away is hidden from screen readers and the keyboard. */
-export function FlipCard({ testID, heading, front, back, flipped, onFlippedChange, backLabel = 'Show details', frontLabel = 'Back' }: FlipCardProps) {
+export function FlipCard({ testID, heading, front, back, flipped, onFlippedChange, backLabel = 'Show details', frontLabel = 'Back', variant }: FlipCardProps) {
   const id = useId();
   const box = useRef<HTMLDivElement>(null);
   const [own, setOwn] = useState(false);
   const on = flipped ?? own;
   const flip = () => { setOwn(!on); onFlippedChange?.(!on); setTimeout(() => box.current?.querySelector<HTMLElement>(on ? '.bx-flip-front .bx-flip-button' : '.bx-flip-back .bx-flip-button')?.focus(), 0); };
   return (
-    <div className={'bx-flip-card' + (on ? ' is-flipped' : '')} ref={box} data-testid={testID}>
+    <div className={'bx-flip-card' + vc('card', variant) + (on ? ' is-flipped' : '')} ref={box} data-testid={testID}>
       <div className="bx-flip-inner">
-        <section className="bx-card bx-flip-face bx-flip-front" aria-hidden={on || undefined} aria-labelledby={id}>
+        <Surface as="section" kind="card" variant={variant} className="bx-card bx-flip-face bx-flip-front" aria-hidden={on || undefined} aria-labelledby={id}>
           <h3 className="bx-card-title" id={id}>{heading}</h3><p className="bx-thing-text">{front}</p>
           <button type="button" className="bx-thing-action bx-flip-button" tabIndex={on ? -1 : undefined} onClick={flip}>{backLabel}</button>
-        </section>
-        <section className="bx-card bx-flip-face bx-flip-back" aria-hidden={!on || undefined} aria-label={heading}>
+        </Surface>
+        <Surface as="section" kind="card" variant={variant} className="bx-card bx-flip-face bx-flip-back" aria-hidden={!on || undefined} aria-label={heading}>
           <p className="bx-thing-text">{back}</p>
           <button type="button" className="bx-thing-action bx-flip-button" tabIndex={on ? undefined : -1} onClick={flip}>{frontLabel}</button>
-        </section>
+        </Surface>
       </div>
     </div>
   );
@@ -293,14 +298,14 @@ export function FlipCard({ testID, heading, front, back, flipped, onFlippedChang
 
 export interface DeckItem { title: string; text?: string }
 /** Cards stacked one behind another; Next and Previous go round, and the position is said. */
-export function CardStack({ testID, label = 'Cards', items }: { testID?: string; label?: string; items: ReadonlyArray<DeckItem> }) {
+export function CardStack({ testID, label = 'Cards', items, variant }: { testID?: string; label?: string; items: ReadonlyArray<DeckItem>; /** The style variant (variants/v2.json). */ variant?: CardsVariant }) {
   const [at, setAt] = useState(0);
   const n = items.length;
   return (
-    <section className="bx-card-stack" aria-label={label} data-testid={testID}>
+    <section className={'bx-card-stack' + vc('cards', variant)} aria-label={label} data-testid={testID}>
       <div className="bx-deck">
         {items.map((o, i) => { const depth = (i - at + n) % Math.max(1, n); return (
-          <article key={i} className={`bx-card bx-deck-card is-depth-${Math.min(depth, 3)}`} aria-hidden={depth !== 0 || undefined}><h3 className="bx-card-title">{o.title}</h3><p className="bx-thing-text">{o.text}</p></article>
+          <Surface as="article" kind="cards" variant={variant} key={i} className={`bx-card bx-deck-card is-depth-${Math.min(depth, 3)}`} aria-hidden={depth !== 0 || undefined}><h3 className="bx-card-title">{o.title}</h3><p className="bx-thing-text">{o.text}</p></Surface>
         ); })}
       </div>
       <div className="bx-deck-controls">
@@ -314,12 +319,14 @@ export function CardStack({ testID, label = 'Cards', items }: { testID?: string;
 
 export interface BentoTile { id: string; title: string; text?: string; figure?: string; size?: 'sm' | 'wide' | 'tall' | 'lg' }
 /** A dashboard of tiles of different sizes; with onAction each opens. */
-export function BentoGrid({ testID, label, items, onAction }: { testID?: string; label?: string; items: ReadonlyArray<BentoTile>; onAction?: (tile: BentoTile) => void }) {
+export function BentoGrid({ testID, label, items, onAction, variant }: { testID?: string; label?: string; items: ReadonlyArray<BentoTile>; onAction?: (tile: BentoTile) => void;
+  /** The style variant (variants/v2.json). */ variant?: TilesVariant }) {
   return (
-    <ul className="bx-bento" aria-label={label || undefined} data-testid={testID}>
+    <ul className={'bx-bento' + vc('tiles', variant)} aria-label={label || undefined} data-testid={testID}>
       {items.map((o, i) => {
         const body = <><span className="bx-tile-label">{o.title}</span>{o.figure ? <span className="bx-tile-value">{o.figure}</span> : null}{o.text ? <span className="bx-tile-meta">{o.text}</span> : null}</>;
-        return <li key={o.id} className={`bx-bento-tile is-${o.size ?? 'sm'} ${stagger(i)}`}>{onAction ? <button type="button" className="bx-bento-button" onClick={() => onAction(o)}>{body}</button> : <div className="bx-bento-body">{body}</div>}</li>;
+        return <li key={o.id} className={`bx-bento-tile is-${o.size ?? 'sm'} ${stagger(i)}`}>{onAction ? <Surface as="button" kind="tiles" variant={variant} type="button" className="bx-bento-button" onClick={() => onAction(o)}>{body}</Surface>
+          : <Surface as="div" kind="tiles" variant={variant} className="bx-bento-body">{body}</Surface>}</li>;
       })}
     </ul>
   );
@@ -368,13 +375,16 @@ export function OptionWheel({ testID, label, options, value, onChange }: WheelPr
 /** Sections in a row of pills; the current one is raised. */
 export function PillNav(p: SideNavProps) { return <div className="bx-fx-pill-nav"><SideNav {...p} /></div>; }
 /** Shortcuts in a dock that swell under the pointer. */
-export function DockNav(p: Opt<QuickActionsProps, 'label'>) { return <div className="bx-fx-dock"><QuickActions label="Dock" {...p} /></div>; }
+export function DockNav({ variant, ...p }: Opt<Omit<QuickActionsProps, 'variant'>, 'label'> & { /** The style variant (variants/v2.json), on the dock. */ variant?: NavVariant }) {
+  return <div className={'bx-fx-dock' + vc('nav', variant)}><QuickActions label="Dock" {...p} /></div>;
+}
 
 export interface CardNavItem { id: string; title: string; text?: string }
 /** Sections as cards that lift on hover and focus. */
-export function CardNav({ testID, label = 'Explore', items, onAction }: { testID?: string; label?: string; items: ReadonlyArray<CardNavItem>; onAction?: (id: string) => void }) {
+export function CardNav({ testID, label = 'Explore', items, onAction, variant }: { testID?: string; label?: string; items: ReadonlyArray<CardNavItem>; onAction?: (id: string) => void;
+  /** The style variant (variants/v2.json). */ variant?: NavVariant }) {
   return (
-    <nav className="bx-card-nav" aria-label={label} data-testid={testID}>
+    <nav className={'bx-card-nav' + vc('nav', variant)} aria-label={label} data-testid={testID}>
       <ul>{items.map((o, i) => <li key={o.id} className={`bx-card-nav-item ${stagger(i)}`}><button type="button" className="bx-card-nav-button" onClick={() => onAction?.(o.id)}><strong>{o.title}</strong>{o.text ? <span>{o.text}</span> : null}</button></li>)}</ul>
     </nav>
   );
@@ -384,42 +394,45 @@ export function StaggeredMenu(p: ActionMenuProps) { return <div className="bx-fx
 
 export interface FolderDoc { id: string; title: string; meta?: string }
 /** A folder that opens to show its documents, each to open. */
-export function DocumentFolder({ testID, heading = 'Documents', items, onAction }: { testID?: string; heading?: string; items: ReadonlyArray<FolderDoc>; onAction?: (doc: FolderDoc) => void }) {
+export function DocumentFolder({ testID, heading = 'Documents', items, onAction, variant }: { testID?: string; heading?: string; items: ReadonlyArray<FolderDoc>; onAction?: (doc: FolderDoc) => void;
+  /** The style variant (variants/v2.json); divided is a Material list. */ variant?: ListVariant }) {
   const id = useId();
   const [open, setOpen] = useState(false);
+  const Ul = (isMaterial('list', variant) ? MuiList : 'ul') as ElementType;
   return (
-    <section className={'bx-folder' + (open ? ' is-open' : '')} data-testid={testID}>
+    <section className={'bx-folder' + vc('list', variant) + (open ? ' is-open' : '')} data-testid={testID}>
       <button type="button" className="bx-folder-tab" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}>
         <span className="bx-folder-icon" aria-hidden="true" /><span className="bx-row-main"><strong>{heading}</strong><span className="bx-row-meta">{items.length} {items.length === 1 ? 'document' : 'documents'}</span></span>
       </button>
       {open ? (
-        <ul className="bx-rows bx-folder-docs" id={id}>
+        <Ul className="bx-rows bx-folder-docs" id={id}>
           {items.map((o, i) => <li key={o.id} className={`bx-row ${stagger(i)}`}><span className="bx-row-main"><strong>{o.title}</strong>{o.meta ? <span className="bx-row-meta">{o.meta}</span> : null}</span>
             <button type="button" className="bx-btn bx-btn--borderless bx-btn--sm" aria-label={`Open ${o.title}`} onClick={() => onAction?.(o)}>Open</button></li>)}
-        </ul>
+        </Ul>
       ) : null}
     </section>
   );
 }
 
 /** Cards that stack as the page scrolls. */
-export function ScrollStack({ testID, label, items }: { testID?: string; label?: string; items: ReadonlyArray<DeckItem> }) {
-  return <ul className="bx-scroll-stack" aria-label={label || undefined} data-testid={testID}>{items.map((o, i) => <li key={i} className={`bx-card bx-scroll-stack-card is-n-${Math.min(i, 9)}`}><h3 className="bx-card-title">{o.title}</h3><p className="bx-thing-text">{o.text}</p></li>)}</ul>;
+export function ScrollStack({ testID, label, items, variant }: { testID?: string; label?: string; items: ReadonlyArray<DeckItem>; /** The style variant (variants/v2.json). */ variant?: CardsVariant }) {
+  return <ul className={'bx-scroll-stack' + vc('cards', variant)} aria-label={label || undefined} data-testid={testID}>{items.map((o, i) => <Surface as="li" kind="cards" variant={variant} key={i} className={`bx-card bx-scroll-stack-card is-n-${Math.min(i, 9)}`}><h3 className="bx-card-title">{o.title}</h3><p className="bx-thing-text">{o.text}</p></Surface>)}</ul>;
 }
 
-export interface ProfileCardProps { testID?: string; name: string; jobTitle?: string; src?: string; items?: ReadonlyArray<Detail>; actionLabel?: string; onAction?: () => void }
+export interface ProfileCardProps { testID?: string; name: string; jobTitle?: string; src?: string; items?: ReadonlyArray<Detail>; actionLabel?: string; onAction?: () => void;
+  /** The style variant (variants/v2.json). */ variant?: CardVariant }
 /** A person with their photo or initials, their role and details. */
-export function ProfileCard({ testID, name, jobTitle, src, items = [], actionLabel, onAction }: ProfileCardProps) {
+export function ProfileCard({ testID, name, jobTitle, src, items = [], actionLabel, onAction, variant }: ProfileCardProps) {
   const id = useId();
   return (
-    <article className="bx-card bx-profile-card" aria-labelledby={id} data-testid={testID}>
+    <Surface as="article" kind="card" variant={variant} className={'bx-card bx-profile-card' + vc('card', variant)} aria-labelledby={id} data-testid={testID}>
       <div className="bx-profile-head">
         {src ? <img className="bx-avatar is-lg" src={src} alt="" /> : <span className="bx-avatar is-lg" aria-hidden="true">{initials(name)}</span>}
         <span className="bx-row-main"><h3 className="bx-card-title" id={id}>{name}</h3>{jobTitle ? <span className="bx-row-meta">{jobTitle}</span> : null}</span>
       </div>
       {items.length ? <DetailList items={items} /> : null}
       {actionLabel ? <button type="button" className="bx-btn bx-btn--outlined" onClick={onAction}>{actionLabel}</button> : null}
-    </article>
+    </Surface>
   );
 }
 

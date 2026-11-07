@@ -13,6 +13,7 @@ import type { Severity } from './Toast';
 import { FieldProps, styles, useField } from './field';
 import { Enter, MODAL_FADE, Pop, Press, Roll, Shake, useGrow, useOpen, useSlide } from './motion';
 import { Theme, useTheme } from './theme';
+import { CardVariant, KvVariant, TilesVariant, variantStyle } from './variants-v2';
 
 /** A form's props: the field props with the heading optional. */
 export type FormProps<T> = Omit<FieldProps<T>, 'label'> & { label?: string };
@@ -63,8 +64,8 @@ export function Touch({ testID, label, hint, onPress, disabled, selected, curren
 /* ---------- Sheet ---------- */
 
 /** A panel that slides up over the screen; the back button and a tap outside close it, and the screen behind is hidden from screen readers. */
-export function Sheet({ testID, open, title, onClose, children, side }: {
-  testID?: string; open: boolean; title: string; onClose: () => void; children: ReactNode; side?: 'bottom' | 'start';
+export function Sheet({ testID, open, title, onClose, children, side, style }: {
+  testID?: string; open: boolean; title: string; onClose: () => void; children: ReactNode; side?: 'bottom' | 'start'; /** A variant's style on the panel. */ style?: object;
 }) {
   const t = useTheme();
   const start = side === 'start';
@@ -77,7 +78,7 @@ export function Sheet({ testID, open, title, onClose, children, side }: {
         <Animated.View testID={testID} accessibilityViewIsModal {...panelRole(title)}
               style={[spring, { backgroundColor: t.color.surface, padding: 16, paddingBottom: 28, gap: 8, ...(start
                 ? { width: '82%', maxWidth: 360, height: '100%' }
-                : { maxHeight: '80%', borderTopLeftRadius: t.radius.card, borderTopRightRadius: t.radius.card }) }]}>
+                : { maxHeight: '80%', borderTopLeftRadius: t.radius.card, borderTopRightRadius: t.radius.card }) }, style]}>
           <Heading t={t}>{title}</Heading>
           {children}
         </Animated.View>
@@ -174,13 +175,15 @@ export interface KeyValuesProps {
   /** The action is running: the button is busy and cannot be pressed twice. */
   busy?: boolean;
   children?: ReactNode;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: KvVariant;
 }
 
 /** Facts as "label: value" rows, each one stop for a screen reader, and one action under them. */
-export function KeyValues({ testID, label, rows, actionLabel, onAction, busy, children }: KeyValuesProps) {
+export function KeyValues({ variant, testID, label, rows, actionLabel, onAction, busy, children }: KeyValuesProps) {
   const t = useTheme();
   return (
-    <Enter testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={[panel(t), variantStyle(t, 'kv', variant)]}>
       {label ? <Heading t={t}>{label}</Heading> : null}
       <View>
         {rows.map((r, i) => (
@@ -216,10 +219,12 @@ export interface TilesProps {
   /** The tile picked for detail. */
   value?: string;
   onChange?: (id: string) => void;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: TilesVariant;
 }
 
 /** A set of totals, two to a row; when onChange is set each tile is a button that picks it. */
-export function Tiles({ testID, label, tiles, value, onChange }: TilesProps) {
+export function Tiles({ testID, label, tiles, value, onChange, variant }: TilesProps) {
   const t = useTheme();
   return (
     <View testID={testID} style={{ gap: 10 }}>
@@ -236,7 +241,9 @@ export function Tiles({ testID, label, tiles, value, onChange }: TilesProps) {
               {x.note ? <Text style={{ fontSize: 12.5, color: t.color.textMuted }}>{x.note}</Text> : null}
             </>
           );
-          const box = [panel(t), { gap: 4, flexGrow: 1, flexBasis: '45%', ...(on ? { borderColor: t.color.primary, borderWidth: 1.5 } : {}) }];
+          // bento: the first figure takes the whole row
+          const box = [panel(t), { gap: 4, flexGrow: 1, flexBasis: variant === 'bento' && x === tiles[0] ? '100%' : '45%' }, variantStyle(t, 'tiles', variant),
+            on ? { borderColor: t.color.primary, borderWidth: 1.5 } : null];
           // Named by its own text (title, value, note), so the name always matches what is shown
           return onChange
             ? <Touch key={x.id} testID={`${testID}-${x.id}`} selected={on} onPress={() => onChange(x.id)} style={box}>{body}</Touch>
@@ -748,14 +755,16 @@ export interface InfoCardProps {
   /** A link at the foot: "Apply now". */
   actionLabel?: string;
   onAction?: () => void;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: CardVariant;
 }
 
 /** A card with a title, a line, a tag and one link (a product, an offer, the relationship manager). */
-export function InfoCard({ testID, title, body, badge, actionLabel, onAction }: InfoCardProps) {
+export function InfoCard({ variant, testID, title, body, badge, actionLabel, onAction }: InfoCardProps) {
   const t = useTheme();
   const c = toneColors(t, 'info');
   return (
-    <Enter testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={[panel(t), variantStyle(t, 'card', variant)]}>
       {badge ? <Text style={{ alignSelf: 'flex-start', fontSize: 12, fontWeight: '700', color: c.fg, backgroundColor: c.bg, paddingHorizontal: 8,
         paddingVertical: 3, borderRadius: 999 }}>{badge}</Text> : null}
       <Heading t={t}>{title}</Heading>

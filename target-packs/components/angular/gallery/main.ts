@@ -54,7 +54,7 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-date testID="dp" label="Pay on" [(value)]="day" min="2026-11-10" max="2026-12-31" locale="en-GB" />
       </div></section>
       <section class="gate" data-component="dialog" aria-labelledby="dl-h"><h2 id="dl-h">Dialog</h2><div class="gate-body"><div class="gate-dialog">
-        <bx-dialog [open]="true" dialogTitle="Delete A. Sharma?" description="You can add them again later.">
+        <bx-dialog [variant]="variant" [open]="true" dialogTitle="Delete A. Sharma?" description="You can add them again later.">
           <p>Payments scheduled to A. Sharma will stop.</p>
           <bx-button footer label="Cancel" chroming="outlined" /><bx-button footer label="Delete" chroming="danger" />
         </bx-dialog>
@@ -63,15 +63,15 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-toast display="general" [messages]="messages" />
       </div></section>
       <section class="gate" data-component="card" aria-labelledby="cd-h"><h2 id="cd-h">Card</h2><div class="gate-body"><div class="gate-row">
-        <bx-card heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</bx-card>
-        <bx-card heading="Current •••• 0187" subheading="Open the account" [interactive]="true" [selected]="false">₹12,410.50</bx-card>
+        <bx-card [variant]="variant" heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</bx-card>
+        <bx-card [variant]="variant" heading="Current •••• 0187" subheading="Open the account" [interactive]="true" [selected]="false">₹12,410.50</bx-card>
       </div></div></section>
       <section class="gate" data-component="tabs" aria-labelledby="tb-h"><h2 id="tb-h">Tabs</h2><div class="gate-body">
-        <bx-tabs #t label="Accounts" [tabs]="tabs" [(selection)]="tab" />
+        <bx-tabs [variant]="variant" #t label="Accounts" [tabs]="tabs" [(selection)]="tab" />
         <p role="tabpanel" [id]="t.panelId(tab())" [attr.aria-labelledby]="t.tabId(tab())">{{ panel[tab()] }}</p>
       </div></section>
       <section class="gate" data-component="data-grid" aria-labelledby="dg-h"><h2 id="dg-h">Data table</h2><div class="gate-body">
-        <bx-data-grid caption="Recent transactions" [rows]="rows" [columns]="columns" selectionMode="multiple" [(selected)]="selected" />
+        <bx-data-grid [variant]="variant" caption="Recent transactions" [rows]="rows" [columns]="columns" selectionMode="multiple" [(selected)]="selected" />
       </div></section>
       <section class="gate" data-component="text-area" aria-labelledby="ta-h"><h2 id="ta-h">Text area</h2><div class="gate-body">
         <bx-text-area testID="ta1" label="Remarks" [(value)]="remarks" [maxLength]="140" helpText="Shown on the payee's statement" />
@@ -118,30 +118,30 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-segmented testID="sg1" label="Show" [options]="['Day', 'Week', 'Month']" [(value)]="show" />
       </div></section>
       <section class="gate" data-component="action-menu" aria-labelledby="aw1-3-h"><h2 id="aw1-3-h">Action menu</h2><div class="gate-body">
-        <bx-action-menu testID="am1" [items]="['Download statement', 'Set a nickname', { value: 'close', label: 'Close the account', danger: true }]" />
+        <bx-action-menu [variant]="variant" testID="am1" [items]="['Download statement', 'Set a nickname', { value: 'close', label: 'Close the account', danger: true }]" />
       </div></section>
       <section class="gate" data-component="stepper" aria-labelledby="aw1-4-h"><h2 id="aw1-4-h">Stepper</h2><div class="gate-body">
         <bx-stepper testID="st1" [steps]="['Details', 'Review', 'Done']" selectedStep="Review" />
       </div></section>
       <section class="gate" data-component="breadcrumb" aria-labelledby="aw1-5-h"><h2 id="aw1-5-h">Breadcrumb</h2><div class="gate-body">
-        <bx-breadcrumb testID="bc1" [items]="['Accounts', 'Savings ·· 4821', 'Statement']" />
+        <bx-breadcrumb [variant]="variant" testID="bc1" [items]="['Accounts', 'Savings ·· 4821', 'Statement']" />
       </div></section>
       <section class="gate" data-component="side-nav" aria-labelledby="aw1-6-h"><h2 id="aw1-6-h">Side navigation</h2><div class="gate-body">
-        <bx-side-nav testID="sn1" [items]="['Accounts', 'Payments', { id: 'Cards', label: 'Cards', badge: 2 }]" [(selection)]="navSel" />
+        <bx-side-nav [variant]="variant" testID="sn1" [items]="['Accounts', 'Payments', { id: 'Cards', label: 'Cards', badge: 2 }]" [(selection)]="navSel" />
       </div></section>
       <section class="gate" data-component="sheet" aria-labelledby="aw1-7-h"><h2 id="aw1-7-h">Sheet</h2><div class="gate-body">
         <bx-secondary-button label="Filter" (action)="sheet.set(true)" />
-        <bx-sheet testID="sh1" [(open)]="sheet" heading="Filter transactions"><p>Choose what to show.</p></bx-sheet>
+        <bx-sheet [variant]="variant" testID="sh1" [(open)]="sheet" heading="Filter transactions"><p>Choose what to show.</p></bx-sheet>
       </div></section>
       <section class="gate" data-component="grid" aria-labelledby="aw1-8-h"><h2 id="aw1-8-h">Grid</h2><div class="gate-body">
-        <bx-grid testID="gr1" [columns]="3"><bx-card heading="Savings" /><bx-card heading="Current" /><bx-card heading="Deposits" /></bx-grid>
+        <bx-grid [variant]="variant" testID="gr1" [columns]="3"><bx-card [variant]="variant" heading="Savings" /><bx-card [variant]="variant" heading="Current" /><bx-card [variant]="variant" heading="Deposits" /></bx-grid>
       </div></section>
       <section class="gate" data-component="divider" aria-labelledby="aw1-9-h"><h2 id="aw1-9-h">Divider</h2><div class="gate-body">
-        <bx-divider testID="dv1" />
-        <bx-divider testID="dv2" label="Or" />
+        <bx-divider [variant]="variant" testID="dv1" />
+        <bx-divider [variant]="variant" testID="dv2" label="Or" />
       </div></section>
       <section class="gate" data-component="pagination" aria-labelledby="aw1-10-h"><h2 id="aw1-10-h">Pagination</h2><div class="gate-body">
-        <bx-pagination testID="pg1" [(page)]="page" [pageCount]="4" />
+        <bx-pagination [variant]="variant" testID="pg1" [(page)]="page" [pageCount]="4" />
       </div></section>
       <section class="gate" data-component="status-badge" aria-labelledby="aw1-11-h"><h2 id="aw1-11-h">Status badge</h2><div class="gate-body">
         <bx-status-badge testID="sb1" label="Completed" tone="success" />
@@ -183,7 +183,7 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-filter-chips testID="fc1" label="Filter" [options]="['Card', 'Transfer', 'Bills', 'Salary']" [value]="['Card']" />
       </div></section>
       <section class="gate" data-component="accordion" aria-labelledby="ap-accordion-h"><h2 id="ap-accordion-h">Accordion</h2><div class="gate-body">
-        <bx-accordion testID="ac1" [items]="[{ id: 'a', title: 'How long does a transfer take?', body: 'Same day inside the bank; up to 2 working days to other banks.' }, { id: 'b', title: 'Can I cancel a payment?', body: 'Yes, until it is sent.' }]" />
+        <bx-accordion [variant]="variant" testID="ac1" [items]="[{ id: 'a', title: 'How long does a transfer take?', body: 'Same day inside the bank; up to 2 working days to other banks.' }, { id: 'b', title: 'Can I cancel a payment?', body: 'Yes, until it is sent.' }]" />
       </div></section>
       <section class="gate" data-component="avatar" aria-labelledby="ap-avatar-h"><h2 id="ap-avatar-h">Avatar</h2><div class="gate-body">
         <bx-avatar testID="av1" name="Asha Rao" />
@@ -196,7 +196,7 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-skeleton testID="sk3" shape="circle" [lines]="1" />
       </div></section>
       <section class="gate" data-component="quick-actions" aria-labelledby="ap-quick-actions-h"><h2 id="ap-quick-actions-h">Quick actions</h2><div class="gate-body">
-        <bx-quick-actions testID="qa1" [items]="[{ id: 'send', label: 'Send', icon: '↗' }, { id: 'bills', label: 'Pay bills', icon: '≡' }, { id: 'topup', label: 'Top up', icon: '+' }, { id: 'scan', label: 'Scan to pay', icon: '⌗' }]" />
+        <bx-quick-actions [variant]="variant" testID="qa1" [items]="[{ id: 'send', label: 'Send', icon: '↗' }, { id: 'bills', label: 'Pay bills', icon: '≡' }, { id: 'topup', label: 'Top up', icon: '+' }, { id: 'scan', label: 'Scan to pay', icon: '⌗' }]" />
       </div></section>
       <section class="gate" data-component="repeat" aria-labelledby="ap-repeat-h"><h2 id="ap-repeat-h">Repeat</h2><div class="gate-body">
         <bx-repeat testID="rp1" value="Once" />
@@ -208,17 +208,17 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-account-picker testID="ap1" [options]="accounts" [(value)]="account" />
       </div></section>
       <section class="gate" data-component="account-summary" aria-labelledby="aw2-1-h"><h2 id="aw2-1-h">Account summary</h2><div class="gate-body">
-        <bx-account-summary testID="as1" [items]="[{ label: 'Savings', value: '12,400.00', meta: 'Available 12,150.00' }, { label: 'Current', value: '3,210.50', meta: 'Overdraft 1,000.00' }, { label: 'Deposits', value: '25,000.00', meta: 'Matures 14 Mar' }]" />
+        <bx-account-summary [variant]="variant" testID="as1" [items]="[{ label: 'Savings', value: '12,400.00', meta: 'Available 12,150.00' }, { label: 'Current', value: '3,210.50', meta: 'Overdraft 1,000.00' }, { label: 'Deposits', value: '25,000.00', meta: 'Matures 14 Mar' }]" />
       </div></section>
       <section class="gate" data-component="balance-card" aria-labelledby="aw2-2-h"><h2 id="aw2-2-h">Balance card</h2><div class="gate-body">
         <bx-balance-card testID="bc1" label="Savings ·· 4821" [amount]="12400" currency="USD" meta="Available 12,150.00" />
         <bx-balance-card testID="bc2" label="Current ·· 7730" [amount]="3210.5" currency="USD" [amountHidden]="true" />
       </div></section>
       <section class="gate" data-component="account-card" aria-labelledby="aw2-3-h"><h2 id="aw2-3-h">Account card</h2><div class="gate-body">
-        <bx-account-card testID="ac1" heading="Savings ·· 4821" text="Balance 12,400.00 · Available 12,150.00" badge="Primary" actionLabel="View details →" />
+        <bx-account-card [variant]="variant" testID="ac1" heading="Savings ·· 4821" text="Balance 12,400.00 · Available 12,150.00" badge="Primary" actionLabel="View details →" />
       </div></section>
       <section class="gate" data-component="account-details" aria-labelledby="aw2-4-h"><h2 id="aw2-4-h">Account details</h2><div class="gate-body">
-        <bx-account-details [items]="[{ label: 'Account', value: 'Savings ·· 4821' }, { label: 'Branch', value: 'London Bridge' }, { label: 'IBAN', value: 'GB29 •••• 9268 19' }, { label: 'Holder', value: 'A. Rao' }]" actionLabel="Download statement" />
+        <bx-account-details [variant]="variant" [items]="[{ label: 'Account', value: 'Savings ·· 4821' }, { label: 'Branch', value: 'London Bridge' }, { label: 'IBAN', value: 'GB29 •••• 9268 19' }, { label: 'Holder', value: 'A. Rao' }]" actionLabel="Download statement" />
       </div></section>
       <section class="gate" data-component="iban" aria-labelledby="aw2-5-h"><h2 id="aw2-5-h">IBAN</h2><div class="gate-body">
         <bx-iban testID="ib1" label="Account number (IBAN)" [(value)]="iban" [required]="true" />
@@ -228,13 +228,13 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-payee-list testID="pl1" [items]="payeeRows" />
       </div></section>
       <section class="gate" data-component="beneficiary-card" aria-labelledby="aw2-7-h"><h2 id="aw2-7-h">Beneficiary card</h2><div class="gate-body">
-        <bx-beneficiary-card testID="bf1" heading="A. Rao" text="GB29 •••• 9268 19 · added 12 Mar" badge="HSBC" actionLabel="Pay now →" />
+        <bx-beneficiary-card [variant]="variant" testID="bf1" heading="A. Rao" text="GB29 •••• 9268 19 · added 12 Mar" badge="HSBC" actionLabel="Pay now →" />
       </div></section>
       <section class="gate" data-component="payment-form" aria-labelledby="aw2-8-h"><h2 id="aw2-8-h">Payment form</h2><div class="gate-body">
         <bx-payment-form testID="pf1" cancelLabel="Cancel"><bx-account-picker [options]="accounts" [(value)]="account" /><bx-amount label="Amount" currency="USD" /></bx-payment-form>
       </div></section>
       <section class="gate" data-component="transfer-summary" aria-labelledby="aw2-9-h"><h2 id="aw2-9-h">Transfer summary</h2><div class="gate-body">
-        <bx-transfer-summary [items]="[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }, { label: 'Amount', value: '1,250.00 USD' }, { label: 'Fee', value: '0.00' }, { label: 'Arrives', value: 'Today' }]" />
+        <bx-transfer-summary [variant]="variant" [items]="[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }, { label: 'Amount', value: '1,250.00 USD' }, { label: 'Fee', value: '0.00' }, { label: 'Arrives', value: 'Today' }]" />
       </div></section>
       <section class="gate" data-component="payment-status" aria-labelledby="aw2-10-h"><h2 id="aw2-10-h">Payment status</h2><div class="gate-body">
         <bx-payment-status testID="ps1" [steps]="['Initiated', 'Approved', 'Sent', 'Completed']" selectedStep="Sent" />
@@ -247,13 +247,13 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-transaction-filter testID="tf1" [options]="['Money in', 'Money out', 'Cards', 'Transfers']" [(value)]="txFilter" />
       </div></section>
       <section class="gate" data-component="transaction-details" aria-labelledby="aw2-13-h"><h2 id="aw2-13-h">Transaction details</h2><div class="gate-body">
-        <bx-transaction-details [items]="[{ label: 'Description', value: 'Coffee House' }, { label: 'Date', value: 'Today 08:14' }, { label: 'Amount', value: '-4.50 USD' }, { label: 'Card', value: '·· 4821' }, { label: 'Reference', value: 'TX-88211' }]" actionLabel="Dispute it" />
+        <bx-transaction-details [variant]="variant" [items]="[{ label: 'Description', value: 'Coffee House' }, { label: 'Date', value: 'Today 08:14' }, { label: 'Amount', value: '-4.50 USD' }, { label: 'Card', value: '·· 4821' }, { label: 'Reference', value: 'TX-88211' }]" actionLabel="Dispute it" />
       </div></section>
       <section class="gate" data-component="receipt" aria-labelledby="aw2-14-h"><h2 id="aw2-14-h">Receipt</h2><div class="gate-body">
         <bx-receipt testID="rc1" [amount]="1250" currency="USD" reference="FX-20391" [items]="[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }]"><bx-secondary-button label="Download" /></bx-receipt>
       </div></section>
       <section class="gate" data-component="td-summary" aria-labelledby="aw2-15-h"><h2 id="aw2-15-h">Deposits summary</h2><div class="gate-body">
-        <bx-td-summary testID="ts1" [interactive]="false" [items]="[{ label: 'Deposits', value: '4', meta: 'Total 62,500.00' }, { label: 'Interest earned', value: '1,840.20', meta: 'This year' }, { label: 'Next maturity', value: '14 Mar', meta: '·· 9011 · 25,000.00' }]" />
+        <bx-td-summary [variant]="variant" testID="ts1" [interactive]="false" [items]="[{ label: 'Deposits', value: '4', meta: 'Total 62,500.00' }, { label: 'Interest earned', value: '1,840.20', meta: 'This year' }, { label: 'Next maturity', value: '14 Mar', meta: '·· 9011 · 25,000.00' }]" />
       </div></section>
       <section class="gate" data-component="new-td" aria-labelledby="aw2-16-h"><h2 id="aw2-16-h">New deposit</h2><div class="gate-body">
         <bx-new-td testID="nt1" [items]="[{ label: 'From account', value: 'Savings ·· 4821' }, { label: 'Amount (USD)', value: '10,000.00' }, { label: 'Tenure', value: '12 months' }]" />
@@ -262,28 +262,28 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-maturity-instructions testID="mi1" [options]="['Renew principal and interest', 'Renew principal, pay out interest', 'Close and pay out']" [(value)]="maturity" />
       </div></section>
       <section class="gate" data-component="td-topup" aria-labelledby="aw2-18-h"><h2 id="aw2-18-h">Deposit top-up</h2><div class="gate-body">
-        <bx-td-topup [items]="[{ label: 'Deposit', value: '·· 9011' }, { label: 'Current amount', value: '25,000.00' }, { label: 'Top-up', value: '5,000.00' }, { label: 'New maturity value', value: '31,950.00', total: true }]" />
+        <bx-td-topup [variant]="variant" [items]="[{ label: 'Deposit', value: '·· 9011' }, { label: 'Current amount', value: '25,000.00' }, { label: 'Top-up', value: '5,000.00' }, { label: 'New maturity value', value: '31,950.00', total: true }]" />
       </div></section>
       <section class="gate" data-component="td-redemption" aria-labelledby="aw2-19-h"><h2 id="aw2-19-h">Deposit redemption</h2><div class="gate-body">
-        <bx-td-redemption [items]="[{ label: 'Deposit', value: '·· 9011' }, { label: 'Principal', value: '25,000.00' }, { label: 'Interest to date', value: '612.40' }, { label: 'Early penalty', value: '-62.50' }, { label: 'You receive', value: '25,549.90', total: true }]" />
+        <bx-td-redemption [variant]="variant" [items]="[{ label: 'Deposit', value: '·· 9011' }, { label: 'Principal', value: '25,000.00' }, { label: 'Interest to date', value: '612.40' }, { label: 'Early penalty', value: '-62.50' }, { label: 'You receive', value: '25,549.90', total: true }]" />
       </div></section>
       <section class="gate" data-component="loan-summary" aria-labelledby="aw3-0-h"><h2 id="aw3-0-h">Loans summary</h2><div class="gate-body">
-        <bx-loan-summary [items]="[{label: 'Home loan', value: '142,300.00', meta: 'Next 1,240.00 on 5 Feb'}, {label: 'Car loan', value: '18,420.00', meta: 'Next 412.00 on 5 Feb'}, {label: 'Overdue', value: '412.00', meta: 'Car loan · 12 days'}]" />
+        <bx-loan-summary [variant]="variant" [items]="[{label: 'Home loan', value: '142,300.00', meta: 'Next 1,240.00 on 5 Feb'}, {label: 'Car loan', value: '18,420.00', meta: 'Next 412.00 on 5 Feb'}, {label: 'Overdue', value: '412.00', meta: 'Car loan · 12 days'}]" />
       </div></section>
       <section class="gate" data-component="loan-repayment" aria-labelledby="aw3-1-h"><h2 id="aw3-1-h">Loan repayment</h2><div class="gate-body">
         <bx-loan-repayment [items]="[{label: 'Loan', value: 'Car loan ·· 3310'}, {label: 'Amount (USD)', value: '412.00'}, {label: 'Pay from', value: 'Savings ·· 4821'}]" />
       </div></section>
       <section class="gate" data-component="loan-schedule" aria-labelledby="aw3-2-h"><h2 id="aw3-2-h">Repayment schedule</h2><div class="gate-body">
-        <bx-loan-schedule testID="ls1" [rows]="[{date: '05 Feb', amount: '412.00', status: 'due'}, {date: '05 Mar', amount: '412.00'}, {date: '05 Apr', amount: '412.00'}]" />
+        <bx-loan-schedule [variant]="variant" testID="ls1" [rows]="[{date: '05 Feb', amount: '412.00', status: 'due'}, {date: '05 Mar', amount: '412.00'}, {date: '05 Apr', amount: '412.00'}]" />
       </div></section>
       <section class="gate" data-component="promise-to-pay" aria-labelledby="aw3-3-h"><h2 id="aw3-3-h">Promise to pay</h2><div class="gate-body">
-        <bx-promise-to-pay [items]="[{label: 'Overdue', value: '412.00'}, {label: 'Promise date', value: '20 Jan'}, {label: 'Pay from', value: 'Savings ·· 4821'}]" />
+        <bx-promise-to-pay [variant]="variant" [items]="[{label: 'Overdue', value: '412.00'}, {label: 'Promise date', value: '20 Jan'}, {label: 'Pay from', value: 'Savings ·· 4821'}]" />
       </div></section>
       <section class="gate" data-component="disbursement" aria-labelledby="aw3-4-h"><h2 id="aw3-4-h">Disbursement timeline</h2><div class="gate-body">
         <bx-disbursement [items]="[{label: 'Sanctioned 30,000.00', meta: '02 Jan'}, {label: 'First disbursement 20,000.00', meta: '05 Jan'}, {label: 'Second disbursement 10,000.00', meta: 'Due 05 Mar', state: 'pending'}]" />
       </div></section>
       <section class="gate" data-component="card-list" aria-labelledby="aw3-5-h"><h2 id="aw3-5-h">Card list</h2><div class="gate-body">
-        <bx-card-list [items]="[{label: 'Platinum ·· 4821', value: '640.00 due', meta: 'Limit 10,000.00 · due 18 Jan'}, {label: 'Classic ·· 7710', value: '0.00 due', meta: 'Limit 3,000.00'}]" />
+        <bx-card-list [variant]="variant" [items]="[{label: 'Platinum ·· 4821', value: '640.00 due', meta: 'Limit 10,000.00 · due 18 Jan'}, {label: 'Classic ·· 7710', value: '0.00 due', meta: 'Limit 3,000.00'}]" />
       </div></section>
       <section class="gate" data-component="convert-emi" aria-labelledby="aw3-6-h"><h2 id="aw3-6-h">Convert to EMI</h2><div class="gate-body">
         <bx-convert-emi testID="ce1" label="Pay 1,200.00 over" [(value)]="emi" />
@@ -312,7 +312,7 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-session-timeout testID="st1" [(open)]="timeoutOpen" [seconds]="90" />
       </div></section>
       <section class="gate" data-component="secure-confirmation" aria-labelledby="aw3-14-h"><h2 id="aw3-14-h">Secure confirmation</h2><div class="gate-body">
-        <bx-secure-confirmation [items]="[{label: 'Pay', value: 'A. Rao'}, {label: 'Amount', value: '1,250.00 USD'}, {label: 'Code sent to', value: '•••• 0123'}]" />
+        <bx-secure-confirmation [variant]="variant" [items]="[{label: 'Pay', value: 'A. Rao'}, {label: 'Amount', value: '1,250.00 USD'}, {label: 'Code sent to', value: '•••• 0123'}]" />
       </div></section>
       <section class="gate" data-component="sensitive" aria-labelledby="aw3-15-h"><h2 id="aw3-15-h">Sensitive field</h2><div class="gate-body">
         <bx-sensitive testID="sf1" value="4111 1111 1111 4821" />
@@ -330,7 +330,7 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-approval-queue [items]="[{title: 'Payroll Feb · prioritized', meta: 'Financial · 182,400.00', value: 'PAY-4410'}, {title: 'Vendor ABC Ltd', meta: 'Financial · 12,000.00', value: 'PAY-4412'}, {title: 'Add payee J. Mehta', meta: 'Non-financial', value: 'BEN-218'}]" />
       </div></section>
       <section class="gate" data-component="approval-detail" aria-labelledby="aw4-4-h"><h2 id="aw4-4-h">Approval detail</h2><div class="gate-body">
-        <bx-approval-detail [items]="[{label: 'Reference', value: 'PAY-4410'}, {label: 'Initiated by', value: 'A. Rao, maker'}, {label: 'Amount', value: '182,400.00 USD'}, {label: 'Value date', value: '28 Jan'}, {label: 'Your level', value: '2 of 3'}]" />
+        <bx-approval-detail [variant]="variant" [items]="[{label: 'Reference', value: 'PAY-4410'}, {label: 'Initiated by', value: 'A. Rao, maker'}, {label: 'Amount', value: '182,400.00 USD'}, {label: 'Value date', value: '28 Jan'}, {label: 'Your level', value: '2 of 3'}]" />
       </div></section>
       <section class="gate" data-component="approval-journey" aria-labelledby="aw4-5-h"><h2 id="aw4-5-h">Approval journey</h2><div class="gate-body">
         <bx-approval-journey [items]="[{label: 'Initiated', meta: 'A. Rao · 09:12'}, {label: 'Approved, level 1', meta: 'P. Nair · 10:40'}, {label: 'Waiting, level 2', meta: 'Finance head', state: 'current'}, {label: 'Release', meta: 'Treasury', state: 'pending'}]" />
@@ -348,10 +348,10 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-structure-type [(value)]="structure" />
       </div></section>
       <section class="gate" data-component="account-structure" aria-labelledby="aw4-10-h"><h2 id="aw4-10-h">Account structure</h2><div class="gate-body">
-        <bx-account-structure [items]="[{id: 'h', title: 'Header account ·· 1000', body: 'Sweeps to zero balance daily at 18:00.'}, {id: 'p', title: 'Child: Payroll ·· 1010', body: 'Target balance 5,000.00.'}, {id: 'v', title: 'Child: Vendors ·· 1020', body: 'Sweeps above 2,000.00.'}]" />
+        <bx-account-structure [variant]="variant" [items]="[{id: 'h', title: 'Header account ·· 1000', body: 'Sweeps to zero balance daily at 18:00.'}, {id: 'p', title: 'Child: Payroll ·· 1010', body: 'Target balance 5,000.00.'}, {id: 'v', title: 'Child: Vendors ·· 1020', body: 'Sweeps above 2,000.00.'}]" />
       </div></section>
       <section class="gate" data-component="structure-simulation" aria-labelledby="aw4-11-h"><h2 id="aw4-11-h">Structure simulation</h2><div class="gate-body">
-        <bx-structure-simulation [items]="[{label: 'Structure', value: 'Daily zero balance'}, {label: 'Accounts', value: '3'}, {label: 'Moved today', value: '182,400.00'}, {label: 'Interest benefit', value: '1,210.00 a month'}]" />
+        <bx-structure-simulation [variant]="variant" [items]="[{label: 'Structure', value: 'Daily zero balance'}, {label: 'Accounts', value: '3'}, {label: 'Moved today', value: '182,400.00'}, {label: 'Interest benefit', value: '1,210.00 a month'}]" />
       </div></section>
       <section class="gate" data-component="intercompany-limits" aria-labelledby="aw4-12-h"><h2 id="aw4-12-h">Intercompany limits</h2><div class="gate-body">
         <bx-intercompany-limits [items]="[{label: 'Payroll Ltd', value: 120, max: 500}, {label: 'Vendors Ltd', value: 340, max: 400}]" unit="k" />
@@ -360,7 +360,7 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-sweep-monitor [items]="[{label: 'Sweep started', meta: '18:00'}, {label: '3 of 3 accounts swept', meta: '18:02'}, {label: 'Interest reallocated', meta: '18:05', state: 'current'}]" />
       </div></section>
       <section class="gate" data-component="profile" aria-labelledby="aw4-14-h"><h2 id="aw4-14-h">Profile</h2><div class="gate-body">
-        <bx-profile [items]="[{label: 'Name', value: 'A. Rao'}, {label: 'Email', value: 'a.rao@mail.example'}, {label: 'Mobile', value: '•••• 0123'}, {label: 'Address', value: '12 Bridge St, London'}]" />
+        <bx-profile [variant]="variant" [items]="[{label: 'Name', value: 'A. Rao'}, {label: 'Email', value: 'a.rao@mail.example'}, {label: 'Mobile', value: '•••• 0123'}, {label: 'Address', value: '12 Bridge St, London'}]" />
       </div></section>
       <section class="gate" data-component="sign-in-options" aria-labelledby="aw4-15-h"><h2 id="aw4-15-h">Sign-in options</h2><div class="gate-body">
         <bx-sign-in-options [options]="['Passkey', 'Facial ID', 'Soft token']" [(value)]="signIn" />
@@ -423,7 +423,7 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-fatca-crs selectedStep="Tax residency" />
       </div></section>
       <section class="gate" data-component="product-showcase" aria-labelledby="aw5-10-h"><h2 id="aw5-10-h">Product showcase</h2><div class="gate-body">
-        <bx-product-showcase heading="Platinum credit card" text="2% cashback · no annual fee in year one" badge="New" actionLabel="Apply now →" />
+        <bx-product-showcase [variant]="variant" heading="Platinum credit card" text="2% cashback · no annual fee in year one" badge="New" actionLabel="Apply now →" />
       </div></section>
       <section class="gate" data-component="application-tracker" aria-labelledby="aw5-11-h"><h2 id="aw5-11-h">Application tracker</h2><div class="gate-body">
         <bx-application-tracker [items]="[{label: 'Submitted', meta: '12 Jan'}, {label: 'Documents checked', meta: '13 Jan'}, {label: 'Credit decision', meta: 'Expected 16 Jan', state: 'current'}, {label: 'Card sent', meta: '—', state: 'pending'}]" />
@@ -453,7 +453,7 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-nominations [items]="[{title: 'S. Rao · spouse', meta: 'Savings ·· 4821', value: '50%'}, {title: 'K. Rao · son', meta: 'Savings ·· 4821', value: '50%'}]" />
       </div></section>
       <section class="gate" data-component="faq" aria-labelledby="aw5-20-h"><h2 id="aw5-20-h">FAQ</h2><div class="gate-body">
-        <bx-faq [items]="faq" />
+        <bx-faq [variant]="variant" [items]="faq" />
       </div></section>
       <section class="gate" data-component="card-tile" aria-labelledby="ap-card-tile-h"><h2 id="ap-card-tile-h">Card tile</h2><div class="gate-body">
         <bx-card-tile testID="ct1" label="Platinum" number="4111111111114821" holder="A. RAO" expiry="09/29" network="Visa" />
@@ -491,7 +491,7 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-currency-converter currency="USD" toCurrency="EUR" [rate]="0.92" />
       </div></section>
       <section class="gate" data-component="financial-overview" aria-labelledby="aw6-0-h"><h2 id="aw6-0-h">Financial overview</h2><div class="gate-body">
-        <bx-financial-overview [items]="[{label: 'Assets', value: '4.2M', meta: 'CASA, deposits'}, {label: 'Liabilities', value: '1.1M', meta: 'Loans'}, {label: 'Net worth', value: '3.1M', meta: 'Assets less liabilities'}]" />
+        <bx-financial-overview [variant]="variant" [items]="[{label: 'Assets', value: '4.2M', meta: 'CASA, deposits'}, {label: 'Liabilities', value: '1.1M', meta: 'Loans'}, {label: 'Net worth', value: '3.1M', meta: 'Assets less liabilities'}]" />
       </div></section>
       <section class="gate" data-component="position-by-currency" aria-labelledby="aw6-1-h"><h2 id="aw6-1-h">Position by currency</h2><div class="gate-body">
         <bx-position-by-currency [items]="[{label: 'USD', value: 88}, {label: 'EUR', value: 60}, {label: 'GBP', value: 42}, {label: 'INR', value: 30}, {label: 'AED', value: 18}]" note="In millions, assets" />
@@ -500,7 +500,7 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-credit-line-usage [items]="[{label: 'Working capital', value: 720, max: 1000}, {label: 'Import LC line', value: 300, max: 500}, {label: 'Guarantees', value: 90, max: 400}]" unit="k" />
       </div></section>
       <section class="gate" data-component="bills-receivable-payable" aria-labelledby="aw6-3-h"><h2 id="aw6-3-h">Bills receivable and payable</h2><div class="gate-body">
-        <bx-bills-receivable-payable [items]="[{label: 'Receivable', value: '1.8M', meta: 'Export bills'}, {label: 'Payable', value: '0.9M', meta: 'Import bills'}]" />
+        <bx-bills-receivable-payable [variant]="variant" [items]="[{label: 'Receivable', value: '1.8M', meta: 'Export bills'}, {label: 'Payable', value: '0.9M', meta: 'Import bills'}]" />
       </div></section>
       <section class="gate" data-component="trade-instruments" aria-labelledby="aw6-4-h"><h2 id="aw6-4-h">Trade instruments</h2><div class="gate-body">
         <bx-trade-instruments [items]="[{title: 'LC ILC2201', meta: 'Expires in 9 days', value: '250,000.00'}, {title: 'Guarantee OG118', meta: 'Expires in 14 days', value: '80,000.00'}]" />
@@ -509,13 +509,13 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-reports [items]="[{title: 'Account statement · Dec', meta: 'Generated today', value: 'PDF'}, {title: 'Payments summary', meta: 'Yesterday', value: 'CSV'}]" />
       </div></section>
       <section class="gate" data-component="accounts-corp" aria-labelledby="aw6-6-h"><h2 id="aw6-6-h">Accounts (corporate)</h2><div class="gate-body">
-        <bx-accounts-corp [items]="[{id: 'casa', label: 'Current and savings', summary: '12 accounts · 3.4M'}, {id: 'td', label: 'Term deposits', summary: '4 deposits · 1.2M'}, {id: 'loans', label: 'Loans and finances', summary: '2 loans · 1.1M outstanding'}]" />
+        <bx-accounts-corp [variant]="variant" [items]="[{id: 'casa', label: 'Current and savings', summary: '12 accounts · 3.4M'}, {id: 'td', label: 'Term deposits', summary: '4 deposits · 1.2M'}, {id: 'loans', label: 'Loans and finances', summary: '2 loans · 1.1M outstanding'}]" />
       </div></section>
       <section class="gate" data-component="corporate-limits" aria-labelledby="aw6-7-h"><h2 id="aw6-7-h">Corporate limits</h2><div class="gate-body">
         <bx-corporate-limits [items]="[{label: 'Daily, own transfers', value: 420, max: 1000}, {label: 'Monthly, payments', value: 6200, max: 20000}]" unit="k" />
       </div></section>
       <section class="gate" data-component="transactions-widget" aria-labelledby="aw6-8-h"><h2 id="aw6-8-h">Transactions (corporate)</h2><div class="gate-body">
-        <bx-transactions-widget [items]="[{id: 'pending', label: 'Pending', summary: '6 waiting: 4 financial, 2 non-financial'}, {id: 'initiated', label: 'Initiated', summary: '3 initiated today'}, {id: 'log', label: 'Log', summary: '42 this week'}, {id: 'approved', label: 'Approved', summary: '18 approved today'}]" />
+        <bx-transactions-widget [variant]="variant" [items]="[{id: 'pending', label: 'Pending', summary: '6 waiting: 4 financial, 2 non-financial'}, {id: 'initiated', label: 'Initiated', summary: '3 initiated today'}, {id: 'log', label: 'Log', summary: '42 this week'}, {id: 'approved', label: 'Approved', summary: '18 approved today'}]" />
       </div></section>
       <section class="gate" data-component="last-5-payments" aria-labelledby="aw6-9-h"><h2 id="aw6-9-h">Last 5 payments</h2><div class="gate-body">
         <bx-last-5-payments [items]="[{title: 'Payroll Jan', meta: 'Processed', value: '182,400.00', tone: 'success'}, {title: 'Vendor ABC Ltd', meta: 'In progress', value: '12,000.00'}, {title: 'Tax', meta: 'Rejected', value: '9,800.00', tone: 'danger'}]" />
@@ -524,10 +524,10 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-bulk-file-upload [(value)]="bulk" />
       </div></section>
       <section class="gate" data-component="quick-links-corp" aria-labelledby="aw6-11-h"><h2 id="aw6-11-h">Quick links (corporate)</h2><div class="gate-body">
-        <bx-quick-links-corp [items]="[{id: 'own', label: 'Own account', icon: '⇄'}, {id: 'transfer', label: 'Transfer', icon: '↗'}, {id: 'adhoc', label: 'Ad-hoc', icon: '+'}, {id: 'file', label: 'File upload', icon: '⇪'}]" />
+        <bx-quick-links-corp [variant]="variant" [items]="[{id: 'own', label: 'Own account', icon: '⇄'}, {id: 'transfer', label: 'Transfer', icon: '↗'}, {id: 'adhoc', label: 'Ad-hoc', icon: '+'}, {id: 'file', label: 'File upload', icon: '⇪'}]" />
       </div></section>
       <section class="gate" data-component="work-snapshot" aria-labelledby="aw6-12-h"><h2 id="aw6-12-h">Work snapshot</h2><div class="gate-body">
-        <bx-work-snapshot [items]="[{label: 'Processed', value: '12', meta: 'Approved today'}, {label: 'In progress', value: '4', meta: 'Initiated today'}, {label: 'Rejected', value: '1', meta: 'Needs a fix'}]" />
+        <bx-work-snapshot [variant]="variant" [items]="[{label: 'Processed', value: '12', meta: 'Approved today'}, {label: 'In progress', value: '4', meta: 'Initiated today'}, {label: 'Rejected', value: '1', meta: 'Needs a fix'}]" />
       </div></section>
       <section class="gate" data-component="notifications-widget" aria-labelledby="aw6-13-h"><h2 id="aw6-13-h">Notifications (corporate)</h2><div class="gate-body">
         <bx-notifications-widget [items]="[{title: 'USD cut-off moves to 3 pm', meta: 'Today', value: 'Bank'}, {title: 'New tax form available', meta: '2 days ago', value: 'Bank'}]" />
@@ -542,7 +542,7 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-pending-approvals [items]="[{title: 'Payroll Feb · prioritized', meta: 'Financial · 182,400.00', value: 'PAY-4410'}, {title: 'Add payee J. Mehta', meta: 'Non-financial', value: 'BEN-218'}]" />
       </div></section>
       <section class="gate" data-component="overview" aria-labelledby="ap-overview-h"><h2 id="ap-overview-h">Overview</h2><div class="gate-body">
-        <bx-overview [items]="[{ label: 'Current and savings', value: '15,610.50', meta: '3 accounts' }, { label: 'Term deposits', value: '25,000.00', meta: '2 deposits' }, { label: 'Loans', value: '18,420.00', meta: '1 loan outstanding' }, { label: 'Credit cards', value: '640.00 due', meta: '2 cards' }, { label: 'Mutual funds', value: '4,120.00', meta: '1 fund' }]" />
+        <bx-overview [variant]="variant" [items]="[{ label: 'Current and savings', value: '15,610.50', meta: '3 accounts' }, { label: 'Term deposits', value: '25,000.00', meta: '2 deposits' }, { label: 'Loans', value: '18,420.00', meta: '1 loan outstanding' }, { label: 'Credit cards', value: '640.00 due', meta: '2 cards' }, { label: 'Mutual funds', value: '4,120.00', meta: '1 fund' }]" />
       </div></section>
       <section class="gate" data-component="quick-insights" aria-labelledby="ap-quick-insights-h"><h2 id="ap-quick-insights-h">Quick insights</h2><div class="gate-body">
         <bx-quick-insights [items]="[{ title: 'Term deposit matures', meta: 'In 5 days · ·· 9011', value: '25,000.00' }, { title: 'Card payment due', meta: '18 Jan · ·· 4821', value: '640.00' }, { title: 'Low balance', meta: 'Current ·· 7730', value: '210.00' }]" />
@@ -569,19 +569,19 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-credit-score [items]="[{ label: 'Credit score', value: 742, max: 900 }]" />
       </div></section>
       <section class="gate" data-component="rewards" aria-labelledby="ap-rewards-h"><h2 id="ap-rewards-h">Rewards</h2><div class="gate-body">
-        <bx-rewards [items]="[{ label: 'Points', value: '12,400', meta: 'Redeem for merchandise, vouchers or air miles' }, { label: 'Vouchers', value: '3', meta: 'Expire 31 Mar' }, { label: 'Cashback', value: '45.00', meta: 'Paid on the 1st' }]" />
+        <bx-rewards [variant]="variant" [items]="[{ label: 'Points', value: '12,400', meta: 'Redeem for merchandise, vouchers or air miles' }, { label: 'Vouchers', value: '3', meta: 'Expire 31 Mar' }, { label: 'Cashback', value: '45.00', meta: 'Paid on the 1st' }]" />
       </div></section>
       <section class="gate" data-component="financial-advisor" aria-labelledby="ap-financial-advisor-h"><h2 id="ap-financial-advisor-h">Financial advisor</h2><div class="gate-body">
-        <bx-financial-advisor heading="Priya Nair" text="priya.nair@bank.example · +44 20 7946 0123" badge="Relationship manager" />
+        <bx-financial-advisor [variant]="variant" heading="Priya Nair" text="priya.nair@bank.example · +44 20 7946 0123" badge="Relationship manager" />
       </div></section>
       <section class="gate" data-component="special-offers" aria-labelledby="ap-special-offers-h"><h2 id="ap-special-offers-h">Special offers</h2><div class="gate-body">
-        <bx-special-offers heading="Pre-approved personal loan" text="Up to 25,000.00 at 9.5% a year." badge="Offer" />
+        <bx-special-offers [variant]="variant" heading="Pre-approved personal loan" text="Up to 25,000.00 at 9.5% a year." badge="Offer" />
       </div></section>
       <section class="gate" data-component="credit-cards-overview" aria-labelledby="ap-credit-cards-overview-h"><h2 id="ap-credit-cards-overview-h">Credit cards</h2><div class="gate-body">
-        <bx-credit-cards-overview [items]="[{ label: 'Total due', value: '640.00', meta: 'Due 18 Jan' }, { label: 'Minimum due', value: '32.00', meta: 'Pay to avoid charges' }, { label: 'Available limit', value: '9,360.00', meta: 'Of 10,000.00' }]" />
+        <bx-credit-cards-overview [variant]="variant" [items]="[{ label: 'Total due', value: '640.00', meta: 'Due 18 Jan' }, { label: 'Minimum due', value: '32.00', meta: 'Pay to avoid charges' }, { label: 'Available limit', value: '9,360.00', meta: 'Of 10,000.00' }]" />
       </div></section>
       <section class="gate" data-component="loans-overview" aria-labelledby="ap-loans-overview-h"><h2 id="ap-loans-overview-h">Loans</h2><div class="gate-body">
-        <bx-loans-overview [items]="[{ label: 'Loans', value: '2', meta: 'Home and car' }, { label: 'Outstanding', value: '18,420.00', meta: 'Next instalment 5 Feb' }, { label: 'Sanctioned', value: '30,000.00', meta: 'Both loans' }]" />
+        <bx-loans-overview [variant]="variant" [items]="[{ label: 'Loans', value: '2', meta: 'Home and car' }, { label: 'Outstanding', value: '18,420.00', meta: 'Next instalment 5 Feb' }, { label: 'Sanctioned', value: '30,000.00', meta: 'Both loans' }]" />
       </div></section>
       <section class="gate" data-component="delinquency-notice" aria-labelledby="ap-delinquency-notice-h"><h2 id="ap-delinquency-notice-h">Delinquency notice</h2><div class="gate-body">
         <bx-delinquency-notice message="Your car loan ·· 3310 is 12 days overdue: 412.00." />
@@ -650,25 +650,25 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-marquee [items]="['USD 0.92 EUR', 'GBP 1.17 EUR', 'AED 0.25 EUR']" />
       </div></section>
       <section class="gate" data-component="animated-list" aria-labelledby="aw7-21-h"><h2 id="aw7-21-h">Animated list</h2><div class="gate-body">
-        <bx-animated-list label="Recent" [items]="['Coffee House', {title: 'Salary', meta: '31 Dec'}]" />
+        <bx-animated-list [variant]="variant" label="Recent" [items]="['Coffee House', {title: 'Salary', meta: '31 Dec'}]" />
       </div></section>
       <section class="gate" data-component="spotlight-card" aria-labelledby="aw7-22-h"><h2 id="aw7-22-h">Spotlight card</h2><div class="gate-body">
-        <bx-spotlight-card heading="Platinum card" text="2% cashback on travel" />
+        <bx-spotlight-card [variant]="variant" heading="Platinum card" text="2% cashback on travel" />
       </div></section>
       <section class="gate" data-component="tilt-card" aria-labelledby="aw7-23-h"><h2 id="aw7-23-h">Tilt card</h2><div class="gate-body">
-        <bx-tilt-card heading="Savings" text="12,400.00" />
+        <bx-tilt-card [variant]="variant" heading="Savings" text="12,400.00" />
       </div></section>
       <section class="gate" data-component="flip-card" aria-labelledby="aw7-24-h"><h2 id="aw7-24-h">Flip card</h2><div class="gate-body">
-        <bx-flip-card heading="Platinum" front="2% cashback" back="No annual fee in year one; 1.5% on foreign spend." />
+        <bx-flip-card [variant]="variant" heading="Platinum" front="2% cashback" back="No annual fee in year one; 1.5% on foreign spend." />
       </div></section>
       <section class="gate" data-component="card-stack" aria-labelledby="aw7-25-h"><h2 id="aw7-25-h">Card stack</h2><div class="gate-body">
-        <bx-card-stack [items]="[{title: 'Set a budget', text: 'See where your money goes'}, {title: 'Turn on alerts', text: 'Know when a payment leaves'}]" />
+        <bx-card-stack [variant]="variant" [items]="[{title: 'Set a budget', text: 'See where your money goes'}, {title: 'Turn on alerts', text: 'Know when a payment leaves'}]" />
       </div></section>
       <section class="gate" data-component="glow-border-card" aria-labelledby="aw7-26-h"><h2 id="aw7-26-h">Glow border card</h2><div class="gate-body">
-        <bx-glow-border-card heading="Premium account" />
+        <bx-glow-border-card [variant]="variant" heading="Premium account" />
       </div></section>
       <section class="gate" data-component="bento-grid" aria-labelledby="aw7-27-h"><h2 id="aw7-27-h">Bento grid</h2><div class="gate-body">
-        <bx-bento-grid label="Dashboard" [items]="[{id: 'spend', title: 'Spending', figure: '1,240.00', size: 'wide'}, {id: 'save', title: 'Saved', figure: '320.00'}, {id: 'score', title: 'Credit score', figure: '742'}]" />
+        <bx-bento-grid [variant]="variant" label="Dashboard" [items]="[{id: 'spend', title: 'Spending', figure: '1,240.00', size: 'wide'}, {id: 'save', title: 'Saved', figure: '320.00'}, {id: 'score', title: 'Credit score', figure: '742'}]" />
       </div></section>
       <section class="gate" data-component="carousel" aria-labelledby="aw7-28-h"><h2 id="aw7-28-h">Carousel</h2><div class="gate-body">
         <bx-carousel [slides]="[{title: 'Travel insurance', text: 'Cover for the whole family'}, {title: 'Home loans', text: 'From 6.9% a year'}]" />
@@ -680,25 +680,25 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
         <bx-option-wheel label="Tenure" [options]="['3 months', '6 months', '12 months']" value="6 months" />
       </div></section>
       <section class="gate" data-component="pill-nav" aria-labelledby="aw7-31-h"><h2 id="aw7-31-h">Pill navigation</h2><div class="gate-body">
-        <bx-pill-nav [items]="['Accounts', 'Payments', 'Cards']" selection="Accounts" />
+        <bx-pill-nav [variant]="variant" [items]="['Accounts', 'Payments', 'Cards']" selection="Accounts" />
       </div></section>
       <section class="gate" data-component="dock-nav" aria-labelledby="aw7-32-h"><h2 id="aw7-32-h">Dock navigation</h2><div class="gate-body">
-        <bx-dock-nav [items]="[{id: 'pay', label: 'Pay', icon: '↗'}, {id: 'cards', label: 'Cards', icon: '▭'}, {id: 'help', label: 'Help', icon: '?'}]" />
+        <bx-dock-nav [variant]="variant" [items]="[{id: 'pay', label: 'Pay', icon: '↗'}, {id: 'cards', label: 'Cards', icon: '▭'}, {id: 'help', label: 'Help', icon: '?'}]" />
       </div></section>
       <section class="gate" data-component="card-nav" aria-labelledby="aw7-33-h"><h2 id="aw7-33-h">Card navigation</h2><div class="gate-body">
-        <bx-card-nav [items]="[{id: 'loans', title: 'Loans', text: 'Home, car, personal'}, {id: 'cards', title: 'Cards', text: 'Credit and debit'}]" />
+        <bx-card-nav [variant]="variant" [items]="[{id: 'loans', title: 'Loans', text: 'Home, car, personal'}, {id: 'cards', title: 'Cards', text: 'Credit and debit'}]" />
       </div></section>
       <section class="gate" data-component="staggered-menu" aria-labelledby="aw7-34-h"><h2 id="aw7-34-h">Staggered menu</h2><div class="gate-body">
-        <bx-staggered-menu [items]="['Statements', 'Settings', 'Sign out']" />
+        <bx-staggered-menu [variant]="variant" [items]="['Statements', 'Settings', 'Sign out']" />
       </div></section>
       <section class="gate" data-component="document-folder" aria-labelledby="aw7-35-h"><h2 id="aw7-35-h">Document folder</h2><div class="gate-body">
-        <bx-document-folder [items]="[{id: 'd1', title: 'Statement December', meta: 'PDF · 120 KB'}, {id: 'd2', title: 'Tax certificate 2025', meta: 'PDF'}]" />
+        <bx-document-folder [variant]="variant" [items]="[{id: 'd1', title: 'Statement December', meta: 'PDF · 120 KB'}, {id: 'd2', title: 'Tax certificate 2025', meta: 'PDF'}]" />
       </div></section>
       <section class="gate" data-component="scroll-stack" aria-labelledby="aw7-36-h"><h2 id="aw7-36-h">Scroll stack</h2><div class="gate-body">
-        <bx-scroll-stack [items]="[{title: 'Choose an account', text: 'Savings or current'}, {title: 'Verify', text: 'Your ID and a selfie'}]" />
+        <bx-scroll-stack [variant]="variant" [items]="[{title: 'Choose an account', text: 'Savings or current'}, {title: 'Verify', text: 'Your ID and a selfie'}]" />
       </div></section>
       <section class="gate" data-component="profile-card" aria-labelledby="aw7-37-h"><h2 id="aw7-37-h">Profile card</h2><div class="gate-body">
-        <bx-profile-card name="Priya Nair" jobTitle="Relationship manager" [items]="[{label: 'Phone', value: '+44 20 7946 0123'}]" actionLabel="Send a message" />
+        <bx-profile-card [variant]="variant" name="Priya Nair" jobTitle="Relationship manager" [items]="[{label: 'Phone', value: '+44 20 7946 0123'}]" actionLabel="Send a message" />
       </div></section>
       <section class="gate" data-component="glass-panel" aria-labelledby="aw7-38-h"><h2 id="aw7-38-h">Glass panel</h2><div class="gate-body">
         <bx-glass-panel><p>The screen's own content</p></bx-glass-panel>
@@ -798,6 +798,8 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
 })
 class Gallery {
   rootClass = styleClasses({ look, mode, motion }) + ' gallery';
+  // ?variant=<id> draws the containers and navigation in one of their style variants (variants/v2.json); a component without it ignores it
+  variant = params.get('variant') || '';
   name = signal('A. Sharma');
   amount = signal<number | null>(1250);
   account = signal('S');

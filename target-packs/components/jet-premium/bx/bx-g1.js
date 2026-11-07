@@ -35,11 +35,18 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
   var register = function (name, kind, defaults) {
     var properties = {};
     Object.keys(kind.props).forEach(function (k) { properties[k] = copy(kind.props[k]); });
+    var model = kind.model;
+    // a kind with a style variant (variants/v2.json) takes variant and gives its view vcls(), the variant's class for its root
+    if (kind.vkind) {
+      properties.variant = str();
+      model = function (context) { kind.model.call(this, context); this.vcls = ko.pureComputed(function () { return bx.vcls(kind.vkind, context.properties.variant); }); };
+      model.prototype = kind.model.prototype;
+    }
     Object.keys(defaults || {}).forEach(function (k) { properties[k] = copy(properties[k] || { type: 'any' }); properties[k].value = defaults[k]; });
     var metadata = { properties: properties };
     if (kind.events) { metadata.events = kind.events; }
     if (kind.methods) { metadata.methods = kind.methods; }
-    Composite.register(name, { view: kind.view, viewModel: kind.model, metadata: metadata });
+    Composite.register(name, { view: kind.view, viewModel: model, metadata: metadata });
     return name;
   };
   var str = function (v) { return { type: 'string', value: v === undefined ? '' : v }; };
@@ -186,9 +193,9 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
       return false;
     };
   }
-  kinds.menu = { model: MenuKind, events: ACTION,
+  kinds.menu = { model: MenuKind, events: ACTION, vkind: 'menu',
     props: { label: str('More'), items: arr(), disabled: bool() },
-    view: '<div class="bx-menu"><button type="button" class="bx-btn bx-btn--outlined bx-menu-button" aria-haspopup="menu" :aria-expanded="[[expanded]]" :aria-controls="[[id]]"'
+    view: '<div :class="[[\'bx-menu\' + vcls()]]"><button type="button" class="bx-btn bx-btn--outlined bx-menu-button" aria-haspopup="menu" :aria-expanded="[[expanded]]" :aria-controls="[[id]]"'
       + ' :disabled="[[$properties.disabled]]" on-click="[[toggle]]" on-keydown="[[onButtonKey]]"><span class="bx-btn-label">' + txt('$properties.label') + '</span><span class="bx-menu-caret" aria-hidden="true"></span></button>'
       + iff('open()', '<ul class="bx-menu-list" role="menu" :id="[[id]]" :aria-label="[[$properties.label]]" on-keydown="[[onMenuKey]]">'
         + each('items', 'm', '<li role="menuitem" tabindex="-1" :class="[[m.data.css]]" :aria-disabled="[[m.data.disabled]]" on-click="[[m.data.pick]]">' + txt('m.data.label') + '</li>') + '</ul>') + '</div>' };
@@ -210,9 +217,9 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
       });
     });
   }
-  kinds.accordion = { model: AccordionKind,
+  kinds.accordion = { model: AccordionKind, vkind: 'accordion',
     props: { items: arr(), expanded: { type: 'Array<string>', value: [], writeback: true }, multiple: bool() },
-    view: '<div class="bx-accordion">' + each('items', 'a', '<div :class="[[a.data.css]]"><h3 class="bx-acc-head"><button type="button" class="bx-acc-button" :id="[[a.data.headId]]"'
+    view: '<div :class="[[\'bx-accordion\' + vcls()]]">' + each('items', 'a', '<div :class="[[a.data.css]]"><h3 class="bx-acc-head"><button type="button" class="bx-acc-button" :id="[[a.data.headId]]"'
       + ' :aria-expanded="[[a.data.expanded]]" :aria-controls="[[a.data.panelId]]" on-click="[[a.data.toggle]]"><span>' + txt('a.data.title') + '</span><span class="bx-acc-icon" aria-hidden="true"></span></button></h3>'
       + iff('a.data.on', '<div class="bx-acc-panel" role="region" :id="[[a.data.panelId]]" :aria-labelledby="[[a.data.headId]]">' + txt('a.data.body') + '</div>') + '</div>') + '</div>' };
 
@@ -241,17 +248,21 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
   function CrumbsKind(context) {
     var self = this;
     base(self, context, 'bx-crumbs');
+    self.full = ko.observable(false);
     self.items = ko.pureComputed(function () {
-      var l = list(self.props.items);
-      return l.map(function (o, i) {
-        return { label: o.label, last: i === l.length - 1, go: function () { bx.fire(self.element, 'ojAction', { value: o.value !== undefined ? o.value : o.id }); } };
-      });
+      var l = list(self.props.items).map(function (o) { return { label: o.label, gap: false, go: function () { bx.fire(self.element, 'ojAction', { value: o.value !== undefined ? o.value : o.id }); } }; });
+      // collapsed: the first page, a button for the hidden middle, and the last two
+      if (self.props.variant === 'collapsed' && !self.full() && l.length > 3) {
+        l = [l[0], { label: '…', gap: true, go: function () { self.full(true); focusLater(self, '.bx-crumb'); } }].concat(l.slice(-2));
+      }
+      return l.map(function (o, i) { o.last = i === l.length - 1; return o; });
     });
   }
-  kinds.crumbs = { model: CrumbsKind, events: ACTION,
+  kinds.crumbs = { model: CrumbsKind, events: ACTION, vkind: 'crumbs',
     props: { label: str('Breadcrumb'), items: arr() },
-    view: '<nav class="bx-crumbs" :aria-label="[[$properties.label]]"><ol>' + each('items', 'c', '<li>' + iff('!c.data.last', '<button type="button" class="bx-crumb" on-click="[[c.data.go]]">'
-      + txt('c.data.label') + '</button><span class="bx-crumb-sep" aria-hidden="true">/</span>') + iff('c.data.last', '<span class="bx-crumb is-here" aria-current="page">' + txt('c.data.label') + '</span>')
+    view: '<nav :class="[[\'bx-crumbs\' + vcls()]]" :aria-label="[[$properties.label]]"><ol>' + each('items', 'c', '<li>' + iff('!c.data.last && !c.data.gap', '<button type="button" class="bx-crumb" on-click="[[c.data.go]]">'
+      + txt('c.data.label') + '</button><span class="bx-crumb-sep" aria-hidden="true">/</span>')
+      + iff('c.data.gap', '<button type="button" class="bx-crumb bx-crumb-more" aria-label="Show the full path" on-click="[[c.data.go]]">…</button><span class="bx-crumb-sep" aria-hidden="true">/</span>') + iff('c.data.last', '<span class="bx-crumb is-here" aria-current="page">' + txt('c.data.label') + '</span>')
       + '</li>') + '</ol></nav>' };
 
   /* ---------- side nav (oj-navigation-list): the sections of the app; the chosen one is the current page ---------- */
@@ -266,9 +277,9 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
       });
     });
   }
-  kinds.nav = { model: NavKind,
+  kinds.nav = { model: NavKind, vkind: 'nav',
     props: { label: str('Main'), items: arr(), selection: { type: 'any', writeback: true } },
-    view: '<nav class="bx-nav" :aria-label="[[$properties.label]]"><ul>' + each('items', 'n', '<li><button type="button" :class="[[n.data.css]]" :aria-current="[[n.data.current]]"'
+    view: '<nav :class="[[\'bx-nav\' + vcls()]]" :aria-label="[[$properties.label]]"><ul>' + each('items', 'n', '<li><button type="button" :class="[[n.data.css]]" :aria-current="[[n.data.current]]"'
       + ' :disabled="[[n.data.disabled]]" on-click="[[n.data.pick]]"><span>' + txt('n.data.label') + '</span>' + iff('n.data.badge', '<span class="bx-nav-badge">' + txt('n.data.badge') + '</span>')
       + '</button></li>') + '</ul></nav>' };
 
@@ -277,7 +288,8 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
     var self = this;
     base(self, context, 'bx-sheet');
     var opener = null;
-    self.css = ko.pureComputed(function () { return 'bx-sheet is-' + (self.props.position || 'end'); });
+    self.css = ko.pureComputed(function () { return 'bx-sheet is-' + (self.props.position || 'end') + bx.vcls('dialog', self.props.variant); });
+    self.role = ko.pureComputed(function () { return self.props.variant === 'alert' ? 'alertdialog' : 'dialog'; });
     self.close = function () {
       if (!self.props.open) { return; }
       self.props.open = false;
@@ -297,9 +309,9 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
       return true;
     };
   }
-  kinds.sheet = { model: SheetKind, events: { ojClose: { bubbles: true } },
+  kinds.sheet = { model: SheetKind, events: { ojClose: { bubbles: true } }, vkind: 'dialog',
     props: { open: { type: 'boolean', value: false, writeback: true }, heading: str(), position: str('end') },
-    view: iff('$properties.open', '<div class="bx-dialog-backdrop" on-click="[[close]]"></div><div :class="[[css]]" role="dialog" aria-modal="true" tabindex="-1"'
+    view: iff('$properties.open', '<div class="bx-dialog-backdrop" on-click="[[close]]"></div><div :class="[[css]]" :role="[[role]]" aria-modal="true" tabindex="-1"'
       + ' :aria-labelledby="[[id + \'-title\']]" on-keydown="[[onKey]]"><div class="bx-dialog-header"><h2 class="bx-dialog-title" :id="[[id + \'-title\']]">' + txt('$properties.heading') + '</h2>'
       + '<button type="button" class="bx-btn bx-btn--borderless bx-btn--icon" aria-label="Close" on-click="[[close]]"><span aria-hidden="true">×</span></button></div>'
       + '<div class="bx-dialog-body"><oj-bind-slot></oj-bind-slot></div><div class="bx-dialog-footer"><oj-bind-slot name="footer"></oj-bind-slot></div></div>') };
@@ -308,14 +320,14 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
   function GridKind(context) {
     var self = this;
     base(self, context, 'bx-grid');
-    self.css = ko.pureComputed(function () { return 'bx-layout-grid is-cols-' + (self.props.columns || 'auto') + ' is-gap-' + (self.props.gap || 'md'); });
+    self.css = ko.pureComputed(function () { return 'bx-layout-grid is-cols-' + (self.props.columns || 'auto') + ' is-gap-' + (self.props.gap || 'md') + bx.vcls('grid', self.props.variant); });
   }
-  kinds.grid = { model: GridKind, props: { columns: { type: 'any', value: 'auto' }, gap: str('md') }, view: '<div :class="[[css]]"><oj-bind-slot></oj-bind-slot></div>' };
+  kinds.grid = { model: GridKind, vkind: 'grid', props: { columns: { type: 'any', value: 'auto' }, gap: str('md') }, view: '<div :class="[[css]]"><oj-bind-slot></oj-bind-slot></div>' };
 
   /* ---------- divider: a line between parts, with an optional label ---------- */
   function DividerKind(context) { base(this, context, 'bx-divider'); }
-  kinds.divider = { model: DividerKind, props: { label: str() },
-    view: iff('!$properties.label', '<hr class="bx-divider"/>') + iff('$properties.label', '<div class="bx-divider has-label" role="separator" :aria-label="[[$properties.label]]">'
+  kinds.divider = { model: DividerKind, vkind: 'divider', props: { label: str() },
+    view: iff('!$properties.label', '<hr :class="[[\'bx-divider\' + vcls()]]"/>') + iff('$properties.label', '<div :class="[[\'bx-divider has-label\' + vcls()]]" role="separator" :aria-label="[[$properties.label]]">'
       + '<span aria-hidden="true">' + txt('$properties.label') + '</span></div>') };
 
   /* ---------- avatar: a photo, or the initials of a name ---------- */
@@ -349,14 +361,15 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
     });
     self.atFirst = ko.pureComputed(function () { return (self.props.page || 1) <= 1; });
     self.atLast = ko.pureComputed(function () { return (self.props.page || 1) >= count(); });
+    self.status = ko.pureComputed(function () { return 'Page ' + (self.props.page || 1) + ' of ' + count(); });
     self.prev = function () { go((self.props.page || 1) - 1); };
     self.next = function () { go((self.props.page || 1) + 1); };
   }
-  kinds.pages = { model: PagesKind,
+  kinds.pages = { model: PagesKind, vkind: 'pages',
     props: { label: str('Pages'), page: { type: 'number', value: 1, writeback: true }, pageCount: num(1) },
-    view: '<nav class="bx-pages" :aria-label="[[$properties.label]]"><button type="button" class="bx-page" aria-label="Previous page" :disabled="[[atFirst]]" on-click="[[prev]]">‹</button>'
-      + each('pages', 'p', iff('p.data.gap', '<span class="bx-page-gap" aria-hidden="true">…</span>') + iff('!p.data.gap', '<button type="button" :class="[[p.data.css]]" :aria-label="[[p.data.name]]"'
-        + ' :aria-current="[[p.data.current]]" on-click="[[p.data.pick]]">' + txt('p.data.label') + '</button>'))
+    view: '<nav :class="[[\'bx-pages\' + vcls()]]" :aria-label="[[$properties.label]]"><button type="button" class="bx-page" aria-label="Previous page" :disabled="[[atFirst]]" on-click="[[prev]]">‹</button>'
+      + iff('$properties.variant === \'compact\'', '<span class="bx-page-status">' + txt('status') + '</span>') + iff('$properties.variant !== \'compact\'', each('pages', 'p', iff('p.data.gap', '<span class="bx-page-gap" aria-hidden="true">…</span>') + iff('!p.data.gap', '<button type="button" :class="[[p.data.css]]" :aria-label="[[p.data.name]]"'
+        + ' :aria-current="[[p.data.current]]" on-click="[[p.data.pick]]">' + txt('p.data.label') + '</button>')))
       + '<button type="button" class="bx-page" aria-label="Next page" :disabled="[[atLast]]" on-click="[[next]]">›</button></nav>' };
 
   /* ---------- badge: a status in a word (neutral, info, success, warning, danger) ---------- */

@@ -3,12 +3,17 @@
  * No business logic and nothing kept: amounts, balances and masked numbers come from the screen; an amount shows the
  * decimals of its currency; the IBAN check is the ISO 13616 checksum only.
  */
-import { ReactNode, useId, useState } from 'react';
+import MuiChip from '@mui/material/Chip';
+import MuiList from '@mui/material/List';
+import MuiListItem from '@mui/material/ListItem';
+import { ElementType, ReactNode, useId, useState } from 'react';
 
 import { Dropdown, DropdownProps } from './Dropdown';
 import { FieldProps, FieldShell, useField } from './field';
 import { ChipsProps, FilterChips, Rows, RowsProps, SegmentsProps, StepperProps, Stepper, ToggleGroup, initials } from './G1';
+import { Surface } from './Material';
 import { decimalsOf } from './TextField';
+import { CardVariant, KvVariant, QuickVariant, TilesVariant, isMaterial, vc } from './variants-v2';
 
 /** An amount with its currency's decimals and the code after it; text is shown as given. */
 export function money(amount: number | string | null | undefined, currency?: string): string {
@@ -46,18 +51,19 @@ export function AccountSelector({ label = 'From account', options, helpText, ...
 /* ---------- tiles ---------- */
 
 export interface Tile { id?: string; label: string; value: string; meta?: string; tone?: 'danger' | 'success' }
-export interface TilesProps { testID?: string; heading?: string; items: ReadonlyArray<Tile>; onAction?: (item: Tile) => void }
+export interface TilesProps { testID?: string; heading?: string; items: ReadonlyArray<Tile>; onAction?: (item: Tile) => void; /** The style variant (variants/v2.json). */ variant?: TilesVariant }
 
 /** A figure each (accounts, deposits, loans); with onAction each is a button that opens it. */
-export function Tiles({ testID, heading, items, onAction }: TilesProps) {
+export function Tiles({ testID, heading, items, onAction, variant }: TilesProps) {
   return (
-    <section className="bx-tiles-wrap" aria-label={heading || undefined} data-testid={testID}>
+    <section className={'bx-tiles-wrap' + vc('tiles', variant)} aria-label={heading || undefined} data-testid={testID}>
       {heading ? <h3 className="bx-panel-title">{heading}</h3> : null}
       <ul className="bx-tiles">
         {items.map((o, i) => {
           const body = <><span className="bx-tile-label">{o.label}</span><span className="bx-tile-value">{o.value}</span>{o.meta ? <span className="bx-tile-meta">{o.meta}</span> : null}</>;
           const css = 'bx-tile' + (o.tone ? ` is-${o.tone}` : '');
-          return <li key={o.id ?? i}>{onAction ? <button type="button" className={`${css} is-interactive`} onClick={() => onAction(o)}>{body}</button> : <div className={css}>{body}</div>}</li>;
+          return <li key={o.id ?? i}>{onAction ? <Surface as="button" kind="tiles" variant={variant} type="button" className={`${css} is-interactive`} onClick={() => onAction(o)}>{body}</Surface>
+            : <Surface as="div" kind="tiles" variant={variant} className={css}>{body}</Surface>}</li>;
         })}
       </ul>
     </section>
@@ -88,37 +94,42 @@ export function AccountBalance({ testID, label, amount, currency, meta, hideable
 
 /* ---------- cards ---------- */
 
-export interface ThingCardProps { testID?: string; heading: string; text?: string; badge?: string; actionLabel?: string; onAction?: () => void; children?: ReactNode }
+export interface ThingCardProps { testID?: string; heading: string; text?: string; badge?: string; actionLabel?: string; onAction?: () => void; children?: ReactNode;
+  /** The style variant (variants/v2.json). */ variant?: CardVariant }
 
 /** A thing to act on (an account, a payee, a product), with a badge and an action. */
-export function ThingCard({ testID, heading, text, badge, actionLabel, onAction, children }: ThingCardProps) {
+export function ThingCard({ testID, heading, text, badge, actionLabel, onAction, children, variant }: ThingCardProps) {
   const id = useId();
   return (
-    <article className="bx-card bx-thing" aria-labelledby={id} data-testid={testID}>
+    <Surface as="article" kind="card" variant={variant} className={'bx-card bx-thing' + vc('card', variant)} aria-labelledby={id} data-testid={testID}>
       <div className="bx-thing-head"><h3 className="bx-card-title" id={id}>{heading}</h3>{badge ? <span className="bx-badge is-info">{badge}</span> : null}</div>
       {text ? <p className="bx-thing-text">{text}</p> : null}
       {children}
       {actionLabel ? <button type="button" className="bx-thing-action" aria-label={`${actionLabel.replace(/\s*→$/, '')}: ${heading}`} onClick={onAction}>{actionLabel}</button> : null}
-    </article>
+    </Surface>
   );
 }
 
 /* ---------- details ---------- */
 
-export interface DetailsProps { testID?: string; heading?: string; items: ReadonlyArray<Detail>; actionLabel?: string; onAction?: () => void; busy?: boolean }
+export interface DetailsProps { testID?: string; heading?: string; items: ReadonlyArray<Detail>; actionLabel?: string; onAction?: () => void; busy?: boolean;
+  /** The style variant (variants/v2.json); list is a Material list. */ variant?: KvVariant }
 
 /** Details as label and value, with the main action; a total row stands out. */
-export function Details({ testID, heading, items, actionLabel, onAction, busy }: DetailsProps) {
+export function Details({ testID, heading, items, actionLabel, onAction, busy, variant }: DetailsProps) {
   return (
-    <section className="bx-panel bx-kv" aria-label={heading || undefined} data-testid={testID}>
+    <section className={'bx-panel bx-kv' + vc('kv', variant)} aria-label={heading || undefined} data-testid={testID}>
       {heading ? <h3 className="bx-panel-title">{heading}</h3> : null}
-      <DetailList items={items} />
+      <DetailList items={items} variant={variant} />
       {actionLabel ? <div className="bx-kv-actions"><button type="button" className="bx-btn bx-btn--callToAction" disabled={busy} aria-busy={busy || undefined} onClick={onAction}>{actionLabel}</button></div> : null}
     </section>
   );
 }
 
-export function DetailList({ items }: { items: ReadonlyArray<Detail> }) {
+export function DetailList({ items, variant }: { items: ReadonlyArray<Detail>; variant?: KvVariant }) {
+  if (isMaterial('kv', variant)) {
+    return <MuiList component="dl" className="bx-kv-list">{items.map((o, i) => <MuiListItem key={i} component="div" className={'bx-kv-row' + (o.total ? ' is-total' : '')}><dt>{o.label}</dt><dd>{o.value}</dd></MuiListItem>)}</MuiList>;
+  }
   return <dl className="bx-kv-list">{items.map((o, i) => <div key={i} className={'bx-kv-row' + (o.total ? ' is-total' : '')}><dt>{o.label}</dt><dd>{o.value}</dd></div>)}</dl>;
 }
 
@@ -152,13 +163,16 @@ export function AccountNumber(props: Omit<FieldProps<string>, 'label'> & { label
 /* ---------- QuickActions ---------- */
 
 export interface QuickItem { id: string; label: string; icon?: string }
-export interface QuickActionsProps { testID?: string; label?: string; items: ReadonlyArray<QuickItem>; onAction?: (id: string) => void }
+export interface QuickActionsProps { testID?: string; label?: string; items: ReadonlyArray<QuickItem>; onAction?: (id: string) => void; /** The style variant (variants/v2.json); chips are Material assist chips. */ variant?: QuickVariant }
 
 /** Shortcuts as tiles of an icon and a word. */
-export function QuickActions({ testID, label = 'Quick actions', items, onAction }: QuickActionsProps) {
+export function QuickActions({ testID, label = 'Quick actions', items, onAction, variant }: QuickActionsProps) {
+  const Chip = MuiChip as ElementType;
   return (
-    <nav className="bx-quick" aria-label={label} data-testid={testID}>
-      <ul>{items.map((o) => <li key={o.id}><button type="button" className="bx-quick-item" onClick={() => onAction?.(o.id)}><span className="bx-quick-icon" aria-hidden="true">{o.icon ?? '•'}</span><span>{o.label}</span></button></li>)}</ul>
+    <nav className={'bx-quick' + vc('quick', variant)} aria-label={label} data-testid={testID}>
+      <ul>{items.map((o) => <li key={o.id}>{isMaterial('quick', variant)
+        ? <Chip component="button" type="button" clickable className="bx-quick-item" icon={<span className="bx-quick-icon" aria-hidden="true">{o.icon ?? '•'}</span>} label={o.label} onClick={() => onAction?.(o.id)} />
+        : <button type="button" className="bx-quick-item" onClick={() => onAction?.(o.id)}><span className="bx-quick-icon" aria-hidden="true">{o.icon ?? '•'}</span><span>{o.label}</span></button>}</li>)}</ul>
     </nav>
   );
 }

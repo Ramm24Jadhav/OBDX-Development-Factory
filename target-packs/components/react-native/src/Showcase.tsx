@@ -12,11 +12,14 @@ import { Option } from './field';
 import { BG, DURATION, Enter, Press, useOpen, usePop, useProgress, useReducedMotion, useSlide, useStagger } from './motion';
 import { Heading, KeyValues, Row, Sheet, SliderControl, SliderControlProps, Touch, panel } from './parts';
 import { useTheme } from './theme';
+import { CardVariant, CardsVariant, ListVariant, MenuVariant, NavVariant, TilesVariant, variantStyle } from './variants-v2';
 
 /* ---------- AnimatedList ---------- */
 
 export interface AnimatedListProps<T> {
   testID?: string;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: ListVariant;
   items: ReadonlyArray<T>;
   keyOf: (item: T) => string;
   renderItem: (item: T) => ReactNode;
@@ -25,10 +28,11 @@ export interface AnimatedListProps<T> {
 }
 
 /** Rows that come in one after another. */
-export function AnimatedList<T>({ testID, items, keyOf, renderItem, step = 50 }: AnimatedListProps<T>) {
+export function AnimatedList<T>({ variant, testID, items, keyOf, renderItem, step = 50 }: AnimatedListProps<T>) {
+  const t = useTheme();
   const vs = useStagger(items.length, step, items.length);
   return (
-    <View testID={testID} style={{ gap: 8 }}>
+    <View testID={testID} style={[{ gap: 8 }, variantStyle(t, 'list', variant)]}>
       {items.map((x, i) => (
         <Animated.View key={keyOf(x)} style={{ opacity: vs[i], transform: [{ translateY: vs[i].interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }}>
           {renderItem(x)}
@@ -42,6 +46,8 @@ export function AnimatedList<T>({ testID, items, keyOf, renderItem, step = 50 }:
 
 export interface CardProps {
   testID?: string;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: CardVariant;
   children?: ReactNode;
   /** Makes the card a button with this name. */
   label?: string;
@@ -49,7 +55,7 @@ export interface CardProps {
 }
 
 /** A card where a soft light follows the finger. */
-export function SpotlightCard({ testID, children, label, onPress }: CardProps) {
+export function SpotlightCard({ variant, testID, children, label, onPress }: CardProps) {
   const t = useTheme();
   const r = useReducedMotion();
   const [at, setAt] = useState<{ x: number; y: number } | null>(null);
@@ -57,7 +63,7 @@ export function SpotlightCard({ testID, children, label, onPress }: CardProps) {
     <Press testID={testID} accessibilityRole={onPress ? 'button' : undefined} accessibilityLabel={label} onPress={onPress}
            onPressIn={(e) => { if (!r) { setAt({ x: e.nativeEvent.locationX, y: e.nativeEvent.locationY }); } }}
            onTouchMove={(e) => { if (!r) { setAt({ x: e.nativeEvent.locationX, y: e.nativeEvent.locationY }); } }} onPressOut={() => setAt(null)}
-           style={[panel(t), { overflow: 'hidden' }]}>
+           style={[panel(t), { overflow: 'hidden' }, variantStyle(t, 'card', variant)]}>
       {children}
       {at ? <View pointerEvents="none" importantForAccessibility="no" style={[StyleSheet.absoluteFill, {
         [BG]: `radial-gradient(circle at ${Math.round(at.x)}px ${Math.round(at.y)}px, rgba(255, 255, 255, 0.35), transparent 60%)` }]} /> : null}
@@ -66,7 +72,7 @@ export function SpotlightCard({ testID, children, label, onPress }: CardProps) {
 }
 
 /** A card that tilts towards the finger and settles back. */
-export function TiltCard({ testID, children, label }: CardProps) {
+export function TiltCard({ variant, testID, children, label }: CardProps) {
   const t = useTheme();
   const r = useReducedMotion();
   const tilt = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
@@ -83,7 +89,7 @@ export function TiltCard({ testID, children, label }: CardProps) {
     <Animated.View testID={testID} accessible={!!label} accessibilityLabel={label} {...pan.panHandlers}
                    onLayout={(e) => { size.current = { w: e.nativeEvent.layout.width || 1, h: e.nativeEvent.layout.height || 1 }; }}
                    style={[panel(t), { transform: [{ perspective: 800 }, { rotateY: tilt.x.interpolate({ inputRange: [-0.5, 0.5], outputRange: ['-8deg', '8deg'] }) },
-                     { rotateX: tilt.y.interpolate({ inputRange: [-0.5, 0.5], outputRange: ['8deg', '-8deg'] }) }] }]}>
+                     { rotateX: tilt.y.interpolate({ inputRange: [-0.5, 0.5], outputRange: ['8deg', '-8deg'] }) }] }, variantStyle(t, 'card', variant)]}>
       {children}
     </Animated.View>
   );
@@ -93,6 +99,8 @@ export function TiltCard({ testID, children, label }: CardProps) {
 
 export interface FlipCardProps {
   testID?: string;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: CardVariant;
   front: ReactNode;
   back: ReactNode;
   /** What the back holds: "card details"; the button reads "Show card details". */
@@ -102,13 +110,13 @@ export interface FlipCardProps {
 }
 
 /** A card that turns over to show its back (the card's details, a rate's terms). Only the face in view is read. */
-export function FlipCard({ testID, front, back, backLabel, flipped, onFlippedChange }: FlipCardProps) {
+export function FlipCard({ variant, testID, front, back, backLabel, flipped, onFlippedChange }: FlipCardProps) {
   const t = useTheme();
   const v = useSlide(flipped ? 1 : 0);
   const face = (side: 0 | 1) => ({ backfaceVisibility: 'hidden' as const, transform: [{ perspective: 1000 },
     { rotateY: v.interpolate({ inputRange: [0, 1], outputRange: side ? ['180deg', '360deg'] : ['0deg', '180deg'] }) }] });
   return (
-    <View testID={testID} style={{ gap: 8 }}>
+    <View testID={testID} style={[{ gap: 8 }, variantStyle(t, 'card', variant)]}>
       <View>
         <Animated.View style={[panel(t), face(0)]} importantForAccessibility={flipped ? 'no-hide-descendants' : 'auto'}>{front}</Animated.View>
         <Animated.View style={[panel(t), StyleSheet.absoluteFill, face(1)]} importantForAccessibility={flipped ? 'auto' : 'no-hide-descendants'}>{back}</Animated.View>
@@ -125,6 +133,8 @@ export function FlipCard({ testID, front, back, backLabel, flipped, onFlippedCha
 
 export interface CardStackProps {
   testID?: string;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: CardsVariant;
   label: string;
   cards: ReadonlyArray<{ id: string; label: string; content: ReactNode }>;
   /** The card on top. */
@@ -133,7 +143,7 @@ export interface CardStackProps {
 }
 
 /** Cards in a pile: swipe the top one aside (or press Next) to bring the next forward. */
-export function CardStack({ testID, label, cards, value, onChange }: CardStackProps) {
+export function CardStack({ variant, testID, label, cards, value, onChange }: CardStackProps) {
   const t = useTheme();
   const at = Math.max(0, cards.findIndex((c) => c.id === value));
   const next = () => onChange(cards[(at + 1) % cards.length].id);
@@ -150,7 +160,7 @@ export function CardStack({ testID, label, cards, value, onChange }: CardStackPr
   })).current;
   const order = cards.map((_, i) => cards[(at + i) % cards.length]).slice(0, 3).reverse();
   return (
-    <View testID={testID} style={{ gap: 10 }}>
+    <View testID={testID} style={[{ gap: 10 }, variantStyle(t, 'cards', variant)]}>
       <View accessibilityLabel={`${label}, ${at + 1} of ${cards.length}`} style={{ height: 180 }}>
         {order.map((c, i) => {
           const depth = order.length - 1 - i;
@@ -174,7 +184,7 @@ export function CardStack({ testID, label, cards, value, onChange }: CardStackPr
 /* ---------- GlowBorderCard ---------- */
 
 /** A card with a slowly turning glow along its border (a premium product, an offer). */
-export function GlowBorderCard({ testID, children }: CardProps) {
+export function GlowBorderCard({ variant, testID, children }: CardProps) {
   const t = useTheme();
   const r = useReducedMotion();
   const turn = useRef(new Animated.Value(0)).current;
@@ -185,7 +195,7 @@ export function GlowBorderCard({ testID, children }: CardProps) {
     return () => loop.stop();
   }, [r, turn]);
   return (
-    <View testID={testID} style={{ borderRadius: t.radius.card + 2, padding: 2, overflow: 'hidden' }}>
+    <View testID={testID} style={[{ borderRadius: t.radius.card + 2, padding: 2, overflow: 'hidden' }, variantStyle(t, 'card', variant)]}>
       <Animated.View pointerEvents="none" importantForAccessibility="no" style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%',
         [BG]: `linear-gradient(90deg, ${t.color.primary}, ${t.color.info}, ${t.color.success}, ${t.color.primary})`,
         transform: [{ rotate: turn.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }} />
@@ -207,11 +217,11 @@ export interface BentoTile {
 }
 
 /** A dashboard of tiles in two columns, wide ones across both; the tiles come in one after another. */
-export function BentoGrid({ testID, tiles, onSelect }: { testID?: string; tiles: ReadonlyArray<BentoTile>; onSelect?: (id: string) => void }) {
+export function BentoGrid({ variant, testID, tiles, onSelect }: { testID?: string; variant?: TilesVariant; tiles: ReadonlyArray<BentoTile>; onSelect?: (id: string) => void }) {
   const t = useTheme();
   const vs = useStagger(tiles.length, 60, tiles.length);
   return (
-    <View testID={testID} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+    <View testID={testID} style={[{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }, variantStyle(t, 'tiles', variant)]}>
       {tiles.map((x, i) => {
         const body = (
           <>
@@ -341,6 +351,8 @@ export function OptionWheel({ testID, label, options, value, onChange }: OptionW
 
 export interface NavProps {
   testID?: string;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: NavVariant;
   label: string;
   items: ReadonlyArray<{ id: string; label: string; icon?: string }>;
   value: string;
@@ -348,8 +360,10 @@ export interface NavProps {
 }
 
 /** Navigation as pills; the chosen pill slides to its place. */
-export function PillNav({ testID, label, items, value, onChange }: NavProps) {
-  return <Tabs testID={testID} label={label} tabs={items.map((i) => ({ id: i.id, label: i.label }))} selection={value} onSelectionChange={onChange} />;
+export function PillNav({ testID, label, items, value, onChange, variant }: NavProps) {
+  const t = useTheme();
+  const tabs = <Tabs testID={testID} label={label} tabs={items.map((i) => ({ id: i.id, label: i.label }))} selection={value} onSelectionChange={onChange} />;
+  return variant ? <View style={variantStyle(t, 'nav', variant)}>{tabs}</View> : tabs;
 }
 
 function DockItem({ item, on, onPress, testID }: { item: NavProps['items'][number]; on: boolean; onPress: () => void; testID?: string }) {
@@ -368,12 +382,12 @@ function DockItem({ item, on, onPress, testID }: { item: NavProps['items'][numbe
 }
 
 /** A bottom dock whose chosen item rises and grows. */
-export function DockNav({ testID, label, items, value, onChange }: NavProps) {
+export function DockNav({ variant, testID, label, items, value, onChange }: NavProps) {
   const t = useTheme();
   return (
     <View testID={testID} accessibilityRole="tablist" accessibilityLabel={label}
-          style={{ flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 8, paddingTop: 4, borderRadius: 24, backgroundColor: t.color.surface,
-            borderWidth: t.border, borderColor: t.color.border, boxShadow: '0 6px 20px rgba(15, 23, 42, 0.12)' }}>
+          style={[{ flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 8, paddingTop: 4, borderRadius: 24, backgroundColor: t.color.surface,
+            borderWidth: t.border, borderColor: t.color.border, boxShadow: '0 6px 20px rgba(15, 23, 42, 0.12)' }, variantStyle(t, 'nav', variant)]}>
       {items.map((i) => <DockItem key={i.id} testID={testID ? `${testID}-${i.id}` : undefined} item={i} on={i.id === value} onPress={() => onChange(i.id)} />)}
     </View>
   );
@@ -388,12 +402,12 @@ export interface MenuGroup {
 }
 
 /** A menu button that opens into cards of links, one card per area. */
-export function CardNav({ testID, label = 'Menu', groups, onNavigate }: { testID?: string; label?: string; groups: ReadonlyArray<MenuGroup>; onNavigate: (id: string) => void }) {
+export function CardNav({ variant, testID, label = 'Menu', groups, onNavigate }: { testID?: string; variant?: NavVariant; label?: string; groups: ReadonlyArray<MenuGroup>; onNavigate: (id: string) => void }) {
   const t = useTheme();
   const [open, setOpen] = useState(false);
   const drop = useOpen(open, 'drop');
   return (
-    <View testID={testID} style={{ gap: 8 }}>
+    <View testID={testID} style={[{ gap: 8 }, variantStyle(t, 'nav', variant)]}>
       <Touch testID={testID ? `${testID}-toggle` : undefined} label={label} expanded={open} onPress={() => setOpen(!open)}
              style={{ alignSelf: 'flex-start', paddingHorizontal: 14, borderRadius: 999, backgroundColor: t.color.surface2 }}>
         <Text style={{ fontSize: 15, fontWeight: '700', color: t.color.text }}>{open ? '×' : '☰'}  {label}</Text>
@@ -417,12 +431,12 @@ export function CardNav({ testID, label = 'Menu', groups, onNavigate }: { testID
 }
 
 /** A full menu whose items slide in one after another. */
-export function StaggeredMenu({ testID, title = 'Menu', open, onOpenChange, items, onSelect }: { testID?: string; title?: string; open: boolean;
+export function StaggeredMenu({ variant, testID, title = 'Menu', open, onOpenChange, items, onSelect }: { testID?: string; variant?: MenuVariant; title?: string; open: boolean;
   onOpenChange: (open: boolean) => void; items: ReadonlyArray<{ id: string; label: string }>; onSelect: (id: string) => void }) {
   const t = useTheme();
   const vs = useStagger(items.length, 45, open);
   return (
-    <Sheet testID={testID} open={open} title={title} side="start" onClose={() => onOpenChange(false)}>
+    <Sheet testID={testID} style={variantStyle(t, 'menu', variant)} open={open} title={title} side="start" onClose={() => onOpenChange(false)}>
       {items.map((x, i) => (
         <Animated.View key={x.id} style={{ opacity: vs[i], transform: [{ translateX: vs[i].interpolate({ inputRange: [0, 1], outputRange: [-24, 0] }) }] }}>
           <Touch testID={testID ? `${testID}-${x.id}` : undefined} label={x.label} onPress={() => { onOpenChange(false); onSelect(x.id); }} style={{ paddingHorizontal: 4 }}>
@@ -438,6 +452,8 @@ export function StaggeredMenu({ testID, title = 'Menu', open, onOpenChange, item
 
 export interface DocumentFolderProps {
   testID?: string;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: ListVariant;
   title: string;
   documents: ReadonlyArray<{ id: string; title: string; meta?: string }>;
   open: boolean;
@@ -446,12 +462,12 @@ export interface DocumentFolderProps {
 }
 
 /** A folder of documents (statements, certificates) whose papers fan up out of it when it opens. */
-export function DocumentFolder({ testID, title, documents, open, onOpenChange, onSelect }: DocumentFolderProps) {
+export function DocumentFolder({ variant, testID, title, documents, open, onOpenChange, onSelect }: DocumentFolderProps) {
   const t = useTheme();
   const v = useSlide(open ? 1 : 0);
   const peek = documents.slice(0, 3);
   return (
-    <View testID={testID} style={{ gap: 10 }}>
+    <View testID={testID} style={[{ gap: 10 }, variantStyle(t, 'list', variant)]}>
       <Touch testID={testID ? `${testID}-folder` : undefined} expanded={open} onPress={() => onOpenChange(!open)}
              style={{ height: 120, justifyContent: 'flex-end' }}>
         {peek.map((d, i) => (
@@ -482,11 +498,11 @@ export function DocumentFolder({ testID, title, documents, open, onOpenChange, o
 /* ---------- ScrollStack ---------- */
 
 /** Cards that pile up as the list scrolls: each one shrinks a little as the next slides over it. */
-export function ScrollStack({ testID, cards, height = 160 }: { testID?: string; cards: ReadonlyArray<{ id: string; content: ReactNode }>; height?: number }) {
+export function ScrollStack({ variant, testID, cards, height = 160 }: { testID?: string; variant?: CardsVariant; cards: ReadonlyArray<{ id: string; content: ReactNode }>; height?: number }) {
   const t = useTheme();
   const y = useRef(new Animated.Value(0)).current;
   return (
-    <Animated.ScrollView testID={testID} style={{ maxHeight: height * 2.5 }} scrollEventThrottle={16}
+    <Animated.ScrollView testID={testID} style={[{ maxHeight: height * 2.5 }, variantStyle(t, 'cards', variant)]} scrollEventThrottle={16}
                          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y } } }], { useNativeDriver: true })}>
       {cards.map((c, i) => (
         <Animated.View key={c.id} style={[panel(t), { height, marginBottom: 12, transform: [
@@ -503,6 +519,8 @@ export function ScrollStack({ testID, cards, height = 160 }: { testID?: string; 
 
 export interface ProfileCardProps {
   testID?: string;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: CardVariant;
   name: string;
   role?: string;
   photo?: string;
@@ -512,11 +530,11 @@ export interface ProfileCardProps {
 }
 
 /** A person (the customer, the relationship manager) with a photo or initials, a few facts and one action. */
-export function ProfileCard({ testID, name, role, photo, rows = [], actionLabel, onAction }: ProfileCardProps) {
+export function ProfileCard({ variant, testID, name, role, photo, rows = [], actionLabel, onAction }: ProfileCardProps) {
   const t = useTheme();
   const v = useProgress(name, DURATION.slow);
   return (
-    <Enter testID={testID} style={[panel(t), { padding: 0, overflow: 'hidden' }]}>
+    <Enter testID={testID} style={[panel(t), { padding: 0, overflow: 'hidden' }, variantStyle(t, 'card', variant)]}>
       <View style={{ height: 64, [BG]: `linear-gradient(135deg, ${t.color.primary}, ${t.color.info})` }} />
       <Animated.View style={{ marginTop: -28, alignSelf: 'center', borderRadius: 32, borderWidth: 3, borderColor: t.color.surface,
         transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] }}>

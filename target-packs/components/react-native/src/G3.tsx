@@ -18,6 +18,7 @@ import { Banner, FormProps, BannerProps, CodeBoxes, CodeBoxesProps, TimelineItem
   StepsProps, Tiles, TilesProps, TimelineList, Touch, maskNumber, panel } from './parts';
 import { Enter } from './motion';
 import { useTheme } from './theme';
+import { KvVariant, TableVariant } from './variants-v2';
 
 const money = (n: number, currency?: string) => `${formatAmount(n, currency)}${currency ? ` ${currency}` : ''}`;
 
@@ -182,14 +183,16 @@ export interface RepaymentScheduleProps {
   label?: string;
   instalments: ReadonlyArray<Instalment>;
   currency?: string;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: TableVariant;
 }
 
 /** Each instalment with its principal and interest, as cards of "header: value" on a phone. */
-export function RepaymentSchedule({ testID, label = 'Repayment schedule', instalments, currency }: RepaymentScheduleProps) {
+export function RepaymentSchedule({ testID, label = 'Repayment schedule', instalments, currency, variant }: RepaymentScheduleProps) {
   const rows = instalments.map((x, i) => ({ key: String(i), due: x.due, principal: formatAmount(x.principal, currency), interest: formatAmount(x.interest, currency),
     total: formatAmount(x.principal + x.interest, currency) }));
   return (
-    <DataTable testID={testID} caption={label} rows={rows} keyField="key" noData="No instalments."
+    <DataTable testID={testID} caption={label} rows={rows} keyField="key" noData="No instalments." variant={variant}
                columns={[{ field: 'due', headerText: 'Due date' }, { field: 'principal', headerText: 'Principal', align: 'end' },
                  { field: 'interest', headerText: 'Interest', align: 'end' }, { field: 'total', headerText: 'Instalment', align: 'end' }]} />
   );
@@ -205,13 +208,15 @@ export interface PromiseToPayProps extends FieldProps<string> {
   min?: string;
   onSubmit: (date: string) => void;
   busy?: boolean;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: KvVariant;
 }
 
 /** Commit to a date for an overdue amount (value is the ISO date). */
-export function PromiseToPay({ testID, label, value, onChange, rows, min, max, onSubmit, busy, disabled }: PromiseToPayProps) {
+export function PromiseToPay({ testID, label, value, onChange, rows, min, max, onSubmit, busy, disabled, variant }: PromiseToPayProps) {
   const [tried, setTried] = useState(false);
   return (
-    <KeyValues testID={testID} label={label} rows={rows} actionLabel="Make the promise" busy={busy}
+    <KeyValues testID={testID} label={label} rows={rows} actionLabel="Make the promise" busy={busy} variant={variant}
                onAction={() => { setTried(true); if (value) { onSubmit(value); } }}>
       <DatePicker testID={`${testID}-date`} label="Promise date" value={value} onChange={onChange} min={min} max={max} required disabled={disabled}
                   error={tried && !value ? 'Choose the date you will pay.' : undefined} />

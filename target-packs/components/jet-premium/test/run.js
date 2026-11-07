@@ -403,7 +403,7 @@ test('fields tie their label and messages to the control', () => {
   ['bx-checkbox-group', 'bx-choice-group'].forEach((e) => { if (!/<fieldset/.test(registry[e].view) || !/<legend/.test(registry[e].view)) { throw new Error(e + ': no fieldset and legend'); } });
 });
 test('dialog, tabs, grid and toasts have their roles', () => {
-  if (!/role="dialog" aria-modal="true"/.test(registry['bx-dialog'].view)) { throw new Error('dialog role'); }
+  if (!/:role="\[\[role\]\]" aria-modal="true"/.test(registry['bx-dialog'].view) || create('bx-dialog').vm.role() !== 'dialog') { throw new Error('dialog role'); }
   if (!/role="tablist"/.test(registry['bx-tabs'].view) || !/role="tab"/.test(registry['bx-tabs'].view)) { throw new Error('tab roles'); }
   if (!/<th scope="col"/.test(registry['bx-data-grid'].view) || !/:aria-sort=/.test(registry['bx-data-grid'].view)) { throw new Error('grid headers'); }
   if (!/:role="\[\[t\.data\.role\]\]"/.test(registry['bx-toast'].view)) { throw new Error('toast live roles'); }
@@ -513,7 +513,7 @@ test('g1 bx-sheet: Close sets open to false and fires ojClose; Escape closes', (
 test('g1 layout: grid columns and gap, divider label, avatar initials and photo', () => {
   eq(create('bx-grid', { columns: 3, gap: 'lg' }).vm.css(), 'bx-layout-grid is-cols-3 is-gap-lg', 'grid');
   eq([create('bx-avatar', { name: 'asha rao' }).vm.initials(), create('bx-avatar', {}).vm.initials()], ['AR', '?'], 'initials');
-  if (!/<hr class="bx-divider"\/>/.test(registry['bx-divider'].view) || !/role="separator" :aria-label/.test(registry['bx-divider'].view)) { throw new Error('divider markup'); }
+  if (!/<hr :class="\[\[\'bx-divider\' \+ vcls\(\)\]\]"\/>/.test(registry['bx-divider'].view) || !/role="separator" :aria-label/.test(registry['bx-divider'].view)) { throw new Error('divider markup'); }
   if (!/:alt="\[\[\$properties\.name\]\]"/.test(registry['bx-avatar'].view) || !/role="img" :aria-label/.test(registry['bx-avatar'].view)) { throw new Error('avatar has no name'); }
 });
 test('g1 bx-pagination: first, last and the pages around the current one; next and previous stop at the ends', () => {
@@ -569,9 +569,9 @@ test('g1 views have their roles', () => {
   has('bx-action-menu', /role="menuitem"/);
   has('bx-accordion', /:aria-controls=[^>]*on-click/);
   has('bx-accordion', /role="region"/);
-  has('bx-breadcrumb', /<nav class="bx-crumbs" :aria-label/);
+  has('bx-breadcrumb', /<nav :class="\[\[\'bx-crumbs\' \+ vcls\(\)\]\]" :aria-label/);
   has('bx-side-nav', /:aria-current="\[\[n\.data\.current\]\]"/);
-  has('bx-sheet', /role="dialog" aria-modal="true"/);
+  has('bx-sheet', /:role="\[\[role\]\]" aria-modal="true"/);
   has('bx-pagination', /aria-label="Next page"/);
   has('bx-stepper', /<ol class="bx-steps" :aria-label/);
 });
@@ -658,7 +658,7 @@ test('g2 views have their names and roles', () => {
   has('bx-transaction-list', /bx-visually-hidden/);
   has('bx-account-details', /<dl class="bx-kv-list">/);
   has('bx-maturity-instructions', /<fieldset/);
-  has('bx-quick-actions', /<nav class="bx-quick" :aria-label/);
+  has('bx-quick-actions', /<nav :class="\[\[\'bx-quick\' \+ vcls\(\)\]\]" :aria-label/);
   has('bx-beneficiary-card', /:aria-label="\[\[actionName\]\]"/);
 });
 
@@ -996,7 +996,7 @@ test('g7 micro: swipe row actions, swipe toast, toggles, gauge, scrub, prompt, v
 });
 test('g7 reused kinds keep their behaviour inside the effect classes', () => {
   ['bx-elastic-slider', 'bx-pill-nav', 'bx-dock-nav', 'bx-staggered-menu', 'bx-otp-slots', 'bx-receipt-tear', 'bx-squish-switch', 'bx-jelly-radio', 'bx-glide-select', 'bx-rubber-segment',
-    'bx-peek-rating', 'bx-warm-tooltip'].forEach((e) => { if (!/^<div class="bx-fx-/.test(registry[e].view)) { throw new Error(e + ': no effect class'); } });
+    'bx-peek-rating', 'bx-warm-tooltip'].forEach((e) => { if (!/^<div (class="bx-fx-|:class="\[\[\'bx-fx-)/.test(registry[e].view)) { throw new Error(e + ': no effect class'); } });
   const s = create('bx-squish-switch', { labelHint: 'Round up to save' });
   s.vm.toggle();
   eq(s.props.value, true, 'switch');
@@ -1044,6 +1044,39 @@ test('the skin has the motion tokens, the effects and a reduced-motion rule for 
   // The effects animate from a start state, so with motion off the element shows its own (end) style
   const toFrames = (css.match(/@keyframes [\w-]+ \{[^}]*\bto\b/g) || []).map((k) => k.split(' ')[1]).filter((k) => !['bx-ripple', 'bx-shimmer', 'bx-spin', 'bx-skel'].includes(k));
   eq(toFrames, [], 'keyframes that end away from the element style');
+});
+
+/* ---------- wave V2: the containers' and navigation's style variants (variants/v2.json) ---------- */
+const V2 = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'variants', 'v2.json'), 'utf8'));
+/** The classes a view model gives its root: vcls() from the kit, or the css / wrapCss computed that carries the variant. */
+const rootClasses = (vm) => ['vcls', 'css', 'wrapCss'].map((k) => (typeof vm[k] === 'function' ? vm[k]() : '')).join(' ');
+V2.components.filter((c) => c.packs['jet-premium']).forEach((c) => {
+  const name = c.packs['jet-premium'].name;
+  test(name + ': every V2 variant gives its root bx-' + c.kind + '--<variant>, and none gives none', () => {
+    const view = registry[name].view;
+    eq(registry[name].metadata.properties.variant && registry[name].metadata.properties.variant.type, 'string', 'variant property');
+    eq(c.variants.filter((v) => rootClasses(create(name, { variant: v.id }).vm).split(/\s+/).indexOf('bx-' + c.kind + '--' + v.id) < 0).map((v) => v.id), [], 'variants without their class');
+    eq(rootClasses(create(name).vm).indexOf('--') < 0, true, 'no variant class by default');
+    if (!/vcls\(\)|\[\[css\]\]|\[\[wrapCss\]\]/.test(view)) { throw new Error('the view does not bind the variant class'); }
+  });
+});
+test('V2 structural variants: collapsed crumbs, compact pages, alert dialogs, vertical tabs, table cards', () => {
+  const b = create('bx-breadcrumb', { items: ['Home', 'Accounts', 'Savings', 'Statement'], variant: 'collapsed' });
+  eq(b.vm.items().map((i) => i.label), ['Home', '…', 'Savings', 'Statement'], 'collapsed');
+  b.vm.items()[1].go();
+  eq(b.vm.items().map((i) => i.label), ['Home', 'Accounts', 'Savings', 'Statement'], 'shown in full');
+  eq(create('bx-breadcrumb', { items: ['Home', 'Accounts', 'Savings', 'Statement'] }).vm.items().length, 4, 'not collapsed by default');
+  eq(create('bx-pagination', { page: 2, pageCount: 6, variant: 'compact' }).vm.status(), 'Page 2 of 6', 'compact status');
+  if (!/\$properties.variant === \'compact\'/.test(registry['bx-pagination'].view)) { throw new Error('compact markup'); }
+  eq([create('bx-dialog', { variant: 'alert' }).vm.role(), create('bx-sheet', { variant: 'alert' }).vm.role(), create('bx-sheet').vm.role()], ['alertdialog', 'alertdialog', 'dialog'], 'roles');
+  ['bx-tabs', 'bx-accounts-corp'].forEach((e) => { if (!/:aria-orientation="\[\[\$properties.variant === \'vertical\'/.test(registry[e].view)) { throw new Error(e + ': orientation'); } });
+  const g = create('bx-data-grid', { data: [{ id: 1, payee: 'Asha' }], columns: [{ field: 'payee', headerText: 'Payee' }], variant: 'cards' });
+  eq(g.vm.rows()[0].cells[0].label, 'Payee', 'grid cell label');
+  eq(create('bx-data-grid', { data: [{ id: 1, payee: 'Asha' }], columns: [{ field: 'payee', headerText: 'Payee' }] }).vm.rows()[0].cells[0].label, null, 'no label by default');
+  eq(create('bx-loan-schedule', { rows: [{ date: '1 Dec', amount: '200' }], variant: 'cards' }).vm.rows()[0].cells[0].label, 'Due date', 'schedule cell label');
+  const dock = registry['bx-dock-nav'].view;
+  eq([rootClasses(create('bx-dock-nav', { variant: 'dock' }).vm).indexOf('bx-nav--dock') >= 0, dock.indexOf("<div :class=\"[[\'bx-fx-dock\' + vcls()]]\">") === 0, dock.split('vcls()').length],
+    [true, true, 2], 'dock-nav: the variant on the dock only');
 });
 
 console.log('Premium JET pack: ' + passed + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : '') + '.');

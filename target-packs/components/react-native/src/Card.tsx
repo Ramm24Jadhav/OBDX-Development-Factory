@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 
 import { Enter, Press } from './motion';
 import { GlassBlur, useTheme } from './theme';
+import { CardVariant, variantStyle } from './variants-v2';
 
 export interface CardProps {
   heading?: string;
@@ -12,11 +13,13 @@ export interface CardProps {
   /** Makes the whole card a button (an account to open). Do not put other buttons in it then. */
   onAction?: () => void;
   selected?: boolean;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: CardVariant;
   testID?: string;
 }
 
 /** A card: a heading, the content and actions. */
-export function Card({ heading, subheading, children, actions, onAction, selected, testID }: CardProps) {
+export function Card({ variant, heading, subheading, children, actions, onAction, selected, testID }: CardProps) {
   const t = useTheme();
   const box = {
     gap: 12, padding: 18, borderRadius: t.radius.card, backgroundColor: t.glass ? t.glass.fill : t.color.surface, borderWidth: selected ? 1.5 : t.border,
@@ -37,12 +40,12 @@ export function Card({ heading, subheading, children, actions, onAction, selecte
       {actions ? <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>{actions}</View> : null}
     </>
   );
-  if (!onAction) { return <Enter testID={testID} style={box}>{body}</Enter>; }
+  if (!onAction) { return <Enter testID={testID} style={[box, variantStyle(t, 'card', variant)]}>{body}</Enter>; }
   return (
     <Enter>
     <Press testID={testID} accessibilityRole="button" accessibilityLabel={[heading, subheading].filter(Boolean).join(', ') || undefined}
                accessibilityState={selected === undefined ? undefined : { selected }} onPress={onAction}
-           style={box}>
+           style={[box, variantStyle(t, 'card', variant)]}>
       {body}
     </Press>
     </Enter>

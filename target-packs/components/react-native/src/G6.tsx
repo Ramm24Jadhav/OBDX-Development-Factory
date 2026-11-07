@@ -11,6 +11,7 @@ import { QuickActions, QuickActionsProps, TransactionHistory, TransactionHistory
 import { ApprovalQueue, ApprovalQueueProps } from './G4';
 import { CalculatorProps, DepositCalculator, ForexCalculator, LoanCalculator, LoanInputs } from './G5';
 import { Tabs } from './Tabs';
+import { TabsVariant } from './variants-v2';
 import { Banner, BannerProps, Bars, BarsProps, InfoCard, InfoCardProps, Item, ItemList, Meter, ProgressList, Tiles, TilesProps, panel } from './parts';
 import { Enter } from './motion';
 import { useTheme } from './theme';
@@ -181,16 +182,18 @@ export interface TabsWidgetProps {
   onChange?: (id: string) => void;
   /** Opens the tab's full screen. */
   onOpen?: (id: string) => void;
+  /** The style variant (variants/v2.json), on the tab strip. */
+  variant?: TabsVariant;
 }
 
-function SummaryTabs({ testID, label, tabs, value, onChange, onOpen }: TabsWidgetProps) {
+function SummaryTabs({ testID, label, tabs, value, onChange, onOpen, variant }: TabsWidgetProps) {
   const t = useTheme();
   const [own, setOwn] = useState(tabs[0]?.id ?? '');
   const current = value ?? own;
   return (
     <Enter testID={testID} style={panel(t)}>
       <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text>
-      <Tabs testID={`${testID}-tabs`} label={label} selection={current} onSelectionChange={(id) => { setOwn(id); onChange?.(id); }}
+      <Tabs testID={`${testID}-tabs`} label={label} variant={variant} selection={current} onSelectionChange={(id) => { setOwn(id); onChange?.(id); }}
             tabs={tabs.map((x) => ({ id: x.id, label: x.label, content: (
               <View style={{ gap: 8 }}>
                 <Text testID={`${testID}-${x.id}-summary`} style={{ fontSize: 15, color: t.color.textBody }}>{x.summary}</Text>

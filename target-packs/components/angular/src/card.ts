@@ -26,8 +26,11 @@ export class Card {
   readonly interactive = input(false);
   readonly selected = input<boolean | undefined>(undefined);
   readonly testID = input('');
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  readonly variant = input('');
+  protected readonly vcls = computed(() => (this.variant() ? ` bx-card--${this.variant()}` : ''));
   readonly action = output<void>();
-  protected readonly css = computed(() => 'bx-card' + (this.interactive() ? ' is-interactive' : '') + (this.selected() ? ' is-selected' : ''));
+  protected readonly css = computed(() => 'bx-card' + this.vcls() + (this.interactive() ? ' is-interactive' : '') + (this.selected() ? ' is-selected' : ''));
 
   protected press(): void { if (this.interactive()) { this.action.emit(); } }
 

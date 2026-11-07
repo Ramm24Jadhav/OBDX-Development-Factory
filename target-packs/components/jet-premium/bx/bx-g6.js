@@ -41,9 +41,9 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2', './bx-g4', './bx-g
     };
     self.act = function () { var c = pick(); bx.fire(self.element, 'ojAction', { value: c ? c.id : '' }); };
   }
-  kinds.tabsum = { model: TabSummaryKind, events: k.ACTION, props: { heading: str(), items: arr(), selection: { type: 'any', writeback: true }, actionLabel: str('View all') },
+  kinds.tabsum = { model: TabSummaryKind, events: k.ACTION, vkind: 'tabs', props: { heading: str(), items: arr(), selection: { type: 'any', writeback: true }, actionLabel: str('View all') },
     view: '<section class="bx-panel bx-tabsum" :aria-labelledby="[[id]]"><h3 class="bx-panel-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>'
-      + '<div class="bx-tabs" role="tablist" :aria-labelledby="[[id]]" on-keydown="[[onKey]]">' + each('tabs', 't', '<button type="button" role="tab" :id="[[t.data.tabId]]" :class="[[t.data.css]]"'
+      + '<div :class="[[\'bx-tabs\' + vcls()]]" role="tablist" :aria-labelledby="[[id]]" :aria-orientation="[[$properties.variant === \'vertical\' ? \'vertical\' : null]]" on-keydown="[[onKey]]">' + each('tabs', 't', '<button type="button" role="tab" :id="[[t.data.tabId]]" :class="[[t.data.css]]"'
         + ' :aria-selected="[[t.data.selected]]" :tabindex="[[t.data.tab]]" :aria-controls="[[id + \'-panel\']]" on-click="[[t.data.choose]]">' + txt('t.data.label') + '</button>') + '</div>'
       + '<div class="bx-tabsum-panel" role="tabpanel" :id="[[id + \'-panel\']]" :aria-labelledby="[[current().tabId]]"><p class="bx-tabsum-figure">' + txt('current().summary') + '</p>'
       + iff('$properties.actionLabel', '<button type="button" class="bx-thing-action" on-click="[[act]]">' + txt('$properties.actionLabel') + '</button>') + '</div></section>' };

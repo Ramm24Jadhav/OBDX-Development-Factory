@@ -25,14 +25,14 @@ export interface ScheduleColumn { field: string; headerText: string; align?: 'st
   selector: 'bx-loan-schedule',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="bx-grid-wrap" [attr.data-testid]="testID() || null">
+    <div [class]="'bx-grid-wrap' + vc('table')" [attr.data-testid]="testID() || null">
       <table class="bx-grid">
         <caption>{{ caption() }}</caption>
         <thead><tr>@for (c of columns(); track c.field) { <th scope="col" [class]="c.align === 'end' ? 'bx-th is-end' : 'bx-th'">{{ c.headerText }}</th> }</tr></thead>
         <tbody>
           @for (r of rows(); track $index) {
             <tr [class]="r['status'] ? 'bx-tr is-' + r['status'] : 'bx-tr'">
-              @for (c of columns(); track c.field) { <td [class]="c.align === 'end' ? 'bx-td is-end' : 'bx-td'">{{ r[c.field] ?? '' }}</td> }
+              @for (c of columns(); track c.field) { <td [class]="c.align === 'end' ? 'bx-td is-end' : 'bx-td'" [attr.data-label]="variant() === 'cards' ? c.headerText : null">{{ r[c.field] ?? '' }}</td> }
             </tr>
           }
         </tbody>

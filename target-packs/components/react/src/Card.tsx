@@ -1,5 +1,8 @@
 import { KeyboardEvent, ReactNode } from 'react';
 
+import { Surface } from './Material';
+import { CardVariant, vc } from './variants-v2';
+
 export interface CardProps {
   heading?: string;
   subheading?: string;
@@ -9,16 +12,18 @@ export interface CardProps {
   onAction?: () => void;
   selected?: boolean;
   testID?: string;
+  /** The style variant (variants/v2.json); the card's own look when left out. */
+  variant?: CardVariant;
 }
 
 /** A card: a heading, the content and actions. */
-export function Card({ heading, subheading, children, actions, onAction, selected, testID }: CardProps) {
+export function Card({ heading, subheading, children, actions, onAction, selected, testID, variant }: CardProps) {
   const interactive = !!onAction;
   const key = (e: KeyboardEvent<HTMLDivElement>) => {
     if (interactive && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onAction?.(); }
   };
   return (
-    <div className={'bx-card' + (interactive ? ' is-interactive' : '') + (selected ? ' is-selected' : '')} data-testid={testID}
+    <Surface as="div" kind="card" variant={variant} className={'bx-card' + vc('card', variant) + (interactive ? ' is-interactive' : '') + (selected ? ' is-selected' : '')} data-testid={testID}
          role={interactive ? 'button' : undefined} tabIndex={interactive ? 0 : undefined} aria-pressed={interactive && selected !== undefined ? selected : undefined}
          onClick={onAction} onKeyDown={key}>
       {heading ? (
@@ -29,6 +34,6 @@ export function Card({ heading, subheading, children, actions, onAction, selecte
       ) : null}
       <div className="bx-card-body">{children}</div>
       {actions ? <div className="bx-card-actions">{actions}</div> : null}
-    </div>
+    </Surface>
   );
 }

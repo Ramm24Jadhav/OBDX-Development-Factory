@@ -14,6 +14,7 @@ import { Chips, FormProps, ChipsProps, Item, ItemList, KeyValues, KeyValuesProps
   toneColors } from './parts';
 import { Enter, Roll } from './motion';
 import { useTheme } from './theme';
+import { CardVariant, QuickVariant, variantStyle } from './variants-v2';
 
 export interface Account {
   id: string;
@@ -111,14 +112,16 @@ export interface AccountCardProps {
   badge?: string;
   actionLabel?: string;
   onAction?: () => void;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: CardVariant;
 }
 
 /** One account with its balance and a way in. */
-export function AccountCard({ testID, account, badge, actionLabel = 'View details', onAction }: AccountCardProps) {
+export function AccountCard({ variant, testID, account, badge, actionLabel = 'View details', onAction }: AccountCardProps) {
   const t = useTheme();
   const c = toneColors(t, 'info');
   return (
-    <Enter testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={[panel(t), variantStyle(t, 'card', variant)]}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{accountLabel(account)}</Text>
         {badge ? <Text style={{ fontSize: 12, fontWeight: '700', color: c.fg, backgroundColor: c.bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
@@ -240,13 +243,15 @@ export interface QuickActionsProps {
   label?: string;
   actions: ReadonlyArray<QuickAction>;
   onAction: (id: string) => void;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: QuickVariant;
 }
 
 /** The everyday tasks, one tap away, four to a row. */
-export function QuickActions({ testID, label, actions, onAction }: QuickActionsProps) {
+export function QuickActions({ variant, testID, label, actions, onAction }: QuickActionsProps) {
   const t = useTheme();
   return (
-    <View testID={testID} style={{ gap: 10 }}>
+    <View testID={testID} style={[{ gap: 10 }, variantStyle(t, 'quick', variant)]}>
       {label ? <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{label}</Text> : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
         {actions.map((a) => (
@@ -312,13 +317,15 @@ export interface BeneficiaryCardProps {
   /** When the payee was added: "added 12 Mar". */
   note?: string;
   onPay?: () => void;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: CardVariant;
 }
 
 /** One payee with their bank and a quick pay. */
-export function BeneficiaryCard({ testID, payee, note, onPay }: BeneficiaryCardProps) {
+export function BeneficiaryCard({ variant, testID, payee, note, onPay }: BeneficiaryCardProps) {
   const t = useTheme();
   return (
-    <Enter testID={testID} style={panel(t)}>
+    <Enter testID={testID} style={[panel(t), variantStyle(t, 'card', variant)]}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
         <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text }}>{payee.name}</Text>
         {payee.bank ? <Text style={{ fontSize: 13, color: t.color.textMuted }}>{payee.bank}</Text> : null}

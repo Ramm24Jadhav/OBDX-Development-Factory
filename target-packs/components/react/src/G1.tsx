@@ -3,11 +3,22 @@
  * premium JET pack. The kinds here (Rows, StepTrack, TimelineList, AlertBox, Segments, ChipFilter, Menu, Panels) are
  * reused by the later groups, which give them their own names and defaults.
  */
+import MuiAccordion from '@mui/material/Accordion';
+import MuiAccordionDetails from '@mui/material/AccordionDetails';
+import MuiAccordionSummary from '@mui/material/AccordionSummary';
+import MuiBreadcrumbs from '@mui/material/Breadcrumbs';
+import MuiDivider from '@mui/material/Divider';
+import MuiList from '@mui/material/List';
+import MuiListItemButton from '@mui/material/ListItemButton';
+import MuiMenu from '@mui/material/Menu';
+import MuiMenuItem from '@mui/material/MenuItem';
+import MuiPagination from '@mui/material/Pagination';
 import * as RadixDialog from '@radix-ui/react-dialog';
-import { KeyboardEvent, ReactNode, useEffect, useId, useRef, useState } from 'react';
+import { ElementType, KeyboardEvent, ReactNode, useEffect, useId, useRef, useState } from 'react';
 
 import { Button, ButtonProps } from './Button';
 import { Lens } from './lens';
+import { AccordionVariant, CrumbsVariant, DialogVariant, DividerVariant, GridVariant, MenuVariant, NavVariant, PagesVariant, collapse, isMaterial, vc } from './variants-v2';
 
 /* ---------- items: strings or objects, each with an id and a label ---------- */
 
@@ -172,13 +183,16 @@ export interface ActionMenuProps {
   items: ReadonlyArray<string | MenuItem>;
   onAction?: (value: string) => void;
   disabled?: boolean;
+  /** The style variant (variants/v2.json); list is a Material menu. */
+  variant?: MenuVariant;
 }
 
 /** A button that opens a list of actions (oj-menu-button); arrows move, Escape closes and gives focus back. */
-export function ActionMenu({ testID, label = 'More', items, onAction, disabled }: ActionMenuProps) {
+export function ActionMenu({ testID, label = 'More', items, onAction, disabled, variant }: ActionMenuProps) {
   const id = useId();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const button = useRef<HTMLButtonElement>(null);
   const live = () => Array.from(box.current?.querySelectorAll<HTMLElement>('.bx-menu-item:not([aria-disabled="true"])') ?? []);
   useEffect(() => { if (open) { live()[0]?.focus(); } }, [open]);
   const close = (refocus: boolean) => { setOpen(false); if (refocus) { box.current?.querySelector<HTMLElement>('.bx-menu-button')?.focus(); } };
@@ -188,13 +202,23 @@ export function ActionMenu({ testID, label = 'More', items, onAction, disabled }
     const next = arrow(e.key, l.indexOf(document.activeElement as HTMLElement), l.length);
     if (next >= 0) { e.preventDefault(); l[next].focus(); }
   };
+  const mui = isMaterial('menu', variant);
   return (
-    <div className="bx-menu" ref={box} data-testid={testID}>
-      <button type="button" className="bx-btn bx-btn--outlined bx-menu-button" aria-haspopup="menu" aria-expanded={open} aria-controls={id} disabled={disabled}
+    <div className={'bx-menu' + vc('menu', variant)} ref={box} data-testid={testID}>
+      <button type="button" ref={button} className="bx-btn bx-btn--outlined bx-menu-button" aria-haspopup="menu" aria-expanded={open} aria-controls={id} disabled={disabled}
               onClick={() => setOpen(!open)} onKeyDown={(e) => { if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); } }}>
         <Lens /><span className="bx-btn-label">{label}</span><span className="bx-menu-caret" aria-hidden="true" />
       </button>
-      {open ? (
+      {mui ? (
+        // MUI's menu list: arrows, Home, End and typing a letter move; Escape and Tab close it and focus goes back to the button
+        <MuiMenu open={open} anchorEl={button.current} onClose={() => close(true)} className={'bx-menu-pop' + vc('menu', variant)}
+                 slotProps={{ list: { id, 'aria-label': label, className: 'bx-menu-list' } as object }}>
+          {toItems(items).map((o) => (
+            <MuiMenuItem key={o.id} disabled={o.disabled} className={'bx-menu-item' + ((o as MenuItem).danger ? ' is-danger' : '')}
+                         onClick={() => { close(true); onAction?.(valueOf(o)); }}>{o.label}</MuiMenuItem>
+          ))}
+        </MuiMenu>
+      ) : open ? (
         <ul className="bx-menu-list" role="menu" id={id} aria-label={label} onKeyDown={key}>
           {toItems(items).map((o) => (
             <li key={o.id} role="menuitem" tabIndex={-1} className={'bx-menu-item' + ((o as MenuItem).danger ? ' is-danger' : '')} aria-disabled={o.disabled || undefined}
@@ -219,15 +243,18 @@ export interface AccordionProps {
   onExpandedChange?: (expanded: string[]) => void;
   /** Several sections open at once. */
   multiple?: boolean;
+  /** The style variant (variants/v2.json); separated is a Material accordion. */
+  variant?: AccordionVariant;
 }
 
 /** Sections that open and close (oj-collapsible): a button with aria-expanded and a region for each. */
-export function Accordion({ testID, items, expanded, onExpandedChange, multiple }: AccordionProps) {
+export function Accordion({ testID, items, expanded, onExpandedChange, multiple, variant }: AccordionProps) {
   const id = useId();
   const [own, setOwn] = useState<string[]>([]);
   const open = expanded ?? own;
+  const mui = isMaterial('accordion', variant);
   return (
-    <div className="bx-accordion" data-testid={testID}>
+    <div className={'bx-accordion' + vc('accordion', variant)} data-testid={testID}>
       {items.map((o, i) => {
         const key = o.id ?? o.title;
         const on = open.includes(key);
@@ -236,6 +263,18 @@ export function Accordion({ testID, items, expanded, onExpandedChange, multiple 
           setOwn(next);
           onExpandedChange?.(next);
         };
+        if (mui) {
+          // MUI ties the summary button and the region from the summary's id and aria-controls
+          return (
+            <MuiAccordion key={key} expanded={on} onChange={toggle} disableGutters className={'bx-acc-item' + (on ? ' is-open' : '')}
+                          slotProps={{ heading: { className: 'bx-acc-head' }, transition: { unmountOnExit: true } }}>
+              <MuiAccordionSummary id={`${id}-${i}-h`} aria-controls={`${id}-${i}-p`} className="bx-acc-button" expandIcon={<span className="bx-acc-icon" aria-hidden="true" />}>
+                <span>{o.title}</span>
+              </MuiAccordionSummary>
+              <MuiAccordionDetails className="bx-acc-panel">{o.body}</MuiAccordionDetails>
+            </MuiAccordion>
+          );
+        }
         return (
           <div key={key} className={'bx-acc-item' + (on ? ' is-open' : '')}>
             <h3 className="bx-acc-head">
@@ -287,19 +326,33 @@ export function Stepper({ testID, label = 'Progress', steps, selectedStep }: Ste
 
 /* ---------- Breadcrumb and SideNav ---------- */
 
-export interface BreadcrumbProps { testID?: string; label?: string; items: ReadonlyArray<ItemLike>; onAction?: (value: string) => void }
+export interface BreadcrumbProps { testID?: string; label?: string; items: ReadonlyArray<ItemLike>; onAction?: (value: string) => void;
+  /** The style variant (variants/v2.json); chevron is Material breadcrumbs, collapsed hides the middle pages behind a button. */
+  variant?: CrumbsVariant }
 
 /** Where the page sits; the earlier pages are links, the last one is the page. */
-export function Breadcrumb({ testID, label = 'Breadcrumb', items, onAction }: BreadcrumbProps) {
+export function Breadcrumb({ testID, label = 'Breadcrumb', items, onAction, variant }: BreadcrumbProps) {
+  const [full, setFull] = useState(false);
   const list = toItems(items);
+  const crumb = (o: ListItem, last: boolean) => (last
+    ? <span className="bx-crumb is-here" aria-current="page">{o.label}</span>
+    : <button type="button" className="bx-crumb" onClick={() => onAction?.(valueOf(o))}>{o.label}</button>);
+  if (isMaterial('crumbs', variant)) {
+    return (
+      <MuiBreadcrumbs aria-label={label} separator="›" className={'bx-crumbs' + vc('crumbs', variant)} data-testid={testID}>
+        {list.map((o, i) => <span key={o.id}>{crumb(o, i === list.length - 1)}</span>)}
+      </MuiBreadcrumbs>
+    );
+  }
+  const shown = variant === 'collapsed' ? collapse(list, full) : list;
   return (
-    <nav className="bx-crumbs" aria-label={label} data-testid={testID}>
+    <nav className={'bx-crumbs' + vc('crumbs', variant)} aria-label={label} data-testid={testID}>
       <ol>
-        {list.map((o, i) => (
-          <li key={o.id}>
-            {i < list.length - 1
-              ? <><button type="button" className="bx-crumb" onClick={() => onAction?.(valueOf(o))}>{o.label}</button><span className="bx-crumb-sep" aria-hidden="true">/</span></>
-              : <span className="bx-crumb is-here" aria-current="page">{o.label}</span>}
+        {shown.map((o, i) => (
+          <li key={o ? o.id : 'more'}>
+            {o ? crumb(o, i === shown.length - 1)
+              : <button type="button" className="bx-crumb bx-crumb-more" aria-label="Show the full path" onClick={() => setFull(true)}>…</button>}
+            {i < shown.length - 1 ? <span className="bx-crumb-sep" aria-hidden="true">/</span> : null}
           </li>
         ))}
       </ol>
@@ -308,26 +361,31 @@ export function Breadcrumb({ testID, label = 'Breadcrumb', items, onAction }: Br
 }
 
 export interface NavItem extends Item { badge?: string | number }
-export interface SideNavProps { testID?: string; label?: string; items: ReadonlyArray<string | NavItem>; selection?: string; onSelectionChange?: (value: string) => void }
+export interface SideNavProps { testID?: string; label?: string; items: ReadonlyArray<string | NavItem>; selection?: string; onSelectionChange?: (value: string) => void;
+  /** The style variant (variants/v2.json); drawer is a Material navigation list. */
+  variant?: NavVariant }
 
 /** The sections of the app (oj-navigation-list); the chosen one is the current page. */
-export function SideNav({ testID, label = 'Main', items, selection, onSelectionChange }: SideNavProps) {
+export function SideNav({ testID, label = 'Main', items, selection, onSelectionChange, variant }: SideNavProps) {
+  const mui = isMaterial('nav', variant);
+  const Ul = (mui ? MuiList : 'ul') as ElementType;
+  const Btn = (mui ? MuiListItemButton : 'button') as ElementType;
   return (
-    <nav className="bx-nav" aria-label={label} data-testid={testID}>
-      <ul>
+    <nav className={'bx-nav' + vc('nav', variant)} aria-label={label} data-testid={testID}>
+      <Ul>
         {toItems(items).map((o) => {
           const on = valueOf(o) === selection;
           const badge = (o as NavItem).badge;
           return (
             <li key={o.id}>
-              <button type="button" className={'bx-nav-item' + (on ? ' is-on' : '')} aria-current={on ? 'page' : undefined} disabled={o.disabled}
-                      onClick={() => onSelectionChange?.(valueOf(o))}>
+              <Btn {...(mui ? { component: 'button', selected: on } : {})} type="button" className={'bx-nav-item' + (on ? ' is-on' : '')} aria-current={on ? 'page' : undefined}
+                   disabled={o.disabled} onClick={() => onSelectionChange?.(valueOf(o))}>
                 <span>{o.label}</span>{badge !== undefined ? <span className="bx-nav-badge">{badge}</span> : null}
-              </button>
+              </Btn>
             </li>
           );
         })}
-      </ul>
+      </Ul>
     </nav>
   );
 }
@@ -344,15 +402,17 @@ export interface SheetProps {
   children?: ReactNode;
   footer?: ReactNode;
   container?: HTMLElement | null;
+  /** The style variant (variants/v2.json); alert is read out as an alert. */
+  variant?: DialogVariant;
 }
 
 /** A panel from the side or the bottom, on Radix Dialog: focus moves in and stays, Escape and the backdrop close it. */
-export function Sheet({ testID, open, onOpenChange, heading, position = 'end', children, footer, container }: SheetProps) {
+export function Sheet({ testID, open, onOpenChange, heading, position = 'end', children, footer, container, variant }: SheetProps) {
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixDialog.Portal container={container ?? undefined}>
         <RadixDialog.Overlay className="bx-dialog-backdrop" />
-        <RadixDialog.Content className={`bx-sheet is-${position}`} data-testid={testID} aria-describedby={undefined}>
+        <RadixDialog.Content className={`bx-sheet is-${position}` + vc('dialog', variant)} data-testid={testID} aria-describedby={undefined} role={variant === 'alert' ? 'alertdialog' : 'dialog'}>
           <div className="bx-dialog-header">
             <RadixDialog.Title className="bx-dialog-title">{heading}</RadixDialog.Title>
             <RadixDialog.Close className="bx-btn bx-btn--borderless bx-btn--icon" aria-label="Close"><span aria-hidden="true">×</span></RadixDialog.Close>
@@ -367,17 +427,23 @@ export function Sheet({ testID, open, onOpenChange, heading, position = 'end', c
 
 /* ---------- layout: Grid, Divider, Avatar ---------- */
 
-export interface GridProps { testID?: string; columns?: 1 | 2 | 3 | 4 | 'auto'; gap?: 'sm' | 'md' | 'lg'; children?: ReactNode }
+export interface GridProps { testID?: string; columns?: 1 | 2 | 3 | 4 | 'auto'; gap?: 'sm' | 'md' | 'lg'; children?: ReactNode; /** The style variant (variants/v2.json). */ variant?: GridVariant }
 /** A responsive layout of columns (fewer on narrow screens). */
-export function Grid({ testID, columns = 'auto', gap = 'md', children }: GridProps) {
-  return <div className={`bx-layout-grid is-cols-${columns} is-gap-${gap}`} data-testid={testID}>{children}</div>;
+export function Grid({ testID, columns = 'auto', gap = 'md', children, variant }: GridProps) {
+  return <div className={`bx-layout-grid is-cols-${columns} is-gap-${gap}` + vc('grid', variant)} data-testid={testID}>{children}</div>;
 }
 
 /** A line between parts, with an optional label. */
-export function Divider({ testID, label }: { testID?: string; label?: string }) {
+export function Divider({ testID, label, variant }: { testID?: string; label?: string; /** The style variant (variants/v2.json); full, inset and middle are Material dividers. */ variant?: DividerVariant }) {
+  if (isMaterial('divider', variant)) {
+    const v = variant === 'full' ? 'fullWidth' : (variant as 'inset' | 'middle');
+    return label
+      ? <MuiDivider variant={v} role="separator" aria-label={label} className={'bx-divider has-label' + vc('divider', variant)} data-testid={testID}><span aria-hidden="true">{label}</span></MuiDivider>
+      : <MuiDivider variant={v} className={'bx-divider' + vc('divider', variant)} data-testid={testID} />;
+  }
   return label
-    ? <div className="bx-divider has-label" role="separator" aria-label={label} data-testid={testID}><span aria-hidden="true">{label}</span></div>
-    : <hr className="bx-divider" data-testid={testID} />;
+    ? <div className={'bx-divider has-label' + vc('divider', variant)} role="separator" aria-label={label} data-testid={testID}><span aria-hidden="true">{label}</span></div>
+    : <hr className={'bx-divider' + vc('divider', variant)} data-testid={testID} />;
 }
 
 export interface AvatarProps { testID?: string; name: string; src?: string; size?: 'sm' | 'md' | 'lg' }
@@ -390,7 +456,9 @@ export function Avatar({ testID, name, src, size = 'md' }: AvatarProps) {
 
 /* ---------- Pagination (oj-paging-control) ---------- */
 
-export interface PaginationProps { testID?: string; label?: string; page: number; pageCount: number; onPageChange?: (page: number) => void }
+export interface PaginationProps { testID?: string; label?: string; page: number; pageCount: number; onPageChange?: (page: number) => void;
+  /** The style variant (variants/v2.json); rounded and outlined are Material pagination, compact says Page x of y. */
+  variant?: PagesVariant }
 
 /** The pages to show: the first, the last and the ones around this page; 0 is a gap. */
 export function pagesAround(page: number, count: number): number[] {
@@ -402,11 +470,23 @@ export function pagesAround(page: number, count: number): number[] {
 }
 
 /** Previous, the pages around this one, next. */
-export function Pagination({ testID, label = 'Pages', page, pageCount, onPageChange }: PaginationProps) {
+export function Pagination({ testID, label = 'Pages', page, pageCount, onPageChange, variant }: PaginationProps) {
   const count = Math.max(1, pageCount);
   const go = (p: number) => { const n = Math.min(count, Math.max(1, p)); if (n !== page) { onPageChange?.(n); } };
+  if (isMaterial('pages', variant)) {
+    return (
+      <MuiPagination count={count} page={page} onChange={(_e: unknown, p: number) => go(p)} shape="rounded" variant={variant === 'outlined' ? 'outlined' : 'text'}
+                     aria-label={label} className={'bx-pages' + vc('pages', variant)} data-testid={testID}
+                     getItemAriaLabel={(type: string, p: number | null) => (type === 'page' ? `Page ${p}` : type === 'previous' ? 'Previous page' : type === 'next' ? 'Next page' : type === 'first' ? 'First page' : 'Last page')} />
+    );
+  }
+  const prev = <button type="button" className="bx-page" aria-label="Previous page" disabled={page <= 1} onClick={() => go(page - 1)}>‹</button>;
+  const next = <button type="button" className="bx-page" aria-label="Next page" disabled={page >= count} onClick={() => go(page + 1)}>›</button>;
+  if (variant === 'compact') {
+    return <nav className="bx-pages bx-pages--compact" aria-label={label} data-testid={testID}>{prev}<span className="bx-page-status">Page {page} of {count}</span>{next}</nav>;
+  }
   return (
-    <nav className="bx-pages" aria-label={label} data-testid={testID}>
+    <nav className={'bx-pages' + vc('pages', variant)} aria-label={label} data-testid={testID}>
       <button type="button" className="bx-page" aria-label="Previous page" disabled={page <= 1} onClick={() => go(page - 1)}>‹</button>
       {pagesAround(page, count).map((p, i) => (p === 0
         ? <span key={`gap${i}`} className="bx-page-gap" aria-hidden="true">…</span>

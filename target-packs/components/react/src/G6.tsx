@@ -9,16 +9,19 @@ import { QuickActions, QuickActionsProps, ThingCard, ThingCardProps, Tiles, Tile
 import { BarChart, BarChartProps, Meters, MetersProps } from './G4';
 import { Calculator, CalculatorProps } from './G5';
 import { FileUpload } from './Forms';
+import { MaterialTabStrip } from './Material';
+import { TabsVariant, isMaterial, vc } from './variants-v2';
 
 type Opt<P, K extends keyof P> = Omit<P, K> & Partial<Pick<P, K>>;
 
 /* ---------- tab summary ---------- */
 
 export interface SummaryTab { id: string; label: string; summary: string }
-export interface TabSummaryProps { testID?: string; heading: string; items: ReadonlyArray<SummaryTab>; selection?: string; onSelectionChange?: (id: string) => void; actionLabel?: string; onAction?: (id: string) => void }
+export interface TabSummaryProps { testID?: string; heading: string; items: ReadonlyArray<SummaryTab>; selection?: string; onSelectionChange?: (id: string) => void; actionLabel?: string; onAction?: (id: string) => void;
+  /** The style variant (variants/v2.json); underline and scrollable are Material tabs. */ variant?: TabsVariant }
 
 /** A figure per tab, and View all; arrow keys move between the tabs. */
-export function TabSummary({ testID, heading, items, selection, onSelectionChange, actionLabel = 'View all', onAction }: TabSummaryProps) {
+export function TabSummary({ testID, heading, items, selection, onSelectionChange, actionLabel = 'View all', onAction, variant }: TabSummaryProps) {
   const id = useId();
   const box = useRef<HTMLDivElement>(null);
   const [own, setOwn] = useState<string | undefined>(undefined);
@@ -34,13 +37,18 @@ export function TabSummary({ testID, heading, items, selection, onSelectionChang
   return (
     <section className="bx-panel bx-tabsum" aria-labelledby={id} data-testid={testID}>
       <h3 className="bx-panel-title" id={id}>{heading}</h3>
-      <div className="bx-tabs" role="tablist" aria-labelledby={id} ref={box} onKeyDown={key}>
+      {isMaterial('tabs', variant) ? (
+        <MaterialTabStrip labelledBy={id} tabs={items} selection={chosen?.id ?? ''} onChange={choose} idOf={(t) => `${id}-t-${t}`} panelOf={(t) => (t === chosen?.id ? `${id}-panel` : undefined)}
+                          scrollable={variant === 'scrollable'} className={'bx-tabs' + vc('tabs', variant)} />
+      ) : (
+      <div className={'bx-tabs' + vc('tabs', variant)} role="tablist" aria-labelledby={id} aria-orientation={variant === 'vertical' ? 'vertical' : undefined} ref={box} onKeyDown={key}>
         {items.map((o) => {
           const on = o === chosen;
           return <button key={o.id} type="button" role="tab" id={`${id}-t-${o.id}`} className={'bx-tab' + (on ? ' is-on' : '')} aria-selected={on} tabIndex={on ? 0 : -1}
                          aria-controls={`${id}-panel`} onClick={() => choose(o.id)}>{o.label}</button>;
         })}
       </div>
+      )}
       <div className="bx-tabsum-panel" role="tabpanel" id={`${id}-panel`} aria-labelledby={chosen ? `${id}-t-${chosen.id}` : undefined}>
         <p className="bx-tabsum-figure">{chosen?.summary}</p>
         {actionLabel ? <button type="button" className="bx-thing-action" onClick={() => onAction?.(chosen?.id ?? '')}>{actionLabel}</button> : null}

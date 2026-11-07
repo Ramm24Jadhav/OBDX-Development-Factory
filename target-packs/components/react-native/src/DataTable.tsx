@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import { Enter, Press } from './motion';
 
 import { useTheme } from './theme';
+import { TableVariant, variantStyle } from './variants-v2';
 
 export interface Column<R> {
   field: keyof R & string;
@@ -23,6 +24,8 @@ export interface DataTableProps<R> {
   onSelectedChange?: (keys: string[]) => void;
   onSort?: (field: string, direction: 'ascending' | 'descending') => void;
   noData?: string;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: TableVariant;
   testID?: string;
 }
 
@@ -31,7 +34,7 @@ export interface DataTableProps<R> {
  * reads as "header: value" pairs, so nothing scrolls sideways. Rows are selectable when selectionMode says so.
  */
 export function DataTable<R extends object>({ caption, rows, columns, keyField, selectionMode = 'none', selected = [], onSelectedChange, onSort, noData,
-                                             testID }: DataTableProps<R>) {
+                                             testID, variant }: DataTableProps<R>) {
   const t = useTheme();
   const [sort, setSort] = useState<{ field: string; asc: boolean } | null>(null);
   const sorted = useMemo(() => {
@@ -88,7 +91,7 @@ export function DataTable<R extends object>({ caption, rows, columns, keyField, 
           </View>
         ));
         const box = { gap: 6, padding: 14, borderRadius: t.radius.card, borderWidth: on ? 1.5 : 1, borderColor: on ? t.color.primary : t.color.border,
-          backgroundColor: on ? t.color.primarySoft : t.color.surface };
+          backgroundColor: on ? t.color.primarySoft : t.color.surface, ...variantStyle(t, 'table', variant) };
         return selectionMode === 'none'
           ? <Enter key={key} effect="settle" testID={testID ? `${testID}-row-${key}` : undefined} style={box}>{cells}</Enter>
           : (

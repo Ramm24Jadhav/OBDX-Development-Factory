@@ -13,6 +13,8 @@ const params = new URLSearchParams(location.search);
 const mode = params.get('mode') === 'dark' ? 'dark' : 'light';
 // The factory's Component factory shows one section (?only=id) in the design and motion its card has chosen
 const only = params.get('only');
+// ?variant=<id> draws the containers and navigation in one of their style variants (variants/v2.json); a component without it ignores it
+const variant = (params.get('variant') || undefined) as never;
 const look = (params.get('look') || 'elevated') as ComponentStyle['look'];
 const motion = { hover: params.get('hover') || undefined, click: params.get('click') || undefined, scroll: params.get('scroll') || undefined } as ComponentStyle['motion'];
 const accounts = [{ value: 'S', label: 'Savings •••• 4521' }, { value: 'C', label: 'Current •••• 0187' }];
@@ -101,7 +103,7 @@ function Gallery() {
       <Section id="dialog" title="Dialog">
         <div className="gate-dialog" ref={setHost}>
           {host ? (
-            <Dialog open onOpenChange={() => undefined} container={host} title="Delete A. Sharma?" description="You can add them again later."
+            <Dialog variant={variant} open onOpenChange={() => undefined} container={host} title="Delete A. Sharma?" description="You can add them again later."
                     footer={<><Button label="Cancel" chroming="outlined" /><Button label="Delete" chroming="danger" /></>}>
               <p>Payments scheduled to A. Sharma will stop.</p>
             </Dialog>
@@ -117,17 +119,17 @@ function Gallery() {
       </Section>
       <Section id="card" title="Card">
         <div className="gate-row">
-          <Card heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</Card>
-          <Card heading="Current •••• 0187" subheading="Open the account" onAction={() => undefined} selected={false}>₹12,410.50</Card>
+          <Card variant={variant} heading="Savings •••• 4521" subheading="Available balance">₹85,000.00</Card>
+          <Card variant={variant} heading="Current •••• 0187" subheading="Open the account" onAction={() => undefined} selected={false}>₹12,410.50</Card>
         </div>
       </Section>
       <Section id="tabs" title="Tabs">
-        <Tabs label="Accounts" selection={tab} onSelectionChange={setTab} tabs={[
+        <Tabs variant={variant} label="Accounts" selection={tab} onSelectionChange={setTab} tabs={[
           { id: 'c', label: 'Current', content: <p>2 current accounts</p> }, { id: 's', label: 'Savings', content: <p>1 savings account</p> },
           { id: 'd', label: 'Deposits', content: <p>3 deposits</p> }, { id: 'l', label: 'Loans', disabled: true }]} />
       </Section>
       <Section id="data-grid" title="Data table">
-        <DataTable caption="Recent transactions" rows={rows} keyField="id" selectionMode="multiple" selected={selected} onSelectedChange={setSelected} columns={[
+        <DataTable variant={variant} caption="Recent transactions" rows={rows} keyField="id" selectionMode="multiple" selected={selected} onSelectedChange={setSelected} columns={[
           { field: 'date', headerText: 'Date', sortable: true }, { field: 'text', headerText: 'Description' },
           { field: 'amount', headerText: 'Amount', sortable: true, align: 'end', render: (r) => r.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }]} />
       </Section>
@@ -184,30 +186,30 @@ function Gallery() {
         <FilterChips testID="fc1" label="Filter" options={['Card', 'Transfer', 'Bills', 'Salary']} value={filters} onChange={setFilters} />
       </Section>
       <Section id="action-menu" title="Action menu">
-        <ActionMenu testID="am1" items={['Download statement', 'Set a nickname', { value: 'close', label: 'Close the account', danger: true }]} />
+        <ActionMenu variant={variant} testID="am1" items={['Download statement', 'Set a nickname', { value: 'close', label: 'Close the account', danger: true }]} />
       </Section>
       <Section id="accordion" title="Accordion">
-        <Accordion testID="ac1" items={faq} />
+        <Accordion variant={variant} testID="ac1" items={faq} />
       </Section>
       <Section id="stepper" title="Stepper">
         <Stepper testID="st1" steps={['Details', 'Review', 'Done']} selectedStep="Review" />
       </Section>
       <Section id="breadcrumb" title="Breadcrumb">
-        <Breadcrumb testID="bc1" items={['Accounts', 'Savings ·· 4821', 'Statement']} />
+        <Breadcrumb variant={variant} testID="bc1" items={['Accounts', 'Savings ·· 4821', 'Statement']} />
       </Section>
       <Section id="side-nav" title="Side navigation">
-        <SideNav testID="sn1" items={['Accounts', 'Payments', { id: 'Cards', label: 'Cards', badge: 2 }]} selection={navSel} onSelectionChange={setNavSel} />
+        <SideNav variant={variant} testID="sn1" items={['Accounts', 'Payments', { id: 'Cards', label: 'Cards', badge: 2 }]} selection={navSel} onSelectionChange={setNavSel} />
       </Section>
       <Section id="sheet" title="Sheet">
         <SecondaryButton label="Filter" onAction={() => setSheet(true)} />
-        <Sheet testID="sh1" open={sheet} onOpenChange={setSheet} heading="Filter transactions"><p>Choose what to show.</p></Sheet>
+        <Sheet variant={variant} testID="sh1" open={sheet} onOpenChange={setSheet} heading="Filter transactions"><p>Choose what to show.</p></Sheet>
       </Section>
       <Section id="grid" title="Grid">
-        <Grid testID="gr1" columns={3}><Card heading="Savings" /><Card heading="Current" /><Card heading="Deposits" /></Grid>
+        <Grid variant={variant} testID="gr1" columns={3}><Card variant={variant} heading="Savings" /><Card variant={variant} heading="Current" /><Card variant={variant} heading="Deposits" /></Grid>
       </Section>
       <Section id="divider" title="Divider">
-        <Divider testID="dv1" />
-        <Divider testID="dv2" label="Or" />
+        <Divider variant={variant} testID="dv1" />
+        <Divider variant={variant} testID="dv2" label="Or" />
       </Section>
       <Section id="avatar" title="Avatar">
         <Avatar testID="av1" name="Asha Rao" />
@@ -215,7 +217,7 @@ function Gallery() {
         <Avatar testID="av3" name="S. Kapoor" size="lg" />
       </Section>
       <Section id="pagination" title="Pagination">
-        <Pagination testID="pg1" page={page} pageCount={4} onPageChange={setPage} />
+        <Pagination variant={variant} testID="pg1" page={page} pageCount={4} onPageChange={setPage} />
       </Section>
       <Section id="status-badge" title="Status badge">
         <StatusBadge testID="sb1" label="Completed" tone="success" />
@@ -258,36 +260,36 @@ function Gallery() {
         <AccountSelector testID="ap1" options={accounts} value={account} onChange={setAccount} />
       </Section>
       <Section id="account-summary" title="Account summary">
-        <AccountSummary testID="as1" items={[{ label: 'Savings', value: '12,400.00', meta: 'Available 12,150.00' }, { label: 'Current', value: '3,210.50', meta: 'Overdraft 1,000.00' }, { label: 'Deposits', value: '25,000.00', meta: 'Matures 14 Mar' }]} onAction={() => undefined} />
+        <AccountSummary variant={variant} testID="as1" items={[{ label: 'Savings', value: '12,400.00', meta: 'Available 12,150.00' }, { label: 'Current', value: '3,210.50', meta: 'Overdraft 1,000.00' }, { label: 'Deposits', value: '25,000.00', meta: 'Matures 14 Mar' }]} onAction={() => undefined} />
       </Section>
       <Section id="balance-card" title="Balance card">
         <AccountBalance testID="bc1" label="Savings ·· 4821" amount={12400} currency="USD" meta="Available 12,150.00" />
         <AccountBalance testID="bc2" label="Current ·· 7730" amount={3210.5} currency="USD" amountHidden />
       </Section>
       <Section id="account-card" title="Account card">
-        <AccountCard testID="ac1" heading="Savings ·· 4821" text="Balance 12,400.00 · Available 12,150.00" badge="Primary" actionLabel="View details →" />
+        <AccountCard variant={variant} testID="ac1" heading="Savings ·· 4821" text="Balance 12,400.00 · Available 12,150.00" badge="Primary" actionLabel="View details →" />
       </Section>
       <Section id="account-details" title="Account details">
-        <AccountDetails items={[{ label: 'Account', value: 'Savings ·· 4821' }, { label: 'Branch', value: 'London Bridge' }, { label: 'IBAN', value: 'GB29 •••• 9268 19' }, { label: 'Holder', value: 'A. Rao' }]} actionLabel="Download statement" />
+        <AccountDetails variant={variant} items={[{ label: 'Account', value: 'Savings ·· 4821' }, { label: 'Branch', value: 'London Bridge' }, { label: 'IBAN', value: 'GB29 •••• 9268 19' }, { label: 'Holder', value: 'A. Rao' }]} actionLabel="Download statement" />
       </Section>
       <Section id="iban" title="IBAN">
         <AccountNumber testID="ib1" value={iban} onChange={setIban} required />
         <AccountNumber testID="ib2" value="GB28NWBK60161331926819" error="Check the IBAN: it starts with the country code." />
       </Section>
       <Section id="quick-actions" title="Quick actions">
-        <QuickActions testID="qa1" items={[{ id: 'send', label: 'Send', icon: '↗' }, { id: 'bills', label: 'Pay bills', icon: '≡' }, { id: 'topup', label: 'Top up', icon: '+' }, { id: 'scan', label: 'Scan to pay', icon: '⌗' }]} />
+        <QuickActions variant={variant} testID="qa1" items={[{ id: 'send', label: 'Send', icon: '↗' }, { id: 'bills', label: 'Pay bills', icon: '≡' }, { id: 'topup', label: 'Top up', icon: '+' }, { id: 'scan', label: 'Scan to pay', icon: '⌗' }]} />
       </Section>
       <Section id="payee-list" title="Payee list">
         <BeneficiarySelector testID="pl1" items={payees} />
       </Section>
       <Section id="beneficiary-card" title="Beneficiary card">
-        <BeneficiaryCard testID="bf1" heading="A. Rao" text="GB29 •••• 9268 19 · added 12 Mar" badge="HSBC" actionLabel="Pay now →" />
+        <BeneficiaryCard variant={variant} testID="bf1" heading="A. Rao" text="GB29 •••• 9268 19 · added 12 Mar" badge="HSBC" actionLabel="Pay now →" />
       </Section>
       <Section id="payment-form" title="Payment form">
         <PaymentForm testID="pf1" cancelLabel="Cancel"><AccountSelector testID="pf1-from" options={accounts} value={account} onChange={setAccount} /><AmountInput testID="pf1-amt" label="Amount" currency="USD" value={null} /></PaymentForm>
       </Section>
       <Section id="transfer-summary" title="Transfer summary">
-        <TransferSummary items={[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }, { label: 'Amount', value: '1,250.00 USD' }, { label: 'Fee', value: '0.00' }, { label: 'Arrives', value: 'Today' }]} />
+        <TransferSummary variant={variant} items={[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }, { label: 'Amount', value: '1,250.00 USD' }, { label: 'Fee', value: '0.00' }, { label: 'Arrives', value: 'Today' }]} />
       </Section>
       <Section id="payment-status" title="Payment status">
         <PaymentStatus testID="ps1" steps={['Initiated', 'Approved', 'Sent', 'Completed']} selectedStep="Sent" />
@@ -300,7 +302,7 @@ function Gallery() {
         <TransactionFilter testID="tf1" options={['Money in', 'Money out', 'Cards', 'Transfers']} value={txFilter} onChange={setTxFilter} />
       </Section>
       <Section id="transaction-details" title="Transaction details">
-        <TransactionDetails items={[{ label: 'Description', value: 'Coffee House' }, { label: 'Date', value: 'Today 08:14' }, { label: 'Amount', value: '-4.50 USD' }, { label: 'Card', value: '·· 4821' }, { label: 'Reference', value: 'TX-88211' }]} actionLabel="Dispute it" />
+        <TransactionDetails variant={variant} items={[{ label: 'Description', value: 'Coffee House' }, { label: 'Date', value: 'Today 08:14' }, { label: 'Amount', value: '-4.50 USD' }, { label: 'Card', value: '·· 4821' }, { label: 'Reference', value: 'TX-88211' }]} actionLabel="Dispute it" />
       </Section>
       <Section id="repeat" title="Repeat">
         <PaymentSchedule testID="rp1" value={repeat} onChange={setRepeat} />
@@ -312,7 +314,7 @@ function Gallery() {
         <UpcomingBills testID="ub1" items={bills} />
       </Section>
       <Section id="td-summary" title="Deposits summary">
-        <DepositsSummary testID="ts1" items={[{ label: 'Deposits', value: '4', meta: 'Total 62,500.00' }, { label: 'Interest earned', value: '1,840.20', meta: 'This year' }, { label: 'Next maturity', value: '14 Mar', meta: '·· 9011 · 25,000.00' }]} />
+        <DepositsSummary variant={variant} testID="ts1" items={[{ label: 'Deposits', value: '4', meta: 'Total 62,500.00' }, { label: 'Interest earned', value: '1,840.20', meta: 'This year' }, { label: 'Next maturity', value: '14 Mar', meta: '·· 9011 · 25,000.00' }]} />
       </Section>
       <Section id="new-td" title="New deposit">
         <NewDepositForm testID="nt1" items={[{ label: 'From account', value: 'Savings ·· 4821' }, { label: 'Amount (USD)', value: '10,000.00' }, { label: 'Tenure', value: '12 months' }]} />
@@ -321,22 +323,22 @@ function Gallery() {
         <MaturityInstructions testID="mi1" options={['Renew principal and interest', 'Renew principal, pay out interest', 'Close and pay out']} value={maturity} onChange={setMaturity} />
       </Section>
       <Section id="td-topup" title="Deposit top-up">
-        <DepositTopUp items={[{ label: 'Deposit', value: '·· 9011' }, { label: 'Current amount', value: '25,000.00' }, { label: 'Top-up', value: '5,000.00' }, { label: 'New maturity value', value: '31,950.00', total: true }]} />
+        <DepositTopUp variant={variant} items={[{ label: 'Deposit', value: '·· 9011' }, { label: 'Current amount', value: '25,000.00' }, { label: 'Top-up', value: '5,000.00' }, { label: 'New maturity value', value: '31,950.00', total: true }]} />
       </Section>
       <Section id="td-redemption" title="Deposit redemption">
-        <DepositRedemption items={[{ label: 'Deposit', value: '·· 9011' }, { label: 'Principal', value: '25,000.00' }, { label: 'Interest to date', value: '612.40' }, { label: 'Early penalty', value: '-62.50' }, { label: 'You receive', value: '25,549.90', total: true }]} />
+        <DepositRedemption variant={variant} items={[{ label: 'Deposit', value: '·· 9011' }, { label: 'Principal', value: '25,000.00' }, { label: 'Interest to date', value: '612.40' }, { label: 'Early penalty', value: '-62.50' }, { label: 'You receive', value: '25,549.90', total: true }]} />
       </Section>
       <Section id="loan-summary" title="Loans summary">
-        <LoansSummary items={[{label: 'Home loan', value: '142,300.00', meta: 'Next 1,240.00 on 5 Feb'}, {label: 'Car loan', value: '18,420.00', meta: 'Next 412.00 on 5 Feb'}, {label: 'Overdue', value: '412.00', meta: 'Car loan · 12 days'}]} />
+        <LoansSummary variant={variant} items={[{label: 'Home loan', value: '142,300.00', meta: 'Next 1,240.00 on 5 Feb'}, {label: 'Car loan', value: '18,420.00', meta: 'Next 412.00 on 5 Feb'}, {label: 'Overdue', value: '412.00', meta: 'Car loan · 12 days'}]} />
       </Section>
       <Section id="loan-repayment" title="Loan repayment">
         <LoanRepayment items={[{label: 'Loan', value: 'Car loan ·· 3310'}, {label: 'Amount (USD)', value: '412.00'}, {label: 'Pay from', value: 'Savings ·· 4821'}]} />
       </Section>
       <Section id="loan-schedule" title="Repayment schedule">
-        <RepaymentSchedule testID="ls1" rows={[{date: '05 Feb', amount: '412.00', status: 'due'}, {date: '05 Mar', amount: '412.00'}, {date: '05 Apr', amount: '412.00'}]} />
+        <RepaymentSchedule variant={variant} testID="ls1" rows={[{date: '05 Feb', amount: '412.00', status: 'due'}, {date: '05 Mar', amount: '412.00'}, {date: '05 Apr', amount: '412.00'}]} />
       </Section>
       <Section id="promise-to-pay" title="Promise to pay">
-        <PromiseToPay items={[{label: 'Overdue', value: '412.00'}, {label: 'Promise date', value: '20 Jan'}, {label: 'Pay from', value: 'Savings ·· 4821'}]} />
+        <PromiseToPay variant={variant} items={[{label: 'Overdue', value: '412.00'}, {label: 'Promise date', value: '20 Jan'}, {label: 'Pay from', value: 'Savings ·· 4821'}]} />
       </Section>
       <Section id="disbursement" title="Disbursement timeline">
         <DisbursementTimeline items={[{label: 'Sanctioned 30,000.00', meta: '02 Jan'}, {label: 'First disbursement 20,000.00', meta: '05 Jan'}, {label: 'Second disbursement 10,000.00', meta: 'Due 05 Mar', state: 'pending'}]} />
@@ -346,7 +348,7 @@ function Gallery() {
         <CardTile testID="ct2" label="Classic" number="4111111111117710" network="Visa" frozen />
       </Section>
       <Section id="card-list" title="Card list">
-        <CardList items={[{label: 'Platinum ·· 4821', value: '640.00 due', meta: 'Limit 10,000.00 · due 18 Jan'}, {label: 'Classic ·· 7710', value: '0.00 due', meta: 'Limit 3,000.00'}]} />
+        <CardList variant={variant} items={[{label: 'Platinum ·· 4821', value: '640.00 due', meta: 'Limit 10,000.00 · due 18 Jan'}, {label: 'Classic ·· 7710', value: '0.00 due', meta: 'Limit 3,000.00'}]} />
       </Section>
       <Section id="activate-card" title="Activate card">
         <ActivateCard testID="ak1" value={code} onChange={setCode} />
@@ -391,7 +393,7 @@ function Gallery() {
         <SessionExpiryWarning testID="st1" open={timeout} seconds={90} onStay={() => setTimeoutOpen(false)} onSignOut={() => setTimeoutOpen(false)} onExpire={() => setTimeoutOpen(false)} />
       </Section>
       <Section id="secure-confirmation" title="Secure confirmation">
-        <SecureConfirmation items={[{label: 'Pay', value: 'A. Rao'}, {label: 'Amount', value: '1,250.00 USD'}, {label: 'Code sent to', value: '•••• 0123'}]} />
+        <SecureConfirmation variant={variant} items={[{label: 'Pay', value: 'A. Rao'}, {label: 'Amount', value: '1,250.00 USD'}, {label: 'Code sent to', value: '•••• 0123'}]} />
       </Section>
       <Section id="sensitive" title="Sensitive field">
         <SensitiveField testID="sf1" value="4111 1111 1111 4821" />
@@ -418,7 +420,7 @@ function Gallery() {
         <ApprovalQueue items={[{title: 'Payroll Feb · prioritized', meta: 'Financial · 182,400.00', value: 'PAY-4410'}, {title: 'Vendor ABC Ltd', meta: 'Financial · 12,000.00', value: 'PAY-4412'}, {title: 'Add payee J. Mehta', meta: 'Non-financial', value: 'BEN-218'}]} />
       </Section>
       <Section id="approval-detail" title="Approval detail">
-        <ApprovalDetail items={[{label: 'Reference', value: 'PAY-4410'}, {label: 'Initiated by', value: 'A. Rao, maker'}, {label: 'Amount', value: '182,400.00 USD'}, {label: 'Value date', value: '28 Jan'}, {label: 'Your level', value: '2 of 3'}]} />
+        <ApprovalDetail variant={variant} items={[{label: 'Reference', value: 'PAY-4410'}, {label: 'Initiated by', value: 'A. Rao, maker'}, {label: 'Amount', value: '182,400.00 USD'}, {label: 'Value date', value: '28 Jan'}, {label: 'Your level', value: '2 of 3'}]} />
       </Section>
       <Section id="approval-journey" title="Approval journey">
         <ApprovalJourney items={[{label: 'Initiated', meta: 'A. Rao · 09:12'}, {label: 'Approved, level 1', meta: 'P. Nair · 10:40'}, {label: 'Waiting, level 2', meta: 'Finance head', state: 'current'}, {label: 'Release', meta: 'Treasury', state: 'pending'}]} />
@@ -436,10 +438,10 @@ function Gallery() {
         <StructureType value={structure} onChange={setStructure} />
       </Section>
       <Section id="account-structure" title="Account structure">
-        <AccountStructure items={[{id: 'h', title: 'Header account ·· 1000', body: 'Sweeps to zero balance daily at 18:00.'}, {id: 'p', title: 'Child: Payroll ·· 1010', body: 'Target balance 5,000.00.'}, {id: 'v', title: 'Child: Vendors ·· 1020', body: 'Sweeps above 2,000.00.'}]} />
+        <AccountStructure variant={variant} items={[{id: 'h', title: 'Header account ·· 1000', body: 'Sweeps to zero balance daily at 18:00.'}, {id: 'p', title: 'Child: Payroll ·· 1010', body: 'Target balance 5,000.00.'}, {id: 'v', title: 'Child: Vendors ·· 1020', body: 'Sweeps above 2,000.00.'}]} />
       </Section>
       <Section id="structure-simulation" title="Structure simulation">
-        <StructureSimulation items={[{label: 'Structure', value: 'Daily zero balance'}, {label: 'Accounts', value: '3'}, {label: 'Moved today', value: '182,400.00'}, {label: 'Interest benefit', value: '1,210.00 a month'}]} />
+        <StructureSimulation variant={variant} items={[{label: 'Structure', value: 'Daily zero balance'}, {label: 'Accounts', value: '3'}, {label: 'Moved today', value: '182,400.00'}, {label: 'Interest benefit', value: '1,210.00 a month'}]} />
       </Section>
       <Section id="intercompany-limits" title="Intercompany limits">
         <LendLimits items={[{label: 'Payroll Ltd', value: 120, max: 500}, {label: 'Vendors Ltd', value: 340, max: 400}]} unit="k" />
@@ -448,7 +450,7 @@ function Gallery() {
         <SweepMonitor items={[{label: 'Sweep started', meta: '18:00'}, {label: '3 of 3 accounts swept', meta: '18:02'}, {label: 'Interest reallocated', meta: '18:05', state: 'current'}]} />
       </Section>
       <Section id="profile" title="Profile">
-        <Profile items={[{label: 'Name', value: 'A. Rao'}, {label: 'Email', value: 'a.rao@mail.example'}, {label: 'Mobile', value: '•••• 0123'}, {label: 'Address', value: '12 Bridge St, London'}]} />
+        <Profile variant={variant} items={[{label: 'Name', value: 'A. Rao'}, {label: 'Email', value: 'a.rao@mail.example'}, {label: 'Mobile', value: '•••• 0123'}, {label: 'Address', value: '12 Bridge St, London'}]} />
       </Section>
       <Section id="sign-in-options" title="Sign-in options">
         <SignInOptions options={['Passkey', 'Facial ID', 'Soft token']} value={signIn} onChange={setSignIn} />
@@ -511,7 +513,7 @@ function Gallery() {
         <TaxSelfCertification selectedStep="Tax residency" />
       </Section>
       <Section id="product-showcase" title="Product showcase">
-        <ProductCard heading="Platinum credit card" text="2% cashback · no annual fee in year one" badge="New" actionLabel="Apply now →" />
+        <ProductCard variant={variant} heading="Platinum credit card" text="2% cashback · no annual fee in year one" badge="New" actionLabel="Apply now →" />
       </Section>
       <Section id="application-tracker" title="Application tracker">
         <ApplicationTracker items={[{label: 'Submitted', meta: '12 Jan'}, {label: 'Documents checked', meta: '13 Jan'}, {label: 'Credit decision', meta: 'Expected 16 Jan', state: 'current'}, {label: 'Card sent', meta: '—', state: 'pending'}]} />
@@ -547,10 +549,10 @@ function Gallery() {
         <Nominations items={[{title: 'S. Rao · spouse', meta: 'Savings ·· 4821', value: '50%'}, {title: 'K. Rao · son', meta: 'Savings ·· 4821', value: '50%'}]} />
       </Section>
       <Section id="faq" title="FAQ">
-        <Faq items={faq} />
+        <Faq variant={variant} items={faq} />
       </Section>
       <Section id="overview" title="Overview">
-        <OverviewWidget items={[{label: 'Current and savings', value: '15,610.50', meta: '3 accounts'}, {label: 'Term deposits', value: '25,000.00', meta: '2 deposits'}, {label: 'Loans', value: '18,420.00', meta: '1 loan outstanding'}, {label: 'Credit cards', value: '640.00 due', meta: '2 cards'}, {label: 'Mutual funds', value: '4,120.00', meta: '1 fund'}]} />
+        <OverviewWidget variant={variant} items={[{label: 'Current and savings', value: '15,610.50', meta: '3 accounts'}, {label: 'Term deposits', value: '25,000.00', meta: '2 deposits'}, {label: 'Loans', value: '18,420.00', meta: '1 loan outstanding'}, {label: 'Credit cards', value: '640.00 due', meta: '2 cards'}, {label: 'Mutual funds', value: '4,120.00', meta: '1 fund'}]} />
       </Section>
       <Section id="quick-insights" title="Quick insights">
         <QuickInsightsWidget items={[{title: 'Term deposit matures', meta: 'In 5 days · ·· 9011', value: '25,000.00'}, {title: 'Card payment due', meta: '18 Jan · ·· 4821', value: '640.00'}, {title: 'Low balance', meta: 'Current ·· 7730', value: '210.00'}]} />
@@ -577,25 +579,25 @@ function Gallery() {
         <CreditScoreWidget items={[{label: 'Credit score', value: 742, max: 900}]} />
       </Section>
       <Section id="rewards" title="Rewards">
-        <RewardsWidget items={[{label: 'Points', value: '12,400', meta: 'Redeem for merchandise, vouchers or air miles'}, {label: 'Vouchers', value: '3', meta: 'Expire 31 Mar'}, {label: 'Cashback', value: '45.00', meta: 'Paid on the 1st'}]} />
+        <RewardsWidget variant={variant} items={[{label: 'Points', value: '12,400', meta: 'Redeem for merchandise, vouchers or air miles'}, {label: 'Vouchers', value: '3', meta: 'Expire 31 Mar'}, {label: 'Cashback', value: '45.00', meta: 'Paid on the 1st'}]} />
       </Section>
       <Section id="financial-advisor" title="Financial advisor">
-        <FinancialAdvisorWidget heading="Priya Nair" text="priya.nair@bank.example · +44 20 7946 0123" badge="Relationship manager" />
+        <FinancialAdvisorWidget variant={variant} heading="Priya Nair" text="priya.nair@bank.example · +44 20 7946 0123" badge="Relationship manager" />
       </Section>
       <Section id="special-offers" title="Special offers">
-        <SpecialOffersWidget heading="Pre-approved personal loan" text="Up to 25,000.00 at 9.5% a year." badge="Offer" />
+        <SpecialOffersWidget variant={variant} heading="Pre-approved personal loan" text="Up to 25,000.00 at 9.5% a year." badge="Offer" />
       </Section>
       <Section id="credit-cards-overview" title="Credit cards">
-        <CreditCardsWidget items={[{label: 'Total due', value: '640.00', meta: 'Due 18 Jan'}, {label: 'Minimum due', value: '32.00', meta: 'Pay to avoid charges'}, {label: 'Available limit', value: '9,360.00', meta: 'Of 10,000.00'}]} />
+        <CreditCardsWidget variant={variant} items={[{label: 'Total due', value: '640.00', meta: 'Due 18 Jan'}, {label: 'Minimum due', value: '32.00', meta: 'Pay to avoid charges'}, {label: 'Available limit', value: '9,360.00', meta: 'Of 10,000.00'}]} />
       </Section>
       <Section id="loans-overview" title="Loans">
-        <LoansWidget items={[{label: 'Loans', value: '2', meta: 'Home and car'}, {label: 'Outstanding', value: '18,420.00', meta: 'Next instalment 5 Feb'}, {label: 'Sanctioned', value: '30,000.00', meta: 'Both loans'}]} />
+        <LoansWidget variant={variant} items={[{label: 'Loans', value: '2', meta: 'Home and car'}, {label: 'Outstanding', value: '18,420.00', meta: 'Next instalment 5 Feb'}, {label: 'Sanctioned', value: '30,000.00', meta: 'Both loans'}]} />
       </Section>
       <Section id="delinquency-notice" title="Delinquency notice">
         <DelinquencyNotice message="Your car loan ·· 3310 is 12 days overdue: 412.00." />
       </Section>
       <Section id="financial-overview" title="Financial overview">
-        <FinancialOverviewWidget items={[{label: 'Assets', value: '4.2M', meta: 'CASA, deposits'}, {label: 'Liabilities', value: '1.1M', meta: 'Loans'}, {label: 'Net worth', value: '3.1M', meta: 'Assets less liabilities'}]} />
+        <FinancialOverviewWidget variant={variant} items={[{label: 'Assets', value: '4.2M', meta: 'CASA, deposits'}, {label: 'Liabilities', value: '1.1M', meta: 'Loans'}, {label: 'Net worth', value: '3.1M', meta: 'Assets less liabilities'}]} />
       </Section>
       <Section id="position-by-currency" title="Position by currency">
         <CurrencyPositionWidget items={[{label: 'USD', value: 88}, {label: 'EUR', value: 60}, {label: 'GBP', value: 42}, {label: 'INR', value: 30}, {label: 'AED', value: 18}]} note="In millions, assets" />
@@ -604,7 +606,7 @@ function Gallery() {
         <CreditLineWidget items={[{label: 'Working capital', value: 720, max: 1000}, {label: 'Import LC line', value: 300, max: 500}, {label: 'Guarantees', value: 90, max: 400}]} unit="k" />
       </Section>
       <Section id="bills-receivable-payable" title="Bills receivable and payable">
-        <TradeBillsWidget items={[{label: 'Receivable', value: '1.8M', meta: 'Export bills'}, {label: 'Payable', value: '0.9M', meta: 'Import bills'}]} />
+        <TradeBillsWidget variant={variant} items={[{label: 'Receivable', value: '1.8M', meta: 'Export bills'}, {label: 'Payable', value: '0.9M', meta: 'Import bills'}]} />
       </Section>
       <Section id="trade-instruments" title="Trade instruments">
         <TradeInstrumentsWidget items={[{title: 'LC ILC2201', meta: 'Expires in 9 days', value: '250,000.00'}, {title: 'Guarantee OG118', meta: 'Expires in 14 days', value: '80,000.00'}]} />
@@ -613,13 +615,13 @@ function Gallery() {
         <ReportsWidget items={[{title: 'Account statement · Dec', meta: 'Generated today', value: 'PDF'}, {title: 'Payments summary', meta: 'Yesterday', value: 'CSV'}]} />
       </Section>
       <Section id="accounts-corp" title="Accounts (corporate)">
-        <AccountsWidget items={[{id: 'casa', label: 'Current and savings', summary: '12 accounts · 3.4M'}, {id: 'td', label: 'Term deposits', summary: '4 deposits · 1.2M'}, {id: 'loans', label: 'Loans and finances', summary: '2 loans · 1.1M outstanding'}]} />
+        <AccountsWidget variant={variant} items={[{id: 'casa', label: 'Current and savings', summary: '12 accounts · 3.4M'}, {id: 'td', label: 'Term deposits', summary: '4 deposits · 1.2M'}, {id: 'loans', label: 'Loans and finances', summary: '2 loans · 1.1M outstanding'}]} />
       </Section>
       <Section id="corporate-limits" title="Corporate limits">
         <CorporateLimitsWidget items={[{label: 'Daily, own transfers', value: 420, max: 1000}, {label: 'Monthly, payments', value: 6200, max: 20000}]} unit="k" />
       </Section>
       <Section id="transactions-widget" title="Transactions (corporate)">
-        <TransactionsWidget items={[{id: 'pending', label: 'Pending', summary: '6 waiting: 4 financial, 2 non-financial'}, {id: 'initiated', label: 'Initiated', summary: '3 initiated today'}, {id: 'log', label: 'Log', summary: '42 this week'}, {id: 'approved', label: 'Approved', summary: '18 approved today'}]} />
+        <TransactionsWidget variant={variant} items={[{id: 'pending', label: 'Pending', summary: '6 waiting: 4 financial, 2 non-financial'}, {id: 'initiated', label: 'Initiated', summary: '3 initiated today'}, {id: 'log', label: 'Log', summary: '42 this week'}, {id: 'approved', label: 'Approved', summary: '18 approved today'}]} />
       </Section>
       <Section id="last-5-payments" title="Last 5 payments">
         <LastPaymentsWidget items={[{title: 'Payroll Jan', meta: 'Processed', value: '182,400.00', tone: 'success'}, {title: 'Vendor ABC Ltd', meta: 'In progress', value: '12,000.00'}, {title: 'Tax', meta: 'Rejected', value: '9,800.00', tone: 'danger'}]} />
@@ -628,10 +630,10 @@ function Gallery() {
         <BulkUploadWidget value={bulk} onChange={setBulk} />
       </Section>
       <Section id="quick-links-corp" title="Quick links (corporate)">
-        <QuickLinksWidget items={[{id: 'own', label: 'Own account', icon: '⇄'}, {id: 'transfer', label: 'Transfer', icon: '↗'}, {id: 'adhoc', label: 'Ad-hoc', icon: '+'}, {id: 'file', label: 'File upload', icon: '⇪'}]} />
+        <QuickLinksWidget variant={variant} items={[{id: 'own', label: 'Own account', icon: '⇄'}, {id: 'transfer', label: 'Transfer', icon: '↗'}, {id: 'adhoc', label: 'Ad-hoc', icon: '+'}, {id: 'file', label: 'File upload', icon: '⇪'}]} />
       </Section>
       <Section id="work-snapshot" title="Work snapshot">
-        <WorkSnapshotWidget items={[{label: 'Processed', value: '12', meta: 'Approved today'}, {label: 'In progress', value: '4', meta: 'Initiated today'}, {label: 'Rejected', value: '1', meta: 'Needs a fix'}]} />
+        <WorkSnapshotWidget variant={variant} items={[{label: 'Processed', value: '12', meta: 'Approved today'}, {label: 'In progress', value: '4', meta: 'Initiated today'}, {label: 'Rejected', value: '1', meta: 'Needs a fix'}]} />
       </Section>
       <Section id="notifications-widget" title="Notifications (corporate)">
         <NotificationsWidget items={[{title: 'USD cut-off moves to 3 pm', meta: 'Today', value: 'Bank'}, {title: 'New tax form available', meta: '2 days ago', value: 'Bank'}]} />
@@ -709,25 +711,25 @@ function Gallery() {
         <Marquee items={['USD 0.92 EUR', 'GBP 1.17 EUR', 'AED 0.25 EUR']} />
       </Section>
       <Section id="animated-list" title="Animated list">
-        <AnimatedList label="Recent" items={['Coffee House', {title: 'Salary', meta: '31 Dec'}]} />
+        <AnimatedList variant={variant} label="Recent" items={['Coffee House', {title: 'Salary', meta: '31 Dec'}]} />
       </Section>
       <Section id="spotlight-card" title="Spotlight card">
-        <SpotlightCard heading="Platinum card" text="2% cashback on travel" />
+        <SpotlightCard variant={variant} heading="Platinum card" text="2% cashback on travel" />
       </Section>
       <Section id="tilt-card" title="Tilt card">
-        <TiltCard heading="Savings" text="12,400.00" />
+        <TiltCard variant={variant} heading="Savings" text="12,400.00" />
       </Section>
       <Section id="flip-card" title="Flip card">
-        <FlipCard heading="Platinum" front="2% cashback" back="No annual fee in year one; 1.5% on foreign spend." />
+        <FlipCard variant={variant} heading="Platinum" front="2% cashback" back="No annual fee in year one; 1.5% on foreign spend." />
       </Section>
       <Section id="card-stack" title="Card stack">
-        <CardStack items={[{title: 'Set a budget', text: 'See where your money goes'}, {title: 'Turn on alerts', text: 'Know when a payment leaves'}]} />
+        <CardStack variant={variant} items={[{title: 'Set a budget', text: 'See where your money goes'}, {title: 'Turn on alerts', text: 'Know when a payment leaves'}]} />
       </Section>
       <Section id="glow-border-card" title="Glow border card">
-        <GlowBorderCard heading="Premium account" />
+        <GlowBorderCard variant={variant} heading="Premium account" />
       </Section>
       <Section id="bento-grid" title="Bento grid">
-        <BentoGrid label="Dashboard" items={[{id: 'spend', title: 'Spending', figure: '1,240.00', size: 'wide'}, {id: 'save', title: 'Saved', figure: '320.00'}, {id: 'score', title: 'Credit score', figure: '742'}]} />
+        <BentoGrid variant={variant} label="Dashboard" items={[{id: 'spend', title: 'Spending', figure: '1,240.00', size: 'wide'}, {id: 'save', title: 'Saved', figure: '320.00'}, {id: 'score', title: 'Credit score', figure: '742'}]} />
       </Section>
       <Section id="carousel" title="Carousel">
         <Carousel slides={[{title: 'Travel insurance', text: 'Cover for the whole family'}, {title: 'Home loans', text: 'From 6.9% a year'}]} />
@@ -739,25 +741,25 @@ function Gallery() {
         <OptionWheel label="Tenure" options={['3 months', '6 months', '12 months']} value="6 months" />
       </Section>
       <Section id="pill-nav" title="Pill navigation">
-        <PillNav items={['Accounts', 'Payments', 'Cards']} selection="Accounts" />
+        <PillNav variant={variant} items={['Accounts', 'Payments', 'Cards']} selection="Accounts" />
       </Section>
       <Section id="dock-nav" title="Dock navigation">
-        <DockNav items={[{id: 'pay', label: 'Pay', icon: '↗'}, {id: 'cards', label: 'Cards', icon: '▭'}, {id: 'help', label: 'Help', icon: '?'}]} />
+        <DockNav variant={variant} items={[{id: 'pay', label: 'Pay', icon: '↗'}, {id: 'cards', label: 'Cards', icon: '▭'}, {id: 'help', label: 'Help', icon: '?'}]} />
       </Section>
       <Section id="card-nav" title="Card navigation">
-        <CardNav items={[{id: 'loans', title: 'Loans', text: 'Home, car, personal'}, {id: 'cards', title: 'Cards', text: 'Credit and debit'}]} />
+        <CardNav variant={variant} items={[{id: 'loans', title: 'Loans', text: 'Home, car, personal'}, {id: 'cards', title: 'Cards', text: 'Credit and debit'}]} />
       </Section>
       <Section id="staggered-menu" title="Staggered menu">
-        <StaggeredMenu items={['Statements', 'Settings', 'Sign out']} />
+        <StaggeredMenu variant={variant} items={['Statements', 'Settings', 'Sign out']} />
       </Section>
       <Section id="document-folder" title="Document folder">
-        <DocumentFolder items={[{id: 'd1', title: 'Statement December', meta: 'PDF · 120 KB'}, {id: 'd2', title: 'Tax certificate 2025', meta: 'PDF'}]} />
+        <DocumentFolder variant={variant} items={[{id: 'd1', title: 'Statement December', meta: 'PDF · 120 KB'}, {id: 'd2', title: 'Tax certificate 2025', meta: 'PDF'}]} />
       </Section>
       <Section id="scroll-stack" title="Scroll stack">
-        <ScrollStack items={[{title: 'Choose an account', text: 'Savings or current'}, {title: 'Verify', text: 'Your ID and a selfie'}]} />
+        <ScrollStack variant={variant} items={[{title: 'Choose an account', text: 'Savings or current'}, {title: 'Verify', text: 'Your ID and a selfie'}]} />
       </Section>
       <Section id="profile-card" title="Profile card">
-        <ProfileCard name="Priya Nair" jobTitle="Relationship manager" items={[{label: 'Phone', value: '+44 20 7946 0123'}]} actionLabel="Send a message" />
+        <ProfileCard variant={variant} name="Priya Nair" jobTitle="Relationship manager" items={[{label: 'Phone', value: '+44 20 7946 0123'}]} actionLabel="Send a message" />
       </Section>
       <Section id="glass-panel" title="Glass panel">
         <GlassPanel><p>The screen's own content</p></GlassPanel>

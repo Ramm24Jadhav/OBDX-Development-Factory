@@ -6923,6 +6923,22 @@
           "version": "0.5",
           "licence": "MIT",
           "notice": "Copyright (c) 2026 Kelvin Zhang. Loaded only under the Liquid glass look, for the bending lens."
+        },
+        {
+          "name": "@mui/material",
+          "version": "9.5",
+          "licence": "MIT",
+          "notice": "Copyright (c) 2014 Call-Em-All. Core only (never MUI X Pro or Premium); draws the Material 3 variants of the containers and navigation (variants/v2.json)."
+        },
+        {
+          "name": "@emotion/react",
+          "version": "11.14",
+          "licence": "MIT"
+        },
+        {
+          "name": "@emotion/styled",
+          "version": "11.14",
+          "licence": "MIT"
         }
       ],
       "built": [

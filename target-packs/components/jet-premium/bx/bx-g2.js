@@ -77,8 +77,8 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1'], function (Composite, bx, g1)
   }
   var tileBody = '<span class="bx-tile-label">' + txt('t.data.label') + '</span><span class="bx-tile-value">' + txt('t.data.value') + '</span>'
     + iff('t.data.meta', '<span class="bx-tile-meta">' + txt('t.data.meta') + '</span>');
-  kinds.tiles = { model: TilesKind, events: k.ACTION, props: { heading: str(), items: arr(), interactive: bool(true) },
-    view: '<section class="bx-tiles-wrap" :aria-label="[[$properties.heading || null]]">' + iff('$properties.heading', '<h3 class="bx-panel-title">' + txt('$properties.heading') + '</h3>')
+  kinds.tiles = { model: TilesKind, events: k.ACTION, vkind: 'tiles', props: { heading: str(), items: arr(), interactive: bool(true) },
+    view: '<section :class="[[\'bx-tiles-wrap\' + vcls()]]" :aria-label="[[$properties.heading || null]]">' + iff('$properties.heading', '<h3 class="bx-panel-title">' + txt('$properties.heading') + '</h3>')
       + '<ul class="bx-tiles">' + each('tiles', 't', '<li>' + iff('$properties.interactive', '<button type="button" :class="[[t.data.css + \' is-interactive\']]" on-click="[[t.data.open]]">' + tileBody + '</button>')
         + iff('!$properties.interactive', '<div :class="[[t.data.css]]">' + tileBody + '</div>') + '</li>') + '</ul></section>' };
 
@@ -103,8 +103,8 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1'], function (Composite, bx, g1)
     self.act = function () { bx.fire(self.element, 'ojAction', {}); };
     self.actionName = ko.pureComputed(function () { return (self.props.actionLabel || '').replace(/\s*→$/, '') + ': ' + (self.props.heading || ''); });
   }
-  kinds.card = { model: CardKind, events: k.ACTION, props: { heading: str(), text: str(), badge: str(), actionLabel: str() },
-    view: '<article class="bx-card bx-thing" :aria-labelledby="[[id]]"><div class="bx-thing-head"><h3 class="bx-card-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>'
+  kinds.card = { model: CardKind, events: k.ACTION, vkind: 'card', props: { heading: str(), text: str(), badge: str(), actionLabel: str() },
+    view: '<article :class="[[\'bx-card bx-thing\' + vcls()]]" :aria-labelledby="[[id]]"><div class="bx-thing-head"><h3 class="bx-card-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>'
       + iff('$properties.badge', '<span class="bx-badge is-info">' + txt('$properties.badge') + '</span>') + '</div>'
       + iff('$properties.text', '<p class="bx-thing-text">' + txt('$properties.text') + '</p>') + '<oj-bind-slot></oj-bind-slot>'
       + iff('$properties.actionLabel', '<button type="button" class="bx-thing-action" :aria-label="[[actionName]]" on-click="[[act]]">' + txt('$properties.actionLabel') + '</button>') + '</article>' };
@@ -119,8 +119,8 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1'], function (Composite, bx, g1)
     self.act = function () { if (!self.props.busy) { bx.fire(self.element, 'ojAction', {}); } };
     self.busyAttr = ko.pureComputed(function () { return self.props.busy ? 'true' : null; });
   }
-  kinds.kv = { model: KvKind, events: k.ACTION, props: { heading: str(), items: arr(), actionLabel: str(), busy: bool() },
-    view: '<section class="bx-panel bx-kv" :aria-label="[[$properties.heading || null]]">' + iff('$properties.heading', '<h3 class="bx-panel-title">' + txt('$properties.heading') + '</h3>')
+  kinds.kv = { model: KvKind, events: k.ACTION, vkind: 'kv', props: { heading: str(), items: arr(), actionLabel: str(), busy: bool() },
+    view: '<section :class="[[\'bx-panel bx-kv\' + vcls()]]" :aria-label="[[$properties.heading || null]]">' + iff('$properties.heading', '<h3 class="bx-panel-title">' + txt('$properties.heading') + '</h3>')
       + '<dl class="bx-kv-list">' + each('rows', 'r', '<div :class="[[r.data.css]]"><dt>' + txt('r.data.label') + '</dt><dd>' + txt('r.data.value') + '</dd></div>') + '</dl>'
       + iff('$properties.actionLabel', '<div class="bx-kv-actions"><button type="button" class="bx-btn bx-btn--callToAction" :disabled="[[$properties.busy]]" :aria-busy="[[busyAttr]]" on-click="[[act]]">'
         + txt('$properties.actionLabel') + '</button></div>') + '</section>' };
@@ -161,8 +161,8 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1'], function (Composite, bx, g1)
       return list(self.props.items).map(function (o) { return { label: o.label, icon: o.icon || '•', go: function () { bx.fire(self.element, 'ojAction', { value: o.value !== undefined ? o.value : o.id }); } }; });
     });
   }
-  kinds.quick = { model: QuickKind, events: k.ACTION, props: { label: str('Quick actions'), items: arr() },
-    view: '<nav class="bx-quick" :aria-label="[[$properties.label]]"><ul>' + each('items', 'q', '<li><button type="button" class="bx-quick-item" on-click="[[q.data.go]]">'
+  kinds.quick = { model: QuickKind, events: k.ACTION, vkind: 'quick', props: { label: str('Quick actions'), items: arr() },
+    view: '<nav :class="[[\'bx-quick\' + vcls()]]" :aria-label="[[$properties.label]]"><ul>' + each('items', 'q', '<li><button type="button" class="bx-quick-item" on-click="[[q.data.go]]">'
       + '<span class="bx-quick-icon" aria-hidden="true">' + txt('q.data.icon') + '</span><span>' + txt('q.data.label') + '</span></button></li>') + '</ul></nav>' };
 
   /* ---------- payees: the saved payees, found by name, picked to pay ---------- */

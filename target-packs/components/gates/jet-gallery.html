@@ -792,6 +792,9 @@
     // ?look= picks one of the pack's designs (the Liquid glass gates use it); elevated by default
     var look = /^[a-z]+$/.test(params.get('look') || '') ? params.get('look') : 'elevated';
     document.getElementById('gallery').className = 'gallery bx-theme bx-look-' + look + (mode === 'dark' ? ' bx-dark' : '');
+    // ?variant=<id> draws the containers and navigation in one of their style variants (variants/v2.json, wave V2)
+    var variant = /^[a-z-]+$/.test(params.get('variant') || '') ? params.get('variant') : '';
+    if (variant) { document.querySelectorAll('bx-action-menu, bx-card, bx-tabs, bx-accordion, bx-breadcrumb, bx-side-nav, bx-sheet, bx-grid, bx-divider, bx-data-grid, bx-pagination, bx-dialog, bx-account-summary, bx-account-card, bx-account-details, bx-quick-actions, bx-beneficiary-card, bx-transfer-summary, bx-transaction-details, bx-td-summary, bx-td-topup, bx-td-redemption, bx-loan-summary, bx-loan-schedule, bx-promise-to-pay, bx-card-list, bx-secure-confirmation, bx-approval-detail, bx-account-structure, bx-structure-simulation, bx-profile, bx-product-showcase, bx-faq, bx-overview, bx-rewards, bx-financial-advisor, bx-special-offers, bx-credit-cards-overview, bx-loans-overview, bx-financial-overview, bx-bills-receivable-payable, bx-accounts-corp, bx-transactions-widget, bx-quick-links-corp, bx-work-snapshot, bx-animated-list, bx-spotlight-card, bx-tilt-card, bx-flip-card, bx-card-stack, bx-glow-border-card, bx-bento-grid, bx-pill-nav, bx-dock-nav, bx-card-nav, bx-staggered-menu, bx-document-folder, bx-scroll-stack, bx-profile-card').forEach(function (el) { el.setAttribute('variant', variant); }); }
     var lib = jet + '/node_modules/';
     var script = document.createElement('script');
     script.src = lib + 'requirejs/require.js';

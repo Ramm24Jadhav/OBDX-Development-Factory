@@ -24,14 +24,14 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2'], function (Composi
     });
     self.rows = ko.pureComputed(function () {
       return (self.props.rows || []).map(function (r) {
-        return { css: 'bx-tr' + (r.status ? ' is-' + r.status : ''), cells: (self.props.columns || []).map(function (c) { return { text: r[c.field] === undefined ? '' : String(r[c.field]), css: 'bx-td' + (c.align === 'end' ? ' is-end' : '') }; }) };
+        return { css: 'bx-tr' + (r.status ? ' is-' + r.status : ''), cells: (self.props.columns || []).map(function (c) { return { text: r[c.field] === undefined ? '' : String(r[c.field]), css: 'bx-td' + (c.align === 'end' ? ' is-end' : ''), label: self.props.variant === 'cards' ? c.headerText : null }; }) };
       });
     });
   }
-  kinds.schedule = { model: ScheduleKind,
+  kinds.schedule = { model: ScheduleKind, vkind: 'table',
     props: { caption: str(), columns: { type: 'Array<Object>', value: [{ field: 'date', headerText: 'Due date' }, { field: 'amount', headerText: 'Instalment', align: 'end' }] }, rows: arr() },
-    view: '<div class="bx-grid-wrap"><table class="bx-grid"><caption>' + txt('$properties.caption') + '</caption><thead><tr>' + each('cols', 'c', '<th scope="col" :class="[[c.data.css]]">' + txt('c.data.header') + '</th>')
-      + '</tr></thead><tbody>' + each('rows', 'r', '<tr :class="[[r.data.css]]">' + each('r.data.cells', 'x', '<td :class="[[x.data.css]]">' + txt('x.data.text') + '</td>') + '</tr>') + '</tbody></table></div>' };
+    view: '<div :class="[[\'bx-grid-wrap\' + vcls()]]"><table class="bx-grid"><caption>' + txt('$properties.caption') + '</caption><thead><tr>' + each('cols', 'c', '<th scope="col" :class="[[c.data.css]]">' + txt('c.data.header') + '</th>')
+      + '</tr></thead><tbody>' + each('rows', 'r', '<tr :class="[[r.data.css]]">' + each('r.data.cells', 'x', '<td :class="[[x.data.css]]" :data-label="[[x.data.label]]">' + txt('x.data.text') + '</td>') + '</tr>') + '</tbody></table></div>' };
 
   /* ---------- card face: the card's picture with the number masked, frozen when blocked ---------- */
   function CardFaceKind(context) {

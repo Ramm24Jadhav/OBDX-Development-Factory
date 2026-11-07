@@ -29,6 +29,8 @@ const rows = [
   { id: 't1', date: '12 Nov 2026', text: 'Electricity bill', amount: '-1,240.00' },
   { id: 't2', date: '11 Nov 2026', text: 'Salary', amount: '85,000.00' },
 ];
+// ?variant=<id> draws the containers and navigation in one of their style variants (variants/v2.json); a component without it ignores it
+const variant = (new URLSearchParams(location.search).get('variant') || undefined) as never;
 const noop = () => undefined;
 
 /** Gallery text in the theme's colour (the platform default is black in the dark theme). */
@@ -81,20 +83,20 @@ function Gallery() {
         </Section>
         <Section id="date" title="Date"><Held initial="2026-11-12">{(v, set) => <DatePicker testID="dp" label="Pay on" value={v} onChange={set} />}</Held></Section>
         <Section id="dialog" title="Dialog">
-          <Dialog open={false} onOpenChange={noop} title="Delete A. Sharma?" description="You can add them again later." />
+          <Dialog variant={variant} open={false} onOpenChange={noop} title="Delete A. Sharma?" description="You can add them again later." />
           <Line>The dialog opens over the screen (a modal); its look is checked in its open state on devices.</Line>
         </Section>
         <Section id="toast" title="Toast">
           <Toast onClose={noop} messages={[{ id: '1', severity: 'error', summary: 'Payment failed', detail: 'The account is blocked. Call the bank.', autoTimeout: 0 },
             { id: '2', severity: 'confirmation', summary: 'Beneficiary added', autoTimeout: 0 }]} />
         </Section>
-        <Section id="card" title="Card"><Card heading="Savings •••• 4521" subheading="Available balance"><Line>₹85,000.00</Line></Card></Section>
+        <Section id="card" title="Card"><Card variant={variant} heading="Savings •••• 4521" subheading="Available balance"><Line>₹85,000.00</Line></Card></Section>
         <Section id="tabs" title="Tabs">
-          <Held initial="c">{(v, set) => <Tabs label="Accounts" selection={v} onSelectionChange={set} tabs={[{ id: 'c', label: 'Current', content: <Line>2 current accounts</Line> },
+          <Held initial="c">{(v, set) => <Tabs variant={variant} label="Accounts" selection={v} onSelectionChange={set} tabs={[{ id: 'c', label: 'Current', content: <Line>2 current accounts</Line> },
             { id: 's', label: 'Savings', content: <Line>1 savings account</Line> }]} />}</Held>
         </Section>
         <Section id="data-grid" title="Data table">
-          <DataTable caption="Recent transactions" rows={rows} keyField="id" columns={[{ field: 'date', headerText: 'Date' }, { field: 'text', headerText: 'Description' },
+          <DataTable variant={variant} caption="Recent transactions" rows={rows} keyField="id" columns={[{ field: 'date', headerText: 'Date' }, { field: 'text', headerText: 'Description' },
             { field: 'amount', headerText: 'Amount', align: 'end' }]} />
         </Section>
         <Section id="text-area" title="Text area"><Held initial="Rent for November">{(v, set) => <TextArea testID="ta1" label="Remarks" value={v} onChange={set} maxLength={140} />}</Held></Section>
@@ -125,7 +127,7 @@ function Gallery() {
         <Section id="danger-button" title="Destructive button"><DestructiveButton label="Cancel payment" /></Section>
         <Section id="segmented" title="Toggle group"><Held initial="Day">{(v, set) => <ToggleGroup testID="tg" label="Show" value={v} onChange={set} options={['Day', 'Week', 'Month']} />}</Held></Section>
         <Section id="filter-chips" title="Filter chips"><Held initial={['Card']}>{(v, set) => <FilterChips testID="fc" label="Filter" value={v} onChange={set} options={['Card', 'Transfer', 'Bills']} />}</Held></Section>
-        <Section id="accordion" title="Accordion"><Accordion testID="acc" items={[{ id: 'a', title: 'How long does a transfer take?', body: 'Same day inside the bank.' }]} expanded={['a']} /></Section>
+        <Section id="accordion" title="Accordion"><Accordion variant={variant} testID="acc" items={[{ id: 'a', title: 'How long does a transfer take?', body: 'Same day inside the bank.' }]} expanded={['a']} /></Section>
         <Section id="stepper" title="Stepper"><Stepper testID="st" steps={['Details', 'Review', 'Done']} selectedStep="Review" /></Section>
         <Section id="status-badge" title="Status badge"><StatusBadge label="Completed" tone="success" /><StatusBadge label="Failed" tone="danger" /></Section>
         <Section id="timeline" title="Timeline"><Timeline testID="tl" items={[{ label: 'Initiated', meta: '09:12' }, { label: 'Completed', state: 'current' }]} /></Section>
@@ -144,8 +146,8 @@ function Gallery() {
         <Section id="alerts-subscription" title="Alerts"><Held initial={['Low balance']}>{(v, set) => <AlertSubscriptions testID="as" label="Tell me about" value={v} onChange={set}
                                                                                                                      options={['Low balance', 'Payments over 500.00']} />}</Held></Section>
         <Section id="loan-calculator" title="Loan calculator"><LoanCalculator testID="lc" value={{ amount: 100000, rate: 12, months: 12 }} currency="USD" /></Section>
-        <Section id="faq" title="FAQ"><Faq testID="faq" items={[{ id: 'a', title: 'How do I block my card?', body: 'Settings › Cards › Block.' }]} /></Section>
-        <Section id="overview" title="Overview widget"><OverviewWidget testID="ov" tiles={[{ id: 'cs', title: 'Current and savings', value: '15,610.50', note: '3 accounts' }]} /></Section>
+        <Section id="faq" title="FAQ"><Faq variant={variant} testID="faq" items={[{ id: 'a', title: 'How do I block my card?', body: 'Settings › Cards › Block.' }]} /></Section>
+        <Section id="overview" title="Overview widget"><OverviewWidget variant={variant} testID="ov" tiles={[{ id: 'cs', title: 'Current and savings', value: '15,610.50', note: '3 accounts' }]} /></Section>
 
         {/* The five effect categories: one of each moving kind (under reduced motion they show their end state) */}
         <Section id="rolling-digits" title="Rolling digits"><RollingDigits value="12,400.00" /></Section>

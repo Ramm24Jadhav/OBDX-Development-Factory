@@ -83,3 +83,6 @@ export type { BackdropProps } from './Backdrops';
 export { BellToggle, BudgetGauge, CallChip, FavouriteHeart, GlideSelect, HoldToConfirm, JellyRadio, LatticeLoader, OtpSlots, PeekRating, PromptBar, ReceiptTear,
   RubberSegment, ScrubField, SlideToConfirm, SquishSwitch, StatusMark, SuccessCheck, SwipeRow, SwipeToast, VoicePill, WarmTooltip } from './Micro';
 export type { ConfirmProps, PickProps, PromptBarProps, ScrubFieldProps, Status, SwipeAction, SwipeRowProps, ToggleProps } from './Micro';
+export { VARIANTS, variantStyle } from './variants-v2';
+export type { AccordionVariant, CardVariant, CardsVariant, DialogVariant, DividerVariant, GridVariant, KvVariant, ListVariant, MenuVariant, NavVariant, PagesVariant,
+  QuickVariant, TableVariant, TabsVariant, TilesVariant, VariantKind } from './variants-v2';

@@ -11,6 +11,7 @@ import { Banner, BannerProps, Chips, ChipsProps, Item, ItemList, ListEntry, Segm
   TimelineItem, TimelineList, TimelineListProps, Tone, Touch, panel, toItems, toneColors } from './parts';
 import { Enter, useShimmer } from './motion';
 import { useTheme } from './theme';
+import { AccordionVariant, DialogVariant, DividerVariant, GridVariant, MenuVariant, NavVariant, PagesVariant, variantStyle } from './variants-v2';
 
 /* ---------- SecondaryButton and DestructiveButton ---------- */
 
@@ -85,16 +86,18 @@ export interface ActionMenuProps {
   /** Called with the item's value (else its id or label). */
   onAction?: (value: string) => void;
   disabled?: boolean;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: MenuVariant;
 }
 
 /** More actions behind one button: a sheet of actions on a phone. */
-export function ActionMenu({ testID, label = 'More', items, onAction, disabled }: ActionMenuProps) {
+export function ActionMenu({ variant, testID, label = 'More', items, onAction, disabled }: ActionMenuProps) {
   const t = useTheme();
   const [open, setOpen] = useState(false);
   return (
     <>
       <Touch testID={testID} label={`${label} actions`} hint="Opens a list of actions" disabled={disabled} onPress={() => setOpen(true)}
-             style={{ minWidth: t.minTouch, alignItems: 'center', paddingHorizontal: 12, borderRadius: t.radius.control }}>
+             style={[{ minWidth: t.minTouch, alignItems: 'center', paddingHorizontal: 12, borderRadius: t.radius.control }, variantStyle(t, 'menu', variant)]}>
         <Text style={{ fontSize: 15, fontWeight: '600', color: t.color.primaryText }}>{label} ⋯</Text>
       </Touch>
       <Sheet testID={`${testID}-sheet`} open={open} title={label} onClose={() => setOpen(false)}>
@@ -127,10 +130,12 @@ export interface AccordionProps {
   onExpandedChange?: (expanded: string[]) => void;
   /** Several open at once; one at a time unless set. */
   multiple?: boolean;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: AccordionVariant;
 }
 
 /** Questions and details that open in place; each header is a button that says whether it is expanded. */
-export function Accordion({ testID, label, items, expanded, onExpandedChange, multiple }: AccordionProps) {
+export function Accordion({ variant, testID, label, items, expanded, onExpandedChange, multiple }: AccordionProps) {
   const t = useTheme();
   const [own, setOwn] = useState<string[]>([]);
   const open = expanded ?? own;
@@ -140,7 +145,7 @@ export function Accordion({ testID, label, items, expanded, onExpandedChange, mu
     onExpandedChange?.(next);
   };
   return (
-    <Enter testID={testID} style={[panel(t), { gap: 0, paddingVertical: 4 }]}>
+    <Enter testID={testID} style={[panel(t), { gap: 0, paddingVertical: 4 }, variantStyle(t, 'accordion', variant)]}>
       {label ? <Text accessibilityRole="header" style={{ fontSize: 16, fontWeight: '700', color: t.color.text, paddingVertical: 8 }}>{label}</Text> : null}
       {items.map((x, i) => {
         const key = x.id ?? x.title;
@@ -148,7 +153,7 @@ export function Accordion({ testID, label, items, expanded, onExpandedChange, mu
         return (
           <View key={key} style={{ borderTopWidth: i || label ? 1 : 0, borderColor: t.color.border }}>
             <Touch testID={`${testID}-${key}`} label={x.title} expanded={on} onPress={() => flip(key)}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+              <View style={{ flexDirection: variant === 'icon-start' ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                 <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: t.color.text }}>{x.title}</Text>
                 <Text importantForAccessibility="no" style={{ fontSize: 16, color: t.color.textMuted }}>{on ? '−' : '+'}</Text>
               </View>
@@ -188,13 +193,15 @@ export interface DrawerProps {
   onSelectionChange?: (value: string) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: NavVariant;
 }
 
 /** The app's menu in a drawer from the start edge; the current page is marked and choosing one closes it. */
-export function Drawer({ testID, label = 'Main', items, selection, onSelectionChange, open, onOpenChange }: DrawerProps) {
+export function Drawer({ variant, testID, label = 'Main', items, selection, onSelectionChange, open, onOpenChange }: DrawerProps) {
   const t = useTheme();
   return (
-    <Sheet testID={testID} open={open} title={label} side="start" onClose={() => onOpenChange(false)}>
+    <Sheet testID={testID} style={variantStyle(t, 'nav', variant)} open={open} title={label} side="start" onClose={() => onOpenChange(false)}>
       {toItems(items).map((x) => {
         const on = x.key === selection;
         const badge = (x.source as NavItem).badge;
@@ -221,12 +228,15 @@ export interface BottomSheetProps {
   children?: ReactNode;
   /** The sheet's actions, at its foot. */
   footer?: ReactNode;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: DialogVariant;
 }
 
 /** A panel that slides over the screen for filters or details. */
-export function BottomSheet({ testID, heading, open, onOpenChange, children, footer }: BottomSheetProps) {
+export function BottomSheet({ variant, testID, heading, open, onOpenChange, children, footer }: BottomSheetProps) {
+  const t = useTheme();
   return (
-    <Sheet testID={testID} open={open} title={heading} onClose={() => onOpenChange(false)}>
+    <Sheet testID={testID} style={variantStyle(t, 'dialog', variant)} open={open} title={heading} onClose={() => onOpenChange(false)}>
       {children}
       {footer ? <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap', paddingTop: 8 }}>{footer}</View> : null}
     </Sheet>
@@ -241,16 +251,18 @@ export interface StackProps {
   columns?: 1 | 2 | 3 | 4 | 'auto';
   gap?: 'sm' | 'md' | 'lg';
   children?: ReactNode;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: GridVariant;
 }
 
 /** Lays out children in equal columns that wrap onto more rows. */
-export function Stack({ testID, columns = 'auto', gap = 'md', children }: StackProps) {
+export function Stack({ variant, testID, columns = 'auto', gap = 'md', children }: StackProps) {
   const t = useTheme();
   const { width } = useWindowDimensions();
   const n = columns === 'auto' ? (width >= 768 ? 2 : 1) : columns;
   const g = { sm: t.space.s, md: t.space.m, lg: t.space.l }[gap];
   return (
-    <View testID={testID} style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -g / 2 }}>
+    <View testID={testID} style={[{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -g / 2 }, variantStyle(t, 'grid', variant)]}>
       {Children.toArray(children).map((c, i) => (
         <View key={i} style={{ width: `${100 / n}%`, paddingHorizontal: g / 2, paddingBottom: g }}>{c}</View>
       ))}
@@ -259,12 +271,12 @@ export function Stack({ testID, columns = 'auto', gap = 'md', children }: StackP
 }
 
 /** Separates groups of content; with a label it reads as a heading between them. */
-export function Divider({ testID, label }: { testID?: string; label?: string }) {
+export function Divider({ variant, testID, label }: { testID?: string; label?: string; /** The style variant (variants/v2.json). */ variant?: DividerVariant }) {
   const t = useTheme();
   const line = <View style={{ flex: 1, height: 1, backgroundColor: t.color.border }} />;
-  if (!label) { return <View testID={testID} style={{ height: 1, backgroundColor: t.color.border, marginVertical: t.space.m }} importantForAccessibility="no" />; }
+  if (!label) { return <View testID={testID} style={[{ height: 1, backgroundColor: t.color.border, marginVertical: t.space.m }, variantStyle(t, 'divider', variant)]} importantForAccessibility="no" />; }
   return (
-    <View testID={testID} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: t.space.m }}>
+    <View testID={testID} style={[{ flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: t.space.m }, variantStyle(t, 'divider', variant)]}>
       {line}<Text accessibilityRole="header" style={{ fontSize: 12.5, color: t.color.textMuted, fontWeight: '600' }}>{label}</Text>{line}
     </View>
   );
@@ -309,10 +321,12 @@ export interface PaginationProps {
   page: number;
   pageCount: number;
   onPageChange?: (page: number) => void;
+  /** The style variant (variants/v2.json); the component's own look when left out. */
+  variant?: PagesVariant;
 }
 
 /** Previous, the pages near the current one, and Next; the current page is marked for screen readers. */
-export function Pagination({ testID, label = 'Pages', page, pageCount, onPageChange }: PaginationProps) {
+export function Pagination({ variant, testID, label = 'Pages', page, pageCount, onPageChange }: PaginationProps) {
   const t = useTheme();
   const from = Math.max(1, Math.min(page - 2, pageCount - 4));
   const pages = Array.from({ length: Math.min(5, pageCount) }, (_, i) => from + i);
@@ -323,9 +337,10 @@ export function Pagination({ testID, label = 'Pages', page, pageCount, onPageCha
     </Touch>
   );
   return (
-    <View testID={testID} accessibilityLabel={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+    <View testID={testID} accessibilityLabel={label} style={[{ flexDirection: 'row', alignItems: 'center', gap: 4, justifyContent: 'center' }, variantStyle(t, 'pages', variant)]}>
       {nav('Previous', page - 1, page <= 1)}
-      {pages.map((p) => (
+      {variant === 'compact' ? <Text testID={`${testID}-status`} style={{ fontSize: 14, color: t.color.text }}>Page {page} of {pageCount}</Text> : null}
+      {variant === 'compact' ? null : pages.map((p) => (
         <Touch key={p} testID={`${testID}-${p}`} label={`Page ${p} of ${pageCount}`} selected={p === page} onPress={() => onPageChange?.(p)}
                style={{ minWidth: t.minTouch, alignItems: 'center', borderRadius: t.radius.control, backgroundColor: p === page ? t.color.primary : 'transparent' }}>
           <Text style={{ fontSize: 14, fontWeight: '600', color: p === page ? t.color.onPrimary : t.color.text }}>{p}</Text>

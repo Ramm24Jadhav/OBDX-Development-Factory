@@ -9,6 +9,8 @@ import { Dialog } from './Dialog';
 import { FieldMessage, fieldClass, useField } from './field';
 import { Alert, AlertProps, Rows, RowsProps, SegmentsProps, Slider, SliderProps, StepperProps, Stepper, Timeline, TimelineProps, ToggleGroup } from './G1';
 import { Details, DetailsProps, StepForm, StepFormProps, Tiles, TilesProps } from './G2';
+import { tableParts } from './Material';
+import { TableVariant, vc } from './variants-v2';
 
 type Opt<P, K extends keyof P> = Omit<P, K> & Partial<Pick<P, K>>;
 
@@ -21,25 +23,27 @@ export function masked(number: string): string {
 /* ---------- RepaymentSchedule ---------- */
 
 export interface ScheduleColumn { field: string; headerText: string; align?: 'start' | 'end' }
-export interface ScheduleProps { testID?: string; caption?: string; columns?: ReadonlyArray<ScheduleColumn>; rows: ReadonlyArray<Record<string, string | number | undefined>> }
+export interface ScheduleProps { testID?: string; caption?: string; columns?: ReadonlyArray<ScheduleColumn>; rows: ReadonlyArray<Record<string, string | number | undefined>>;
+  /** The style variant (variants/v2.json). */ variant?: TableVariant }
 
 const INSTALMENTS: ScheduleColumn[] = [{ field: 'date', headerText: 'Due date' }, { field: 'amount', headerText: 'Instalment', align: 'end' }];
 
 /** A table of dates and amounts; a row's status (due, overdue, paid) marks it. */
-export function RepaymentSchedule({ testID, caption = 'Repayment schedule', columns = INSTALMENTS, rows }: ScheduleProps) {
+export function RepaymentSchedule({ testID, caption = 'Repayment schedule', columns = INSTALMENTS, rows, variant }: ScheduleProps) {
+  const { Table, Head, Body, Row, Cell } = tableParts(variant);
   return (
-    <div className="bx-grid-wrap" data-testid={testID}>
-      <table className="bx-grid">
+    <div className={'bx-grid-wrap' + vc('table', variant)} data-testid={testID}>
+      <Table className="bx-grid">
         <caption>{caption}</caption>
-        <thead><tr>{columns.map((c) => <th key={c.field} scope="col" className={'bx-th' + (c.align === 'end' ? ' is-end' : '')}>{c.headerText}</th>)}</tr></thead>
-        <tbody>
+        <Head><Row>{columns.map((c) => <Cell component="th" key={c.field} scope="col" className={'bx-th' + (c.align === 'end' ? ' is-end' : '')}>{c.headerText}</Cell>)}</Row></Head>
+        <Body>
           {rows.map((r, i) => (
-            <tr key={i} className={'bx-tr' + (r.status ? ` is-${r.status}` : '')}>
-              {columns.map((c) => <td key={c.field} className={'bx-td' + (c.align === 'end' ? ' is-end' : '')}>{r[c.field] ?? ''}</td>)}
-            </tr>
+            <Row key={i} className={'bx-tr' + (r.status ? ` is-${r.status}` : '')}>
+              {columns.map((c) => <Cell key={c.field} className={'bx-td' + (c.align === 'end' ? ' is-end' : '')} data-label={variant === 'cards' ? c.headerText : undefined}>{r[c.field] ?? ''}</Cell>)}
+            </Row>
           ))}
-        </tbody>
-      </table>
+        </Body>
+      </Table>
     </div>
   );
 }
