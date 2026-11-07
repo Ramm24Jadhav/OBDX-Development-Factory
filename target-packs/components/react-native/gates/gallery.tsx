@@ -3,11 +3,11 @@
  * data-component="id"> each (the catalogue ids), in the theme the URL asks for (?mode=light|dark). Fixed data so the
  * screenshots are stable; values are held in state so the controls work.
  */
-import { ReactElement, ReactNode, cloneElement, useState } from 'react';
+import { ReactElement, ReactNode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Text } from 'react-native';
 
-import { SAMPLES } from './samples';
+import { SAMPLES, Variant } from './samples';
 
 import {
   AccountBalance, Accordion, AlertSubscriptions, AmountInput, ApprovalQueue, Autocomplete, BarChart, Button, Card, CardTile, CheckboxGroup, CurrencySelector,
@@ -20,8 +20,8 @@ const params = new URLSearchParams(location.search);
 const mode = params.get('mode') === 'dark' ? 'dark' : 'light';
 // The factory's Component factory shows one section (?only=id) in the design, motion and brand its card has chosen
 const only = params.get('only');
-// and the variant (variants/v4.json) its card cycles through; each component's variant prop checks the name
-const variant = (params.get('variant') || undefined) as never;
+// ?samples=all also draws every sample at once (the design gates check them all in one page)
+const samples = params.get('samples') === 'all';
 const look = (params.get('look') || 'elevated') as NonNullable<ComponentStyle['look']>;
 const click = (params.get('click') || 'press') as NonNullable<NonNullable<ComponentStyle['motion']>['click']>;
 const scroll = (params.get('scroll') || 'fadeup') as NonNullable<NonNullable<ComponentStyle['motion']>['scroll']>;
@@ -58,8 +58,8 @@ function Gallery() {
   return (
     <ThemeProvider style={{ mode, look, motion: { click, scroll } }} brand={brand}>
       <main className={`gallery ${mode}`} data-gallery-ready>
-        {/* A component the sections below do not show, from the unit tests' examples, when the factory asks for it alone */}
-        {only && SAMPLES[only] ? <Section id={only} title={SAMPLES[only][0]}>{variant ? cloneElement(SAMPLES[only][1] as ReactElement<{ variant?: string }>, { variant }) : SAMPLES[only][1]}</Section> : null}
+        {/* A component the sections below do not show, from the unit tests' examples, when the factory asks for it alone (or the design gates for all) */}
+        {(only ? [only] : samples ? Object.keys(SAMPLES) : []).filter((id) => SAMPLES[id]).map((id) => <Section key={id} id={id} title={SAMPLES[id][0]}>{SAMPLES[id][1]}</Section>)}
         {/* The foundation and the forms wave (the same ids as the web packs' galleries) */}
         <Section id="button" title="Button"><Button label="Pay now" /><Button label="Paying" busy /></Section>
         <Section id="icon-button" title="Icon button"><IconButton label="More actions" /><IconButton label="Close" icon="close" chroming="outlined" /></Section>
@@ -90,7 +90,8 @@ function Gallery() {
           <Toast onClose={noop} messages={[{ id: '1', severity: 'error', summary: 'Payment failed', detail: 'The account is blocked. Call the bank.', autoTimeout: 0 },
             { id: '2', severity: 'confirmation', summary: 'Beneficiary added', autoTimeout: 0 }]} />
         </Section>
-        <Section id="card" title="Card"><Card heading="Savings •••• 4521" subheading="Available balance"><Line>₹85,000.00</Line></Card></Section>
+        <Section id="card" title="Card"><Card heading="Savings •••• 4521" subheading="Available balance"><Line>₹85,000.00</Line></Card>
+          <Variant id="outlined"><Card variant="outlined" heading="Savings •••• 4521" subheading="Available balance"><Line>₹85,000.00</Line></Card></Variant></Section>
         <Section id="tabs" title="Tabs">
           <Held initial="c">{(v, set) => <Tabs label="Accounts" selection={v} onSelectionChange={set} tabs={[{ id: 'c', label: 'Current', content: <Line>2 current accounts</Line> },
             { id: 's', label: 'Savings', content: <Line>1 savings account</Line> }]} />}</Held>
@@ -132,20 +133,44 @@ function Gallery() {
         <Section id="status-badge" title="Status badge"><StatusBadge label="Completed" tone="success" /><StatusBadge label="Failed" tone="danger" /></Section>
         <Section id="timeline" title="Timeline"><Timeline testID="tl" items={[{ label: 'Initiated', meta: '09:12' }, { label: 'Completed', state: 'current' }]} /></Section>
         <Section id="error-message" title="Error message"><ErrorMessage testID="em" message="The amount is more than your daily limit of 5,000.00." actionLabel="Change the amount" /></Section>
-        <Section id="balance-card" title="Account balance"><AccountBalance variant={variant} testID="ab" label="Savings ·· 4821" balance={12400} available={12150} currency="USD" /></Section>
+        <Section id="balance-card" title="Account balance"><AccountBalance testID="ab" label="Savings ·· 4821" balance={12400} available={12150} currency="USD" />
+          <Variant id="compact"><AccountBalance variant="compact" testID="ab-compact" label="Savings ·· 4821" balance={12400} available={12150} currency="USD" /></Variant>
+          <Variant id="hero"><AccountBalance variant="hero" testID="ab-hero" label="Savings ·· 4821" balance={12400} available={12150} currency="USD" /></Variant>
+          <Variant id="glass"><AccountBalance variant="glass" testID="ab-glass" label="Savings ·· 4821" balance={12400} available={12150} currency="USD" /></Variant></Section>
         <Section id="transaction-list" title="Transaction history">
-          <TransactionHistory variant={variant} testID="th" transactions={[{ id: '1', description: 'Coffee House', date: 'Today', amount: -4.5, currency: 'USD' },
+          <TransactionHistory testID="th" transactions={[{ id: '1', description: 'Coffee House', date: 'Today', amount: -4.5, currency: 'USD' },
             { id: '2', description: 'Salary', date: '1 Nov', amount: 4200, currency: 'USD' }]} />
+          <Variant id="compact"><TransactionHistory variant="compact" testID="th-compact" transactions={[{ id: '1', description: 'Coffee House', date: 'Today', amount: -4.5, currency: 'USD' },
+            { id: '2', description: 'Salary', date: '1 Nov', amount: 4200, currency: 'USD' }]} /></Variant>
+          <Variant id="detailed"><TransactionHistory variant="detailed" testID="th-detailed" transactions={[{ id: '1', description: 'Coffee House', date: 'Today', amount: -4.5, currency: 'USD' },
+            { id: '2', description: 'Salary', date: '1 Nov', amount: 4200, currency: 'USD' }]} /></Variant>
+          <Variant id="card"><TransactionHistory variant="card" testID="th-card" transactions={[{ id: '1', description: 'Coffee House', date: 'Today', amount: -4.5, currency: 'USD' },
+            { id: '2', description: 'Salary', date: '1 Nov', amount: 4200, currency: 'USD' }]} /></Variant>
+          <Variant id="glass"><TransactionHistory variant="glass" testID="th-glass" transactions={[{ id: '1', description: 'Coffee House', date: 'Today', amount: -4.5, currency: 'USD' },
+            { id: '2', description: 'Salary', date: '1 Nov', amount: 4200, currency: 'USD' }]} /></Variant>
         </Section>
         <Section id="otp" title="OTP input"><Held initial="12">{(v, set) => <OtpInput testID="otp" label="Enter the code" value={v} onChange={set} />}</Held></Section>
-        <Section id="card-tile" title="Card tile"><Held initial={false}>{(v, set) => <CardTile variant={variant} testID="ct" card={{ id: 'c', name: 'Platinum', number: '4111111111114821', expiry: '08/29' }}
-                                                                                       frozen={v} onFrozenChange={set} />}</Held></Section>
+        <Section id="card-tile" title="Card tile"><Held initial={false}>{(v, set) => <><CardTile testID="ct" card={{ id: 'c', name: 'Platinum', number: '4111111111114821', expiry: '08/29' }}
+                                                                                       frozen={v} onFrozenChange={set} />
+          <Variant id="minimal"><CardTile variant="minimal" testID="ct-minimal" card={{ id: 'c', name: 'Platinum', number: '4111111111114821', expiry: '08/29' }}
+                                                                                       frozen={v} onFrozenChange={set} /></Variant>
+          <Variant id="glass"><CardTile variant="glass" testID="ct-glass" card={{ id: 'c', name: 'Platinum', number: '4111111111114821', expiry: '08/29' }}
+                                                                                       frozen={v} onFrozenChange={set} /></Variant>
+          <Variant id="metal"><CardTile variant="metal" testID="ct-metal" card={{ id: 'c', name: 'Platinum', number: '4111111111114821', expiry: '08/29' }}
+                                                                                       frozen={v} onFrozenChange={set} /></Variant></>}</Held></Section>
         <Section id="spending-chart" title="Chart"><BarChart testID="bc" label="Spending" currency="USD" bars={[{ label: 'Sep', value: 980 }, { label: 'Oct', value: 1240 }]} /></Section>
         <Section id="budget-progress" title="Progress bar"><ProgressBar testID="pb" currency="USD" items={[{ label: 'Groceries', value: 320, max: 400 }, { label: 'Eating out', value: 210, max: 200 }]} /></Section>
-        <Section id="approval-queue" title="Pending for approval"><ApprovalQueue variant={variant} testID="aq" items={[{ id: 'p', title: 'Payroll Feb', meta: '182,400.00', priority: true }]} onApprove={noop} onReject={noop} /></Section>
+        <Section id="approval-queue" title="Pending for approval"><ApprovalQueue testID="aq" items={[{ id: 'p', title: 'Payroll Feb', meta: '182,400.00', priority: true }]} onApprove={noop} onReject={noop} />
+          <Variant id="compact"><ApprovalQueue variant="compact" testID="aq-compact" items={[{ id: 'p', title: 'Payroll Feb', meta: '182,400.00', priority: true }]} onApprove={noop} onReject={noop} /></Variant>
+          <Variant id="detailed"><ApprovalQueue variant="detailed" testID="aq-detailed" items={[{ id: 'p', title: 'Payroll Feb', meta: '182,400.00', priority: true }]} onApprove={noop} onReject={noop} /></Variant>
+          <Variant id="card"><ApprovalQueue variant="card" testID="aq-card" items={[{ id: 'p', title: 'Payroll Feb', meta: '182,400.00', priority: true }]} onApprove={noop} onReject={noop} /></Variant>
+          <Variant id="glass"><ApprovalQueue variant="glass" testID="aq-glass" items={[{ id: 'p', title: 'Payroll Feb', meta: '182,400.00', priority: true }]} onApprove={noop} onReject={noop} /></Variant></Section>
         <Section id="alerts-subscription" title="Alerts"><Held initial={['Low balance']}>{(v, set) => <AlertSubscriptions testID="as" label="Tell me about" value={v} onChange={set}
                                                                                                                      options={['Low balance', 'Payments over 500.00']} />}</Held></Section>
-        <Section id="loan-calculator" title="Loan calculator"><LoanCalculator variant={variant} testID="lc" value={{ amount: 100000, rate: 12, months: 12 }} currency="USD" /></Section>
+        <Section id="loan-calculator" title="Loan calculator"><LoanCalculator testID="lc" value={{ amount: 100000, rate: 12, months: 12 }} currency="USD" />
+          <Variant id="compact"><LoanCalculator variant="compact" testID="lc-compact" value={{ amount: 100000, rate: 12, months: 12 }} currency="USD" /></Variant>
+          <Variant id="split"><LoanCalculator variant="split" testID="lc-split" value={{ amount: 100000, rate: 12, months: 12 }} currency="USD" /></Variant>
+          <Variant id="glass"><LoanCalculator variant="glass" testID="lc-glass" value={{ amount: 100000, rate: 12, months: 12 }} currency="USD" /></Variant></Section>
         <Section id="faq" title="FAQ"><Faq testID="faq" items={[{ id: 'a', title: 'How do I block my card?', body: 'Settings › Cards › Block.' }]} /></Section>
         <Section id="overview" title="Overview widget"><OverviewWidget testID="ov" tiles={[{ id: 'cs', title: 'Current and savings', value: '15,610.50', note: '3 accounts' }]} /></Section>
 

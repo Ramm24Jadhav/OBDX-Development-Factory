@@ -1046,12 +1046,15 @@ test('the skin has the motion tokens, the effects and a reduced-motion rule for 
   eq(toFrames, [], 'keyframes that end away from the element style');
 });
 
-/* ---------- banking widget variants (wave V4, variants/v4.json) ---------- */
-const V4 = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'variants', 'v4.json'), 'utf8')).components.filter((c) => c.variants.length);
+/* ---------- banking widget variants (wave V4: variants.json, and variants/v4.json for the states) ---------- */
+const V4STATES = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'variants', 'v4.json'), 'utf8')).components;
+const V4 = Object.entries(JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'variants.json'), 'utf8')).components)
+  .filter(([, c]) => c.wave === 'V4' && c.variants.some((v) => v.id !== 'default' && v.built.indexOf('jet-premium') >= 0))
+  .map(([id, c]) => ({ id: id, kind: c.kind, variants: c.variants.filter((v) => v.id !== 'default'), states: V4STATES[id].states }));
 V4.forEach((c) => {
-  test('v4 bx-' + c.id + ': every variant sets bx-' + c.kind + '--<variant> on its root, and none without a variant', () => {
-    eq(create('bx-' + c.id, {}).vm.css().indexOf('--') < 0 || c.kind === 'avatar' ? 'plain' : create('bx-' + c.id, {}).vm.css(), 'plain', 'no variant');
-    eq(c.variants.filter((v) => create('bx-' + c.id, { variant: v.id }).vm.css().split(' ').indexOf('bx-' + c.kind + '--' + v.id) < 0).map((v) => v.id), [], 'variants without their class');
+  test('v4 bx-' + c.id + ': every variant sets bx-v-<variant> on its root; the default and no variant set none', () => {
+    eq([create('bx-' + c.id, {}).vm.css().indexOf('bx-v-'), create('bx-' + c.id, { variant: 'default' }).vm.css().indexOf('bx-v-')], [-1, -1], 'no variant');
+    eq(c.variants.filter((v) => create('bx-' + c.id, { variant: v.id }).vm.css().split(' ').indexOf('bx-v-' + v.id) < 0).map((v) => v.id), [], 'variants without their class');
     eq(registry['bx-' + c.id].view.indexOf(':class="[[css]]"') >= 0, true, 'root class bound');
   });
 });
@@ -1066,7 +1069,7 @@ test('v4: compact payees and transactions leave out the initials; the tonal avat
   ['bx-payee-list', 'bx-transaction-list', 'bx-recent-transactions'].forEach((n) => eq(registry[n].view.indexOf("<oj-bind-if test=\"[[$properties.variant !== 'compact']]\"><span class=\"bx-avatar is-sm\"") >= 0, true, n));
   const a = create('bx-avatar', { name: 'A. Rao', variant: 'tonal' });
   eq([/^--bx-avatar-hue: [0-9]+$/.test(a.vm.hue()), create('bx-avatar', { name: 'A. Rao' }).vm.hue(), a.vm.hue() === create('bx-avatar', { name: 'A. Rao', variant: 'tonal' }).vm.hue()], [true, null, true]);
-  eq(create('bx-avatar', { name: 'A. Rao', size: 'lg', variant: 'ring' }).vm.css(), 'bx-avatar is-lg bx-avatar--ring');
+  eq(create('bx-avatar', { name: 'A. Rao', size: 'lg', variant: 'ring' }).vm.css(), 'bx-avatar is-lg bx-v-ring');
 });
 
 console.log('Premium JET pack: ' + passed + ' passed' + (failures.length ? ', ' + failures.length + ' failed' : '') + '.');

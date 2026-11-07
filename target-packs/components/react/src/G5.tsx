@@ -131,7 +131,7 @@ export function Calculator({ testID, heading = 'Loan calculator', mode = 'loan',
       <input type="number" className="bx-input bx-num" inputMode="decimal" id={`${id}-${key}`} value={v} min={extra.min} step={extra.step} onChange={(e) => set(e.target.value)} /></div></div>
   );
   return (
-    <section className={withVariant('bx-card bx-calc', 'calc', variant)} aria-labelledby={id} data-testid={testID}>
+    <section className={withVariant('bx-card bx-calc', variant)} aria-labelledby={id} data-testid={testID}>
       <h3 className="bx-card-title" id={id}>{heading}</h3>
       <div className="bx-calc-fields">
         {field('a', amountLabel, a, setA, { min: 0 })}
@@ -158,7 +158,7 @@ export function Locator({ testID, heading = 'Find a branch or ATM', items, empty
   const q = query.trim().toLowerCase();
   const rows = items.filter((o) => (kind === 'all' || o.type === kind) && (!q || `${o.name} ${o.address ?? ''}`.toLowerCase().includes(q)));
   return (
-    <section className={withVariant('bx-panel bx-locator', 'locator', variant)} aria-labelledby={id} data-testid={testID}>
+    <section className={withVariant('bx-panel bx-locator', variant)} aria-labelledby={id} data-testid={testID}>
       <h3 className="bx-panel-title" id={id}>{heading}</h3>
       <div className="bx-control bx-payee-search"><span className="bx-search-icon" aria-hidden="true" />
         <input type="search" className="bx-input bx-search" aria-label="Search by name or area" placeholder="Name or area" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
@@ -195,7 +195,7 @@ export function LiveChat({ testID, heading = 'Chat with us', messages, typing, d
   const send = () => { if (off) { return; } const t = draft.trim(); setDraft(''); onSend?.(t); };
   const key = (e: KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } };
   return (
-    <section className={withVariant('bx-panel bx-chat', 'chat', variant)} aria-labelledby={id} data-testid={testID}>
+    <section className={withVariant('bx-panel bx-chat', variant)} aria-labelledby={id} data-testid={testID}>
       <h3 className="bx-panel-title" id={id}>{heading}</h3>
       {loading ? <Skeleton /> : null}
       <div className="bx-chat-log" role="log" aria-live="polite" aria-labelledby={id}>

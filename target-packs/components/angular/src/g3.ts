@@ -134,7 +134,7 @@ export class CardTile extends Part {
   readonly network = input('');
   readonly frozen = input(false);
   readonly variant = input<CardTileVariant | undefined>(undefined);
-  protected readonly css = computed(() => withVariant(this.frozen() ? 'bx-card-face is-frozen' : 'bx-card-face', 'cardtile', this.variant()));
+  protected readonly css = computed(() => withVariant(this.frozen() ? 'bx-card-face is-frozen' : 'bx-card-face', this.variant()));
   protected readonly shown = computed(() => masked(this.number()));
   protected readonly name = computed(() => [this.label(), this.network(), `ending ${(this.number() || '').replace(/\D/g, '').slice(-4)}`, this.frozen() ? 'blocked' : '']
     .filter(Boolean).join(', '));
@@ -167,7 +167,7 @@ export class AuthChallenge extends Part {
   readonly actionLabel = input('Use fingerprint');
   readonly otherLabel = input('Use a code instead');
   readonly variant = input<BiometricVariant | undefined>(undefined);
-  protected readonly css = computed(() => withVariant('bx-card bx-challenge', 'biometric', this.variant()));
+  protected readonly css = computed(() => withVariant('bx-card bx-challenge', this.variant()));
   /** ready, waiting (the device is asking) or failed. */
   readonly state = input<'ready' | 'waiting' | 'failed'>('ready');
   readonly failedText = input('That did not work. Try again, or use a code.');

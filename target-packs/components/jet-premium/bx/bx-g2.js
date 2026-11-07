@@ -13,8 +13,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1'], function (Composite, bx, g1)
   var k = g1.kit;
   var txt = k.txt, iff = k.iff, each = k.each, list = k.list, base = k.base, register = k.register, str = k.str, bool = k.bool, arr = k.arr;
   var kinds = {};
-  /* Banking widget variants (variants/v4.json): bx-<kind>--<variant> after the root's own classes, and the loading skeleton */
-  var withVariant = function (vm, own, kind) { return ko.pureComputed(function () { return own + (vm.props.variant ? ' bx-' + kind + '--' + vm.props.variant : ''); }); };
+  /* Banking widget variants (variants.json): the variant's class (bx-v-<id>) after the root's own classes, and the loading skeleton */
+  var withVariant = function (vm, own) {
+    return ko.pureComputed(function () { return (typeof own === 'function' ? own() : own) + bx.variantClass(vm.props.variant); });
+  };
   var LOADING = '<div class="bx-skeleton is-text" role="status" aria-busy="true"><span class="bx-visually-hidden">Loading</span><span class="bx-skel-line" aria-hidden="true"></span>'
     + '<span class="bx-skel-line" aria-hidden="true"></span><span class="bx-skel-line is-short" aria-hidden="true"></span></div>';
 
@@ -94,7 +96,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1'], function (Composite, bx, g1)
     self.toggleText = ko.pureComputed(function () { return self.props.amountHidden ? 'Show balance' : 'Hide balance'; });
     self.pressed = ko.pureComputed(function () { return self.props.amountHidden ? 'false' : 'true'; });
     self.toggle = function () { self.props.amountHidden = !self.props.amountHidden; };
-    self.css = withVariant(self, 'bx-balance', 'balance');
+    self.css = withVariant(self, 'bx-balance');
   }
   kinds.balance = { model: BalanceKind, props: { label: str(), amount: { type: 'any' }, currency: str(), meta: str(), hideable: bool(true), amountHidden: { type: 'boolean', value: false, writeback: true },
     variant: str(), loading: bool() },
@@ -186,7 +188,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1'], function (Composite, bx, g1)
     });
     self.none = ko.pureComputed(function () { return self.rows().length === 0; });
     self.onQuery = function (event) { self.query(event.target.value); return true; };
-    self.css = withVariant(self, 'bx-panel', 'payees');
+    self.css = withVariant(self, 'bx-panel bx-payees');
   }
   kinds.payees = { model: PayeesKind, events: k.ACTION, props: { heading: str('Payees'), items: arr(), searchable: bool(true), emptyText: str('No payees match.'), variant: str(), loading: bool() },
     view: '<section :class="[[css]]" :aria-labelledby="[[id]]"><h3 class="bx-panel-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>'
@@ -205,7 +207,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1'], function (Composite, bx, g1)
     self.busyAttr = ko.pureComputed(function () { return self.props.busy ? 'true' : null; });
     self.submit = function () { if (!self.props.busy) { bx.fire(self.element, 'ojAction', { action: 'submit' }); } };
     self.cancel = function () { bx.fire(self.element, 'ojAction', { action: 'cancel' }); };
-    self.css = withVariant(self, 'bx-card bx-form', 'form');
+    self.css = withVariant(self, 'bx-card bx-form');
   }
   kinds.form = { model: FormKind, events: k.ACTION, props: { heading: str(), items: arr(), submitLabel: str('Continue'), cancelLabel: str(), busy: bool(), variant: str() },
     view: '<section :class="[[css]]" :aria-labelledby="[[id]]"><h3 class="bx-card-title" :id="[[id]]">' + txt('$properties.heading') + '</h3><div class="bx-form-body"><oj-bind-slot></oj-bind-slot></div>'
@@ -228,7 +230,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1'], function (Composite, bx, g1)
       });
     });
     self.empty = ko.pureComputed(function () { return self.rows().length === 0; });
-    self.css = withVariant(self, 'bx-panel', 'txlist');
+    self.css = withVariant(self, 'bx-panel bx-txlist');
   }
   var txBody = iff('$properties.variant !== \'compact\'', '<span class="bx-avatar is-sm" aria-hidden="true">' + txt('t.data.initials') + '</span>') + '<span class="bx-row-main"><strong>' + txt('t.data.name') + '</strong>'
     + iff('t.data.meta', '<span class="bx-row-meta">' + txt('t.data.meta') + '</span>') + '</span><span :class="[[t.data.css]]"><span class="bx-visually-hidden">' + txt('t.data.direction') + '</span>'
@@ -246,7 +248,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1'], function (Composite, bx, g1)
     base(self, context, 'bx-receipt');
     self.amountText = ko.pureComputed(function () { return money(self.props.amount, self.props.currency); });
     self.rows = ko.pureComputed(function () { return list(self.props.items).map(function (o) { return { label: o.label, value: o.value !== undefined ? String(o.value) : '' }; }); });
-    self.css = withVariant(self, 'bx-card bx-receipt', 'receipt');
+    self.css = withVariant(self, 'bx-card bx-receipt');
   }
   kinds.receipt = { model: ReceiptKind, props: { heading: str('Done'), amount: { type: 'any' }, currency: str(), items: arr(), reference: str(), variant: str() },
     view: '<section :class="[[css]]" :aria-labelledby="[[id]]"><span class="bx-receipt-mark" aria-hidden="true">✓</span><h3 class="bx-receipt-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>'

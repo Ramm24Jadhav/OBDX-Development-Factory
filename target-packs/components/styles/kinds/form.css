@@ -1,0 +1,8 @@
+.bx-form-body { display: flex; flex-direction: column; }
+.bx-form-body:empty { display: none; }
+/* Variants (variants.json, wave V4) */
+.bx-form.bx-v-flat { padding: 0; background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.bx-form.bx-v-sectioned > * + * { padding-top: 14px; border-top: var(--bx-bw) solid var(--bx-rule); }
+@media (max-width: 600px) { .bx-form.bx-v-sectioned .bx-kv-actions { position: sticky; bottom: 0; padding-bottom: 12px; background: var(--bx-card); } }
+.bx-form.bx-v-glass { background: color-mix(in srgb, var(--bx-card) 58%, transparent); -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%); border-color: color-mix(in srgb, var(--bx-text) 12%, transparent); }
+@media (prefers-reduced-transparency: reduce) { .bx-form.bx-v-glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--bx-card); } }

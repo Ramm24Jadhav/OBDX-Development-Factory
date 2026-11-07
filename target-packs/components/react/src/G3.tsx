@@ -54,7 +54,7 @@ export function CardTile({ testID, label, number, holder, expiry, network, froze
   const last = (number || '').replace(/\D/g, '').slice(-4);
   const name = [label, network, `ending ${last}`, frozen ? 'blocked' : ''].filter(Boolean).join(', ');
   return (
-    <div className={withVariant('bx-card-face' + (frozen ? ' is-frozen' : ''), 'cardtile', variant)} role="img" aria-label={name} data-testid={testID}>
+    <div className={withVariant('bx-card-face' + (frozen ? ' is-frozen' : ''), variant)} role="img" aria-label={name} data-testid={testID}>
       <span className="bx-card-face-label" aria-hidden="true">{label}</span>
       <span className="bx-card-face-number bx-mono" aria-hidden="true">{masked(number)}</span>
       <span className="bx-card-face-foot" aria-hidden="true"><span>{holder}</span><span>{expiry}</span><strong>{network}</strong></span>
@@ -194,7 +194,7 @@ export function AuthChallenge({ testID, heading = 'Confirm it is you', text, met
   const id = useId();
   const waiting = state === 'waiting';
   return (
-    <section className={withVariant('bx-card bx-challenge', 'biometric', variant)} aria-labelledby={id} data-testid={testID}>
+    <section className={withVariant('bx-card bx-challenge', variant)} aria-labelledby={id} data-testid={testID}>
       <span className={'bx-challenge-icon' + (waiting ? ' is-waiting' : '')} aria-hidden="true">{METHOD_ICON[method]}</span>
       <h3 className="bx-card-title" id={id}>{heading}</h3>
       {text ? <p className="bx-thing-text">{text}</p> : null}

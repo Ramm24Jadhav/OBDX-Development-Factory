@@ -125,7 +125,7 @@ export const CALC = `
 export abstract class CalcBase extends Part {
   readonly heading = input<string | undefined>(undefined);
   readonly variant = input<CalcVariant | undefined>(undefined);
-  protected readonly css = computed(() => withVariant('bx-card bx-calc', 'calc', this.variant()));
+  protected readonly css = computed(() => withVariant('bx-card bx-calc', this.variant()));
   readonly currency = input('');
   readonly toCurrency = input('');
   /** Yearly rate in % (loan, deposit), or the exchange rate (fx); leave out for the component's own. */
@@ -219,7 +219,7 @@ export class Locator extends Part {
   /** Skeleton rows while the screen fetches the places. */
   readonly loading = input(false);
   readonly action = output<Place>();
-  protected readonly css = computed(() => withVariant('bx-panel bx-locator', 'locator', this.variant()));
+  protected readonly css = computed(() => withVariant('bx-panel bx-locator', this.variant()));
   protected readonly kinds = [{ key: 'all', label: 'All' }, { key: 'branch', label: 'Branches' }, { key: 'atm', label: 'ATMs' }] as const;
   protected readonly query = signal('');
   protected readonly kind = signal<'all' | 'branch' | 'atm'>('all');
@@ -267,7 +267,7 @@ export class LiveChat extends Part {
   /** Skeleton lines while the screen fetches the history. */
   readonly loading = input(false);
   readonly send = output<string>();
-  protected readonly css = computed(() => withVariant('bx-panel bx-chat', 'chat', this.variant()));
+  protected readonly css = computed(() => withVariant('bx-panel bx-chat', this.variant()));
   protected readonly draft = signal('');
   protected readonly off = computed(() => !this.draft().trim() || this.disabled());
   protected go(): void { if (this.off()) { return; } const t = this.draft().trim(); this.draft.set(''); this.send.emit(t); }

@@ -491,7 +491,7 @@ export class Avatar extends Part {
   readonly src = input('');
   readonly size = input<'sm' | 'md' | 'lg'>('md');
   readonly variant = input<AvatarVariant | undefined>(undefined);
-  protected readonly css = computed(() => withVariant('bx-avatar is-' + this.size(), 'avatar', this.variant()));
+  protected readonly css = computed(() => withVariant('bx-avatar is-' + this.size(), this.variant()));
   protected readonly hue = computed(() => (this.variant() === 'tonal' ? hueOf(this.name()) : null));
   protected readonly letters = computed(() => initials(this.name()));
 }
@@ -737,7 +737,7 @@ export abstract class RowsBase extends Part {
   /** Skeleton rows while the screen fetches the items. */
   readonly loading = input(false);
   readonly action = output<RowItem>();
-  protected readonly css = computed(() => withVariant('bx-panel', 'bills', this.variant()));
+  protected readonly css = computed(() => withVariant('bx-panel bx-bills', this.variant()));
   protected readonly defaults: { heading?: string; actionLabel?: string; emptyText?: string } = {};
   protected readonly empty = computed(() => this.emptyText() ?? this.defaults.emptyText ?? 'Nothing here yet.');
   protected readonly head = computed(() => this.heading() ?? this.defaults.heading ?? '');

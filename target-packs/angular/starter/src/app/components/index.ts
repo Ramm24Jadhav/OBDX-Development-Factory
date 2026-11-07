@@ -23,6 +23,6 @@ export { Autocomplete, CURRENCIES, CurrencySelector, DateRangePicker, FileUpload
   fileSize } from './forms';
 export type { DateRange } from './forms';
 export { ReadOnlyField, Screen, Section } from './layout';
-// The banking widgets' variant names (variants/v4.json)
+// The banking widgets' variant names (variants.json)
 export type { AvatarVariant, BalanceVariant, BillsVariant, BiometricVariant, BoardVariant, CalcVariant, CardTileVariant, ChatVariant, FormVariant, LocatorVariant, PayeesVariant,
   PromptVariant, ReceiptVariant, SensitiveVariant, TxListVariant } from './variant';

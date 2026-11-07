@@ -10,9 +10,12 @@ import { violations } from './a11y';
 
 afterEach(cleanup);
 
-// Wave V4's banking widgets and their variants, as variants/v4.json lists them
-interface V4 { components: Array<{ id: string; kind: string; variants: Array<{ id: string }>; states?: { loadingProperty?: boolean } }> }
-const v4 = JSON.parse(readFileSync(join(__dirname, '..', '..', 'variants', 'v4.json'), 'utf8')) as V4;
+// Wave V4's banking widgets and the variants variants.json lists as built here; their states are in variants/v4.json
+interface Entry { kind: string; wave: string; variants: Array<{ id: string; built: string[] }> }
+const states = (JSON.parse(readFileSync(join(__dirname, '..', '..', 'variants', 'v4.json'), 'utf8')) as { components: Record<string, { states: { loadingProperty?: boolean } }> }).components;
+const v4 = Object.entries((JSON.parse(readFileSync(join(__dirname, '..', '..', 'variants.json'), 'utf8')) as { components: Record<string, Entry> }).components)
+  .filter(([, c]) => c.wave === 'V4' && c.variants.some((v) => v.id !== 'default' && v.built.includes('react')))
+  .map(([id, c]) => ({ id, kind: c.kind, variants: c.variants.filter((v) => v.id !== 'default'), states: states[id].states }));
 const catalogue = JSON.parse(readFileSync(join(__dirname, '..', '..', 'catalogue.json'), 'utf8')) as { categories: Array<{ components: Array<{ id: string; names: Record<string, string> }> }> };
 const names = Object.fromEntries(catalogue.categories.flatMap((c) => c.components).map((c) => [c.id, c.names.react]));
 
@@ -37,19 +40,19 @@ const draw = (id: string, kind: string, extra: Record<string, unknown> = {}) =>
   render(createElement((bx as unknown as Record<string, ComponentType<Record<string, unknown>>>)[names[id]], { ...props(id, kind), ...extra }));
 
 describe('wave V4 variants', () => {
-  for (const c of v4.components.filter((x) => x.variants.length)) {
-    it(`${c.id}: each variant puts bx-${c.kind}--<variant> on the root; none without a variant`, () => {
-      expect(draw(c.id, c.kind).container.querySelector(`[class*="bx-${c.kind}--"]`)).toBeNull();
+  for (const c of v4) {
+    it(`${c.id}: each variant puts bx-v-<variant> on the root; none without a variant`, () => {
+      expect(draw(c.id, c.kind).container.querySelector('[class*="bx-v-"]')).toBeNull();
       cleanup();
       for (const v of c.variants) {
         const { container } = draw(c.id, c.kind, { variant: v.id });
-        expect(container.querySelector(`.bx-${c.kind}--${v.id}`), v.id).not.toBeNull();
+        expect(container.querySelector(`.bx-v-${v.id}`), v.id).not.toBeNull();
         cleanup();
       }
     });
   }
 
-  for (const c of v4.components.filter((x) => x.states?.loadingProperty)) {
+  for (const c of v4.filter((x) => x.states.loadingProperty)) {
     it(`${c.id}: loading shows a skeleton with role status, without the empty line, and passes axe`, async () => {
       const { container } = draw(c.id, c.kind, { loading: true, items: [], messages: [] });
       expect(container.querySelector('.bx-skeleton[role="status"][aria-busy="true"]')).not.toBeNull();

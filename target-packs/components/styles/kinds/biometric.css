@@ -1,0 +1,15 @@
+.bx-challenge { align-items: center; text-align: center; }
+.bx-challenge-icon { width: 64px; height: 64px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: color-mix(in srgb, var(--bx-brand) 12%, var(--bx-surface));
+  color: var(--bx-brand-text); font-size: 30px; }
+.bx-challenge-icon.is-waiting { animation: bx-breathe 1.6s var(--bx-ease-standard) infinite; }
+.bx-challenge .bx-kv-actions { justify-content: center; }
+@keyframes bx-breathe { 50% { transform: scale(1.08); box-shadow: 0 0 0 10px color-mix(in srgb, var(--bx-brand) 10%, transparent); } }
+/* Variants (variants.json, wave V4) */
+.bx-challenge.bx-v-inline { flex-flow: row wrap; align-items: center; gap: 8px 14px; padding: 12px var(--bx-pad); text-align: left; }
+.bx-challenge.bx-v-inline .bx-challenge-icon { width: 40px; height: 40px; font-size: 20px; }
+.bx-challenge.bx-v-inline .bx-card-title { flex: 1 1 auto; font-size: 15px; }
+.bx-challenge.bx-v-inline :is(.bx-thing-text, .bx-error) { flex-basis: 100%; }
+.bx-challenge.bx-v-inline .bx-kv-actions { justify-content: flex-end; margin-left: auto; }
+.bx-challenge.bx-v-sheet { position: relative; padding: 28px var(--bx-pad-card) 24px; border-radius: var(--bx-radius-xl) var(--bx-radius-xl) 0 0; background: var(--bx-raised); box-shadow: var(--bx-shadow-3); }
+.bx-challenge.bx-v-sheet::before { content: ""; position: absolute; top: 10px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: var(--bx-radius-pill); background: var(--bx-border-strong); }
+.bx-challenge.bx-v-sheet .bx-challenge-icon { width: 80px; height: 80px; font-size: 38px; }

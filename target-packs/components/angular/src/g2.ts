@@ -145,7 +145,7 @@ export class AccountBalance extends Part {
   readonly variant = input<BalanceVariant | undefined>(undefined);
   /** A skeleton in place of the amount while the screen fetches it. */
   readonly loading = input(false);
-  protected readonly css = computed(() => withVariant('bx-balance', 'balance', this.variant()));
+  protected readonly css = computed(() => withVariant('bx-balance', this.variant()));
   protected readonly shown = computed(() => money(this.amount(), this.currency() || undefined));
 }
 
@@ -287,7 +287,7 @@ export class BeneficiarySelector extends Part {
   /** Skeleton rows while the screen fetches the payees. */
   readonly loading = input(false);
   readonly action = output<Payee>();
-  protected readonly css = computed(() => withVariant('bx-panel', 'payees', this.variant()));
+  protected readonly css = computed(() => withVariant('bx-panel bx-payees', this.variant()));
   protected readonly query = signal('');
   protected readonly rows = computed(() => {
     const q = this.query().trim().toLowerCase();
@@ -320,7 +320,7 @@ export abstract class FormBase extends Part {
   readonly busy = input(false);
   readonly variant = input<FormVariant | undefined>(undefined);
   readonly submitted = output<void>();
-  protected readonly css = computed(() => withVariant('bx-card bx-form', 'form', this.variant()));
+  protected readonly css = computed(() => withVariant('bx-card bx-form', this.variant()));
   readonly cancelled = output<void>();
   protected readonly defaults: { heading: string; submitLabel: string } = { heading: '', submitLabel: 'Continue' };
   protected readonly head = computed(() => this.heading() ?? this.defaults.heading);
@@ -380,7 +380,7 @@ export class TransactionHistory extends Part {
   /** Skeleton rows while the screen fetches the transactions. */
   readonly loading = input(false);
   readonly action = output<Transaction>();
-  protected readonly css = computed(() => withVariant('bx-panel', 'txlist', this.variant()));
+  protected readonly css = computed(() => withVariant('bx-panel bx-txlist', this.variant()));
   protected readonly rows = computed(() => this.items().map((item) => {
     const n = typeof item.amount === 'number' ? item.amount : Number(String(item.amount).replace(/[^\d.-]/g, ''));
     const shown = typeof item.amount === 'number' ? (n > 0 ? '+' : n < 0 ? '−' : '') + money(Math.abs(n), item.currency ?? (this.currency() || undefined)) : item.amount;
@@ -414,7 +414,7 @@ export class TransactionReceipt extends Part {
   readonly items = input<ReadonlyArray<Detail>>([]);
   readonly reference = input('');
   readonly variant = input<ReceiptVariant | undefined>(undefined);
-  protected readonly css = computed(() => withVariant('bx-card bx-receipt', 'receipt', this.variant()));
+  protected readonly css = computed(() => withVariant('bx-card bx-receipt', this.variant()));
   protected readonly shown = computed(() => money(this.amount(), this.currency() || undefined));
 }
 

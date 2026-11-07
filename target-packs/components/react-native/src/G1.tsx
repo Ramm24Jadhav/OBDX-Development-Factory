@@ -410,7 +410,7 @@ export function Skeleton({ testID, label = 'Loading', lines = 3, shape = 'text' 
     <Animated.View testID={testID} accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityState={{ busy: true }}
                    style={[{ gap: 10 }, pulse]}>
       {shape === 'circle' ? <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: t.color.surface3 }} />
-        : shape === 'card' ? <View style={{ height: 120, borderRadius: t.radius.card, backgroundColor: t.color.surface3 }} />
+        : shape === 'card' ? <View style={{ height: 120, borderRadius: t.radius.card, backgroundColor: t.track }} />
           : Array.from({ length: lines }, (_, i) => (
             <View key={i} style={{ height: 14, borderRadius: 7, backgroundColor: t.color.surface3, width: i === lines - 1 ? '60%' : '100%' }} />
           ))}

@@ -1,16 +1,18 @@
 import { render, screen } from '@testing-library/react-native';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { ReactElement, cloneElement } from 'react';
+import { Children, Fragment, ReactElement, cloneElement } from 'react';
 
 import { AccountBalance, ApprovalQueue, Avatar, CardTile, LoanCalculator, TransactionHistory } from '../src';
 import { hueOf } from '../src/bankVariants';
 import { SAMPLES } from '../gates/samples';
 
-// Wave V4's banking widgets and their variants, as variants/v4.json lists them; React Native has 38 of the 42 (spend-limit takes the slider's)
-interface V4 { components: Array<{ id: string; kind: string; variants: Array<{ id: string; default?: boolean; packs: Record<string, string> }>; states?: { loadingProperty?: boolean } }> }
-const v4 = (JSON.parse(readFileSync(join(__dirname, '..', '..', 'variants', 'v4.json'), 'utf8')) as V4).components
-  .filter((c) => c.variants.length && c.variants[0].packs['react-native'] === 'built');
+// Wave V4's banking widgets the pack has (38 of the 42 with variants; spend-limit takes the slider's) and the variants variants.json lists as built here; their states are in variants/v4.json
+interface Entry { kind: string; wave: string; variants: Array<{ id: string; built: string[] }> }
+const states = (JSON.parse(readFileSync(join(__dirname, '..', '..', 'variants', 'v4.json'), 'utf8')) as { components: Record<string, { states: { loadingProperty?: boolean } }> }).components;
+const v4 = Object.entries((JSON.parse(readFileSync(join(__dirname, '..', '..', 'variants.json'), 'utf8')) as { components: Record<string, Entry> }).components)
+  .filter(([, c]) => c.wave === 'V4' && c.variants.some((v) => v.id !== 'default' && v.built.includes('react-native')))
+  .map(([id, c]) => ({ id, kind: c.kind, variants: c.variants, states: states[id].states }));
 
 const noop = () => undefined;
 // The five the gallery shows in its own sections, so they are not in SAMPLES
@@ -21,7 +23,11 @@ const OWN: Record<string, ReactElement> = {
   'approval-queue': <ApprovalQueue testID="approval-queue" items={[{ id: 'a', title: 'Payroll', meta: '12 Jan', value: '182,400.00' }]} onApprove={noop} />,
   'loan-calculator': <LoanCalculator testID="loan-calculator" value={{ amount: 10000, rate: 9.5, months: 36 }} currency="USD" />,
 };
-const sample = (id: string) => (OWN[id] ?? SAMPLES[id][1]) as ReactElement<Record<string, unknown>>;
+// a sample with variants is a fragment: the default instance, then each <Variant>; the default is the one to clone
+const sample = (id: string) => {
+  const el = (OWN[id] ?? SAMPLES[id][1]) as ReactElement<{ children?: ReactElement[] }>;
+  return (el.type === Fragment ? Children.toArray(el.props.children)[0] : el) as ReactElement<Record<string, unknown>>;
+};
 const drawn = async (id: string, props: Record<string, unknown>) => {
   const r = await render(cloneElement(sample(id), props));
   const json = JSON.stringify(r.toJSON());
@@ -38,17 +44,16 @@ describe('wave V4 variants', () => {
   for (const c of v4) {
     it(`${c.id}: the default variant is its own look and every other variant draws differently`, async () => {
       const own = await drawn(c.id, {});
-      const def = c.variants.find((v) => v.default)!;
-      expect(await drawn(c.id, { variant: def.id })).toBe(own);
+      expect(await drawn(c.id, { variant: 'default' })).toBe(own);
       const looks: Array<readonly [string, string]> = [];
-      for (const v of c.variants.filter((x) => !x.default)) { looks.push([v.id, await drawn(c.id, { variant: v.id })]); }
+      for (const v of c.variants.filter((x) => x.id !== 'default')) { looks.push([v.id, await drawn(c.id, { variant: v.id })]); }
       expect(looks.filter(([, json]) => json === own).map(([id]) => id)).toEqual([]);
       // and no two variants look the same
       expect(new Set(looks.map(([, json]) => json)).size).toBe(looks.length);
     });
   }
 
-  for (const c of v4.filter((x) => x.states?.loadingProperty)) {
+  for (const c of v4.filter((x) => x.states.loadingProperty)) {
     it(`${c.id}: loading shows a busy progress bar named Loading in place of the rows`, async () => {
       await render(cloneElement(sample(c.id), { loading: true }));
       const bar = screen.getByLabelText('Loading');

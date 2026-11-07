@@ -1,0 +1,8 @@
+.bx-locator .bx-chip-row { margin-bottom: 6px; }
+.bx-locator.bx-v-compact { gap: 0; padding: calc(var(--bx-pad-card) - 8px) calc(var(--bx-pad-card) - 4px); }
+.bx-locator.bx-v-compact .bx-row { min-height: 44px; padding: 4px 0; }
+.bx-locator.bx-v-compact .bx-row-main { flex-direction: row; align-items: baseline; gap: 8px; }
+.bx-locator.bx-v-compact .bx-row-meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bx-locator.bx-v-card { padding: 0; background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.bx-locator.bx-v-card .bx-rows { gap: 8px; }
+.bx-locator.bx-v-card .bx-row, .bx-locator.bx-v-card .bx-row:first-child { padding: 8px var(--bx-pad); border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-1); }

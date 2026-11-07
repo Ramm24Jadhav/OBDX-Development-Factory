@@ -109,7 +109,7 @@ export class SplitFlapBoard extends Part {
   readonly heading = input('Exchange rates');
   readonly items = input<ReadonlyArray<FlapRow>>([]);
   readonly variant = input<BoardVariant | undefined>(undefined);
-  protected readonly css = computed(() => withVariant('bx-panel bx-flap', 'board', this.variant()));
+  protected readonly css = computed(() => withVariant('bx-panel bx-flap', this.variant()));
   protected readonly rows = computed(() => this.items().map((o) => ({ ...o, tiles: chars(o.value) })));
 }
 
@@ -125,7 +125,7 @@ export class RevealDigits extends Part {
   readonly label = input('Account number');
   readonly value = input('');
   readonly variant = input<SensitiveVariant | undefined>(undefined);
-  protected readonly css = computed(() => withVariant('bx-field bx-reveal-digits', 'sensitive', this.variant()));
+  protected readonly css = computed(() => withVariant('bx-field bx-reveal-digits', this.variant()));
   protected readonly shown = signal(false);
   protected readonly text = computed(() => (this.shown() ? this.value() : masked(this.value())));
   protected readonly tiles = computed(() => chars(this.text()));
@@ -846,7 +846,7 @@ export class PromptBar extends Part {
   readonly busy = input(false);
   readonly variant = input<PromptVariant | undefined>(undefined);
   readonly ask = output<string>();
-  protected readonly css = computed(() => withVariant('bx-prompt-bar', 'chat', this.variant()));
+  protected readonly css = computed(() => withVariant('bx-prompt-bar', this.variant()));
   protected readonly draft = signal('');
   protected readonly off = computed(() => !this.draft().trim() || this.busy());
   protected use(s: string): void { this.draft.set(s); this.focusLater('.bx-prompt-input'); }

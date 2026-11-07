@@ -5,8 +5,6 @@
 define([], function () {
   return function (ko) {
   var vm = {
-    // the banking widgets' variant (variants/v4.json) the page shows; empty for each one's own look
-    variant: ko.observable(''),
     name: ko.observable('A. Sharma'),
     amount: ko.observable(1250),
     account: ko.observable('S'),

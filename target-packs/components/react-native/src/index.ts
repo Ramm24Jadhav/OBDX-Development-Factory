@@ -83,6 +83,6 @@ export type { BackdropProps } from './Backdrops';
 export { BellToggle, BudgetGauge, CallChip, FavouriteHeart, GlideSelect, HoldToConfirm, JellyRadio, LatticeLoader, OtpSlots, PeekRating, PromptBar, ReceiptTear,
   RubberSegment, ScrubField, SlideToConfirm, SquishSwitch, StatusMark, SuccessCheck, SwipeRow, SwipeToast, VoicePill, WarmTooltip } from './Micro';
 export type { ConfirmProps, PickProps, PromptBarProps, ScrubFieldProps, Status, SwipeAction, SwipeRowProps, ToggleProps } from './Micro';
-// The banking widgets' variants (variants/v4.json)
+// The banking widgets' variants (variants.json)
 export type { AvatarVariant, BalanceVariant, BillsVariant, BiometricVariant, BoardVariant, CalcVariant, CardTileVariant, ChatVariant, FormVariant, ListVariantProps,
   LocatorVariant, PayeesVariant, PromptVariant, ReceiptVariant, SensitiveVariant, TxListVariant } from './bankVariants';

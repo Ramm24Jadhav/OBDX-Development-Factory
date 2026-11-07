@@ -10,9 +10,12 @@ import { violations } from './a11y';
 
 afterEach(() => { document.body.innerHTML = ''; TestBed.resetTestingModule(); });
 
-// Wave V4's banking widgets and their variants, as variants/v4.json lists them
-interface V4 { components: Array<{ id: string; kind: string; variants: Array<{ id: string }>; states?: { loadingProperty?: boolean } }> }
-const v4 = JSON.parse(readFileSync(join(__dirname, '..', '..', 'variants', 'v4.json'), 'utf8')) as V4;
+// Wave V4's banking widgets and the variants variants.json lists as built here; their states are in variants/v4.json
+interface Entry { kind: string; wave: string; variants: Array<{ id: string; built: string[] }> }
+const states = (JSON.parse(readFileSync(join(__dirname, '..', '..', 'variants', 'v4.json'), 'utf8')) as { components: Record<string, { states: { loadingProperty?: boolean } }> }).components;
+const v4 = Object.entries((JSON.parse(readFileSync(join(__dirname, '..', '..', 'variants.json'), 'utf8')) as { components: Record<string, Entry> }).components)
+  .filter(([, c]) => c.wave === 'V4' && c.variants.some((v) => v.id !== 'default' && v.built.includes('angular')))
+  .map(([id, c]) => ({ id, kind: c.kind, variants: c.variants.filter((v) => v.id !== 'default'), states: states[id].states }));
 // Each component class by its selector (bx-<id>)
 const bySelector = new Map<string, Type<unknown>>();
 for (const value of Object.values(bx)) {
@@ -48,17 +51,17 @@ async function draw(id: string, kind: string, extra: Record<string, unknown> = {
 }
 
 describe('wave V4 variants', () => {
-  for (const c of v4.components.filter((x) => x.variants.length)) {
-    it(`${c.id}: each variant puts bx-${c.kind}--<variant> on the root; none without a variant`, async () => {
-      expect((await draw(c.id, c.kind)).querySelector(`[class*="bx-${c.kind}--"]`)).toBeNull();
+  for (const c of v4) {
+    it(`${c.id}: each variant puts bx-v-<variant> on the root; none without a variant`, async () => {
+      expect((await draw(c.id, c.kind)).querySelector('[class*="bx-v-"]')).toBeNull();
       for (const v of c.variants) {
         TestBed.resetTestingModule();
-        expect((await draw(c.id, c.kind, { variant: v.id })).querySelector(`.bx-${c.kind}--${v.id}`), v.id).not.toBeNull();
+        expect((await draw(c.id, c.kind, { variant: v.id })).querySelector(`.bx-v-${v.id}`), v.id).not.toBeNull();
       }
     });
   }
 
-  for (const c of v4.components.filter((x) => x.states?.loadingProperty)) {
+  for (const c of v4.filter((x) => x.states.loadingProperty)) {
     it(`${c.id}: loading shows a skeleton with role status, without the empty line, and passes axe`, async () => {
       const el = await draw(c.id, c.kind, { loading: true, ...(c.kind === 'chat' ? { messages: [] } : c.kind === 'balance' ? {} : { items: [] }) });
       expect(el.querySelector('.bx-skeleton[role="status"][aria-busy="true"]')).not.toBeNull();

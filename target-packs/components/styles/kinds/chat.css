@@ -1,0 +1,26 @@
+.bx-chat-log { display: flex; flex-direction: column; gap: 10px; max-height: 360px; margin: 0; padding: 4px 0; overflow-y: auto; list-style: none; }
+.bx-msg { align-self: flex-start; display: flex; flex-direction: column; gap: 2px; max-width: 80%; padding: 8px 12px; border-radius: 14px 14px 14px 4px; background: var(--bx-surface-3);
+  color: var(--bx-text); font-size: 14px; animation: bx-settle var(--bx-dur-base) var(--bx-ease-standard); }
+.bx-msg.is-mine { align-self: flex-end; border-radius: 14px 14px 4px 14px; background: var(--bx-brand); color: var(--bx-on-brand); }
+.bx-msg-who { font-size: 11.5px; font-weight: 650; opacity: 0.9; }
+.bx-chat-typing { margin: 0; color: var(--bx-muted); font-size: 13px; font-style: italic; }
+.bx-chat-compose { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.bx-chat-compose .bx-control { flex: 1 1 auto; }
+.bx-prompt-bar { display: flex; flex-direction: column; gap: 8px; }
+.bx-prompt-row { display: flex; gap: 8px; align-items: center; }
+.bx-prompt-row .bx-control { flex: 1 1 auto; border-radius: var(--bx-radius-pill); }
+.bx-prompt-spark { padding-left: 14px; color: var(--bx-brand-text); }
+.bx-prompt-bar .bx-btn { border-radius: var(--bx-radius-pill); }
+/* Variants (variants.json, wave V4): the chat, then the prompt bar */
+.bx-chat.bx-v-compact { gap: 2px; padding: calc(var(--bx-pad-card) - 8px) calc(var(--bx-pad-card) - 4px); }
+.bx-chat.bx-v-compact .bx-chat-log { gap: 6px; }
+.bx-chat.bx-v-compact .bx-msg { padding: 5px 10px; font-size: 13px; }
+.bx-chat.bx-v-flat .bx-chat-log { gap: 0; }
+.bx-chat.bx-v-flat .bx-msg, .bx-chat.bx-v-flat .bx-msg.is-mine { align-self: stretch; max-width: none; padding: 8px 0; border-radius: 0; background: none; color: var(--bx-text); border-top: var(--bx-bw) solid var(--bx-rule); }
+.bx-chat.bx-v-flat .bx-msg:first-child { border-top: 0; }
+.bx-chat.bx-v-flat .bx-msg.is-mine .bx-msg-who { color: var(--bx-brand-text); }
+.bx-chat.bx-v-glass { background: color-mix(in srgb, var(--bx-card) 58%, transparent); -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%); border-color: color-mix(in srgb, var(--bx-text) 12%, transparent); }
+.bx-prompt-bar.bx-v-boxed { padding: 12px; border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-1); }
+.bx-prompt-bar.bx-v-boxed .bx-prompt-row .bx-control, .bx-prompt-bar.bx-v-boxed .bx-btn { border-radius: var(--bx-radius-control); }
+.bx-prompt-bar.bx-v-glass .bx-prompt-row .bx-control { background: color-mix(in srgb, var(--bx-card) 58%, transparent); -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%); border-color: color-mix(in srgb, var(--bx-text) 12%, transparent); }
+@media (prefers-reduced-transparency: reduce) { .bx-chat.bx-v-glass, .bx-prompt-bar.bx-v-glass .bx-prompt-row .bx-control { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--bx-card); } }

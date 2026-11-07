@@ -78,7 +78,7 @@ export function CountUp({ testID, value, from = 0, duration = 1200, currency, pr
 export function SplitFlapBoard({ testID, heading = 'Exchange rates', items, variant }: { testID?: string; heading?: string; items: ReadonlyArray<{ label: string; value: string }>;
   variant?: BoardVariant }) {
   return (
-    <section className={withVariant('bx-panel bx-flap', 'board', variant)} aria-label={heading || undefined} data-testid={testID}>
+    <section className={withVariant('bx-panel bx-flap', variant)} aria-label={heading || undefined} data-testid={testID}>
       {heading ? <h3 className="bx-panel-title">{heading}</h3> : null}
       <ul className="bx-flap-rows">
         {items.map((o) => (
@@ -96,7 +96,7 @@ export function RevealDigits({ testID, label = 'Account number', value, variant 
   const [shown, setShown] = useState(false);
   const text = shown ? value : masked(value);
   return (
-    <div className={withVariant('bx-field bx-reveal-digits', 'sensitive', variant)} data-testid={testID}>
+    <div className={withVariant('bx-field bx-reveal-digits', variant)} data-testid={testID}>
       <span className="bx-label" id={id}>{label}</span>
       <div className="bx-control is-readonly" role="group" aria-labelledby={id}>
         <span className="bx-input bx-mono bx-sensitive-value"><Hidden>{text}</Hidden><span aria-hidden="true">{chars(text).map((t, i) => <span key={`${shown}${i}`} className={t.css}>{t.ch}</span>)}</span></span>
@@ -635,7 +635,7 @@ export function PromptBar({ testID, label = 'Ask the assistant', placeholder = '
   const off = !draft.trim() || busy;
   const send = () => { if (off) { return; } const t = draft.trim(); setDraft(''); onAsk?.(t); };
   return (
-    <div className={withVariant('bx-prompt-bar', 'chat', variant)} data-testid={testID}>
+    <div className={withVariant('bx-prompt-bar', variant)} data-testid={testID}>
       <div className="bx-chip-row" role="group" aria-label={`Suggestions for ${label}`}>{suggestions.map((s) => <button key={s} type="button" className="bx-filter-chip" onClick={() => { setDraft(s); input.current?.focus(); }}>{s}</button>)}</div>
       <div className="bx-prompt-row">
         <div className="bx-control"><span className="bx-prompt-spark" aria-hidden="true">✦</span>

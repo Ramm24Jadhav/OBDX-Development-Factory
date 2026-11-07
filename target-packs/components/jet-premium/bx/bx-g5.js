@@ -14,8 +14,10 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2', './bx-g3'], functi
   var txt = k.txt, iff = k.iff, each = k.each, list = k.list, base = k.base, register = k.register, str = k.str, bool = k.bool, num = k.num, arr = k.arr;
   var money = g2.kit.money;
   var kinds = {};
-  /* Banking widget variants (variants/v4.json): bx-<kind>--<variant> after the root's own classes, and the loading skeleton */
-  var withVariant = function (vm, own, kind) { return ko.pureComputed(function () { return own + (vm.props.variant ? ' bx-' + kind + '--' + vm.props.variant : ''); }); };
+  /* Banking widget variants (variants.json): the variant's class (bx-v-<id>) after the root's own classes, and the loading skeleton */
+  var withVariant = function (vm, own) {
+    return ko.pureComputed(function () { return (typeof own === 'function' ? own() : own) + bx.variantClass(vm.props.variant); });
+  };
   var LOADING = '<div class="bx-skeleton is-text" role="status" aria-busy="true"><span class="bx-visually-hidden">Loading</span><span class="bx-skel-line" aria-hidden="true"></span>'
     + '<span class="bx-skel-line" aria-hidden="true"></span><span class="bx-skel-line is-short" aria-hidden="true"></span></div>';
 
@@ -107,7 +109,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2', './bx-g3'], functi
     self.onRate = function (event) { self.rateIn(event.target.value); return true; };
     self.onMonths = function (event) { self.months(event.target.value); return true; };
     self.act = function () { bx.fire(self.element, 'ojAction', { amount: n(self.amount()), rate: n(self.rateIn()), months: n(self.months()), result: self.result().value }); };
-    self.css = withVariant(self, 'bx-card bx-calc', 'calc');
+    self.css = withVariant(self, 'bx-card bx-calc');
   }
   var calcField = function (key, label, value, handler, extra) {
     return '<div class="bx-field"><label class="bx-label" :for="[[id + \'-' + key + '\']]">' + label + '</label><div class="bx-control"><input type="number" class="bx-input bx-num" inputmode="decimal"'
@@ -147,7 +149,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2', './bx-g3'], functi
     });
     self.none = ko.pureComputed(function () { return self.rows().length === 0; });
     self.onQuery = function (event) { self.query(event.target.value); return true; };
-    self.css = withVariant(self, 'bx-panel bx-locator', 'locator');
+    self.css = withVariant(self, 'bx-panel bx-locator');
   }
   kinds.locator = { model: LocatorKind, events: k.ACTION, props: { heading: str('Find a branch or ATM'), items: arr(), emptyText: str('Nothing matches. Try another name or area.'), variant: str(), loading: bool() },
     view: '<section :class="[[css]]" :aria-labelledby="[[id]]"><h3 class="bx-panel-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>'
@@ -174,7 +176,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2', './bx-g3'], functi
     self.onDraft = function (event) { self.draft(event.target.value); return true; };
     self.send = function () { if (self.off()) { return; } var t = self.draft().trim(); self.draft(''); bx.fire(self.element, 'ojAction', { text: t }); };
     self.onKey = function (event) { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); self.send(); return false; } return true; };
-    self.css = withVariant(self, 'bx-panel bx-chat', 'chat');
+    self.css = withVariant(self, 'bx-panel bx-chat');
   }
   kinds.chat = { model: ChatKind, events: k.ACTION, props: { heading: str('Chat with us'), messages: arr(), typing: bool(), disabled: bool(), placeholder: str('Write a message'), variant: str(), loading: bool() },
     view: '<section :class="[[css]]" :aria-labelledby="[[id]]"><h3 class="bx-panel-title" :id="[[id]]">' + txt('$properties.heading') + '</h3>' + iff('$properties.loading', LOADING)

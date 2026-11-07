@@ -13,6 +13,11 @@ define(['knockout'], function (ko) {
     return (prefix || 'bx') + '-' + seq;
   }
 
+  /** The class of a style variant (variants.json): " bx-v-<id>", nothing for the default look; only plain ids pass. */
+  function variantClass(id) {
+    return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(id || '') && id !== 'default' ? ' bx-v-' + id : '';
+  }
+
   /** Options as [{value, label, disabled}], from strings, objects, or {value, label} lists. */
   function options(list) {
     return (list || []).map(function (o) {
@@ -183,6 +188,6 @@ define(['knockout'], function (ko) {
     element.dispatchEvent(new CustomEvent(name, { bubbles: true, detail: detail || {} }));
   }
 
-  return { nextId: nextId, options: options, fromData: fromData, validate: validate, customMessage: customMessage, format: format, parse: parse,
+  return { nextId: nextId, variantClass: variantClass, options: options, fromData: fromData, validate: validate, customMessage: customMessage, format: format, parse: parse,
     helpText: helpText, FIELD: FIELD, fieldView: fieldView, fieldState: fieldState, fire: fire, ko: ko };
 });

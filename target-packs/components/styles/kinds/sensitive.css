@@ -1,0 +1,5 @@
+.bx-sensitive-value { display: inline-flex; align-items: center; }
+/* Variants (variants.json, wave V4): blur hides even the masked digits until shown */
+.bx-reveal-digits.bx-v-blur .bx-control:has(.bx-reveal[aria-pressed="false"]) .bx-sensitive-value > [aria-hidden] { filter: blur(4px); }
+.bx-reveal-digits.bx-v-card .bx-control { height: auto; padding: var(--bx-pad-card); border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-1); }
+.bx-reveal-digits.bx-v-card .bx-sensitive-value { font-size: 22px; letter-spacing: 0.08em; }

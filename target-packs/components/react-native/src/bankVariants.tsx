@@ -1,5 +1,5 @@
 /*
- * The banking widgets' variants (variants/v4.json, the same names as the web packs' bx-<kind>--<variant> classes): a
+ * The banking widgets' variants (variants.json, the same ids as the web packs' bx-v-<variant> classes): a
  * widget's variant prop picks a theme for its surface, a style for its root and one for its rows. Without a variant the
  * widget keeps its own look. The list widgets also take loading: skeleton lines in place of their rows.
  */
@@ -7,21 +7,21 @@ import { View, ViewStyle } from 'react-native';
 
 import { Theme } from './theme';
 
-export type BillsVariant = 'list' | 'compact' | 'detailed' | 'card' | 'glass';
-export type BalanceVariant = 'card' | 'compact' | 'hero' | 'glass';
-export type PayeesVariant = 'list' | 'compact' | 'grid' | 'card';
-export type CardTileVariant = 'classic' | 'minimal' | 'glass' | 'metal';
-export type TxListVariant = 'list' | 'compact' | 'detailed' | 'card' | 'glass';
-export type ReceiptVariant = 'card' | 'ticket' | 'minimal' | 'glass';
-export type FormVariant = 'card' | 'flat' | 'sectioned' | 'glass';
-export type CalcVariant = 'card' | 'compact' | 'split' | 'glass';
-export type BiometricVariant = 'card' | 'inline' | 'sheet';
-export type LocatorVariant = 'list' | 'compact' | 'card';
-export type ChatVariant = 'bubbles' | 'compact' | 'flat' | 'glass';
-export type PromptVariant = 'pill' | 'boxed' | 'glass';
-export type AvatarVariant = 'circle' | 'rounded' | 'ring' | 'tonal';
-export type BoardVariant = 'classic' | 'light' | 'compact';
-export type SensitiveVariant = 'dots' | 'blur' | 'card';
+export type BillsVariant = 'default' | 'compact' | 'detailed' | 'card' | 'glass';
+export type BalanceVariant = 'default' | 'compact' | 'hero' | 'glass';
+export type PayeesVariant = 'default' | 'compact' | 'grid' | 'card';
+export type CardTileVariant = 'default' | 'minimal' | 'glass' | 'metal';
+export type TxListVariant = 'default' | 'compact' | 'detailed' | 'card' | 'glass';
+export type ReceiptVariant = 'default' | 'ticket' | 'minimal' | 'glass';
+export type FormVariant = 'default' | 'flat' | 'sectioned' | 'glass';
+export type CalcVariant = 'default' | 'compact' | 'split' | 'glass';
+export type BiometricVariant = 'default' | 'inline' | 'sheet';
+export type LocatorVariant = 'default' | 'compact' | 'card';
+export type ChatVariant = 'default' | 'compact' | 'flat' | 'glass';
+export type PromptVariant = 'default' | 'boxed' | 'glass';
+export type AvatarVariant = 'default' | 'rounded' | 'ring' | 'tonal';
+export type BoardVariant = 'default' | 'light' | 'compact';
+export type SensitiveVariant = 'default' | 'blur' | 'card';
 
 /** What a list widget takes besides its own props. */
 export interface ListVariantProps<V extends string> {
@@ -47,8 +47,9 @@ const flat: ViewStyle = { backgroundColor: 'transparent', borderWidth: 0, shadow
 export function variantLook(base: Theme, kind: string, variant?: string): VariantLook {
   const c = base.color;
   const dark = c.onPrimary !== '#ffffff';
-  const recolour = (color: Partial<Theme['color']>): Theme => ({ ...base, color: { ...c, ...color } });
-  const glass = recolour({ surface: dark ? 'rgba(40, 40, 40, 0.62)' : 'rgba(255, 255, 255, 0.6)' });
+  // a surface of its own: the colours and the card setting panels read
+  const recolour = (color: Partial<Theme['color']>): Theme => ({ ...base, card: color.surface ?? base.card, color: { ...c, ...color } });
+  const glass = base.glass ? recolour({ surface: base.glass.fill }) : recolour({ surface: dark ? 'rgba(40, 40, 40, 0.62)' : 'rgba(255, 255, 255, 0.6)' });
   switch (variant) {
     case 'compact':
       return { t: base, surface: { padding: 10, gap: 6 }, row: { minHeight: base.minTouch, paddingVertical: 2 } };
@@ -57,10 +58,10 @@ export function variantLook(base: Theme, kind: string, variant?: string): Varian
     case 'card':
       return LISTS.includes(kind)
         ? { t: base, surface: { ...flat, padding: 0, gap: 8 },
-          row: { backgroundColor: c.surface, borderRadius: base.radius.card, borderWidth: base.border, borderTopWidth: base.border, borderColor: c.border, paddingHorizontal: 12, marginBottom: 8 } }
+          row: { backgroundColor: base.card, borderRadius: base.radius.card, borderWidth: base.border, borderTopWidth: base.border, borderColor: base.line, paddingHorizontal: base.pad - 2, marginBottom: 8, ...base.elevation(1) } }
         : { t: base, surface: {}, row: {} };
     case 'glass':
-      return { t: glass, surface: { backgroundColor: glass.color.surface, borderColor: dark ? 'rgba(255, 255, 255, 0.13)' : 'rgba(255, 255, 255, 0.3)' }, row: {} };
+      return { t: glass, surface: { backgroundColor: glass.card, borderColor: base.glass ? base.glass.rim : dark ? 'rgba(255, 255, 255, 0.13)' : 'rgba(255, 255, 255, 0.3)' }, row: {} };
     case 'hero': {
       const t = recolour({ surface: c.primary, text: c.onPrimary, textMuted: c.onPrimary, primaryText: c.onPrimary });
       return { t, surface: { backgroundColor: c.primary, borderColor: c.primary, padding: 24 }, row: {} };
@@ -70,7 +71,7 @@ export function variantLook(base: Theme, kind: string, variant?: string): Varian
       return { t, surface: { backgroundColor: '#1f2328', borderColor: '#3a4048' }, row: {} };
     }
     case 'minimal':
-      return { t: base, surface: { ...flat, borderWidth: base.border, borderColor: c.borderStrong }, row: {} };
+      return { t: base, surface: { ...flat, borderWidth: base.border, borderColor: base.lineStrong }, row: {} };
     case 'flat':
       return { t: base, surface: { ...flat, padding: 0 }, row: {} };
     case 'sectioned':
@@ -84,11 +85,11 @@ export function variantLook(base: Theme, kind: string, variant?: string): Varian
     case 'sheet':
       return { t: base, surface: { borderTopLeftRadius: 28, borderTopRightRadius: 28, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, paddingTop: 28 }, row: {} };
     case 'ticket':
-      return { t: base, surface: { borderStyle: 'dashed', borderWidth: 1.5, borderColor: c.borderStrong, borderRadius: 4 }, row: {} };
+      return { t: base, surface: { borderStyle: 'dashed', borderWidth: Math.max(base.border, 1), borderColor: base.lineStrong, borderRadius: base.radius.small }, row: {} };
     case 'boxed':
-      return { t: base, surface: { borderRadius: 6, minHeight: base.minTouch + 12 }, row: {} };
+      return { t: base, surface: { borderRadius: base.radius.control === 999 ? 16 : base.radius.control, minHeight: base.minTouch + 12 }, row: {} };
     case 'light':
-      return { t: base, surface: { backgroundColor: c.surface, borderWidth: base.border, borderColor: c.border }, row: {} };
+      return { t: base, surface: { backgroundColor: base.card, borderWidth: base.border, borderColor: base.line }, row: {} };
     default:
       // the default variant of each kind (list, card, classic, bubbles, pill, circle, dots) is the widget's own look
       return { t: base, surface: {}, row: {} };

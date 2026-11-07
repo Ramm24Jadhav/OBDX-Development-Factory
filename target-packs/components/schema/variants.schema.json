@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://obdx-factory/schema/variants.schema.json",
+  "title": "Component variants and motion",
+  "description": "variants.json: per component of catalogue.json, its style variants and its motion, and the packs each variant is built in. VariantsCoverageTest checks a built variant is in the pack's code and gallery.",
+  "type": "object",
+  "required": ["version", "packs", "components"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "$comment": { "type": "string" },
+    "version": { "const": 1 },
+    "packs": { "type": "array", "items": { "$ref": "#/$defs/pack" }, "uniqueItems": true },
+    "components": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+      "additionalProperties": { "$ref": "#/$defs/component" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "pack": { "enum": ["jet-premium", "react", "angular", "react-native"] },
+    "component": {
+      "type": "object",
+      "required": ["kind", "wave", "variants", "motion"],
+      "properties": {
+        "kind": { "type": "string", "description": "The catalogue's kind; its web styles are target-packs/components/styles/kinds/<kind>.css" },
+        "wave": { "enum": ["V1", "V2", "V3", "V4", "V5", "V6"], "description": "The wave of docs/COMPONENT-VARIANTS-PLAN.md that refines and builds it" },
+        "variants": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/variant" } },
+        "motion": {
+          "type": "object",
+          "required": ["enter", "hover", "press", "change"],
+          "description": "Effect names from motion.json's effects (style follows the Component factory's motion choice); null for none",
+          "properties": {
+            "enter": { "type": ["string", "null"] }, "hover": { "type": ["string", "null"] },
+            "press": { "type": ["string", "null"] }, "change": { "type": ["string", "null"] }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "variant": {
+      "type": "object",
+      "required": ["id", "name", "purpose", "pattern", "source", "licence", "built"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "description": "default is the component as drawn today; another id is the variant prop's value and the web class bx-v-<id>" },
+        "name": { "type": "string", "description": "Shown on the Component factory card" },
+        "purpose": { "type": "string", "description": "What it is for, in one line" },
+        "pattern": { "type": "string", "description": "The design-system pattern it follows" },
+        "source": { "type": "string", "description": "own, or where a ported or inspired variant comes from (a URL)" },
+        "licence": { "type": "string", "description": "own, or the source's licence (MIT, Apache-2.0); never a licence that forbids ports" },
+        "built": { "type": "array", "items": { "$ref": "#/$defs/pack" }, "uniqueItems": true, "description": "The packs it is built in" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

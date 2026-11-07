@@ -1,0 +1,16 @@
+/* Variants of the bills widgets (variants.json, wave V4); their rows are the panel's (_panel.css) */
+.bx-bills.bx-v-compact { gap: 0; padding: calc(var(--bx-pad-card) - 8px) calc(var(--bx-pad-card) - 4px); }
+.bx-bills.bx-v-compact .bx-row { min-height: 44px; padding: 4px 0; }
+.bx-bills.bx-v-compact .bx-row-main { flex-direction: row; align-items: baseline; gap: 8px; }
+.bx-bills.bx-v-compact .bx-row-meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bx-bills.bx-v-detailed { gap: 8px; padding: var(--bx-pad-card) calc(var(--bx-pad-card) + 4px); }
+.bx-bills.bx-v-detailed .bx-row { min-height: 72px; padding: 14px 0; }
+.bx-bills.bx-v-detailed .bx-row-main { gap: 4px; }
+.bx-bills.bx-v-detailed .bx-row-main strong { font-size: 15px; white-space: normal; }
+.bx-bills.bx-v-detailed .bx-row-meta { font-size: 13px; }
+.bx-bills.bx-v-detailed :is(.bx-row-value, .bx-tx-amount) { font-size: 17px; font-weight: var(--bx-weight-title); }
+.bx-bills.bx-v-card { padding: 0; background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.bx-bills.bx-v-card .bx-rows { gap: 8px; }
+.bx-bills.bx-v-card .bx-row, .bx-bills.bx-v-card .bx-row:first-child { padding: 8px var(--bx-pad); border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-1); }
+.bx-bills.bx-v-glass { background: color-mix(in srgb, var(--bx-card) 58%, transparent); -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%); border-color: color-mix(in srgb, var(--bx-text) 12%, transparent); }
+@media (prefers-reduced-transparency: reduce) { .bx-bills.bx-v-glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--bx-card); } }

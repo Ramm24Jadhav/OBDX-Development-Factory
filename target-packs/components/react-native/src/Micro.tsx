@@ -378,7 +378,7 @@ export function RubberSegment({ testID, label, value, onChange, options, disable
   return (
     <View testID={testID} style={s.field} accessibilityRole="radiogroup" accessibilityLabel={label}>
       <Text style={s.label} importantForAccessibility="no">{label}</Text>
-      <View style={{ flexDirection: 'row', padding: 3, borderRadius: 999, backgroundColor: t.color.surface3 }}>
+      <View style={{ flexDirection: 'row', padding: 3, borderRadius: 999, backgroundColor: t.track, borderWidth: t.look === 'brutal' ? t.border : 0, borderColor: t.line }}>
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           <Animated.View style={{ position: 'absolute', top: 3, bottom: 3, width: `${100 / list.length}%`, borderRadius: 999, backgroundColor: t.color.surface,
             left: slide.interpolate({ inputRange: [0, list.length], outputRange: ['0%', '100%'] }),
@@ -528,13 +528,13 @@ export interface PromptBarProps {
 export function PromptBar({ testID, label = 'Ask the assistant', value, onChange, onSubmit, busy, placeholder = 'Ask about your accounts', variant }: PromptBarProps) {
   const look = variantLook(useTheme(), 'chat', variant);
   const t = look.t;
-  const radius = variant === 'boxed' ? 6 : 999;
+  const radius = variant === 'boxed' ? (t.radius.control === 999 ? 16 : t.radius.control) : 999;
   const [focused, setFocused] = useState(false);
   const glow = useCycle(1600, !!busy || focused, 0.5);
   const send = () => { if (value.trim() && !busy) { onSubmit(value.trim()); } };
   return (
     <View testID={testID} style={[{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 4, minHeight: t.minTouch + 8, borderRadius: radius,
-      backgroundColor: t.color.surface, borderWidth: 1, borderColor: t.color.border }, look.surface]}>
+      backgroundColor: t.fill, borderWidth: t.border, borderColor: t.line }, look.surface]}>
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius, borderWidth: 2, borderColor: t.color.primary,
         opacity: busy || focused ? glow.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.35, 1, 0.35] }) : 0 }]} />
       <TextInput testID={testID ? `${testID}-input` : undefined} style={{ flex: 1, minHeight: t.minTouch, fontSize: 16, color: t.color.text, paddingVertical: 10 }} value={value}

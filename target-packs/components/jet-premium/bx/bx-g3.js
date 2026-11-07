@@ -13,9 +13,9 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2'], function (Composi
   var txt = k.txt, iff = k.iff, each = k.each, list = k.list, base = k.base, register = k.register, str = k.str, bool = k.bool, num = k.num, arr = k.arr;
   var kinds = {};
   /** The last four digits behind dots, as banks show a card or account number. */
-  /* Banking widget variants (variants/v4.json): bx-<kind>--<variant> after the root's own classes */
-  var withVariant = function (vm, own, kind) {
-    return ko.pureComputed(function () { return (typeof own === 'function' ? own() : own) + (vm.props.variant ? ' bx-' + kind + '--' + vm.props.variant : ''); });
+  /* Banking widget variants (variants.json): the variant's class (bx-v-<id>) after the root's own classes */
+  var withVariant = function (vm, own) {
+    return ko.pureComputed(function () { return (typeof own === 'function' ? own() : own) + bx.variantClass(vm.props.variant); });
   };
   var masked = function (number) { var d = String(number || '').replace(/\D/g, ''); return d ? '•••• ' + d.slice(-4) : ''; };
 
@@ -42,7 +42,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2'], function (Composi
     var self = this;
     base(self, context, 'bx-cardface');
     self.number = ko.pureComputed(function () { return masked(self.props.number); });
-    self.css = withVariant(self, function () { return 'bx-card-face' + (self.props.frozen ? ' is-frozen' : ''); }, 'cardtile');
+    self.css = withVariant(self, function () { return 'bx-card-face' + (self.props.frozen ? ' is-frozen' : ''); });
     self.name = ko.pureComputed(function () { return [self.props.label, self.props.network, 'ending ' + String(self.props.number || '').replace(/\D/g, '').slice(-4), self.props.frozen ? 'blocked' : ''].filter(Boolean).join(', '); });
   }
   kinds.cardface = { model: CardFaceKind, props: { label: str(), number: str(), holder: str(), expiry: str(), network: str(), frozen: bool(), variant: str() },
@@ -133,7 +133,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-g1', './bx-g2'], function (Composi
     self.failed = ko.pureComputed(function () { return self.props.state === 'failed'; });
     self.waiting = ko.pureComputed(function () { return self.props.state === 'waiting'; });
     self.go = function () { if (!self.waiting()) { bx.fire(self.element, 'ojAction', { action: 'verify' }); } };
-    self.css = withVariant(self, 'bx-card bx-challenge', 'biometric');
+    self.css = withVariant(self, 'bx-card bx-challenge');
     self.other = function () { bx.fire(self.element, 'ojAction', { action: 'other' }); };
   }
   kinds.challenge = { model: ChallengeKind, events: k.ACTION,

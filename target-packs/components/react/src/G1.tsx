@@ -384,7 +384,7 @@ export function Divider({ testID, label }: { testID?: string; label?: string }) 
 export interface AvatarProps { testID?: string; name: string; src?: string; size?: 'sm' | 'md' | 'lg'; variant?: AvatarVariant }
 /** A photo, or the initials of a name; the name is what a screen reader says. */
 export function Avatar({ testID, name, src, size = 'md', variant }: AvatarProps) {
-  const css = withVariant(`bx-avatar is-${size}`, 'avatar', variant);
+  const css = withVariant(`bx-avatar is-${size}`, variant);
   return src
     ? <img className={css} src={src} alt={name} data-testid={testID} />
     : <span className={css} style={variant === 'tonal' ? { '--bx-avatar-hue': hueOf(name) } as CSSProperties : undefined} role="img" aria-label={name} data-testid={testID}>
@@ -550,7 +550,7 @@ export interface RowsProps {
 
 export function Rows({ testID, heading, items, actionLabel, onAction, emptyText = 'Nothing here yet.', variant, loading }: RowsProps) {
   return (
-    <section className={withVariant('bx-panel', 'bills', variant)} aria-label={heading || undefined} data-testid={testID}>
+    <section className={withVariant('bx-panel bx-bills', variant)} aria-label={heading || undefined} data-testid={testID}>
       {heading ? <h3 className="bx-panel-title">{heading}</h3> : null}
       {loading ? <Skeleton /> : items.length === 0 ? <p className="bx-panel-empty">{emptyText}</p> : (
         <ul className="bx-rows">

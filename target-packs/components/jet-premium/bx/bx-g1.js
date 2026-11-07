@@ -62,9 +62,9 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
   };
 
   var kinds = {};
-  /* Banking widget variants (variants/v4.json): bx-<kind>--<variant> after the root's own classes, and the loading skeleton */
-  var withVariant = function (vm, own, kind) {
-    return ko.pureComputed(function () { return (typeof own === 'function' ? own() : own) + (vm.props.variant ? ' bx-' + kind + '--' + vm.props.variant : ''); });
+  /* Banking widget variants (variants.json): the variant's class (bx-v-<id>) after the root's own classes, and the loading skeleton */
+  var withVariant = function (vm, own) {
+    return ko.pureComputed(function () { return (typeof own === 'function' ? own() : own) + bx.variantClass(vm.props.variant); });
   };
   var LOADING = '<div class="bx-skeleton is-text" role="status" aria-busy="true"><span class="bx-visually-hidden">Loading</span><span class="bx-skel-line" aria-hidden="true"></span>'
     + '<span class="bx-skel-line" aria-hidden="true"></span><span class="bx-skel-line is-short" aria-hidden="true"></span></div>';
@@ -331,7 +331,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
     var self = this;
     base(self, context, 'bx-avatar');
     self.initials = ko.pureComputed(function () { return initials(self.props.name); });
-    self.css = withVariant(self, function () { return 'bx-avatar is-' + (self.props.size || 'md'); }, 'avatar');
+    self.css = withVariant(self, function () { return 'bx-avatar is-' + (self.props.size || 'md'); });
     self.hue = ko.pureComputed(function () { return self.props.variant === 'tonal' ? '--bx-avatar-hue: ' + hueOf(self.props.name) : null; });
   }
   kinds.avatar = { model: AvatarKind, props: { name: str(), src: str(), size: str('md'), variant: str() },
@@ -475,7 +475,7 @@ define(['ojs/ojcomposite', './bx-core', './bx-motion'], function (Composite, bx,
       });
     });
     self.empty = ko.pureComputed(function () { return self.rows().length === 0; });
-    self.css = withVariant(self, 'bx-panel', 'bills');
+    self.css = withVariant(self, 'bx-panel bx-bills');
   }
   kinds.rows = { model: RowsKind, events: ACTION, props: { heading: str(), items: arr(), actionLabel: str(), emptyText: str('Nothing here yet.'), variant: str(), loading: bool() },
     view: '<section :class="[[css]]" :aria-label="[[$properties.heading || null]]">' + iff('$properties.heading', '<h3 class="bx-panel-title">' + txt('$properties.heading') + '</h3>')

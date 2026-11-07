@@ -77,7 +77,7 @@ export function AccountBalance({ testID, label, amount, currency, meta, hideable
   const off = amountHidden ?? own;
   const toggle = () => { setOwn(!off); onAmountHiddenChange?.(!off); };
   return (
-    <section className={withVariant('bx-balance', 'balance', variant)} aria-labelledby={id} data-testid={testID}>
+    <section className={withVariant('bx-balance', variant)} aria-labelledby={id} data-testid={testID}>
       <div className="bx-balance-head">
         <h3 className="bx-balance-label" id={id}>{label}</h3>
         {hideable && !loading ? <button type="button" className="bx-reveal" aria-pressed={!off} onClick={toggle}>{off ? 'Show balance' : 'Hide balance'}</button> : null}
@@ -180,7 +180,7 @@ export function BeneficiarySelector({ testID, heading = 'Payees', items, searcha
   const q = query.trim().toLowerCase();
   const rows = items.filter((o) => !q || o.name.toLowerCase().includes(q));
   return (
-    <section className={withVariant('bx-panel', 'payees', variant)} aria-labelledby={id} data-testid={testID}>
+    <section className={withVariant('bx-panel bx-payees', variant)} aria-labelledby={id} data-testid={testID}>
       <h3 className="bx-panel-title" id={id}>{heading}</h3>
       {searchable && !loading ? (
         <div className="bx-control bx-payee-search"><span className="bx-search-icon" aria-hidden="true" />
@@ -222,7 +222,7 @@ export interface StepFormProps {
 export function StepForm({ testID, heading, items = [], submitLabel = 'Continue', cancelLabel, busy, onSubmit, onCancel, children, variant }: StepFormProps) {
   const id = useId();
   return (
-    <section className={withVariant('bx-card bx-form', 'form', variant)} aria-labelledby={id} data-testid={testID}>
+    <section className={withVariant('bx-card bx-form', variant)} aria-labelledby={id} data-testid={testID}>
       <h3 className="bx-card-title" id={id}>{heading}</h3>
       <div className="bx-form-body">{children}</div>
       {items.length ? <DetailList items={items} /> : null}
@@ -244,7 +244,7 @@ export interface TransactionsProps { testID?: string; heading?: string; items: R
 export function Transactions({ testID, heading = 'Transactions', items, currency, emptyText = 'No transactions in this period.', onAction, variant, loading }: TransactionsProps) {
   const id = useId();
   return (
-    <section className={withVariant('bx-panel', 'txlist', variant)} aria-labelledby={id} data-testid={testID}>
+    <section className={withVariant('bx-panel bx-txlist', variant)} aria-labelledby={id} data-testid={testID}>
       <h3 className="bx-panel-title" id={id}>{heading}</h3>
       {loading ? <Skeleton /> : items.length === 0 ? <p className="bx-panel-empty">{emptyText}</p> : null}
       {loading ? null : <ul className="bx-rows">
@@ -275,7 +275,7 @@ export function TransactionReceipt({ testID, heading = 'Payment sent', amount, c
   const id = useId();
   const shown = money(amount, currency);
   return (
-    <section className={withVariant('bx-card bx-receipt', 'receipt', variant)} aria-labelledby={id} data-testid={testID}>
+    <section className={withVariant('bx-card bx-receipt', variant)} aria-labelledby={id} data-testid={testID}>
       <span className="bx-receipt-mark" aria-hidden="true">✓</span>
       <h3 className="bx-receipt-title" id={id}>{heading}</h3>
       {shown ? <p className="bx-receipt-amount">{shown}</p> : null}
