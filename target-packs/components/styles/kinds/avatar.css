@@ -4,6 +4,6 @@
 .bx-avatar.is-lg { width: 56px; height: 56px; font-size: 19px; }
 /* Variants (variants.json, wave V4); tonal takes --bx-avatar-hue from the name */
 .bx-avatar.bx-v-rounded { border-radius: var(--bx-radius); }
-.bx-avatar.bx-v-ring { box-shadow: 0 0 0 2px var(--bx-surface), 0 0 0 4px var(--bx-brand); }
+.bx-avatar.bx-v-ring { box-shadow: 0 0 0 2px var(--bx-card, var(--bx-surface)), 0 0 0 4px var(--bx-brand); }
 .bx-avatar.bx-v-tonal { background: hsl(var(--bx-avatar-hue, 210) 60% 90%); color: hsl(var(--bx-avatar-hue, 210) 70% 25%); }
-.bx-dark .bx-avatar.bx-v-tonal { background: hsl(var(--bx-avatar-hue, 210) 45% 24%); color: hsl(var(--bx-avatar-hue, 210) 70% 85%); }
+:is(.bx-dark .bx-avatar, .bx-avatar.bx-dark).bx-v-tonal { background: hsl(var(--bx-avatar-hue, 210) 45% 24%); color: hsl(var(--bx-avatar-hue, 210) 70% 85%); }

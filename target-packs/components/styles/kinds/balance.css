@@ -17,10 +17,10 @@
 .bx-balance.bx-v-compact .bx-balance-head { flex: 1 1 auto; }
 .bx-balance.bx-v-compact .bx-balance-amount { font-size: 20px; }
 .bx-balance.bx-v-compact .bx-balance-meta { flex-basis: 100%; }
-.bx-balance.bx-v-hero { position: relative; overflow: hidden; gap: 10px; padding: 28px; border-radius: var(--bx-radius-xl); box-shadow: var(--bx-shadow-3); }
-.bx-balance.bx-v-hero::before { content: ""; position: absolute; right: -48px; top: -72px; width: 220px; height: 220px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); pointer-events: none; }
-.bx-balance.bx-v-hero .bx-balance-amount { font-size: 40px; }
-.bx-balance.bx-v-glass { background: color-mix(in srgb, var(--bx-card) 58%, transparent); -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%); border-color: color-mix(in srgb, var(--bx-text) 12%, transparent); color: var(--bx-text); box-shadow: var(--bx-shadow-1); }
+.bx-balance.bx-v-hero { gap: 10px; padding: 28px; border-radius: var(--bx-radius-xl); box-shadow: var(--bx-shadow-3); }
+.bx-balance.bx-v-hero .bx-balance-amount { font-size: clamp(28px, 9vw, 40px); overflow-wrap: anywhere; }
+.bx-balance.bx-v-glass { background: color-mix(in srgb, var(--bx-card) 58%, transparent); -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%); color: var(--bx-text); box-shadow: var(--bx-shadow-1); }
 .bx-balance.bx-v-glass :is(.bx-balance-label, .bx-balance-amount, .bx-balance-meta) { color: var(--bx-text); }
 .bx-balance.bx-v-glass .bx-reveal { color: var(--bx-brand-text); background: color-mix(in srgb, var(--bx-brand) 10%, transparent); }
-@media (prefers-reduced-transparency: reduce) { .bx-balance.bx-v-glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--bx-card); } }
+@media (prefers-reduced-transparency: reduce) { .bx-balance.bx-v-glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--bx-surface); } }
+@media (forced-colors: active) { .bx-balance.bx-v-glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: Canvas; } }

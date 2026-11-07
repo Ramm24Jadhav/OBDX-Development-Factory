@@ -138,8 +138,8 @@ export interface RevealDigitsProps extends TextEffectProps {
 export function RevealDigits({ testID, value, masked, style, variant }: RevealDigitsProps) {
   const s = useTextStyle(style, variant === 'card' ? 22 : 18);
   const t = useTheme();
-  // blur: the masked digits fade and spread (the real number is never drawn while masked); card: a surface of its own
-  const v = variant === 'blur' && masked ? { opacity: 0.55, letterSpacing: 4 } : variant === 'card' ? { padding: 16, borderRadius: t.radius.card, backgroundColor: t.color.surface2, overflow: 'hidden' as const } : null;
+  // blur: while masked even the last four are dots, so a glance over the shoulder sees nothing; card: a surface of its own
+  const v = variant === 'card' ? { padding: t.padCard - 2, borderRadius: t.radius.card, backgroundColor: t.color.surface2, overflow: 'hidden' as const } : null;
   const r = useReducedMotion();
   /* the last four digits always show; spaces and separators stay */
   const digitsAt = value.split('').map((c, i) => (/\d/.test(c) ? i : -1)).filter((i) => i >= 0);
@@ -152,7 +152,7 @@ export function RevealDigits({ testID, value, masked, style, variant }: RevealDi
     const timer = setInterval(() => { n += 1; setOpen(n); if (n >= value.length) { clearInterval(timer); } }, 35);
     return () => clearInterval(timer);
   }, [masked, value, r]);
-  const shown = value.split('').map((c, i) => (/\d/.test(c) && !keep.has(i) && i >= open ? '•' : c)).join('');
+  const shown = value.split('').map((c, i) => (/\d/.test(c) && (!keep.has(i) || (variant === 'blur' && masked)) && i >= open ? '•' : c)).join('');
   return <Text testID={testID} accessibilityLabel={masked ? `ending ${value.replace(/\s/g, '').slice(-4)}, hidden` : value} style={[s, v]}>{shown}</Text>;
 }
 

@@ -329,7 +329,7 @@ function Gallery() {
       <Section id="receipt" title="Receipt">
         <TransactionReceipt testID="rc1" amount={1250} currency="USD" reference="FX-20391" items={[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }]}><SecondaryButton label="Download" /></TransactionReceipt>
           <div data-variant="ticket"><TransactionReceipt variant="ticket" testID="rc1-ticket" amount={1250} currency="USD" reference="FX-20391" items={[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }]}><SecondaryButton label="Download" /></TransactionReceipt></div>
-          <div data-variant="minimal"><TransactionReceipt variant="minimal" testID="rc1-minimal" amount={1250} currency="USD" reference="FX-20391" items={[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }]}><SecondaryButton label="Download" /></TransactionReceipt></div>
+          <div data-variant="flat"><TransactionReceipt variant="flat" testID="rc1-flat" amount={1250} currency="USD" reference="FX-20391" items={[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }]}><SecondaryButton label="Download" /></TransactionReceipt></div>
           <div data-variant="glass"><TransactionReceipt variant="glass" testID="rc1-glass" amount={1250} currency="USD" reference="FX-20391" items={[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }]}><SecondaryButton label="Download" /></TransactionReceipt></div>
       </Section>
       <Section id="upcoming-bills" title="Upcoming bills">
@@ -935,7 +935,7 @@ function Gallery() {
       <Section id="receipt-tear" title="Torn receipt">
         <ReceiptTear amount={1250} currency="USD" reference="FX-20391" />
           <div data-variant="ticket"><ReceiptTear variant="ticket" amount={1250} currency="USD" reference="FX-20391" /></div>
-          <div data-variant="minimal"><ReceiptTear variant="minimal" amount={1250} currency="USD" reference="FX-20391" /></div>
+          <div data-variant="flat"><ReceiptTear variant="flat" amount={1250} currency="USD" reference="FX-20391" /></div>
           <div data-variant="glass"><ReceiptTear variant="glass" amount={1250} currency="USD" reference="FX-20391" /></div>
       </Section>
       <Section id="success-check" title="Success check">

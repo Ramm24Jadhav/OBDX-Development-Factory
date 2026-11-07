@@ -16,6 +16,7 @@
   -webkit-mask: radial-gradient(circle 10px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 10px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat;
   mask: radial-gradient(circle 10px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 10px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat; }
 .bx-receipt.bx-v-ticket .bx-kv-list { padding-top: 12px; border-top: var(--bx-bw) dashed var(--bx-border-strong); }
-.bx-receipt.bx-v-minimal { padding: 0; background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
-.bx-receipt.bx-v-glass { background: color-mix(in srgb, var(--bx-card) 58%, transparent); -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%); border-color: color-mix(in srgb, var(--bx-text) 12%, transparent); }
-@media (prefers-reduced-transparency: reduce) { .bx-receipt.bx-v-glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--bx-card); } }
+.bx-receipt.bx-v-flat { padding: 0; background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.bx-receipt.bx-v-glass { background: color-mix(in srgb, var(--bx-card) 58%, transparent); -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%); }
+@media (prefers-reduced-transparency: reduce) { .bx-receipt.bx-v-glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--bx-surface); } }
+@media (forced-colors: active) { .bx-receipt.bx-v-glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: Canvas; } }

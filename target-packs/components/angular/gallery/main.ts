@@ -277,7 +277,7 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       <section class="gate" data-component="receipt" aria-labelledby="aw2-14-h"><h2 id="aw2-14-h">Receipt</h2><div class="gate-body">
         <bx-receipt testID="rc1" [amount]="1250" currency="USD" reference="FX-20391" [items]="[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }]"><bx-secondary-button label="Download" /></bx-receipt>
       <div data-variant="ticket"><bx-receipt variant="ticket" testID="rc1-ticket" [amount]="1250" currency="USD" reference="FX-20391" [items]="[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }]"><bx-secondary-button label="Download" /></bx-receipt></div>
-      <div data-variant="minimal"><bx-receipt variant="minimal" testID="rc1-minimal" [amount]="1250" currency="USD" reference="FX-20391" [items]="[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }]"><bx-secondary-button label="Download" /></bx-receipt></div>
+      <div data-variant="flat"><bx-receipt variant="flat" testID="rc1-flat" [amount]="1250" currency="USD" reference="FX-20391" [items]="[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }]"><bx-secondary-button label="Download" /></bx-receipt></div>
       <div data-variant="glass"><bx-receipt variant="glass" testID="rc1-glass" [amount]="1250" currency="USD" reference="FX-20391" [items]="[{ label: 'From', value: 'Savings ·· 4821' }, { label: 'To', value: 'A. Rao · HSBC' }]"><bx-secondary-button label="Download" /></bx-receipt></div>
       </div></section>
       <section class="gate" data-component="td-summary" aria-labelledby="aw2-15-h"><h2 id="aw2-15-h">Deposits summary</h2><div class="gate-body">
@@ -876,7 +876,7 @@ const motion = { hover: params.get('hover') || undefined, click: params.get('cli
       <section class="gate" data-component="receipt-tear" aria-labelledby="aw7-50-h"><h2 id="aw7-50-h">Torn receipt</h2><div class="gate-body">
         <bx-receipt-tear [amount]="1250" currency="USD" reference="FX-20391" />
       <div data-variant="ticket"><bx-receipt-tear variant="ticket" [amount]="1250" currency="USD" reference="FX-20391" /></div>
-      <div data-variant="minimal"><bx-receipt-tear variant="minimal" [amount]="1250" currency="USD" reference="FX-20391" /></div>
+      <div data-variant="flat"><bx-receipt-tear variant="flat" [amount]="1250" currency="USD" reference="FX-20391" /></div>
       <div data-variant="glass"><bx-receipt-tear variant="glass" [amount]="1250" currency="USD" reference="FX-20391" /></div>
       </div></section>
       <section class="gate" data-component="success-check" aria-labelledby="aw7-51-h"><h2 id="aw7-51-h">Success check</h2><div class="gate-body">

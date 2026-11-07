@@ -12,7 +12,7 @@ export type BalanceVariant = 'default' | 'compact' | 'hero' | 'glass';
 export type PayeesVariant = 'default' | 'compact' | 'grid' | 'card';
 export type CardTileVariant = 'default' | 'minimal' | 'glass' | 'metal';
 export type TxListVariant = 'default' | 'compact' | 'detailed' | 'card' | 'glass';
-export type ReceiptVariant = 'default' | 'ticket' | 'minimal' | 'glass';
+export type ReceiptVariant = 'default' | 'ticket' | 'flat' | 'glass';
 export type FormVariant = 'default' | 'flat' | 'sectioned' | 'glass';
 export type CalcVariant = 'default' | 'compact' | 'split' | 'glass';
 export type BiometricVariant = 'default' | 'inline' | 'sheet';
@@ -39,6 +39,14 @@ export interface VariantLook {
   row: ViewStyle;
 }
 
+/** The theme is dark when its surface is dark (a light-mode bank can have dark text on its brand colour). */
+export function isDark(t: Theme): boolean {
+  const hex = /^#([0-9a-f]{6})$/i.exec(t.color.surface);
+  if (!hex) { return false; }
+  const n = parseInt(hex[1], 16);
+  return 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) < 128;
+}
+
 /** Kinds whose card variant makes each row a card (for the others card is their own default look). */
 const LISTS = ['bills', 'payees', 'txlist', 'locator'];
 const flat: ViewStyle = { backgroundColor: 'transparent', borderWidth: 0, shadowOpacity: 0, elevation: 0 };
@@ -46,10 +54,11 @@ const flat: ViewStyle = { backgroundColor: 'transparent', borderWidth: 0, shadow
 /** The theme, root style and row style of a banking widget's variant. */
 export function variantLook(base: Theme, kind: string, variant?: string): VariantLook {
   const c = base.color;
-  const dark = c.onPrimary !== '#ffffff';
+  const dark = isDark(base);
   // a surface of its own: the colours and the card setting panels read
   const recolour = (color: Partial<Theme['color']>): Theme => ({ ...base, card: color.surface ?? base.card, color: { ...c, ...color } });
-  const glass = base.glass ? recolour({ surface: base.glass.fill }) : recolour({ surface: dark ? 'rgba(40, 40, 40, 0.62)' : 'rgba(255, 255, 255, 0.6)' });
+  // liquid glass's own frosted fill; elsewhere (no blur on a phone without expo-blur) a nearly opaque one, so text keeps its contrast over a photo
+  const glass = base.glass ? recolour({ surface: base.glass.fill }) : recolour({ surface: dark ? 'rgba(17, 24, 39, 0.88)' : 'rgba(255, 255, 255, 0.88)' });
   switch (variant) {
     case 'compact':
       return { t: base, surface: { padding: 10, gap: 6 }, row: { minHeight: base.minTouch, paddingVertical: 2 } };
@@ -79,7 +88,7 @@ export function variantLook(base: Theme, kind: string, variant?: string): Varian
     case 'split':
       return { t: base, surface: { borderLeftWidth: 6, borderLeftColor: c.primary }, row: {} };
     case 'grid':
-      return { t: base, surface: { flexDirection: 'row', flexWrap: 'wrap' }, row: { width: '50%' } };
+      return { t: base, surface: { flexDirection: 'row', flexWrap: 'wrap' }, row: { width: '33.33%' } };
     case 'inline':
       return { t: base, surface: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', padding: 12, gap: 8 }, row: {} };
     case 'sheet':

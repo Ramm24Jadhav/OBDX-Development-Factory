@@ -7,6 +7,7 @@
 @keyframes bx-flap { from { transform: rotateX(90deg); opacity: 0.4; } }
 /* Variants (variants.json, wave V4) */
 .bx-flap.bx-v-light .bx-flap-tile { background: var(--bx-surface-3); color: var(--bx-text); box-shadow: inset 0 -1px 0 var(--bx-border); }
+:is(.bx-dark .bx-flap, .bx-flap.bx-dark).bx-v-light .bx-flap-tile { background: #f1f5f9; color: #0f172a; }
 .bx-flap.bx-v-compact { padding: 10px 12px; }
 .bx-flap.bx-v-compact .bx-flap-rows { gap: 4px; }
 .bx-flap.bx-v-compact .bx-flap-tile { min-width: 1em; padding: 2px 1px; font-size: 13px; }

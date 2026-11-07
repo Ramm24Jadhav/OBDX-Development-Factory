@@ -19,8 +19,9 @@
 .bx-chat.bx-v-flat .bx-msg, .bx-chat.bx-v-flat .bx-msg.is-mine { align-self: stretch; max-width: none; padding: 8px 0; border-radius: 0; background: none; color: var(--bx-text); border-top: var(--bx-bw) solid var(--bx-rule); }
 .bx-chat.bx-v-flat .bx-msg:first-child { border-top: 0; }
 .bx-chat.bx-v-flat .bx-msg.is-mine .bx-msg-who { color: var(--bx-brand-text); }
-.bx-chat.bx-v-glass { background: color-mix(in srgb, var(--bx-card) 58%, transparent); -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%); border-color: color-mix(in srgb, var(--bx-text) 12%, transparent); }
+.bx-chat.bx-v-glass { background: color-mix(in srgb, var(--bx-card) 58%, transparent); -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%); }
 .bx-prompt-bar.bx-v-boxed { padding: 12px; border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-1); }
 .bx-prompt-bar.bx-v-boxed .bx-prompt-row .bx-control, .bx-prompt-bar.bx-v-boxed .bx-btn { border-radius: var(--bx-radius-control); }
-.bx-prompt-bar.bx-v-glass .bx-prompt-row .bx-control { background: color-mix(in srgb, var(--bx-card) 58%, transparent); -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%); border-color: color-mix(in srgb, var(--bx-text) 12%, transparent); }
-@media (prefers-reduced-transparency: reduce) { .bx-chat.bx-v-glass, .bx-prompt-bar.bx-v-glass .bx-prompt-row .bx-control { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--bx-card); } }
+.bx-prompt-bar.bx-v-glass .bx-prompt-row .bx-control { background: color-mix(in srgb, var(--bx-card) 58%, transparent); -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%); }
+@media (prefers-reduced-transparency: reduce) { .bx-chat.bx-v-glass, .bx-prompt-bar.bx-v-glass .bx-prompt-row .bx-control { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--bx-surface); } }
+@media (forced-colors: active) { .bx-chat.bx-v-glass, .bx-prompt-bar.bx-v-glass .bx-prompt-row .bx-control { -webkit-backdrop-filter: none; backdrop-filter: none; background: Canvas; } }

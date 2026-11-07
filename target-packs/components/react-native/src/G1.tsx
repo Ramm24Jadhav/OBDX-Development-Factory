@@ -11,7 +11,7 @@ import { Banner, BannerProps, Chips, ChipsProps, Item, ItemList, ListEntry, Segm
   TimelineItem, TimelineList, TimelineListProps, Tone, Touch, panel, toItems, toneColors } from './parts';
 import { Enter, useShimmer } from './motion';
 import { useTheme } from './theme';
-import { AvatarVariant, BillsVariant, ListVariantProps, hueOf } from './bankVariants';
+import { AvatarVariant, BillsVariant, ListVariantProps, hueOf, isDark } from './bankVariants';
 
 /* ---------- SecondaryButton and DestructiveButton ---------- */
 
@@ -293,7 +293,7 @@ export function Avatar({ testID, name, src, size = 'md', variant }: AvatarProps 
   const box = { width: d, height: d, borderRadius: variant === 'rounded' ? d / 4 : d / 2,
     ...(variant === 'ring' ? { borderWidth: 2, borderColor: t.color.primary } : {}) };
   // the tonal avatar's soft fill and text, from a hue of the name (dark text on light, light text on dark)
-  const dark = t.color.onPrimary !== '#ffffff';
+  const dark = isDark(t);
   const tone = variant === 'tonal' ? { bg: `hsl(${hueOf(name)}, 60%, ${dark ? 24 : 90}%)`, fg: `hsl(${hueOf(name)}, 70%, ${dark ? 85 : 25}%)` } : null;
   return src
     ? <Image testID={testID} source={{ uri: src }} style={box} accessibilityLabel={name} accessibilityRole="image" />

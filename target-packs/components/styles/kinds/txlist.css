@@ -14,5 +14,6 @@
 .bx-txlist.bx-v-card { padding: 0; background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
 .bx-txlist.bx-v-card .bx-rows { gap: 8px; }
 .bx-txlist.bx-v-card .bx-row, .bx-txlist.bx-v-card .bx-row:first-child { padding: 8px var(--bx-pad); border: var(--bx-bw) solid var(--bx-border); border-radius: var(--bx-radius-lg); background: var(--bx-card); box-shadow: var(--bx-shadow-1); }
-.bx-txlist.bx-v-glass { background: color-mix(in srgb, var(--bx-card) 58%, transparent); -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%); border-color: color-mix(in srgb, var(--bx-text) 12%, transparent); }
-@media (prefers-reduced-transparency: reduce) { .bx-txlist.bx-v-glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--bx-card); } }
+.bx-txlist.bx-v-glass { background: color-mix(in srgb, var(--bx-card) 58%, transparent); -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%); }
+@media (prefers-reduced-transparency: reduce) { .bx-txlist.bx-v-glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--bx-surface); } }
+@media (forced-colors: active) { .bx-txlist.bx-v-glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: Canvas; } }

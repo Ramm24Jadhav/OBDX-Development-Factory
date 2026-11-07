@@ -2162,7 +2162,7 @@
       "variants": [
         { "id": "default", "name": "Default", "purpose": "The widget as the pack draws it: the tick, the amount, the reference and the details in a card.", "pattern": "Confirmation screen (GOV.UK confirmation page)", "source": "own", "licence": "own", "built": ["jet-premium", "react", "angular", "react-native"] },
         { "id": "ticket", "name": "Ticket", "purpose": "A paper receipt with a perforated edge and a dashed line before the details.", "pattern": "Paper receipt", "source": "own", "licence": "own", "built": ["jet-premium", "react", "angular", "react-native"] },
-        { "id": "minimal", "name": "Minimal", "purpose": "No card: the amount and details straight on the page, for a full screen.", "pattern": "Plain confirmation", "source": "own", "licence": "own", "built": ["jet-premium", "react", "angular", "react-native"] },
+        { "id": "flat", "name": "Flat", "purpose": "No card: the amount and details straight on the page, for a full screen.", "pattern": "Plain confirmation", "source": "own", "licence": "own", "built": ["jet-premium", "react", "angular", "react-native"] },
         { "id": "glass", "name": "Glass", "purpose": "The receipt as glass over a backdrop, for a success screen with a gradient.", "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency", "source": "own", "licence": "own", "built": ["jet-premium", "react", "angular", "react-native"] }
       ],
       "motion": { "enter": "rise", "hover": null, "press": "style", "change": "pop" }
@@ -2579,7 +2579,7 @@
       "variants": [
         { "id": "default", "name": "Default", "purpose": "The widget as the pack draws it: the tick, the amount, the reference and the details in a card.", "pattern": "Confirmation screen (GOV.UK confirmation page)", "source": "own", "licence": "own", "built": ["jet-premium", "react", "angular", "react-native"] },
         { "id": "ticket", "name": "Ticket", "purpose": "A paper receipt with a perforated edge and a dashed line before the details.", "pattern": "Paper receipt", "source": "own", "licence": "own", "built": ["jet-premium", "react", "angular", "react-native"] },
-        { "id": "minimal", "name": "Minimal", "purpose": "No card: the amount and details straight on the page, for a full screen.", "pattern": "Plain confirmation", "source": "own", "licence": "own", "built": ["jet-premium", "react", "angular", "react-native"] },
+        { "id": "flat", "name": "Flat", "purpose": "No card: the amount and details straight on the page, for a full screen.", "pattern": "Plain confirmation", "source": "own", "licence": "own", "built": ["jet-premium", "react", "angular", "react-native"] },
         { "id": "glass", "name": "Glass", "purpose": "The receipt as glass over a backdrop, for a success screen with a gradient.", "pattern": "Liquid glass: a translucent fill with a lit rim over the page (the pack's glass.json); solid where the user asks for less transparency", "source": "own", "licence": "own", "built": ["jet-premium", "react", "angular", "react-native"] }
       ],
       "motion": { "enter": "rise", "hover": null, "press": "style", "change": "pop" }
